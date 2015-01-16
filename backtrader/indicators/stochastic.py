@@ -18,17 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from .. import DataSeries, Indicator, Parameter
+from .. import DataSeries, Indicator
 from ma import MATypes
 from utils import LineDifference, LineDivision, Highest, Lowest
 
 
 class StochasticFast(Indicator):
     lines = ('k', 'd',)
-
-    period = Parameter(14)
-    period_dfast = Parameter(3)
-    matype = Parameter(MATypes.Simple)
+    params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),)
 
     def __init__(self, data):
         highesthigh = Highest(data, period=self.params.period, line=DataSeries.High)
@@ -42,21 +39,22 @@ class StochasticFast(Indicator):
 
 
 class StochasticSlow(Indicator):
-    extends = (StochasticFast, 'stocfast', (0, 1))
-    period_dslow = Parameter(3)
+    extend = (StochasticFast, (0, 1),)
+    params = (('period_dslow', 3),)
 
     def __init__(self, data):
-        dslowperc = self.params.matype(self.stocfast, period=self.params.period_dslow, line=1)
+        dslowperc = self.params.matype(self.extend, period=self.params.period_dslow, line=1)
         self.bind2lines(1, dslowperc)
 
 
 class StochasticFull(Indicator):
+    extend = (StochasticFast, (0, 0), (1, 1),)
     lines = ('dslow',)
-    extends = (StochasticFast, 'stocfast', (0, 1))
-    period_dslow = Parameter(3)
+
+    params = (('period_dslow', 3),)
 
     def __init__(self, data):
-        dslowperc = self.params.matype(self.stocfast, period=self.params.period_dslow, line=1)
+        dslowperc = self.params.matype(self.extend, period=self.params.period_dslow, line=1)
         self.bind2lines(2, dslowperc)
 
 

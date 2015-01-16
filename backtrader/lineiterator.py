@@ -27,103 +27,71 @@ import itertools
 from lineseries import LineSeries
 
 
-class ParamsHolder(object):
-    params = collections.defaultdict(list)
-    extends = (None, None)
-
-    @classmethod
-    def get_params(cls):
-        return cls.params[cls]
-
-    @classmethod
-    def add_param(cls, name, parameter):
-        cls.params[cls].append(name)
-        setattr(cls, name, parameter)
-
-    def __setattr__(self, name, value):
-        if name not in self.params[self.__class__]:
-            # if name not in dir(self):
-            raise AttributeError
-        object.__setattr__(self, name, value)
-
-    @classmethod
-    def sort_params(cls):
-        cls.params[cls].sort(key=lambda x: getattr(cls, x)._id)
-
-
 class Parameter(object):
-    _id = itertools.count()
-
     def __init__(self, default):
-        self._id = self.__class__._id.next()
-
         self.default = default
-        self.default_type = type(default) if default is not None else None
-        default_function = functools.partial(lambda x: x, default)
-        self.cache = collections.defaultdict(default_function)
-        # self.cache[None] = default
-        self.cache[None] = self # To enable access to attributes and __call__
+        # Allow access to descriptor __call__ via 'None' (ex: get default value)
+        self.cache = dict([[None, self],])
 
     def __set__(self, obj, value):
-        # value = self.default_type(value) if self.default_type is not None else value
         self.cache[obj] = value
 
     def __get__(self, obj, cls=None):
-        return self.cache[obj or None]
+        return self.cache.setdefault(obj, self.default)
 
-    def __call__(self, *args, **kwargs):
-        return self.default
+    def __call__(self):
+        return self
+
+
+class Params(object):
+    _getparamsbase = classmethod(lambda cls: ())
+    _getparams = classmethod(lambda cls: ())
+
+    @classmethod
+    def _derive(cls, name, params):
+        # Prepare the full param list newclass = (baseclass + subclass)
+        newparams = cls._getparams() + params
+
+        # Create subclass
+        newcls = type(cls.__name__ + '_' + name, (cls,), {})
+
+        # Keep a copy of _getparams ... to access the params
+        setattr(newcls, '_getparamsbase', getattr(newcls, '_getparams'))
+
+        # Set the lambda classmethod in the new class that returns the new params (closure)
+        setattr(newcls, '_getparams', classmethod(lambda cls: newparams))
+
+        # Create Parameter descriptors for new params, the others come from the base class
+        for pname, pdefault in params:
+            setattr(newcls, pname, Parameter(pdefault))
+
+        # Return the result
+        return newcls
 
 
 class MetaLineIterator(LineSeries.__metaclass__):
+
     def __new__(meta, name, bases, dct):
-        extends = dct.pop('extends', None)
-        extcls = extends[0] if extends is not None else None
-        extattr = extends[1] if extends is not None else None
+        # Remove params from class definition to avod inheritance (and hence "repetition")
+        newparams = dct.pop('params', ())
 
-        if extcls is not None:
-            pbase = getattr(extcls, ParamsHolder.__name__)
-        else:
-            pbase = ParamsHolder
-            # Look in bases for a subclass of ParamsHolder and create a (sub)class
-            for base in bases:
-                for mname, mvalue in inspect.getmembers(base):
-                    if inspect.isclass(mvalue) and issubclass(mvalue, ParamsHolder):
-                        pbase = mvalue
-                        break
-                else:
-                    continue # inner loop came to end without break
-
-                break # broke out of inner loop ... pbase has a value
-
-        paramsholder = type(ParamsHolder.__name__ + '_' + name, (pbase,), {})
-
-        # Keep a copy of the extension (if any)
-        setattr(paramsholder, 'extends', extends)
-
-        # Keep a copy of the existing parameters - to keep original creation order
-        paramsholder.params[paramsholder] = pbase.params[pbase][:]
-
-        # Intercept the params in the new class and remove them from the dict to avoid creation
-        for dname, dvalue in dct.items():
-            if isinstance(dvalue, Parameter):
-                paramsholder.add_param(dname, dct.pop(dname))
-
-        # Ensure the params have the order in which they were defined
-        paramsholder.sort_params()
-
-        if extcls is not None:
-            # From "extended"
-            linealiases = getattr(extcls._Lines, 'linealiases', list())[:]
-            # Self defined (addition)
-            lines = dct.pop('lines', list())[:]
-            linealiases.extend(lines)
-            dct['lines'] = linealiases
-
-        # Create the class
+        # Create the new class - this pulls predefined "params"
         cls = super(MetaLineIterator, meta).__new__(meta, name, bases, dct)
-        # Add the ParamsHolder class (or dynamically created subclass)
-        setattr(cls, ParamsHolder.__name__, paramsholder)
+
+        # Pulls the param class out of it
+        params = getattr(cls, 'params', Params)
+
+        # Look for an extension and if found, add the params
+        extend = dct.get('extend', None)
+        if extend:
+            extcls = extend[0]
+            extparams = getattr(extcls, 'params')
+            newparams = extparams._getparams() + newparams
+
+        # Subclass and store the existing params with the (extended if any) newly defined params
+        cls.params = params._derive(name, newparams)
+
+        # The "extparams" end up in the middle (baseparams + extparams + newparams) which makes sense
 
         return cls
 
@@ -137,8 +105,8 @@ class MetaLineIterator(LineSeries.__metaclass__):
         # Set autoscanning of subindicators for minperiod
         obj._minperiodautoscan = True
 
-        # Add an instance of ParamsHolder to the instance
-        obj.params = params = cls.ParamsHolder()
+        # Add an instance of Params to the instance hiding the class definition
+        obj.params = params = cls.params()
 
         # Intercept param values in the instantiation call
         for kname in kwargs.keys():
@@ -170,26 +138,25 @@ class MetaLineIterator(LineSeries.__metaclass__):
         obj._linebindings = dict()
 
         # Create an extension attribute variable if needed
-        extends = getattr(params, 'extends', None)
-        extcls = extends[0] if extends is not None else None
-        extattr = extends[1] if extends is not None else None
-        extbindings = extends[2:] if extends is not None else list()
-
-        if extcls is not None and extattr is not None:
-            # Go over the class expected params. Fetch the value from the actual params
-            # Pass them as kwargs to the creation of the instance
-            extparams = getattr(extcls, ParamsHolder.__name__) # let exception be raised if None
+        extend = getattr(obj, 'extend', None)
+        if extend:
+            extcls = extend[0]
+            # Go over the class expected params. Fetch the value from the actual existing params
+            # Pass them as kwargs to the creation of the extended instance
+            extparams = getattr(extcls, 'params')
             extkwargs = dict()
-            for pname in extparams.get_params():
+            for pname, pdefault in extparams._getparams():
                 extkwargs[pname] = getattr(params, pname)
 
             extobj = extcls(*args, **extkwargs)
-            setattr(obj, extattr, extobj)
+            setattr(obj, 'extend', extobj)
             obj.addindicator(extobj)
 
-        for extbinding in extbindings:
-            lineself, lineext = extbinding
-            obj.bind2lines(lineself, extobj, lineext)
+            # Make sure extended binding to lines have the right offset
+            # the start after a potential baseclass
+            extoffset = len(cls.lines._getlinesbase())
+            for lineself, lineext in extend[1:]:
+                obj.bind2lines(lineself + extoffset, extobj, lineext)
 
         # Parameter values have now been set before __init__
         return obj, args, kwargs

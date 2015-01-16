@@ -104,7 +104,7 @@ class YahooFinance(dataseries.OHLCDateTime):
 
 class YahooFinanceCSV(dataseries.OHLCDateTime):
 
-    linecls = linebuffer.LineBufferFull
+    _linecls = linebuffer.LineBufferFull
 
     def __init__(self, path, adjclose=True):
         self.path = path

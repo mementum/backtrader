@@ -28,6 +28,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         obj, args, kwargs = super(MetaStrategy, cls).dopreinit(obj, *args, **kwargs)
         obj.env = env
         obj._clock = env.datas[0]
+        obj._len = 0
         return obj, args[1:], kwargs
 
 
@@ -39,3 +40,11 @@ class Strategy(LineIterator):
 
     def stop(self):
         pass
+
+    # Need to simulate len and forwarding because systems have no "lines"
+    # This may change in the future
+    def __len__(self):
+        return self._len
+
+    def forward(self):
+        self._len += 1

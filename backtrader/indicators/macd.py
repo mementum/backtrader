@@ -18,17 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from .. indicator import Indicator, Parameter
+from .. indicator import Indicator
 from ma import MovingAverageExponential
 from utils import LineDifference
 
 
 class MACDHisto(Indicator):
     lines = ('macd', 'signal', 'histo',)
-
-    period_me1 = Parameter(12)
-    period_me2 = Parameter(26)
-    period_signal = Parameter(9)
+    params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
     def __init__(self, data):
         me1 = MovingAverageExponential(data, period=self.params.period_me1)
@@ -48,10 +45,7 @@ class MACDHisto(Indicator):
 
 class MACD(Indicator):
     lines = ('macd', 'signal',)
-
-    period_me1 = Parameter(12)
-    period_me2 = Parameter(26)
-    period_signal = Parameter(9)
+    params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
     def __init__(self, data):
         me1 = MovingAverageExponential(data, period=self.params.period_me1)
@@ -66,11 +60,11 @@ class MACD(Indicator):
 
 if True:
     class MACDHistogram(Indicator):
-        extends = (MACD, 'MACD', (0, 0), (1, 1))
+        extend = (MACD, (0, 0), (1, 1))
         lines = ('histo',) # adds a line
 
         def __init__(self, data):
-            self.bind2lines(2, LineDifference(self.MACD, self.MACD, line0=0, line1=1))
+            self.bind2lines(2, LineDifference(self.extend, self.extend, line0=0, line1=1))
 
 else:
     class MACDHistogram(MACD):
