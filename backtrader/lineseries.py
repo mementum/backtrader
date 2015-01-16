@@ -73,17 +73,25 @@ class Lines(object):
 
     _getlinesbase = classmethod(lambda cls: ())
     _getlines = classmethod(lambda cls: ())
+    _getlinesextra = classmethod(lambda cls: 0)
+    _getlinesextrabase = classmethod(lambda cls: 0)
 
     @classmethod
-    def _derive(cls, name, lines, linecls):
+    def _derive(cls, name, lines, linebuffercls, extralines):
         baselines = cls._getlines()
         newlines = baselines + lines
+
+        newextralines = cls._getlinesextra() + extralines
+
         newcls = type(cls.__name__ + '_' + name, (cls,), {})
 
         setattr(newcls, '_getlinesbase', getattr(newcls, '_getlines'))
         setattr(newcls, '_getlines', classmethod(lambda cls: newlines))
 
-        setattr(newcls, '_linecls', linecls)
+        setattr(newcls, '_getextralinesbase', getattr(newcls, '_getlines'))
+        setattr(newcls, '_getextralines', classmethod(lambda cls: newextralines))
+
+        setattr(newcls, '_linecls', linebuffercls)
 
         for line, linealias in enumerate(lines, start=len(baselines)):
             if not isinstance(linealias, basestring):
@@ -104,6 +112,10 @@ class Lines(object):
                     self.lines[-1] = self.lines[-1].linedate()
                 elif aliastype == 'tm':
                     self.lines[-1] = self.lines[-1].linetime()
+
+        # Add the required extralines
+        for i in xrange(self._getlinesextra()):
+            self.lines.append(self._linecls())
 
     def __len__(self):
         return len(self.lines[0])
@@ -144,6 +156,7 @@ class MetaLineSeries(RootLine.__metaclass__):
     def __new__(meta, name, bases, dct):
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
+        extralines = dct.pop('extralines', 0)
 
         # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
@@ -161,7 +174,7 @@ class MetaLineSeries(RootLine.__metaclass__):
             newlines = extendlines._getlines() + newlines
 
         # Create a subclass of the lines class with our name and newlines and put it in the class
-        cls.lines = lines._derive(name, newlines, linebuffercls)
+        cls.lines = lines._derive(name, newlines, linebuffercls, extralines)
 
         # return the class
         return cls
