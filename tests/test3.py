@@ -22,14 +22,13 @@ import testbase
 
 from datetime import datetime
 
-from backtrader import Parameter, Strategy, BrokerBase, BrokerTest, Cerebro
+from backtrader import Strategy, BrokerBase, BrokerTest, Cerebro
 from backtrader.feeds import YahooFinanceCSV
 from backtrader.indicators import MovingAverageSimple
 
 
 class TestStrategy(Strategy):
-    period = Parameter(15)
-    stake = Parameter(10)
+    params = (('period', 15), ('stake', 10),)
 
     def __init__(self):
         self.data = self.env.datas[0]

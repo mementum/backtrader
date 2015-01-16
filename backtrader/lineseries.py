@@ -24,8 +24,7 @@ import collections
 import linebuffer
 
 
-# Deriving our root metaclass from ABCMeta allows any of the classes below
-# to have abstract methods
+# Subclassing from ABCMeta allows later the entire hierarchy to have abstract methods
 
 class MetaRootLine(abc.ABCMeta):
     def doprenew(cls, *args, **kwargs):
@@ -69,51 +68,42 @@ class LineAlias(object):
         obj.lines[self.line][0] = value
 
 
-class MetaLines(type):
-    linealiases = dict()
+class Lines(object):
+    _linecls = linebuffer.LineBufferFull
 
-    def __new__(meta, name, bases, dct):
-        # linealiases = dct.pop('linealiases', list())[:]
-        linealiases = dct.get('linealiases', list())[:]
+    _getlinesbase = classmethod(lambda cls: ())
+    _getlines = classmethod(lambda cls: ())
 
-        cls = super(MetaLines, meta).__new__(meta, name, bases, dct)
-        for line, linealias in enumerate(linealiases):
+    @classmethod
+    def _derive(cls, name, lines, linecls):
+        baselines = cls._getlines()
+        newlines = baselines + lines
+        newcls = type(cls.__name__ + '_' + name, (cls,), {})
+
+        setattr(newcls, '_getlinesbase', getattr(newcls, '_getlines'))
+        setattr(newcls, '_getlines', classmethod(lambda cls: newlines))
+
+        setattr(newcls, '_linecls', linecls)
+
+        for line, linealias in enumerate(lines, start=len(baselines)):
             if not isinstance(linealias, basestring):
-                linealias = linealias[0] # a tuple or list was passed
+                # a tuple or list was passed, 1st is name
+                linealias = linealias[0]
             setattr(cls, linealias, LineAlias(line))
 
-        meta.linealiases[cls] = linealiases
-        return cls
-
-    def __call__(cls, *args, **kwargs):
-        obj = super(MetaLines, cls).__call__(*args, **kwargs)
-
-        # Done to guarantee the lines exist and avoid losing the 1st data value in a line
-        # The caller may use additional (non-name declared) lines for internal calculations
-        # and the defaultdict ensures the Line will be created automatically
-        # The defined ones will always be present.
-        # Done in __metaclass__.__call__ to prevent adding a class variable to Lines
-        for line, linealias in enumerate(MetaLines.linealiases[cls]):
-            # simply asking for the key will force defaultdict to create the value
-            obj.lines[line]
-            if not isinstance(linealias, basestring):
-                # a tuple or list was passed
-                aliasname, aliastype = linealias
-                if aliastype == 'dt':
-                    obj.lines[line] = obj.lines[line].linedate()
-                elif aliastype == 'tm':
-                    obj.lines[line] = obj.lines[line].linetime()
-
-        return obj
-
-
-class Lines(object):
-    __metaclass__ = MetaLines
-
-    LineCls = linebuffer.LineBufferFull
+        return newcls
 
     def __init__(self):
-        self.lines = collections.defaultdict(self.LineCls)
+        self.lines = list()
+        for line, linealias in enumerate(self._getlines()):
+            self.lines.append(self._linecls())
+            if not isinstance(linealias, basestring):
+                # a tuple or list was passed, 1st is name, 2nd is type code
+                aliasname, aliastype = linealias
+                if aliastype == 'dt':
+                    self.lines[-1] = self.lines[-1].linedate()
+                elif aliastype == 'tm':
+                    self.lines[-1] = self.lines[-1].linetime()
 
     def __len__(self):
         return len(self.lines[0])
@@ -131,19 +121,19 @@ class Lines(object):
         self.lines[line][0] = value
 
     def forward(self, value=linebuffer.NAN):
-        for line in self.lines.itervalues():
+        for line in self.lines:
             line.forward(value)
 
     def reset(self):
-        for line in self.lines.itervalues():
+        for line in self.lines:
             line.reset()
 
     def home(self):
-        for line in self.lines.itervalues():
+        for line in self.lines:
             line.home()
 
     def advance(self):
-        for line in self.lines.itervalues():
+        for line in self.lines:
             line.advance()
 
     def buflen(self, line=0):
@@ -151,22 +141,40 @@ class Lines(object):
 
 
 class MetaLineSeries(RootLine.__metaclass__):
-
     def __new__(meta, name, bases, dct):
-        lines = dct.pop('lines', list())
+        # Remove the line definition (if any) from the class creation
+        newlines = dct.pop('lines', ())
+
+        # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
-        linecls = getattr(cls, 'linecls', Lines.LineCls)
-        baseslines = getattr(cls, 'lines', list())[:]
-        baseslines.extend(lines)
-        cls.lines = baseslines
-        cls._Lines = type(Lines.__name__ + '_'  + name, (Lines,), {'linealiases': cls.lines, 'LineCls': linecls})
+        lines = getattr(cls, 'lines', Lines)
+
+        # Get the linebufferclass to apply
+        linebuffercls = getattr(cls, '_linecls', lines._linecls)
+
+        # Look for an extension
+        extend = dct.get('extend', None)
+        if extend:
+            extcls = extend[0]
+            extendlines = getattr(extcls, 'lines')
+            # lines end up in following order: baselines + extlines + newlines
+            newlines = extendlines._getlines() + newlines
+
+        # Create a subclass of the lines class with our name and newlines and put it in the class
+        cls.lines = lines._derive(name, newlines, linebuffercls)
+
+        # return the class
         return cls
 
     def dopreinit(cls, obj, *args, **kwargs):
         obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(obj, *args, **kwargs)
-         # obj.lines shadows the class lines (list) definition in the instance
-        obj.lines = cls._Lines()
+
+        # obj.lines shadows the lines (class) definition in the class
+        obj.lines = cls.lines()
+
+        # Set the minimum period for any LineSeries (sub)class instance
         obj._minperiod = 1
+
         return obj, args, kwargs
 
 

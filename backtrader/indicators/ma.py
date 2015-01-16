@@ -21,14 +21,12 @@
 import collections
 import math
 
-from .. import Indicator, Parameter
+from .. import Indicator
 
 
 class MovingAverageSimple(Indicator):
     lines = ('avg',)
-
-    period = Parameter(30)
-    line = Parameter(0)
+    params = (('period', 30), ('line', 0))
 
     def __init__(self, data):
         self.dataline = data[self.params.line]
@@ -47,9 +45,7 @@ class MovingAverageSimple(Indicator):
 
 class MovingAverageWeighted(Indicator):
     lines = ('avg',)
-
-    period = Parameter(30)
-    line = Parameter(0)
+    params = (('period', 30), ('line', 0))
 
     def __init__(self, data):
         self.dataline = data[self.params.line]
@@ -67,7 +63,7 @@ class MovingAverageWeighted(Indicator):
 
 
 class MovingAverageSmoothing(MovingAverageSimple):
-    smoothing = Parameter(None) # Must be set
+    params = (('smoothing', None),)
 
     def __init__(self, data):
         super(MovingAverageSmoothing, self).__init__(data)

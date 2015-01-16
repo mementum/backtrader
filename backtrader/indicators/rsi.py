@@ -18,15 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from .. import Indicator, Parameter
+from .. import Indicator
 from ma import MATypes
 from utils import LineDifference, LineDivision
 
-class _LineNormalize(Indicator):
-    lines = ('linenorm',)
 
-    norm = Parameter(100.0)
-    line = Parameter(0)
+class LineNormalize(Indicator):
+    lines = ('linenorm',)
+    params = (('norm', 100.0), ('line', 0))
 
     def __init__(self, data):
         self.dataline = data[self.params.line]
@@ -36,26 +35,24 @@ class _LineNormalize(Indicator):
         self.lines[0][0] = norm - norm / (1.0 + self.dataline[0])
 
 
-class _UpDays(Indicator):
+class UpDays(Indicator):
     lines = ('up',)
-
-    linesource = Parameter(0)
+    params = (('line', 0),)
 
     def __init__(self, data):
-        self.dataline = data.lines[self.params.linesource]
+        self.dataline = data.lines[self.params.line]
 
     def next(self):
         linediff = self.dataline[0] - self.dataline[1]
         self.lines[0][0] = linediff if linediff > 0.0 else 0.0
 
 
-class _DownDays(Indicator):
+class DownDays(Indicator):
     lines = ('down',)
-
-    linesource = Parameter(0)
+    params = (('line', 0),)
 
     def __init__(self, data):
-        self.dataline = data.lines[self.params.linesource]
+        self.dataline = data.lines[self.params.line]
 
     def next(self):
         linediff = self.dataline[1] - self.dataline[0]
@@ -64,18 +61,16 @@ class _DownDays(Indicator):
 
 class RSI(Indicator):
     lines = ('rsi',)
-
-    period = Parameter(14)
-    matype = Parameter(MATypes.Smoothed)
+    params = (('period', 14), ('matype', MATypes.Smoothed))
 
     def __init__(self, data):
-        updays = _UpDays(data)
-        downdays = _DownDays(data)
+        updays = UpDays(data)
+        downdays = DownDays(data)
         if False:
             maup = self.params.matype(updays, period=self.params.period)
             madown = self.params.matype(downdays, period=self.params.period)
             rs = LineDivision(maup, madown)
-            rsi = _LineNormalize(rs)
+            rsi = LineNormalize(rs)
             self.bind2lines(0, rsi)
         else:
             self.maup = self.params.matype(updays, period=self.params.period)
@@ -90,3 +85,5 @@ class RSI(Indicator):
         rs = self.maup[0][0] / self.madown[0][0]
         rsi = 100.0 - 100.0 / (1.0 + rs)
         self.lines[0][0] = rsi
+
+__all__ = ['RSI',]

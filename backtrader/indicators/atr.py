@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from .. import DataSeries, Indicator, Parameter
+from .. import DataSeries, Indicator
 from ma import MATypes
 
 
@@ -45,9 +45,7 @@ class TrueRange(Indicator):
 
 class AverageTrueRange(Indicator):
     lines = ('atr',)
-
-    period = Parameter(14)
-    matype = Parameter(MATypes.Simple)
+    params = (('period', 14), ('matype', MATypes.Simple))
 
     def __init__(self, data):
         tr = TrueRange(data)

@@ -18,16 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from .. import Indicator, Parameter
+from .. import Indicator
 
 
 class LineDifference(Indicator):
     lines = ('linedif',)
-
-    line0 = Parameter(0)
-    line1 = Parameter(0)
-    ago0 = Parameter(0)
-    ago1 = Parameter(0)
+    params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0))
 
     def __init__(self, data0, data1):
         self.data0line = data0[self.params.line0]
@@ -41,12 +37,8 @@ class LineDifference(Indicator):
 
 class LineDivision(Indicator):
     lines = ('linediv',)
+    params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0), ('factor', 1.0))
 
-    line0 = Parameter(0)
-    line1 = Parameter(0)
-    ago0 = Parameter(0)
-    ago1 = Parameter(0)
-    factor = Parameter(1.0)
 
     def __init__(self, data0, data1):
         self.data0line = data0.lines[self.params.line0]
@@ -61,9 +53,7 @@ class LineDivision(Indicator):
 
 class Highest(Indicator):
     lines = ('highest',)
-
-    period = Parameter(14)
-    line = Parameter(0)
+    params = (('period', 14), ('line', 0))
 
     def __init__(self, data):
         self.dataline = data[self.params.line]
@@ -75,9 +65,7 @@ class Highest(Indicator):
 
 class Lowest(Indicator):
     lines = ('lowest',)
-
-    period = Parameter(14)
-    line = Parameter(0)
+    params = (('period', 14), ('line', 0))
 
     def __init__(self, data):
         self.dataline = data.lines[self.params.line]

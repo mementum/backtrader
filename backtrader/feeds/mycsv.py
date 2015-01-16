@@ -90,8 +90,9 @@ class MyCSV1(dataseries.OHLCDateTime):
             self.f.close()
             self.f = None
 
+
 class MyCSV2(dataseries.OHLCDateTime):
-    linecls = linebuffer.LineBufferFull
+    _linecls = linebuffer.LineBufferFull
 
     def __init__(self, path):
         self.path = path
