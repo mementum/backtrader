@@ -31,26 +31,26 @@ class MetaRootLine(abc.ABCMeta):
         return cls, args, kwargs
 
     def donew(cls, *args, **kwargs):
-        obj = cls.__new__(cls, *args, **kwargs)
-        return obj, args, kwargs
+        _obj = cls.__new__(cls, *args, **kwargs)
+        return _obj, args, kwargs
 
-    def dopreinit(cls, obj, *args, **kwargs):
-        return obj, args, kwargs
+    def dopreinit(cls, _obj, *args, **kwargs):
+        return _obj, args, kwargs
 
-    def doinit(cls, obj, *args, **kwargs):
-        obj.__init__(*args, **kwargs)
-        return obj, args, kwargs
+    def doinit(cls, _obj, *args, **kwargs):
+        _obj.__init__(*args, **kwargs)
+        return _obj, args, kwargs
 
-    def dopostinit(cls, obj, *args, **kwargs):
-        return obj, args, kwargs
+    def dopostinit(cls, _obj, *args, **kwargs):
+        return _obj, args, kwargs
 
     def __call__(cls, *args, **kwargs):
         cls, args, kwargs = cls.doprenew(*args, **kwargs)
-        obj, args, kwargs = cls.donew(*args, **kwargs)
-        obj, args, kwargs = cls.dopreinit(obj, *args, **kwargs)
-        obj, args, kwargs = cls.doinit(obj, *args, **kwargs)
-        obj, args, kwargs = cls.dopostinit(obj, *args, **kwargs)
-        return obj
+        _obj, args, kwargs = cls.donew(*args, **kwargs)
+        _obj, args, kwargs = cls.dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = cls.doinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = cls.dopostinit(_obj, *args, **kwargs)
+        return _obj
 
 
 class RootLine(object):
@@ -167,7 +167,7 @@ class MetaLineSeries(RootLine.__metaclass__):
 
         # Look for an extension
         extend = dct.get('extend', None)
-        if extend:
+        if extend is not None:
             extcls = extend[0]
             extendlines = getattr(extcls, 'lines')
             # lines end up in following order: baselines + extlines + newlines
@@ -179,16 +179,16 @@ class MetaLineSeries(RootLine.__metaclass__):
         # return the class
         return cls
 
-    def dopreinit(cls, obj, *args, **kwargs):
-        obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(obj, *args, **kwargs)
+    def dopreinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(_obj, *args, **kwargs)
 
-        # obj.lines shadows the lines (class) definition in the class
-        obj.lines = cls.lines()
+        # _obj.lines shadows the lines (class) definition in the class
+        _obj.lines = cls.lines()
 
-        # Set the minimum period for any LineSeries (sub)class instance
-        obj._minperiod = 1
+        # Set the minimum period for any LineSeries (sub)class instance (do it at classlevel ?)
+        _obj._minperiod = 1
 
-        return obj, args, kwargs
+        return _obj, args, kwargs
 
 
 class LineSeries(RootLine):

@@ -38,20 +38,24 @@ class TestStrategy(btstrategy.Strategy):
         self.close = self.ohlc.close
 
         if True:
-            self.addindicator(btindicators.StochasticSlow(self.env.datas[0]))
+            # btindicators.MovingAverageExponential(self.env.datas[0], period=30)
+            # btindicators.MovingAverageSimple(self.env.datas[0], period=30)
+            # btindicators.AverageTrueRange(self.env.datas[0])
+            self.ind = btindicators.StochasticSlow(self.env.datas[0])
             pass
         else:
             self.stocslow = btindicators.StochasticSlow(self.env.datas[0])
             self.macd2 = btindicators.MACDHisto2(self.env.datas[0])
-            self.addindicator(btindicators.AverageTrueRange(self.env.datas[0]))
-            self.addindicator(btindicators.MACDHisto(self.env.datas[0]))
-            self.addindicator(btindicators.MovingAverageSimple(self.ind1, period=10))
-            self.addindicator(btindicators.MovingAverageExponential(self.env.datas[0], period=30))
-            self.addindicator(btindicators.MovingAverageWeighted(self.env.datas[0], period=30))
-            self.addindicator(btindicators.RSI(self.env.datas[0]))
-            self.addindicator(btindicators.RSI(self.env.datas[0], matype=btindicators.MATypes.Exponential))
-            self.addindicator(btindicators.StochasticFast(self.env.datas[0]))
-            self.addindicator(btindicators.StochasticSlow(self.env.datas[0]))
+            btindicators.AverageTrueRange(self.env.datas[0])
+            btindicators.MACDHisto(self.env.datas[0])
+            btindicators.MovingAverageSimple(self.env.datas[0], period=30)
+            btindicators.MovingAverageSimple(self.ind1, period=10)
+            btindicators.MovingAverageExponential(self.env.datas[0], period=30)
+            btindicators.MovingAverageWeighted(self.env.datas[0], period=30)
+            btindicators.RSI(self.env.datas[0])
+            btindicators.RSI(self.env.datas[0], matype=btindicators.MATypes.Exponential)
+            btindicators.StochasticFast(self.env.datas[0])
+            btindicators.StochasticSlow(self.env.datas[0])
 
         print '--------------------------------------------------'
         for indicator in self._indicators:
