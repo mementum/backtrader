@@ -24,12 +24,12 @@ from lineiterator import LineIterator, Parameter
 
 class MetaStrategy(LineIterator.__metaclass__):
 
-    def dopreinit(cls, obj, env, *args, **kwargs):
-        obj, args, kwargs = super(MetaStrategy, cls).dopreinit(obj, *args, **kwargs)
-        obj.env = env
-        obj._clock = env.datas[0]
-        obj._len = 0
-        return obj, args[1:], kwargs
+    def dopreinit(cls, _obj, env, *args, **kwargs):
+        _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
+        _obj.env = env
+        _obj._clock = env.datas[0]
+        _obj._len = 0
+        return _obj, args[1:], kwargs
 
 
 class Strategy(LineIterator):

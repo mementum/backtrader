@@ -18,26 +18,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import itertools
-
 from lineiterator import LineIterator, Parameter
 
 
 class MetaIndicator(LineIterator.__metaclass__):
-
-    def dopreinit(cls, obj, *args, **kwargs):
-        obj, args, kwargs = super(MetaIndicator, cls).dopreinit(obj, *args, **kwargs)
+    def dopreinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaIndicator, cls).dopreinit(_obj, *args, **kwargs)
 
         # 1st arg is the data source and therefore the ticking clock
-        obj._clock = args[0]
-        obj._id = Indicator._id.next()
-        return obj, args, kwargs
+        _obj._clock = args[0]
+
+        return _obj, args, kwargs
 
 
 class Indicator(LineIterator):
     __metaclass__ = MetaIndicator
-
-    _id = itertools.count()
 
 
 def Naked(indicator):
