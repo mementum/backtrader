@@ -181,11 +181,11 @@ class YahooFinanceCSV(dataseries.OHLCDateTime):
         if self.adjclose:
             adjustedclose = float(linetokens[i.next()])
             adjfactor = self.lines.close[0] / adjustedclose
-            self.lines.open[0] /= adjfactor
-            self.lines.high[0] /= adjfactor
-            self.lines.low[0] /= adjfactor
-            self.lines.close[0] = adjustedclose
-            self.lines.volume[0] /= adjfactor
+            self.lines.open[0] = round(self.lines.open[0] / adjfactor, 2)
+            self.lines.high[0] = round(self.lines.high[0] / adjfactor, 2)
+            self.lines.low[0] = round(self.lines.low[0] / adjfactor, 2)
+            self.lines.close[0] = round(adjustedclose, 2)
+            self.lines.volume[0] = round(self.lines.volume[0] / adjfactor, 2)
 
         return True
 

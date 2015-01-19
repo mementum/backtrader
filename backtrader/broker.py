@@ -20,97 +20,59 @@
 ################################################################################
 
 import collections
-
-AtMarket = 0
-AtClose = 1
-AtLimit = 2
-
-OrderBuy = 0
-OrderSell = 1
-
-
-class OrderedDefaultdict(collections.OrderedDict):
-    # Adapted from:
-    # http://stackoverflow.com/questions/4126348/how-do-i-rewrite-this-function-to-implement-ordereddict/
-    def __init__(self, *args, **kwargs):
-        if not args:
-            self.default_factory = None
-        else:
-            if not (args[0] is None or callable(args[0])):
-                raise TypeError('first argument must be callable or None')
-            self.default_factory = args[0]
-            args = args[1:]
-        super(OrderedDefaultdict, self).__init__(*args, **kwargs)
-
-    def __missing__ (self, key):
-        if self.default_factory is None:
-            raise KeyError(key)
-        self[key] = default = self.default_factory()
-        return default
-
-    def __reduce__(self):  # optional, for pickle support
-        args = (self.default_factory,) if self.default_factory else ()
-        return self.__class__, args, None, None, self.iteritems()
+import datetime
 
 
 class Order(object):
+    AtMarket, AtClose, AtLimit = range(3)
+    OrderBuy, OrderSell = range(2)
+    Pending, Completed, Partial, Cancelled, Expired = range(5)
 
-    def __init__(self, order, data, price, size, execution):
+    def __init__(self, order, data, size, price=None, how=None, valid=None):
         self.order = order
         self.data = data
+        # FIXME: price can be none for "AtMarket" and "AtClose" but
+        # it would be good to raise an Exception (ValueError?) if for example
+        # AtLimit is passed and None is given as price
         self.price = price
         self.size = size
-        self.execution = execution
+        self.how = how if how is not None else Order.AtMarket
+        # FIXME: Set a default validity if None is given
+        self.valid = valid
+
+        self.status = Order.Pending
+        self.dtcomplete = None
 
 
 class BuyOrder(Order):
-    def __init__(self, data, price, size, execution):
-        self.order = OrderBuy
-        self.data = data
-        self.price = price
-        self.size = size
-        self.execution = execution
+    def __init__(self, data, size, price=None, how=None, valid=None):
+        super(BuyOrder, self).__init__(self.OrderBuy, data, size, price, how, valid)
 
 
 class SellOrder(Order):
-    def __init__(self, data, price, size, execution):
-        self.order = OrderSell
-        self.data = data
-        self.price = price
-        self.size = size
-        self.execution = execution
+    def __init__(self, data, size, price=None, how=None, valid=None):
+        super(SellOrder, self).__init__(self.OrderSell, data, size, price, how, valid)
 
 
-class BrokerBase(object):
-    AtMarket = 0
-    AtClose = 1
-    AtLimit = 2
+class BrokerBack(object):
+    AtMarket, AtClose, AtLimit = Order.AtMarket, Order.AtClose, Order.AtLimit
 
-    OrderBuy = 0
-    OrderSell = 1
+    class Position(object):
+        def __init__(self):
+            self.size = 0
+            self.price = 0.0
+
+        def __len__(self):
+            return self.size
 
     def __init__(self, cash):
-        self.cash = float(cash)
-        self.profitloss = 0.0
-        self.equity = 0.0
-        self.position = 0
-        self.price = 0.0
+        self.cash = cash
 
-        self.orders = OrderedDefaultdict(collections.deque)
+        self.owner = dict()
+        self.orders = collections.deque()
+        self.pending = collections.deque()
 
-    @property
-    def position(self):
-        return self._position
-
-    @position.setter
-    def position(self, position):
-        self._position = position
-
-    def buy(self, price, size, execution=AtClose):
-        raise NotImplementedError
-
-    def sell(self, price, size, execution=AtClose):
-        raise NotImplementedError
+        self.position = collections.defaultdict(BrokerBack.Position)
 
     def start(self):
         pass
@@ -118,125 +80,109 @@ class BrokerBase(object):
     def stop(self):
         pass
 
-    def next(self):
-        pass
+    def buy(self, owner, data, size, price=None, how=None, valid=None):
+        order = BuyOrder(data, size, price, how, valid)
+        self.pending.append(order)
+        self.owner[id(order)] = owner
+        return id(order)
 
+    def sell(self, owner, data, size, price=None, how=None, valid=None):
+        order = SellOrder(data, size, price, how, valid)
+        self.pending.append(order)
+        self.owner[id(order)] = owner
+        return id(order)
 
-class BrokerTest(BrokerBase):
-
-    def buy(self, data, price=None, size=1, execution=AtClose):
-        if execution == AtClose:
-            self._buy(data, data.close[0], size)
-            return
-
-        self.orders[data].append(BuyOrder(data, price, size, execution))
-
-    def _buy(self, data, price, size):
-        if self.position < 0:
-            size = self.closeposition(price, size)
+    def _buy(self, data, size, price):
+        size = self.closeposition(data, size, price)
         if size:
-            self.openposition(price, size)
+            self.openposition(data, size, price)
 
-    def sell(self, data, price=None, size=1, execution=AtClose):
-        if execution == AtClose:
-            self._sell(data, data.close[0], size)
-            return
-
-        self.orders[data].append(SellOrder(data, price, size, execution))
-
-    def _sell(self, data, price, size):
-        if self.position > 0:
-            # Pass negative size ... we are selling
-            size = self.closeposition(price, -size)
+    def _sell(self, data, size, price):
+        # Pass negative size ... we are selling
+        size = self.closeposition(data, -size, price)
         if size:
             # Returned Remaining size (if any) is negative
-            self.openposition(price, size)
+            self.openposition(data, size, price)
 
-    def getvalue(self, data, price):
-        pos_value_on_open = self.price * abs(self.position)
-        profitloss = (price - self.price) * self.position
+    def _execute(self, order, price):
+        if order.order == Order.OrderBuy:
+            self._buy(order.data, order.size, price)
+        elif order.order == Order.OrderSell:
+            self._sell(order.data, order.size, price)
+        else:
+            raise ValueError('Unknown Order type %d' % order.order)
+
+        # Order has been completed ... change status, put into
+        order.status = Order.Completed
+        order.price = price
+        order.dtcomplete = datetime.datetime.combine(order.data.date[0], order.data.time[0])
+        self.orders.append(order)
+        # We need to notify the owner
+        self.owner[id(order)]._ordernotify(order)
+
+    def getvalue(self, datas=None):
+        if not datas:
+            datas = self.position.iterkeys()
+
+        profitloss = 0.0
+        pos_value_on_open = 0.0
+        for data in datas:
+            position = self.position[data]
+            price = data.close[0]
+
+            pos_value_on_open += position.price * abs(position.size)
+            profitloss += (price - position.price) * position.size
+
         return self.cash + pos_value_on_open + profitloss
 
-    def closeposition(self, price, size):
-        if not self.position:
+    def getposition(self, data):
+        return self.position[data]
+
+    def closeposition(self, data, size, price):
+        position = self.position[data]
+        if not position.size:
             return size
 
-        position = self.position
-        positionsign = position/abs(position)
+        positionsign = position.size/abs(position.size)
 
         # number of contracts to close is the entire position or just the size
-        closingabs = min(abs(position), abs(size))
+        closingabs = min(abs(position.size), abs(size))
         closing = positionsign * closingabs
 
-        self.position -= closing
+        position.size -= closing
 
-        profitloss = (price - self.price) * closing
-        self.profitloss += profitloss
+        profitloss = (price - position.price) * closing
+        # position.profitloss += profitloss
 
         # original position is back plus/minus profitloss
-        self.cash += self.price * closingabs + profitloss
+        self.cash += position.price * closingabs + profitloss
 
         return size + closing
 
-    def openposition(self, price, size):
+    def openposition(self, data, size, price):
+        position = self.position[data]
         # Calculate the new average price
-        oldpos = self.price * self.position
+        oldpos = position.price * position.size
         newpos = price * size
 
-        self.position += size
-        self.price = (oldpos + newpos) / self.position
-        # print 'opening position cash, price, size', self.cash, price, size
+        position.size += size
+        position.price = (oldpos + newpos) / position.size
+
+        # Reduce the available cash according to new open position
         self.cash -= price * abs(size)
 
     def next(self):
-        for data, orders in self.orders.iteritems():
-            for i in xrange(len(orders)):
-                order = orders.popleft()
-                if order.execution == AtMarket: # can do
-                    price = data.open[0]
-                    if order.order == OrderBuy:
-                        self._buy(data, price, order.size)
-                    else:
-                        self._sell(data, price, order.size)
-                    continue
-                elif order.execution == AtLimit: # FIXME
-                    # put it back at the front for reprocessing and break out of loop
-                    # because next orders depend on this one being executed
-                    orders.appendleft(order)
-                    break
-                else:
-                    # Don't know what to do with this order ... skip it and go to next
-                    continue
-                    pass
-
-
-if False:
-    b = BrokerTest(10000)
-    data = None
-
-    print '----------------------------------------------------------------------'
-    b.buy(data, price=20.0, size=100)
-    print 'position', b.position
-    print 'price', b.price
-    print 'cash', b.cash
-
-    print '----------------------------------------------------------------------'
-    b.buy(data, price=25.0, size=100)
-    print 'position', b.position
-    print 'price', b.price
-    print 'cash', b.cash
-
-    print '----------------------------------------------------------------------'
-    b.sell(data, price=30.0, size=200)
-    print 'position', b.position
-    print 'price', b.price
-    print 'cash', b.cash
-
-    print '----------------------------------------------------------------------'
-    b.sell(data, price=30.0, size=200)
-    print 'position', b.position
-    print 'price', b.price
-    print 'cash', b.cash
-
-    print '----------------------------------------------------------------------'
-    print 'value', b.getvalue(data, price=30.0)
+        for i in xrange(len(self.pending)):
+            order = self.pending.popleft()
+            # FIXME : Check if the order needs to expire
+            if order.how == Order.AtMarket:
+                # Take the fist tick of the new bar in the data -> Open
+                price = order.data.open[0]
+                self._execute(order, price)
+            elif order.how == Order.AtClose:
+                raise NotImplementedError('AtClose How not yet implemented')
+            elif order.how == Order.AtLimit:
+                raise NotImplementedError('AtLimit How not yet implemented')
+            else:
+                raise ValueError('Unknown Order Execution type %d' % order.how)
+            # FIXME : If the order is not executed it must be appended to the queue

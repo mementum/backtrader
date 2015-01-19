@@ -35,7 +35,7 @@ class LineBufferBase(object):
         self.bindings = list()
 
     def reset(self):
-        self.array = array.array('f', [self.DEFVALUE] * self.BUFSIZE)
+        self.array = array.array('d', [self.DEFVALUE] * self.BUFSIZE)
         self.idx = -1
 
     def __len__(self):

@@ -20,46 +20,50 @@
 ################################################################################
 import testbase
 
-from datetime import datetime
+import datetime
 
-from backtrader import Strategy, BrokerBase, BrokerTest, Cerebro
+from backtrader import Strategy, BrokerBack, Cerebro
 from backtrader.feeds import YahooFinanceCSV
 from backtrader.indicators import MovingAverageSimple
 
 
 class TestStrategy(Strategy):
-    params = (('period', 15), ('stake', 10),)
+    params = (('period', 15), ('stake', 10), ('printdata', True))
 
     def __init__(self):
         self.data = self.env.datas[0]
-        self.dataclose = self.data.lines.close
-        self.sma = MovingAverageSimple(self.data, period=self.params.period)
-        self.broker = self.env.brokers[0]
+        self.dataclose = self.data.close
+        self.sma = MovingAverageSimple(self.env.datas[0], period=self.params.period)
+
+    def start(self):
+        self.tstart = datetime.datetime.now()
+
+    def ordernotify(self, order):
+        if order.status == order.Completed:
+            if order.order == order.OrderBuy:
+                print '%s, BUY , %.2f' % (order.dtcomplete.isoformat(), order.price)
+            elif order.order == order.OrderSell:
+                print '%s, SELL, %.2f' % (order.dtcomplete.isoformat(), order.price)
 
     def next(self):
-        closeprice = self.data.close[0]
-        smavalue = self.sma[0][0]
-        if not self.broker.position:
-            if closeprice > smavalue:
-                self.broker.buy(self.data, size=self.params.stake, execution=BrokerBase.AtMarket)
-                # FIXME: The actual "AtMarket" price is not the close price but the open price
-                # of the next bar
-                # Will be available when the broker gives information of the execution price
-                print '%s - BUY  at %.2f' % (self.data.date[0].isoformat(), closeprice)
+        if self.params.printdata:
+            print '%s, Close, %f, Sma, %f' % (self.data.date[0].isoformat(), self.dataclose[0], self.sma[0][0])
 
-        elif closeprice < smavalue:
-            self.broker.sell(self.data, size=self.params.stake, execution=BrokerBase.AtMarket)
-            # FIXME: The actual "AtMarket" price is not the close price but the open price
-            # of the next bar
-            # Will be available when the broker gives information of the execution price
-            print '%s - SELL at %.2f' % (self.data.date[0].isoformat(), closeprice)
+        if not self.position(self.data):
+            if self.dataclose[0] > self.sma[0][0]:
+                self.buy(self.data, size=self.params.stake)
+
+        elif self.dataclose[0] < self.sma[0][0]:
+            self.sell(self.data, size=self.params.stake)
 
     def stop(self):
-        print 'Final portfolio value: %.2f' % self.broker.getvalue(self.data, price=self.dataclose[0])
-
+        tused = datetime.datetime.now() - self.tstart
+        print 'Time used:', str(tused)
+        print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
 
 cerebro = Cerebro()
-cerebro.addbroker(BrokerTest(cash=1000))
-cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-2000.csv'))
-cerebro.addstrategy(TestStrategy)
+cerebro.addbroker(BrokerBack(cash=1000))
+# cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-2000.csv'))
+cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-1995-2014.csv'))
+cerebro.addstrategy(TestStrategy, printdata=False)
 cerebro.run()
