@@ -29,6 +29,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj.env = env
         _obj._clock = env.datas[0]
         _obj._len = 0
+        _obj._broker = env.brokers[0] if env.brokers else None
         return _obj, args[1:], kwargs
 
 
@@ -48,3 +49,24 @@ class Strategy(LineIterator):
 
     def forward(self):
         self._len += 1
+
+    def setbroker(self, broker):
+        self._broker = broker
+
+    def getbroker(self):
+        return self._broker
+
+    def _ordernotify(self, order):
+        self.ordernotify(order)
+
+    def ordernotify(self, order):
+        pass
+
+    def buy(self, data, size, price=None, how=None, valid=None):
+        self._broker.buy(self, data, size=size, price=price, how=how, valid=valid)
+
+    def sell(self, data, size, price=None, how=None, valid=None):
+        self._broker.sell(self, data, size=size, price=price, how=how, valid=valid)
+
+    def position(self, data):
+        return self._broker.getposition(data)
