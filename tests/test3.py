@@ -68,11 +68,11 @@ class TestStrategy(Strategy):
 
         if not self.position(self.data):
             if self.dataclose[0] > self.sma[0][0]:
-                valid = datetime.datetime.combine(self.data.date[0], self.data.time[0])
-                valid += datetime.timedelta(days=self.params.expiredays)
-                price = self.dataclose[0] * self.params.atlimitperc # change price
+                valid = self.data.datetime[0] + datetime.timedelta(days=self.params.expiredays)
+                price = self.dataclose[0] * self.params.atlimitperc
                 self.orderid = self.buy(self.data, size=self.params.stake,
-                                        exectype=self.params.exectype, price=price, valid=valid)
+                                        exectype=self.params.exectype,
+                                        price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
             self.orderid = self.sell(self.data, size=self.params.stake, exectype=Order.Market)
@@ -87,5 +87,5 @@ cerebro = Cerebro()
 cerebro.addbroker(BrokerBack(cash=1000))
 # cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-2000.csv'))
 cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-1995-2014.csv'))
-cerebro.addstrategy(TestStrategy, printdata=False, exectype=Order.Market, atlimitperc=1.00, expiredays=5)
+cerebro.addstrategy(TestStrategy, printdata=False, exectype=Order.Limit, atlimitperc=1.00, expiredays=5)
 cerebro.run()

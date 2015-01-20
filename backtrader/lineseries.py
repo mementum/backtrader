@@ -69,15 +69,13 @@ class LineAlias(object):
 
 
 class Lines(object):
-    _linecls = linebuffer.LineBufferFull
-
     _getlinesbase = classmethod(lambda cls: ())
     _getlines = classmethod(lambda cls: ())
     _getlinesextra = classmethod(lambda cls: 0)
     _getlinesextrabase = classmethod(lambda cls: 0)
 
     @classmethod
-    def _derive(cls, name, lines, linebuffercls, extralines):
+    def _derive(cls, name, lines, extralines):
         baselines = cls._getlines()
         newlines = baselines + lines
 
@@ -91,8 +89,6 @@ class Lines(object):
         setattr(newcls, '_getextralinesbase', getattr(newcls, '_getlines'))
         setattr(newcls, '_getextralines', classmethod(lambda cls: newextralines))
 
-        setattr(newcls, '_linecls', linebuffercls)
-
         for line, linealias in enumerate(lines, start=len(baselines)):
             if not isinstance(linealias, basestring):
                 # a tuple or list was passed, 1st is name
@@ -104,18 +100,18 @@ class Lines(object):
     def __init__(self):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
-            self.lines.append(self._linecls())
             if not isinstance(linealias, basestring):
                 # a tuple or list was passed, 1st is name, 2nd is type code
-                aliasname, aliastype = linealias
-                if aliastype == 'dt':
-                    self.lines[-1] = self.lines[-1].linedate()
-                elif aliastype == 'tm':
-                    self.lines[-1] = self.lines[-1].linetime()
+                aliasname, typecode = linealias
+                lineobj = linebuffer.LineBuffer(typecode=typecode)
+            else:
+                lineobj = linebuffer.LineBuffer()
+
+            self.lines.append(lineobj)
 
         # Add the required extralines
         for i in xrange(self._getlinesextra()):
-            self.lines.append(self._linecls())
+            self.lines.append(linebufer.LineBuffer())
 
     def __len__(self):
         return len(self.lines[0])
@@ -162,9 +158,6 @@ class MetaLineSeries(RootLine.__metaclass__):
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
         lines = getattr(cls, 'lines', Lines)
 
-        # Get the linebufferclass to apply
-        linebuffercls = getattr(cls, '_linecls', lines._linecls)
-
         # Look for an extension
         extend = dct.get('extend', None)
         if extend is not None:
@@ -174,7 +167,7 @@ class MetaLineSeries(RootLine.__metaclass__):
             newlines = extendlines._getlines() + newlines
 
         # Create a subclass of the lines class with our name and newlines and put it in the class
-        cls.lines = lines._derive(name, newlines, linebuffercls, extralines)
+        cls.lines = lines._derive(name, newlines, extralines)
 
         # return the class
         return cls

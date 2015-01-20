@@ -19,24 +19,41 @@
 #
 ################################################################################
 import array
+import collections
 import datetime
+import itertools
 
-
-MAXLEN = 1024
 NAN = float('NaN')
 
 
-class LineBufferBase(object):
-    DEFVALUE = NAN
-    BUFSIZE = 0
+class LineBuffer(object):
+    DefaultTypeCode = 'd'
 
-    def __init__(self):
-        self.reset()
+    def __new__(cls, *args, **kwargs):
+        typecode = kwargs.get('typecode', cls.DefaultTypeCode)
+
+        if typecode == 'dq':
+            newcls = LineBufferDeque
+        elif typecode == 'ls':
+            newcls = LineBufferList
+        else:
+            newcls = LineBufferArray
+
+        obj = super(LineBuffer, newcls).__new__(newcls, *args, **kwargs)
+        obj.__init__(*args, **kwargs)
+        return obj
+
+    def __init__(self, typecode=DefaultTypeCode):
         self.bindings = list()
+        self.typecode = typecode
+        self.reset()
 
     def reset(self):
-        self.array = array.array('d', [self.DEFVALUE] * self.BUFSIZE)
+        self.create_array()
         self.idx = -1
+
+    def create_array(self):
+        raise NotImplementedError()
 
     def __len__(self):
         return self.idx + 1
@@ -44,73 +61,15 @@ class LineBufferBase(object):
     def buflen(self):
         return len(self.array)
 
-    def __call__(self, ago=0, size=1):
-        return self.get(ago, size)
-
-    def __getitem__(self, ago):
-        raise NotImplementedError
-
-    def get(self, ago=0, size=1):
-        return [self[x] for x in xrange(ago + size - 1, ago - 1, -1)]
-
-    def getzero(self, idx=0, size=1):
-        return self.array[idx:idx + size]
-
-    def __setitem__(self, ago, value):
-        raise NotImplementedError
-
-    def set(self, value, ago=0):
-        self[ago] = value
-
-    def home(self):
-        self.idx = -1
-
-    def forward(self, value=NAN):
-        raise NotImplementedError
-
-    def advance(self):
-        self.idx += 1
-
-    def date(self, ago=0):
-        return datetime.date.fromordinal(int(self[ago]))
-
-    def setdate(self, value, ago=0):
-        if isinstance(value, datetime.date) or isinstance(value, datetime.datetime):
-            value = value.toordinal()
-
-        self[ago] = value
-
-    def time(self, ago=0):
-        hm, s = divmod(int(self[ago]), 60)
-        h, m = divmod(hm, 60)
-        return datetime.time(h, m, s)
-
-    def settime(self, value, ago=0):
-        if isinstance(value, datetime.timedelta):
-            value = value.total_seconds()
-        elif isinstance(value, datetime.time) or isinstance(value, datetime.datetime):
-            value = value.second + value.minute * 60 + value.hour * 3600
-
-        self[ago] = value
-
-    def linedate(self):
-        raise NotImplementedError
-
-    def linetime(self):
-        raise NotImplementedError
-
-    def addbinding(self, binding):
-        self.bindings.append(binding)
-
-
-class LineBufferFull(LineBufferBase):
-
     def __getitem__(self, ago):
         return self.array[self.idx - ago]
 
     def get(self, ago=0, size=1):
         return self.array[self.idx - ago - size + 1:self.idx - ago + 1]
 
+    def getzero(self, idx=0, size=1):
+        return self.array[idx:idx + size]
+
     def __setitem__(self, ago, value):
         self.array[self.idx - ago] = value
         for binding in self.bindings:
@@ -120,103 +79,37 @@ class LineBufferFull(LineBufferBase):
         self.array[self.idx - ago] = value
         for binding in self.bindings:
             binding[ago] = value
+
+    def home(self):
+        self.idx = -1
 
     def forward(self, value=NAN):
         self.idx += 1
         self.array.append(value)
 
-    def linedate(self):
-        return LineBufferFullDate()
-
-    def linetime(self):
-        return LineBufferFullTime()
-
-
-class LineBufferFullDate(LineBufferFull):
-    def __getitem__(self, ago):
-        value = self.array[self.idx - ago]
-        return datetime.date.fromordinal(int(value))
-
-    def get(self, ago=0, size=1):
-        return [self[x] for x in xrange(ago + size - 1, ago - 1, -1)]
-
-    def __setitem__(self, ago, value):
-        if isinstance(value, datetime.date) or isinstance(value, datetime.datetime):
-            value = value.toordinal()
-
-        self.array[self.idx - ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
-
-    def set(self, value, ago=0):
-        if isinstance(value, datetime.date) or isinstance(value, datetime.datetime):
-            value = value.toordinal()
-
-        self.array[self.idx - ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
-
-
-class LineBufferFullTime(LineBufferFull):
-    def __getitem__(self, ago):
-        value = self.array[self.idx - ago]
-        hm, s = divmod(int(value), 60)
-        h, m = divmod(hm, 60)
-        return datetime.time(h, m, s)
-
-    def get(self, ago=0, size=1):
-        return [self[x] for x in xrange(ago + size - 1, ago - 1, -1)]
-
-    def __setitem__(self, ago, value):
-        if isinstance(value, datetime.timedelta):
-            value = value.seconds
-        elif isinstance(value, datetime.time):
-            value = value.second + value.minute * 60 + value.hour * 3600
-
-        self.array[self.idx - ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
-
-    def set(self, value, ago=0):
-        if isinstance(value, datetime.timedelta):
-            value = value.seconds
-        elif isinstance(value, datetime.time):
-            value = value.second + value.minute * 60 + value.hour * 3600
-
-        self.array[self.idx - ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
-
-
-class LineBufferRing(LineBufferBase):
-    BUFSIZE = MAXLEN
-
-    def __getitem__(self, ago):
-        return self.array[(self.idx - ago) % self.BUFSIZE]
-
-    def __setitem__(self, ago, value):
-        self.array[(self.idx - ago) % self.BUFSIZE] = value
-
-    def forward(self, value=NAN):
+    def advance(self):
         self.idx += 1
-        self.array[self.idx % self.BUFSIZE] = value
 
-    def linedate(self):
-        return LineBufferRingDate()
-
-    def linetime(self):
-        return LineBufferRingTime()
+    def addbinding(self, binding):
+        self.bindings.append(binding)
 
 
-class LineBufferRingDate(LineBufferRing):
-    def __getitem__(self, ago):
-        value = self.array[(self.idx - ago) % self.BUFSIZE]
-        return datetime.date.fromordinal(int(value))
+class LineBufferArray(LineBuffer):
+    def create_array(self):
+        self.array = array.array(self.typecode)
 
 
-class LineBufferRingTime(LineBufferRing):
-    def __getitem__(self, ago):
-        value = self.array[(self.idx - ago) % self.BUFSIZE]
-        hm, s = divmod(int(value), 60)
-        h, m = divmod(hm, 60)
-        return datetime.time(h, m, s)
+class LineBufferList(LineBuffer):
+    def create_array(self):
+        self.array = list()
+
+
+class LineBufferDeque(LineBuffer):
+    def create_array(self):
+        self.array = collections.deque()
+
+    def get(self, ago=0, size=1):
+        return list(itertools.islice(self.array, self.idx - ago - size + 1, self.idx - ago + 1))
+
+    def getzero(self, idx=0, size=1):
+        return list(itertools.islice(self.array, idx, idx + size))

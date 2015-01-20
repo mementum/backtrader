@@ -75,9 +75,8 @@ class TestStrategy(btstrategy.Strategy):
         for indicator in self._indicators:
             print '--------------------------------------------------'
             print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
-            basetxt = '%5d: %s - %s - Close %.2f - Indicator' \
-                      % (len(self.ohlc), self.ohlc.date[0].isoformat(),
-                         self.ohlc.time[0].isoformat(), self.close[0])
+            basetxt = '%5d: %s - Close %.2f - Indicator' \
+                      % (len(self.ohlc), self.ohlc.datetime[0].isoformat(), self.close[0])
 
             for i in xrange(indicator.size()):
                 basetxt += ' %.2f' % (indicator.lines[i][0],)

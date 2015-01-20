@@ -104,8 +104,6 @@ class YahooFinance(dataseries.OHLCDateTime):
 
 class YahooFinanceCSV(dataseries.OHLCDateTime):
 
-    _linecls = linebuffer.LineBufferFull
-
     def __init__(self, path, adjclose=True):
         self.path = path
         self.f = None
@@ -170,8 +168,7 @@ class YahooFinanceCSV(dataseries.OHLCDateTime):
         dttxt = linetokens[i.next()]
         y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
 
-        self.lines.date = datetime.date(y, m, d).toordinal()
-        self.lines.time = 0
+        self.lines.datetime = datetime.datetime(y, m, d)
         self.lines.open = float(linetokens[i.next()])
         self.lines.high = float(linetokens[i.next()])
         self.lines.low = float(linetokens[i.next()])
