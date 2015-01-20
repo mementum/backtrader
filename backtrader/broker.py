@@ -22,40 +22,58 @@
 import collections
 import datetime
 
+class OrderData(object):
+    def __init__(self, dt=None, size=0, price=None):
+        self.dt = dt
+        self.size = size
+        self.price = price
+
 
 class Order(object):
-    AtMarket, AtClose, AtLimit = range(3)
-    OrderBuy, OrderSell = range(2)
+    Market, Close, Limit = range(3)
+    Buy, Sell = range(2)
     Pending, Completed, Partial, Cancelled, Expired = range(5)
 
-    def __init__(self, order, data, size, price=None, how=None, valid=None):
-        self.order = order
+    def __init__(self, ordtype, data, size, price=None, exectype=None, valid=None):
+        self.ordtype = ordtype
         self.data = data
-        # FIXME: price can be none for "AtMarket" and "AtClose" but
-        # it would be good to raise an Exception (ValueError?) if for example
-        # AtLimit is passed and None is given as price
-        self.price = price
-        self.size = size
-        self.how = how if how is not None else Order.AtMarket
-        # FIXME: Set a default validity if None is given
-        self.valid = valid
 
         self.status = Order.Pending
-        self.dtcomplete = None
+        self.exectype = exectype if exectype is not None else Order.Market
+        self.valid = valid
+
+        dt = datetime.datetime.combine(data.date[0], data.time[0])
+        self.created = OrderData(dt, size, price)
+        self.executed = OrderData()
+
+    def cancel(self):
+        self.status = Order.Cancelled
+        dt = datetime.datetime.combine(self.data.date[0], self.data.time[0])
+        self.executed = OrderData(dt, 0, None)
+
+    def execute(self, size, price, dtindex=0):
+        self.status = Order.Completed
+        dt = datetime.datetime.combine(self.data.date[dtindex], self.data.time[dtindex])
+        self.executed = OrderData(dt, size, price)
+
+    def expire(self):
+        self.status = Order.Expired
+        dt = datetime.datetime.combine(self.data.date[0], self.data.time[0])
+        self.executed = OrderData(dt, 0, None)
 
 
 class BuyOrder(Order):
-    def __init__(self, data, size, price=None, how=None, valid=None):
-        super(BuyOrder, self).__init__(self.OrderBuy, data, size, price, how, valid)
+    def __init__(self, data, size, price=None, exectype=None, valid=None):
+        super(BuyOrder, self).__init__(Order.Buy, data, size, price, exectype, valid)
 
 
 class SellOrder(Order):
-    def __init__(self, data, size, price=None, how=None, valid=None):
-        super(SellOrder, self).__init__(self.OrderSell, data, size, price, how, valid)
+    def __init__(self, data, size, price=None, exectype=None, valid=None):
+        super(SellOrder, self).__init__(Order.Sell, data, size, price, exectype, valid)
 
 
 class BrokerBack(object):
-    AtMarket, AtClose, AtLimit = Order.AtMarket, Order.AtClose, Order.AtLimit
+    Market, Close, Limit = Order.Market, Order.Close, Order.Limit
 
     class Position(object):
         def __init__(self):
@@ -69,7 +87,7 @@ class BrokerBack(object):
         self.cash = cash
 
         self.owner = dict()
-        self.orders = collections.deque()
+        self.orders = list() # will only be appending
         self.pending = collections.deque()
 
         self.position = collections.defaultdict(BrokerBack.Position)
@@ -80,45 +98,18 @@ class BrokerBack(object):
     def stop(self):
         pass
 
-    def buy(self, owner, data, size, price=None, how=None, valid=None):
-        order = BuyOrder(data, size, price, how, valid)
-        self.pending.append(order)
-        self.owner[id(order)] = owner
-        return id(order)
+    def cancel(self, orderid):
+        orders = filter(lambda x: id(x) == orderid, self.pending)
+        for order in orders:
+            # If the filtered list contains something is a single entry. we can safely return
+            order.cancel()
+            self.pending.remove(order)
+            # We need to notify the owner
+            self.owner[id(order)]._ordernotify(order)
+            return True
 
-    def sell(self, owner, data, size, price=None, how=None, valid=None):
-        order = SellOrder(data, size, price, how, valid)
-        self.pending.append(order)
-        self.owner[id(order)] = owner
-        return id(order)
-
-    def _buy(self, data, size, price):
-        size = self.closeposition(data, size, price)
-        if size:
-            self.openposition(data, size, price)
-
-    def _sell(self, data, size, price):
-        # Pass negative size ... we are selling
-        size = self.closeposition(data, -size, price)
-        if size:
-            # Returned Remaining size (if any) is negative
-            self.openposition(data, size, price)
-
-    def _execute(self, order, price):
-        if order.order == Order.OrderBuy:
-            self._buy(order.data, order.size, price)
-        elif order.order == Order.OrderSell:
-            self._sell(order.data, order.size, price)
-        else:
-            raise ValueError('Unknown Order type %d' % order.order)
-
-        # Order has been completed ... change status, put into
-        order.status = Order.Completed
-        order.price = price
-        order.dtcomplete = datetime.datetime.combine(order.data.date[0], order.data.time[0])
-        self.orders.append(order)
-        # We need to notify the owner
-        self.owner[id(order)]._ordernotify(order)
+        # If the list had no elements we didn't cancel anything
+        return False
 
     def getvalue(self, datas=None):
         if not datas:
@@ -137,6 +128,30 @@ class BrokerBack(object):
 
     def getposition(self, data):
         return self.position[data]
+
+    def submit(self, owner, order):
+        self.orders.append(order)
+        self.pending.append(order)
+        self.owner[id(order)] = owner
+        return id(order)
+
+    def buy(self, owner, data, size, price=None, exectype=None, valid=None):
+        return self.submit(owner, BuyOrder(data, size, price, exectype, valid))
+
+    def sell(self, owner, data, size, price=None, exectype=None, valid=None):
+        return self.submit(owner, SellOrder(data, size, price, exectype, valid))
+
+    def _execute(self, order, price, dtindex=0):
+        size = order.created.size * (1 if order.ordtype == Order.Buy else -1)
+        size = self.closeposition(order.data, size, price)
+        if size:
+            # Returned remaining size has the right sign already
+            self.openposition(order.data, size, price)
+
+        order.execute(size, price, dtindex)
+
+        # We need to notify the owner
+        self.owner[id(order)]._ordernotify(order)
 
     def closeposition(self, data, size, price):
         position = self.position[data]
@@ -172,17 +187,47 @@ class BrokerBack(object):
         self.cash -= price * abs(size)
 
     def next(self):
+        # Iterate once over all elements of the pending queue
         for i in xrange(len(self.pending)):
             order = self.pending.popleft()
-            # FIXME : Check if the order needs to expire
-            if order.how == Order.AtMarket:
-                # Take the fist tick of the new bar in the data -> Open
-                price = order.data.open[0]
-                self._execute(order, price)
-            elif order.how == Order.AtClose:
-                raise NotImplementedError('AtClose How not yet implemented')
-            elif order.how == Order.AtLimit:
-                raise NotImplementedError('AtLimit How not yet implemented')
-            else:
-                raise ValueError('Unknown Order Execution type %d' % order.how)
-            # FIXME : If the order is not executed it must be appended to the queue
+
+            if order.valid:
+                curdt = datetime.datetime.combine(order.data.date[0], order.data.time[0])
+                if curdt > order.valid:
+                    order.expire()
+                    # We need to notify the owner
+                    self.owner[id(order)]._ordernotify(order)
+                    continue
+
+            if order.exectype == Order.Market:
+                # Take the fist tick of the new bar -> Open
+                self._execute(order, price=order.data.open[0])
+            elif order.exectype == Order.Close:
+                # execute with the price of the closed bar
+                # intraday: time changes in between bars
+                if order.data.time[0] != order.data.time[1]:
+                    self._execute(order, price=order.data.close[1], dtindex=1)
+                # daily: time is equal, date changes
+                elif order.data.date[0] != order.data.date[1]:
+                    self._execute(order, price=order.data.close[1], dtindex=1)
+
+            elif order.exectype == Order.Limit:
+                plow = order.data.low[0]
+                phigh = order.data.high[0]
+                popen = order.data.close[0]
+                plimit = order.created.price
+
+                if order.ordtype == Order.Buy:
+                    if popen <= plimit:
+                        self._execute(order, popen)
+                    elif plow <= plimit <= phigh:
+                        self._execute(order, plimit)
+
+                else: # Sell
+                    if popen >= plimit:
+                        self._execute(order, popen)
+                    elif plow <= plimit <= phigh:
+                        self._execute(order, plimit)
+
+            if order.status != Order.Completed:
+                self.pending.append(order)

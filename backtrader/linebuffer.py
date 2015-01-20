@@ -87,8 +87,8 @@ class LineBufferBase(object):
 
     def settime(self, value, ago=0):
         if isinstance(value, datetime.timedelta):
-            value = value.seconds
-        elif isinstance(value, datetime.time):
+            value = value.total_seconds()
+        elif isinstance(value, datetime.time) or isinstance(value, datetime.datetime):
             value = value.second + value.minute * 60 + value.hour * 3600
 
         self[ago] = value

@@ -22,48 +22,70 @@ import testbase
 
 import datetime
 
-from backtrader import Strategy, BrokerBack, Cerebro
+from backtrader import BrokerBack, Cerebro, Order, Strategy
 from backtrader.feeds import YahooFinanceCSV
 from backtrader.indicators import MovingAverageSimple
 
 
 class TestStrategy(Strategy):
-    params = (('period', 15), ('stake', 10), ('printdata', True))
+    params = (
+        ('maperiod', 15),
+        ('stake', 10),
+        ('exectype', Order.Market),
+        ('atlimitperc', 1.0),
+        ('expiredays', 10),
+        ('printdata', True),
+    )
 
     def __init__(self):
-        self.data = self.env.datas[0]
+        self.data = self.datas[0]
         self.dataclose = self.data.close
-        self.sma = MovingAverageSimple(self.env.datas[0], period=self.params.period)
+        self.sma = MovingAverageSimple(self.data, period=self.params.maperiod)
+        self.orderid = None
 
     def start(self):
         self.tstart = datetime.datetime.now()
 
     def ordernotify(self, order):
-        if order.status == order.Completed:
-            if order.order == order.OrderBuy:
-                print '%s, BUY , %.2f' % (order.dtcomplete.isoformat(), order.price)
-            elif order.order == order.OrderSell:
-                print '%s, SELL, %.2f' % (order.dtcomplete.isoformat(), order.price)
+        if order.status == Order.Completed:
+            if order.ordtype == order.Buy:
+                print '%s, BUY , %.2f' % (order.executed.dt.isoformat(), order.executed.price)
+            elif order.ordtype == order.Sell:
+                print '%s, SELL, %.2f' % (order.executed.dt.isoformat(), order.executed.price)
+        elif order.status == Order.Expired:
+            pass # Do nothing for expired orders
+
+        # Allow new orders
+        self.orderid = None
 
     def next(self):
         if self.params.printdata:
             print '%s, Close, %f, Sma, %f' % (self.data.date[0].isoformat(), self.dataclose[0], self.sma[0][0])
 
+        if self.orderid:
+            # if an order is active, no new orders are allowed
+            return
+
         if not self.position(self.data):
             if self.dataclose[0] > self.sma[0][0]:
-                self.buy(self.data, size=self.params.stake)
+                valid = datetime.datetime.combine(self.data.date[0], self.data.time[0])
+                valid += datetime.timedelta(days=self.params.expiredays)
+                price = self.dataclose[0] * self.params.atlimitperc # change price
+                self.orderid = self.buy(self.data, size=self.params.stake,
+                                        exectype=self.params.exectype, price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
-            self.sell(self.data, size=self.params.stake)
+            self.orderid = self.sell(self.data, size=self.params.stake, exectype=Order.Market)
 
     def stop(self):
         tused = datetime.datetime.now() - self.tstart
         print 'Time used:', str(tused)
         print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
 
+
 cerebro = Cerebro()
 cerebro.addbroker(BrokerBack(cash=1000))
 # cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-2000.csv'))
 cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-1995-2014.csv'))
-cerebro.addstrategy(TestStrategy, printdata=False)
+cerebro.addstrategy(TestStrategy, printdata=False, exectype=Order.Market, atlimitperc=1.00, expiredays=5)
 cerebro.run()
