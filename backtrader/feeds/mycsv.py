@@ -67,7 +67,7 @@ class MyCSV1(dataseries.OHLCDateTime):
         isday = linetokens[i.next()] == 'D'
         dttxt = linetokens[i.next()]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
-        self.lines.date = datetime.date(y, m, d).toordinal()
+        self.lines.datetime = datetime.datetime(y, m, d)
 
         tmtxt = linetokens[i.next()]
         if not isday:
@@ -92,8 +92,6 @@ class MyCSV1(dataseries.OHLCDateTime):
 
 
 class MyCSV2(dataseries.OHLCDateTime):
-    _linecls = linebuffer.LineBufferFull
-
     def __init__(self, path):
         self.path = path
         self.f = None
@@ -154,7 +152,7 @@ class MyCSV2(dataseries.OHLCDateTime):
 
         dttxt = linetokens[i.next()]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
-        self.lines.date = datetime.date(y, m, d).toordinal()
+        self.lines.datetime = datetime.datetime(y, m, d)
 
         tmtxt = linetokens[i.next()]
         if not isday:

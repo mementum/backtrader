@@ -31,8 +31,7 @@ import backtrader.strategy as btstrategy
 class TestStrategy(btstrategy.Strategy):
     def __init__(self, *args, **kwargs):
         self.data = self.env.datas[0]
-        self.date = self.env.datas[0].date
-        self.time = self.env.datas[0].time
+        self.date = self.env.datas[0].datetime
         self.open = self.env.datas[0].open
         self.high = self.env.datas[0].high
         self.low = self.env.datas[0].low
@@ -40,10 +39,9 @@ class TestStrategy(btstrategy.Strategy):
 
     def next(self):
         if True:
-            print '%5d - %s - %s - %.2f - %.2f - %.2f - %.2f' % \
+            print '%5d - %s - %.2f - %.2f - %.2f - %.2f' % \
                 (len(self.close),
-                 self.date[0].isoformat(),
-                 self.time[0].isoformat(),
+                 self.datetime[0].isoformat(),
                  self.open[0],
                  self.high[0],
                  self.low[0],

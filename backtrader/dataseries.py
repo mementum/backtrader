@@ -22,19 +22,18 @@ from lineseries import LineSeries
 
 
 class DataSeries(LineSeries):
-    Close, Low, High, Open, Volume, OpenInterest, Date, Time = range(8)
+    Close, Low, High, Open, Volume, OpenInterest, DateTime = range(7)
 
     # To simply branch away from indicators/systems/strategies/studies
     pass
 
 
 class OHLC(DataSeries):
-
     lines = ('close', 'low', 'high', 'open', 'volume', 'openinterest',)
 
 
 class OHLCDateTime(OHLC):
-    lines = (('date', 'dt'), ('time', 'tm'),)
+    lines = (('datetime', 'dq'),)
 
 
 class OHLCDateTimeTestExt(OHLC):

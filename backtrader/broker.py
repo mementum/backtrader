@@ -42,24 +42,20 @@ class Order(object):
         self.exectype = exectype if exectype is not None else Order.Market
         self.valid = valid
 
-        dt = datetime.datetime.combine(data.date[0], data.time[0])
-        self.created = OrderData(dt, size, price)
+        self.created = OrderData(data.datetime[0], size, price)
         self.executed = OrderData()
 
     def cancel(self):
         self.status = Order.Cancelled
-        dt = datetime.datetime.combine(self.data.date[0], self.data.time[0])
-        self.executed = OrderData(dt, 0, None)
+        self.executed = OrderData(self.data.datetime[0], 0, None)
 
     def execute(self, size, price, dtindex=0):
         self.status = Order.Completed
-        dt = datetime.datetime.combine(self.data.date[dtindex], self.data.time[dtindex])
-        self.executed = OrderData(dt, size, price)
+        self.executed = OrderData(self.data.datetime[dtindex], size, price)
 
     def expire(self):
         self.status = Order.Expired
-        dt = datetime.datetime.combine(self.data.date[0], self.data.time[0])
-        self.executed = OrderData(dt, 0, None)
+        self.executed = OrderData(self.data.datetime[0], 0, None)
 
 
 class BuyOrder(Order):
@@ -191,24 +187,22 @@ class BrokerBack(object):
         for i in xrange(len(self.pending)):
             order = self.pending.popleft()
 
-            if order.valid:
-                curdt = datetime.datetime.combine(order.data.date[0], order.data.time[0])
-                if curdt > order.valid:
-                    order.expire()
-                    # We need to notify the owner
-                    self.owner[id(order)]._ordernotify(order)
-                    continue
+            if order.valid and order.data.datetime[0] > order.valid:
+                order.expire()
+                # We need to notify the owner
+                self.owner[id(order)]._ordernotify(order)
+                continue
 
             if order.exectype == Order.Market:
                 # Take the fist tick of the new bar -> Open
                 self._execute(order, price=order.data.open[0])
             elif order.exectype == Order.Close:
                 # execute with the price of the closed bar
-                # intraday: time changes in between bars
-                if order.data.time[0] != order.data.time[1]:
+                if order.data.datetime[0].time() != order.data.datetime[1].time():
+                    # intraday: time changes in between bars
                     self._execute(order, price=order.data.close[1], dtindex=1)
-                # daily: time is equal, date changes
-                elif order.data.date[0] != order.data.date[1]:
+                elif order.data.datetime[0].date() != order.data.datetime[1].date():
+                    # daily: time is equal, date changes
                     self._execute(order, price=order.data.close[1], dtindex=1)
 
             elif order.exectype == Order.Limit:
