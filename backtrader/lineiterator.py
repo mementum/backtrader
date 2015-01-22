@@ -26,48 +26,7 @@ import itertools
 import sys
 
 from lineseries import LineSeries
-
-
-class Parameter(object):
-    def __init__(self, default):
-        self.default = default
-        # Allow access to descriptor __call__ via 'None' (ex: get default value)
-        self.cache = dict([[None, self],])
-
-    def __set__(self, obj, value):
-        self.cache[obj] = value
-
-    def __get__(self, obj, cls=None):
-        return self.cache.setdefault(obj, self.default)
-
-    def __call__(self):
-        return self
-
-
-class Params(object):
-    _getparamsbase = classmethod(lambda cls: ())
-    _getparams = classmethod(lambda cls: ())
-
-    @classmethod
-    def _derive(cls, name, params):
-        # Prepare the full param list newclass = (baseclass + subclass)
-        newparams = cls._getparams() + params
-
-        # Create subclass
-        newcls = type(cls.__name__ + '_' + name, (cls,), {})
-
-        # Keep a copy of _getparams ... to access the params
-        setattr(newcls, '_getparamsbase', getattr(newcls, '_getparams'))
-
-        # Set the lambda classmethod in the new class that returns the new params (closure)
-        setattr(newcls, '_getparams', classmethod(lambda cls: newparams))
-
-        # Create Parameter descriptors for new params, the others come from the base class
-        for pname, pdefault in params:
-            setattr(newcls, pname, Parameter(pdefault))
-
-        # Return the result
-        return newcls
+from parameters import Params
 
 
 class MetaLineIterator(LineSeries.__metaclass__):
@@ -115,9 +74,6 @@ class MetaLineIterator(LineSeries.__metaclass__):
             elif obj_ != _obj and isinstance(obj_, LineIterator):
                 _obj._owner = obj_
                 break
-
-        # Used to skip a recursive call
-        _obj._naked = 0
 
         # Create params and set the values from the kwargs
         _obj.params = cls.params()
@@ -170,7 +126,6 @@ class MetaLineIterator(LineSeries.__metaclass__):
         seen = set()
         _obj._indicators = [x for x in _obj._indicators if x not in seen and not seen.add(x)]
 
-
         _obj._clockindicator = False
         if _obj._clock in _obj._indicators:
             # If the clock has not moved forward we won't move our own clock forward
@@ -178,7 +133,7 @@ class MetaLineIterator(LineSeries.__metaclass__):
             # by also taking the "clock" out of the indicator slicing the _indicators member
             # variable must not be done each and every time
             _obj._clockindicator = True
-            _obj._indicators = self._indicators[1:]
+            _obj._indicators = self._indicators[1:] # clock is always first, leave it aside
 
         return _obj, args, kwargs
 

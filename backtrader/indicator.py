@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from lineiterator import LineIterator, Parameter
+from lineiterator import LineIterator
 
 
 class MetaIndicator(LineIterator.__metaclass__):
