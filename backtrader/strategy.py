@@ -19,7 +19,7 @@
 #
 ################################################################################
 
-from lineiterator import LineIterator, Parameter
+from lineiterator import LineIterator
 
 
 class MetaStrategy(LineIterator.__metaclass__):

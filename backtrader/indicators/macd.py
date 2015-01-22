@@ -58,7 +58,7 @@ class MACD(Indicator):
         self.bind2lines(1, signal)
 
 
-if True:
+if False:
     class MACDHistogram(Indicator):
         extend = (MACD, (0, 0), (1, 1))
         lines = ('histo',) # adds a line
@@ -72,8 +72,7 @@ else:
 
         def __init__(self, data):
             super(MACDHistogram, self).__init__(data)
-            # Use Naked to avoid infinite calculation recursion
-            self.bind2lines(2, LineDifference(Naked(self), Naked(self), line0=0, line1=1))
+            self.bind2lines(2, LineDifference(self, self, line0=0, line1=1))
 
         def next1(self):
             self.lines[2][0] = self.lines[0][0] - self.lines[1][0]
