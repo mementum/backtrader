@@ -37,6 +37,8 @@ class MetaStrategy(LineIterator.__metaclass__):
 class Strategy(LineIterator):
     __metaclass__ = MetaStrategy
 
+    # This unnamed line is meant to allow having "len" and "forwarding"
+    # This
     extralines = 1
 
     def start(self):
@@ -44,15 +46,6 @@ class Strategy(LineIterator):
 
     def stop(self):
         pass
-
-    # Need to simulate len and forwarding because systems have no "lines"
-    # This may change in the future
-    if True:
-        def __len__(self):
-            return self._len
-
-        def forward(self):
-            self._len += 1
 
     def setbroker(self, broker):
         self._broker = broker

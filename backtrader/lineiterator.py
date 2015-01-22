@@ -113,11 +113,10 @@ class MetaLineIterator(LineSeries.__metaclass__):
                 _obj._owner = self_
                 break
             elif obj_ != _obj and isinstance(obj_, LineIterator):
-                # Need "is not None", because obj len may be 0 and report as boolean False
                 _obj._owner = obj_
                 break
 
-        # mark as not being calculated yet and being a full indicator
+        # Used to skip a recursive call
         _obj._naked = 0
 
         # Create params and set the values from the kwargs
@@ -171,6 +170,16 @@ class MetaLineIterator(LineSeries.__metaclass__):
         seen = set()
         _obj._indicators = [x for x in _obj._indicators if x not in seen and not seen.add(x)]
 
+
+        _obj._clockindicator = False
+        if _obj._clock in _obj._indicators:
+            # If the clock has not moved forward we won't move our own clock forward
+            # Therefore this "clockindidator" has to be calculated first before our clock moves
+            # by also taking the "clock" out of the indicator slicing the _indicators member
+            # variable must not be done each and every time
+            _obj._clockindicator = True
+            _obj._indicators = self._indicators[1:]
+
         return _obj, args, kwargs
 
 
@@ -199,17 +208,14 @@ class LineIterator(LineSeries):
             lineit.lines[itlines[i]].addbinding(self.lines[line])
 
     def _next(self):
-        if self._clock in self._indicators:
+        if self._clockindicator:
             self._clock._next()
-            indicators = self._indicators[1:]
-        else:
-            indicators = self._indicators
 
         clock_len = len(self._clock)
         if clock_len != len(self):
             self.forward()
 
-        for indicator in indicators:
+        for indicator in self._indicators:
             indicator._next()
 
         if clock_len > self._minperiod:

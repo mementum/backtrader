@@ -86,8 +86,8 @@ class Lines(object):
         setattr(newcls, '_getlinesbase', getattr(newcls, '_getlines'))
         setattr(newcls, '_getlines', classmethod(lambda cls: newlines))
 
-        setattr(newcls, '_getextralinesbase', getattr(newcls, '_getlines'))
-        setattr(newcls, '_getextralines', classmethod(lambda cls: newextralines))
+        setattr(newcls, '_getlinesextrabase', getattr(newcls, '_getlinesextra'))
+        setattr(newcls, '_getlinesextra', classmethod(lambda cls: newextralines))
 
         for line, linealias in enumerate(lines, start=len(baselines)):
             if not isinstance(linealias, basestring):
@@ -100,18 +100,16 @@ class Lines(object):
     def __init__(self):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
+            kwargs = dict()
             if not isinstance(linealias, basestring):
                 # a tuple or list was passed, 1st is name, 2nd is type code
-                aliasname, typecode = linealias
-                lineobj = linebuffer.LineBuffer(typecode=typecode)
-            else:
-                lineobj = linebuffer.LineBuffer()
+                kwargs['typecode'] = linealias[1]
 
-            self.lines.append(lineobj)
+            self.lines.append(linebuffer.LineBuffer(**kwargs))
 
         # Add the required extralines
         for i in xrange(self._getlinesextra()):
-            self.lines.append(linebufer.LineBuffer())
+            self.lines.append(linebuffer.LineBuffer())
 
     def __len__(self):
         return len(self.lines[0])
