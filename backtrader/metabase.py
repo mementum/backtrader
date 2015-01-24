@@ -18,6 +18,36 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+import abc
+
+# Subclassing from ABCMeta allows later the entire hierarchy to have abstract methods
+
+class MetaBase(abc.ABCMeta):
+    def doprenew(cls, *args, **kwargs):
+        return cls, args, kwargs
+
+    def donew(cls, *args, **kwargs):
+        _obj = cls.__new__(cls, *args, **kwargs)
+        return _obj, args, kwargs
+
+    def dopreinit(cls, _obj, *args, **kwargs):
+        return _obj, args, kwargs
+
+    def doinit(cls, _obj, *args, **kwargs):
+        _obj.__init__(*args, **kwargs)
+        return _obj, args, kwargs
+
+    def dopostinit(cls, _obj, *args, **kwargs):
+        return _obj, args, kwargs
+
+    def __call__(cls, *args, **kwargs):
+        cls, args, kwargs = cls.doprenew(*args, **kwargs)
+        _obj, args, kwargs = cls.donew(*args, **kwargs)
+        _obj, args, kwargs = cls.dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = cls.doinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = cls.dopostinit(_obj, *args, **kwargs)
+        return _obj
+
 
 class Parameter(object):
     def __init__(self, default):
@@ -59,3 +89,33 @@ class Params(object):
 
         # Return the result
         return newcls
+
+
+class MetaParams(metabase.MetaBase):
+    def __new__(meta, name, bases, dct):
+        # Remove params from class definition to avod inheritance (and hence "repetition")
+        newparams = dct.pop('params', ())
+
+        # Create the new class - this pulls predefined "params"
+        cls = super(MetaParams, meta).__new__(meta, name, bases, dct)
+
+        # Pulls the param class out of it - default is the empty class
+        params = getattr(cls, 'params', Params)
+
+        # Subclass and store the newly derived params class
+        cls.params = params._derive(name, newparams)
+
+        return cls
+
+    def dopreinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaParams, cls).dopreinit(_obj, *args, **kwargs)
+        obj = cls.__new__(cls, *args, **kwargs)
+        # Create params and set the values from the kwargs
+        _obj.params = cls.params()
+        for kname in kwargs.keys():
+            if hasattr(_obj.params, kname):
+                setattr(_obj.params, kname, kwargs.pop(kname))
+        obj.params = cls.params()
+
+        # Parameter values have now been set before __init__
+        return _obj, args, kwargs

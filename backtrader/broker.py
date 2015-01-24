@@ -22,7 +22,7 @@
 import collections
 import datetime
 
-from parameters import Params
+import metabase
 
 class OrderData(object):
     def __init__(self, dt=None, size=0, price=None):
@@ -70,35 +70,8 @@ class SellOrder(Order):
         super(SellOrder, self).__init__(Order.Sell, data, size, price, exectype, valid)
 
 
-class MetaBrokerBack(type):
-    def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance (and hence "repetition")
-        newparams = dct.pop('params', ())
-
-        # Create the new class - this pulls predefined "params"
-        cls = super(MetaBrokerBack, meta).__new__(meta, name, bases, dct)
-
-        # Pulls the param class out of it - default is the empty class
-        params = getattr(cls, 'params', Params)
-
-        # Subclass and store the existing params with the (extended if any) newly defined params
-        cls.params = params._derive(name, newparams)
-
-        # The "extparams" end up in the middle (baseparams + extparams + newparams) which makes sense
-        return cls
-
-    def __call__(cls, *args, **kwargs):
-        obj = cls.__new__(cls, *args, **kwargs)
-        obj.params = cls.params()
-        for kname in kwargs.keys():
-            if hasattr(obj.params, kname):
-                setattr(obj.params, kname, kwargs.pop(kname))
-        obj.__init__(*args, **kwargs)
-        return obj
-
-
 class BrokerBack(object):
-    __metaclass__ = MetaBrokerBack
+    __metaclass__ = metabase.MetaParams
 
     Market, Close, Limit = Order.Market, Order.Close, Order.Limit
 

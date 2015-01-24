@@ -18,46 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import abc
 import collections
 
 import linebuffer
-
-
-# Subclassing from ABCMeta allows later the entire hierarchy to have abstract methods
-
-class MetaRootLine(abc.ABCMeta):
-    def doprenew(cls, *args, **kwargs):
-        return cls, args, kwargs
-
-    def donew(cls, *args, **kwargs):
-        _obj = cls.__new__(cls, *args, **kwargs)
-        return _obj, args, kwargs
-
-    def dopreinit(cls, _obj, *args, **kwargs):
-        return _obj, args, kwargs
-
-    def doinit(cls, _obj, *args, **kwargs):
-        _obj.__init__(*args, **kwargs)
-        return _obj, args, kwargs
-
-    def dopostinit(cls, _obj, *args, **kwargs):
-        return _obj, args, kwargs
-
-    def __call__(cls, *args, **kwargs):
-        cls, args, kwargs = cls.doprenew(*args, **kwargs)
-        _obj, args, kwargs = cls.donew(*args, **kwargs)
-        _obj, args, kwargs = cls.dopreinit(_obj, *args, **kwargs)
-        _obj, args, kwargs = cls.doinit(_obj, *args, **kwargs)
-        _obj, args, kwargs = cls.dopostinit(_obj, *args, **kwargs)
-        return _obj
-
-
-class RootLine(object):
-    __metaclass__ = MetaRootLine
-
-    def __init__(self, *args, **kwargs):
-        pass
+import metabase
 
 
 class LineAlias(object):
@@ -149,7 +113,7 @@ class Lines(object):
         return self.lines[line].buflen()
 
 
-class MetaLineSeries(RootLine.__metaclass__):
+class MetaLineSeries(metabase.MetaParams):
     def __new__(meta, name, bases, dct):
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
@@ -158,14 +122,6 @@ class MetaLineSeries(RootLine.__metaclass__):
         # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
         lines = getattr(cls, 'lines', Lines)
-
-        # Look for an extension
-        extend = dct.get('extend', None)
-        if extend is not None:
-            extcls = extend[0]
-            extendlines = getattr(extcls, 'lines')
-            # lines end up in following order: baselines + extlines + newlines
-            newlines = extendlines._getlines() + newlines
 
         # Create a subclass of the lines class with our name and newlines and put it in the class
         cls.lines = lines._derive(name, newlines, extralines)
@@ -185,7 +141,7 @@ class MetaLineSeries(RootLine.__metaclass__):
         return _obj, args, kwargs
 
 
-class LineSeries(RootLine):
+class LineSeries(object):
     __metaclass__ = MetaLineSeries
 
     def __getattr__(self, name):

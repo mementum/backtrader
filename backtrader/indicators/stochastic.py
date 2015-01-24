@@ -36,43 +36,23 @@ class StochasticFast(Indicator):
         self.params.matype(kperc, period=self.params.period_dfast).bindlines(1)
 
 
-if True:
-    class StochasticInt(StochasticFast):
-        params = (('period_dslow', 3),)
+class StochasticInt(StochasticFast):
+    params = (('period_dslow', 3),)
 
-        def __init__(self):
-            if self.slow:
-                LineBinder(self, line0=0, line1=1)
+    def __init__(self):
+        if self.slow:
+            LineBinder(self, line0=0, line1=1)
 
-            self.params.matype(self, period=self.params.period_dslow, line=1).bindlines(2 - self.slow)
-
-
-    class StochasticFull(StochasticInt):
-        lines = ('dd',)
-        slow = False
+        self.params.matype(self, period=self.params.period_dslow, line=1).bindlines(2 - self.slow)
 
 
-    class StochasticSlow(StochasticInt):
-        slow = True
+class StochasticFull(StochasticInt):
+    lines = ('dd',)
+    slow = False
 
 
-else:
-    class StochasticSlow(Indicator):
-        extend = (StochasticFast, (0, 1),)
-        params = (('period_dslow', 3),)
-
-        def __init__(self):
-            self.params.matype(self.extend, period=self.params.period_dslow, line=1).bindlines(1)
-
-
-    class StochasticFull(Indicator):
-        extend = (StochasticFast, (0, 0), (1, 1),)
-        lines = ('dd',)
-
-        params = (('period_dslow', 3),)
-
-        def __init__(self):
-            self.params.matype(self.extend, period=self.params.period_dslow, line=1).bindlines(2)
+class StochasticSlow(StochasticInt):
+    slow = True
 
 
 Stochastic = StochasticSlow

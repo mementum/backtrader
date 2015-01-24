@@ -25,34 +25,10 @@ import inspect
 import itertools
 import sys
 
-from lineseries import LineSeries, RootLine
-from parameters import Params
+from lineseries import LineSeries
 
 
 class MetaLineIterator(LineSeries.__metaclass__):
-    def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance (and hence "repetition")
-        newparams = dct.pop('params', ())
-
-        # Create the new class - this pulls predefined "params"
-        cls = super(MetaLineIterator, meta).__new__(meta, name, bases, dct)
-
-        # Pulls the param class out of it
-        params = getattr(cls, 'params', Params)
-
-        # Look for an extension and if found, add the params
-        extend = dct.get('extend', None)
-        if extend is not None:
-            extcls = extend[0]
-            extparams = getattr(extcls, 'params')
-            newparams = extparams._getparams() + newparams
-
-        # Subclass and store the existing params with the (extended if any) newly defined params
-        cls.params = params._derive(name, newparams)
-
-        # The "extparams" end up in the middle (baseparams + extparams + newparams) which makes sense
-        return cls
-
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
@@ -75,12 +51,6 @@ class MetaLineIterator(LineSeries.__metaclass__):
                 _obj._owner = obj_
                 break
 
-        # Create params and set the values from the kwargs
-        _obj.params = cls.params()
-        for kname in kwargs.keys():
-            if hasattr(_obj.params, kname):
-                setattr(_obj.params, kname, kwargs.pop(kname))
-
         # Scan args for datas ... if none are found, use the _owner (to have a clock)
         _obj.datas = [x for x in args if isinstance(x, LineSeries)] or [_obj._owner,]
 
@@ -95,35 +65,15 @@ class MetaLineIterator(LineSeries.__metaclass__):
         # Prepare to hold children
         _obj._indicators = list()
 
-        # Create an extension attribute variable if needed
-        extend = getattr(_obj, 'extend', None)
-        if extend is not None:
-            extcls = extend[0]
-            # Go over the class expected params. Fetch the value from the actual existing params
-            # Pass them as kwargs to the creation of the extended instance
-            extparams = getattr(extcls, 'params')
-            extkwargs = dict()
-            for pname, pdefault in extparams._getparams():
-                extkwargs[pname] = getattr(_obj.params, pname)
-
-            extobj = extcls(*args, **extkwargs)
-            setattr(_obj, 'extend', extobj)
-
-            # Make sure extended binding to lines have the right offset - start after a potential baseclass
-            extoffset = len(cls.lines._getlinesbase())
-            for lineself, lineext in extend[1:]:
-                _obj.bind2lines(lineself + extoffset, extobj, lineext)
-
         # Remove the datas from the args ... already being given to the line iterator
         args = filter(lambda x: x not in _obj.datas, args)
 
-        # Parameter values have now been set before __init__
         return _obj, args, kwargs
 
     def doinit(cls, _obj, *args, **kwargs):
         def findbases(kls):
             for base in kls.__bases__:
-                if issubclass(base, RootLine):
+                if issubclass(base, LineSeries):
                     lst = findbases(base)
                     return lst.append(base) or lst
 
