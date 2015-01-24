@@ -30,8 +30,8 @@ class MovingAverageSimple(Indicator):
 
     def __init__(self):
         self.dataline = self.datas[0][self.params.line]
-        self.setminperiod(self.params.period)
         self.fperiod = float(self.params.period)
+        self.setminperiod(self.params.period)
 
         self.dq = collections.deque(maxlen=self.params.period)
 
@@ -43,19 +43,10 @@ class MovingAverageSimple(Indicator):
         self.lines[0][0] = math.fsum(self.dq) / self.fperiod
 
 
-class MovingAverageWeighted(Indicator):
-    lines = ('avg',)
-    params = (('period', 30), ('line', 0))
-
+class MovingAverageWeighted(MovingAverageSimple):
     def __init__(self):
-        self.dataline = self.datas[0][self.params.line]
-        self.setminperiod(self.params.period)
         self.weights = map(float, range(1, self.params.period + 1))
-        self.coef = 2.0 / (float(self.params.period) * (float(self.params.period) + 1.0))
-        self.dq = collections.deque(maxlen=self.params.period)
-
-    def prenext(self):
-        self.dq.append(self.dataline[0])
+        self.coef = 2.0 / (self.fperiod * (self.fperiod + 1.0))
 
     def next(self):
         self.dq.append(self.dataline[0])
@@ -63,15 +54,6 @@ class MovingAverageWeighted(Indicator):
 
 
 class MovingAverageSmoothing(MovingAverageSimple):
-    params = (('smoothing', None),)
-
-    def __init__(self):
-        # super(MovingAverageSmoothing, self).__init__()
-        self.setsmoothing()
-
-    def setsmoothing(self):
-        raise NotImplementedError
-
     def nextstart(self):
         # Let MovingAverageSimple produce the 1st value
         super(MovingAverageSmoothing, self).next()
@@ -83,13 +65,14 @@ class MovingAverageSmoothing(MovingAverageSimple):
 
 
 class MovingAverageExponential(MovingAverageSmoothing):
-    def setsmoothing(self):
-        self.smoothfactor = 2.0 / (1.0 + float(self.fperiod))
+    def __init__(self):
+        self.smoothfactor = 2.0 / (1.0 + self.fperiod)
 
 
 class MovingAverageSmoothed(MovingAverageSmoothing):
-    def setsmoothing(self):
+    def __init__(self):
         self.smoothfactor = 1.0 / self.fperiod
+
 
 class MAType(object):
     Simple, Exponential, Smoothed, Weighted = range(4)
@@ -103,6 +86,7 @@ class MAClass(object):
 
     def __new__(cls, clstype):
         return cls.classes[clstype]
+
 
 class MATypes(object):
     Simple = MovingAverageSimple
