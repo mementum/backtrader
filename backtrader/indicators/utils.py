@@ -21,13 +21,26 @@
 from .. import Indicator
 
 
+class LineBinder(Indicator):
+    # lines = ('linebinder',)
+    extralines = 1
+    params = (('line0', 0), ('line1', 1),)
+
+    def __init__(self):
+        self.data0line = self.datas[0][self.params.line0]
+        self.data1line = self.datas[len(self.datas) > 1][self.params.line1]
+
+    def next(self):
+        self.data0line[0] = self.data1line[0]
+
+
 class LineDifference(Indicator):
     lines = ('linedif',)
     params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0))
 
-    def __init__(self, data0, data1):
-        self.data0line = data0[self.params.line0]
-        self.data1line = data1[self.params.line1]
+    def __init__(self):
+        self.data0line = self.datas[0][self.params.line0]
+        self.data1line = self.datas[1][self.params.line1]
 
         self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
 
@@ -40,9 +53,9 @@ class LineDivision(Indicator):
     params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0), ('factor', 1.0))
 
 
-    def __init__(self, data0, data1):
-        self.data0line = data0.lines[self.params.line0]
-        self.data1line = data1.lines[self.params.line1]
+    def __init__(self):
+        self.data0line = self.datas[0][self.params.line0]
+        self.data1line = self.datas[1][self.params.line1]
 
         self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
 
@@ -55,20 +68,20 @@ class Highest(Indicator):
     lines = ('highest',)
     params = (('period', 14), ('line', 0))
 
-    def __init__(self, data):
-        self.dataline = data[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0][self.params.line]
         self.setminperiod(self.params.period)
 
     def next(self):
-        self[0][0] = max(self.dataline.get(ago=0, size=self.params.period))
+        self[0][0] = max(self.dataline.get(size=self.params.period))
 
 
 class Lowest(Indicator):
     lines = ('lowest',)
     params = (('period', 14), ('line', 0))
 
-    def __init__(self, data):
-        self.dataline = data.lines[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0][self.params.line]
         self.setminperiod(self.params.period)
 
     def next(self):

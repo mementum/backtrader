@@ -31,8 +31,7 @@ class Cerebro(object):
         self.datas.append(feed.getdata())
 
     def addstrategy(self, strategy, *args, **kwargs):
-        strat = strategy(self, *args, **kwargs)
-        self.strats.append(strat)
+        self.strats.append((strategy, args, kwargs))
 
     def addbroker(self, broker):
         self.brokers.append(broker)
@@ -44,8 +43,12 @@ class Cerebro(object):
         for broker in self.brokers:
             broker.start()
 
-        for strat in self.strats:
+        strats = list()
+        for stratcls, sargs, skwargs in self.strats:
+            sargs = self.datas + list(sargs)
+            strat = stratcls(self, *sargs, **skwargs)
             strat.start()
+            strats.append(strat)
 
         while not [feed for feed in self.feeds if not feed.next()]:
             for data in self.datas:
@@ -54,10 +57,10 @@ class Cerebro(object):
             for broker in self.brokers:
                 broker.next()
 
-            for strat in self.strats:
+            for strat in strats:
                 strat._next()
 
-        for strat in self.strats:
+        for strat in strats:
             strat.stop()
 
         for feed in self.feeds:
@@ -71,7 +74,7 @@ class Cerebro(object):
             feed.preload()
 
         for data in self.datas:
-            # data.docalc() # FULL CALCULATION
+            # data.docalc() # FULL CALCULATION ??
             pass
 
         for strat in self.strats:

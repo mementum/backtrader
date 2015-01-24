@@ -143,16 +143,12 @@ class BrokerBack(object):
         if not datas:
             datas = self.position.iterkeys()
 
-        profitloss = 0.0
-        pos_value_on_open = 0.0
+        pos_value = 0.0
         for data in datas:
             position = self.position[data]
-            price = data.close[0]
+            pos_value += abs(position.size) * data.close[0]
 
-            pos_value_on_open += position.price * abs(position.size)
-            profitloss += (price - position.price) * position.size
-
-        return self.params.cash + pos_value_on_open + profitloss
+        return self.params.cash + pos_value
 
     def getposition(self, data):
         return self.position[data]

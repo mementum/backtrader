@@ -27,8 +27,8 @@ class LineNormalize(Indicator):
     lines = ('linenorm',)
     params = (('norm', 100.0), ('line', 0))
 
-    def __init__(self, data):
-        self.dataline = data[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0][self.params.line]
 
     def next(self):
         norm = self.params.norm
@@ -39,8 +39,8 @@ class UpDays(Indicator):
     lines = ('up',)
     params = (('line', 0),)
 
-    def __init__(self, data):
-        self.dataline = data.lines[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0].lines[self.params.line]
 
     def next(self):
         linediff = self.dataline[0] - self.dataline[1]
@@ -51,8 +51,8 @@ class DownDays(Indicator):
     lines = ('down',)
     params = (('line', 0),)
 
-    def __init__(self, data):
-        self.dataline = data.lines[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0].lines[self.params.line]
 
     def next(self):
         linediff = self.dataline[1] - self.dataline[0]
@@ -63,15 +63,14 @@ class RSI(Indicator):
     lines = ('rsi',)
     params = (('period', 14), ('matype', MATypes.Smoothed))
 
-    def __init__(self, data):
-        updays = UpDays(data)
-        downdays = DownDays(data)
+    def __init__(self):
+        updays = UpDays(self.datas[0])
+        downdays = DownDays(self.datas[0])
         if False:
             maup = self.params.matype(updays, period=self.params.period)
             madown = self.params.matype(downdays, period=self.params.period)
             rs = LineDivision(maup, madown)
-            rsi = LineNormalize(rs)
-            self.bind2lines(0, rsi)
+            rsi = LineNormalize(rs).bindlines()
         else:
             self.maup = self.params.matype(updays, period=self.params.period)
             self.madown = self.params.matype(downdays, period=self.params.period)

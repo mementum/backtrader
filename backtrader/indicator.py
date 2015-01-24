@@ -21,20 +21,6 @@
 from lineiterator import LineIterator
 
 
-class MetaIndicator(LineIterator.__metaclass__):
-    def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaIndicator, cls).dopreinit(_obj, *args, **kwargs)
-
-        # 1st arg is the data source and therefore the ticking clock
-        _obj._clock = args[0]
-
-        return _obj, args, kwargs
-
-
 class Indicator(LineIterator):
-    __metaclass__ = MetaIndicator
-
-
-def Naked(indicator):
-    indicator._naked += 1
-    return indicator
+    # Branching away from things like Strategy and DataSeries, were it needed to differentiate
+    pass

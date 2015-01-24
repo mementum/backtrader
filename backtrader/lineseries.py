@@ -56,6 +56,9 @@ class MetaRootLine(abc.ABCMeta):
 class RootLine(object):
     __metaclass__ = MetaRootLine
 
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class LineAlias(object):
     def __init__(self, line):
