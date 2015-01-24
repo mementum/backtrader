@@ -46,12 +46,8 @@ class MACD(Indicator):
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
         me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
-
-        macd = LineDifference(me1, me2)
-        self.bind2lines(0, macd)
-
-        signal = MovingAverageExponential(macd, period=self.params.period_signal)
-        self.bind2lines(1, signal)
+        macd = LineDifference(me1, me2).bindlines(0)
+        signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(1)
 
 
 macdimp = 4
@@ -60,18 +56,17 @@ if macdimp == 1:
     # Slowest implementation
     # 1. Composition via "extend"
     # 2. LineBinding of a LineDifference of the extended indicator
-    # 3. By far the most elegant
     class MACDHistogram(Indicator):
         extend = (MACD, (0, 0), (1, 1))
         lines = ('histo',) # adds a line
 
         def __init__(self):
             LineDifference(self.extend, self.extend, line0=0, line1=1).bindlines(2)
+
 elif macdimp == 2:
     # Slower implementation
     # 1. Composition via "extend"
-    # 2. Calculation of the new line based on the values of
-    #    the 2 lines of the extended indicator
+    # 2. Calculation of the new line based on the values of the 2 lines of the extended indicator
     class MACDHistogram(Indicator):
         extend = (MACD, (0, 0), (1, 1))
         lines = ('histo',) # adds a line
@@ -83,25 +78,19 @@ elif macdimp == 3:
     # 2nd fastest implementation
     # 1. Inheritance
     # 2. LineBinding of a LineDifference indicator which operates on "self"
-    # 3. By far the most elegant
+    # 3. Possibly the most elegant
     class MACDHistogram(MACD):
         lines = ('histo',) # adds a line
 
         def __init__(self):
-            # super(MACDHistogram, self).__init__()
             LineDifference(self, self, line0=0, line1=1).bindlines(2)
 
 elif macdimp == 4:
     # Fastest implementation
     # 1. Inheritance
-    # 2. Calculation of the new line based on the values of
-    #    the 2 lines of the base class in next
+    # 2. Calculation of the new line based on the values of the 2 lines of the base class in next
     class MACDHistogram(MACD):
         lines = ('histo',) # adds a line
-
-        if False:
-            def __init__(self):
-                super(MACDHistogram, self).__init__()
 
         def next(self):
             self.lines[2][0] = self.lines[0][0] - self.lines[1][0]
