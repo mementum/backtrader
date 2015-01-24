@@ -28,8 +28,8 @@ class MovingAverageSimple(Indicator):
     lines = ('avg',)
     params = (('period', 30), ('line', 0))
 
-    def __init__(self, data):
-        self.dataline = data[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0][self.params.line]
         self.setminperiod(self.params.period)
         self.fperiod = float(self.params.period)
 
@@ -47,8 +47,8 @@ class MovingAverageWeighted(Indicator):
     lines = ('avg',)
     params = (('period', 30), ('line', 0))
 
-    def __init__(self, data):
-        self.dataline = data[self.params.line]
+    def __init__(self):
+        self.dataline = self.datas[0][self.params.line]
         self.setminperiod(self.params.period)
         self.weights = map(float, range(1, self.params.period + 1))
         self.coef = 2.0 / (float(self.params.period) * (float(self.params.period) + 1.0))
@@ -65,8 +65,8 @@ class MovingAverageWeighted(Indicator):
 class MovingAverageSmoothing(MovingAverageSimple):
     params = (('smoothing', None),)
 
-    def __init__(self, data):
-        super(MovingAverageSmoothing, self).__init__(data)
+    def __init__(self):
+        # super(MovingAverageSmoothing, self).__init__()
         self.setsmoothing()
 
     def setsmoothing(self):

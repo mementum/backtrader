@@ -27,19 +27,15 @@ class MACDHisto(Indicator):
     lines = ('macd', 'signal', 'histo',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
-    def __init__(self, data):
-        me1 = MovingAverageExponential(data, period=self.params.period_me1)
-        me2 = MovingAverageExponential(data, period=self.params.period_me2)
+    def __init__(self):
+        me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
+        me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
 
-        macd = LineDifference(me1, me2)
-        self.bind2lines(0, macd)
+        macd = LineDifference(me1, me2).bindlines() # owner 0 <- own 0
+        signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(owner=1)
+        LineDifference(macd, signal).bindlines(owner=2) # owner 2 <- own 0
 
-        signal = MovingAverageExponential(macd, period=self.params.period_signal)
-        self.bind2lines(1, signal)
-        # histo = LineDifference(macd, signal)
-        # self.bind2lines(2, histo)
-
-    def next(self):
+    def next1(self):
         self[2][0] = self[0][0] - self[1][0]
 
 
@@ -47,9 +43,9 @@ class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
-    def __init__(self, data):
-        me1 = MovingAverageExponential(data, period=self.params.period_me1)
-        me2 = MovingAverageExponential(data, period=self.params.period_me2)
+    def __init__(self):
+        me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
+        me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
 
         macd = LineDifference(me1, me2)
         self.bind2lines(0, macd)
@@ -58,21 +54,54 @@ class MACD(Indicator):
         self.bind2lines(1, signal)
 
 
-if False:
+macdimp = 4
+
+if macdimp == 1:
+    # Slowest implementation
+    # 1. Composition via "extend"
+    # 2. LineBinding of a LineDifference of the extended indicator
+    # 3. By far the most elegant
     class MACDHistogram(Indicator):
         extend = (MACD, (0, 0), (1, 1))
         lines = ('histo',) # adds a line
 
-        def __init__(self, data):
-            self.bind2lines(2, LineDifference(self.extend, self.extend, line0=0, line1=1))
+        def __init__(self):
+            LineDifference(self.extend, self.extend, line0=0, line1=1).bindlines(2)
+elif macdimp == 2:
+    # Slower implementation
+    # 1. Composition via "extend"
+    # 2. Calculation of the new line based on the values of
+    #    the 2 lines of the extended indicator
+    class MACDHistogram(Indicator):
+        extend = (MACD, (0, 0), (1, 1))
+        lines = ('histo',) # adds a line
 
-else:
+        def next(self):
+            self.lines[2][0] = self.lines[0][0] - self.lines[1][0]
+
+elif macdimp == 3:
+    # 2nd fastest implementation
+    # 1. Inheritance
+    # 2. LineBinding of a LineDifference indicator which operates on "self"
+    # 3. By far the most elegant
     class MACDHistogram(MACD):
         lines = ('histo',) # adds a line
 
-        def __init__(self, data):
-            super(MACDHistogram, self).__init__(data)
-            self.bind2lines(2, LineDifference(self, self, line0=0, line1=1))
+        def __init__(self):
+            # super(MACDHistogram, self).__init__()
+            LineDifference(self, self, line0=0, line1=1).bindlines(2)
 
-        def next1(self):
+elif macdimp == 4:
+    # Fastest implementation
+    # 1. Inheritance
+    # 2. Calculation of the new line based on the values of
+    #    the 2 lines of the base class in next
+    class MACDHistogram(MACD):
+        lines = ('histo',) # adds a line
+
+        if False:
+            def __init__(self):
+                super(MACDHistogram, self).__init__()
+
+        def next(self):
             self.lines[2][0] = self.lines[0][0] - self.lines[1][0]

@@ -25,10 +25,10 @@ from ma import MATypes
 class TrueRange(Indicator):
     lines = ('tr',)
 
-    def __init__(self, data):
-        self.data_high = data.lines[DataSeries.High]
-        self.data_low = data.lines[DataSeries.Low]
-        self.data_close = data.lines[DataSeries.Close]
+    def __init__(self):
+        self.data_high = self.datas[0].lines[DataSeries.High]
+        self.data_low = self.datas[0].lines[DataSeries.Low]
+        self.data_close = self.datas[0].lines[DataSeries.Close]
 
         self.setminperiod(1)
 
@@ -47,9 +47,8 @@ class AverageTrueRange(Indicator):
     lines = ('atr',)
     params = (('period', 14), ('matype', MATypes.Simple))
 
-    def __init__(self, data):
-        tr = TrueRange(data)
-        self.bind2lines(0, self.params.matype(tr, period=self.params.period))
-
+    def __init__(self):
+        tr = TrueRange(self.datas[0])
+        self.params.matype(tr, period=self.params.period).bindlines()
 
 ATR = AverageTrueRange

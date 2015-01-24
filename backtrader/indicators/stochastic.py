@@ -20,42 +20,59 @@
 ################################################################################
 from .. import DataSeries, Indicator
 from ma import MATypes
-from utils import LineDifference, LineDivision, Highest, Lowest
+from utils import LineBinder, LineDifference, LineDivision, Highest, Lowest
 
 
 class StochasticFast(Indicator):
     lines = ('k', 'd',)
     params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),)
 
-    def __init__(self, data):
-        highesthigh = Highest(data, period=self.params.period, line=DataSeries.High)
-        lowestlow = Lowest(data, period=self.params.period, line=DataSeries.Low)
-        knum = LineDifference(data, lowestlow)
+    def __init__(self):
+        highesthigh = Highest(self.datas[0], period=self.params.period, line=DataSeries.High)
+        lowestlow = Lowest(self.datas[0], period=self.params.period, line=DataSeries.Low)
+        knum = LineDifference(self.datas[0], lowestlow)
         kden = LineDifference(highesthigh, lowestlow)
-        kperc = LineDivision(knum, kden, factor=100.0)
-        self.bind2lines(0, kperc)
-        dfastperc = self.params.matype(kperc, period=self.params.period_dfast)
-        self.bind2lines(1, dfastperc)
+        kperc = LineDivision(knum, kden, factor=100.0).bindlines()
+        self.params.matype(kperc, period=self.params.period_dfast).bindlines(1)
 
 
-class StochasticSlow(Indicator):
-    extend = (StochasticFast, (0, 1),)
-    params = (('period_dslow', 3),)
+if True:
+    class StochasticInt(StochasticFast):
+        params = (('period_dslow', 3),)
 
-    def __init__(self, data):
-        dslowperc = self.params.matype(self.extend, period=self.params.period_dslow, line=1)
-        self.bind2lines(1, dslowperc)
+        def __init__(self):
+            if self.slow:
+                LineBinder(self, line0=0, line1=1)
+
+            self.params.matype(self, period=self.params.period_dslow, line=1).bindlines(2 - self.slow)
 
 
-class StochasticFull(Indicator):
-    extend = (StochasticFast, (0, 0), (1, 1),)
-    lines = ('dslow',)
+    class StochasticFull(StochasticInt):
+        lines = ('dd',)
+        slow = False
 
-    params = (('period_dslow', 3),)
 
-    def __init__(self, data):
-        dslowperc = self.params.matype(self.extend, period=self.params.period_dslow, line=1)
-        self.bind2lines(2, dslowperc)
+    class StochasticSlow(StochasticInt):
+        slow = True
+
+
+else:
+    class StochasticSlow(Indicator):
+        extend = (StochasticFast, (0, 1),)
+        params = (('period_dslow', 3),)
+
+        def __init__(self):
+            self.params.matype(self.extend, period=self.params.period_dslow, line=1).bindlines(1)
+
+
+    class StochasticFull(Indicator):
+        extend = (StochasticFast, (0, 0), (1, 1),)
+        lines = ('dd',)
+
+        params = (('period_dslow', 3),)
+
+        def __init__(self):
+            self.params.matype(self.extend, period=self.params.period_dslow, line=1).bindlines(2)
 
 
 Stochastic = StochasticSlow

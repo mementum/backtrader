@@ -25,7 +25,7 @@ import inspect
 import itertools
 import sys
 
-from lineseries import LineSeries
+from lineseries import LineSeries, RootLine
 from parameters import Params
 
 
@@ -81,16 +81,18 @@ class MetaLineIterator(LineSeries.__metaclass__):
             if hasattr(_obj.params, kname):
                 setattr(_obj.params, kname, kwargs.pop(kname))
 
-        # scan the args for "datas" (maybe at least for things defining a _minperiod)
-        # _obj._datas = [inst for inst in args if hasattr(inst, '_minperiod')]
-        _obj._datas = [x for x in args if isinstance(x, LineSeries)]
+        # Scan args for datas ... if none are found, use the _owner (to have a clock)
+        _obj.datas = [x for x in args if isinstance(x, LineSeries)] or [_obj._owner,]
+
+        # 1st data source is our ticking clock
+        _obj._clock = _obj.datas[0]
 
         # To automatically set the period Start by scanning the found datas
-        # datas_minperiod = max([data._minperiod for data in self._datas]) - 1
         # No calculation can take place until all datas have yielded "data"
         # A data could be an indicator and it could take x bars until something is produced
-        _obj._minperiod = max([x._minperiod for x in _obj._datas] or [_obj._minperiod,])
+        _obj._minperiod = max([x._minperiod for x in _obj.datas] or [_obj._minperiod,])
 
+        # Prepare to hold children
         _obj._indicators = list()
 
         # Create an extension attribute variable if needed
@@ -112,17 +114,42 @@ class MetaLineIterator(LineSeries.__metaclass__):
             for lineself, lineext in extend[1:]:
                 _obj.bind2lines(lineself + extoffset, extobj, lineext)
 
+        # Remove the datas from the args ... already being given to the line iterator
+        args = filter(lambda x: x not in _obj.datas, args)
+
         # Parameter values have now been set before __init__
+        return _obj, args, kwargs
+
+    def doinit(cls, _obj, *args, **kwargs):
+        def findbases(kls):
+            for base in kls.__bases__:
+                if issubclass(base, RootLine):
+                    lst = findbases(base)
+                    return lst.append(base) or lst
+
+            return []
+
+        bases = findbases(cls)
+        # Filter out bases from which the current __init__ was inherited
+        bases = filter(lambda x: cls.__init__ != x.__init__, findbases(cls))
+
+        # Call the needed inits along the chain
+        for base in bases:
+            base.__init__(_obj, *args, **kwargs)
+
+        _obj, args, kwargs = super(MetaLineIterator, cls).doinit(_obj, *args, **kwargs)
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopostinit(_obj, *args, **kwargs)
 
         # Register (my)self as indicator (lineiterator) to the owner
+        # This can't be done any earlier because my own "minperiod" depens on child indicators
+        # which have only registered to myself once "init" is over
         if _obj._owner is not None:
             _obj._owner.addindicator(_obj)
 
-        # Avoid duplicates in own _indicators
+        # Avoid duplicates in own _indicators, keeping order
         seen = set()
         _obj._indicators = [x for x in _obj._indicators if x not in seen and not seen.add(x)]
 
@@ -149,6 +176,22 @@ class LineIterator(LineSeries):
         # Add the extra requested by the indicator to the auto-calculated from datas
         # Substract 1 which is the minimum period to avoid carrying over an extra 1
         self._minperiod += minperiod - 1
+
+    def bindlines(self, owner=None, own=None):
+        if not owner:
+            owner = 0
+        if not isinstance(owner, collections.Iterable):
+            owner = [owner,]
+
+        if not own:
+            own = xrange(len(owner))
+        if not isinstance(own, collections.Iterable):
+            own = [own,]
+
+        for lineowner, lineown in zip(owner, own):
+            self.lines[lineown].addbinding(self._owner.lines[lineowner])
+
+        return self
 
     def bind2lines(self, lines, lineit, itlines=None):
         if not isinstance(lines, collections.Iterable):
