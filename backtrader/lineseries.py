@@ -144,6 +144,9 @@ class MetaLineSeries(metabase.MetaParams):
 class LineSeries(object):
     __metaclass__ = MetaLineSeries
 
+    # Use Parameter but install directly as class attribute
+    _name = metabase.Parameter(None)
+
     def __getattr__(self, name):
         # to refer to line by name directly if the attribute was not found in this object
         # if we set an attribute in this object it will be found before we end up here

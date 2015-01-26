@@ -21,6 +21,7 @@
 import testbase
 
 import datetime
+from time import clock as tclock
 
 from backtrader import BrokerBack, Cerebro, Order, Strategy
 from backtrader.feeds import YahooFinanceCSV
@@ -42,15 +43,16 @@ class TestStrategy(Strategy):
         self.dataclose = self.data.close
         self.sma = MovingAverageSimple(self.data, period=self.params.maperiod)
         self.orderid = None
+        self.expiry = datetime.timedelta(days=self.params.expiredays)
 
     def start(self):
-        self.tstart = datetime.datetime.now()
+        self.tstart = tclock()
 
     def ordernotify(self, order):
         if order.status == Order.Completed:
-            if order.ordtype == order.Buy:
+            if isinstance(order, BuyOrder):
                 print '%s, BUY , %.2f' % (order.executed.dt.isoformat(), order.executed.price)
-            elif order.ordtype == order.Sell:
+            else: # elif isinstance(order, SellOrder):
                 print '%s, SELL, %.2f' % (order.executed.dt.isoformat(), order.executed.price)
         elif order.status == Order.Expired:
             pass # Do nothing for expired orders
@@ -68,17 +70,16 @@ class TestStrategy(Strategy):
 
         if not self.position(self.data):
             if self.dataclose[0] > self.sma[0][0]:
-                valid = self.data.datetime[0] + datetime.timedelta(days=self.params.expiredays)
+                valid = self.data.datetime[0] + self.expiry
                 price = self.dataclose[0] * self.params.atlimitperc
-                self.orderid = self.buy(self.data, size=self.params.stake,
-                                        exectype=self.params.exectype,
-                                        price=price, valid=valid)
+                self.orderid = self.buy(
+                    self.data, size=self.params.stake, exectype=self.params.exectype, price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
             self.orderid = self.sell(self.data, size=self.params.stake, exectype=Order.Market)
 
     def stop(self):
-        tused = datetime.datetime.now() - self.tstart
+        tused = tclock() - self.tstart
         print 'Time used:', str(tused)
         print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
 

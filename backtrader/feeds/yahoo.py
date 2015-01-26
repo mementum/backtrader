@@ -38,19 +38,10 @@ class YahooFinance(dataseries.OHLCDateTime):
         self.error = None
 
         url = self.baseurl
-
         url += 's=%s' % ticker
-
-        url += '&a=%d' % (fromdate.month - 1)
-        url += '&b=%d' % fromdate.day
-        url += '&c=%d' % fromdate.year
-
-        url += '&d=%d' % (todate.month - 1)
-        url += '&e=%d' % todate.day
-        url += '&f=%d' % todate.year
-
+        url += '&a=%d&b=%d&c=%d' % ((fromdate.month - 1), fromdate.day, fromdate.year)
+        url += '&d=%d&e=%d&f=%d' % ((todate.month - 1), todate.day, todate.year)
         url += '&g=%s' % period
-
         url += '&ignore=.csv'
 
         try:
