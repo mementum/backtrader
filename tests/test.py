@@ -20,8 +20,7 @@
 ################################################################################
 import testbase
 
-import collections
-import datetime
+from time import clock as tclock
 
 import backtrader.cerebro as btcerebro
 import backtrader.feeds as btfeeds
@@ -34,41 +33,41 @@ feed = btfeeds.YahooFinanceCSV('./datas/yahoo/oracle-2000.csv')
 class TestStrategy(btstrategy.Strategy):
 
     def __init__(self):
-        self.ohlc = self.env.datas[0]
+        self.ohlc = self.datas[0]
         self.close = self.ohlc.close
 
         if True:
-            # btindicators.MovingAverageExponential(self.env.datas[0], period=30)
-            # btindicators.MovingAverageSimple(self.env.datas[0], period=30)
-            # btindicators.AverageTrueRange(self.env.datas[0])
-            self.ind = btindicators.StochasticSlow(self.env.datas[0])
+            btindicators.StochasticFast(self.datas[0])
             pass
         else:
-            self.stocslow = btindicators.StochasticSlow(self.env.datas[0])
-            self.macd2 = btindicators.MACDHisto2(self.env.datas[0])
-            btindicators.AverageTrueRange(self.env.datas[0])
-            btindicators.MACDHisto(self.env.datas[0])
-            btindicators.MovingAverageSimple(self.env.datas[0], period=30)
+            self.stocslow = btindicators.StochasticSlow(self.datas[0])
+            self.macd2 = btindicators.MACDHisto2(self.datas[0])
+            btindicators.AverageTrueRange(self.datas[0])
+            btindicators.MACDHisto(self.datas[0])
+            btindicators.MACD(self.datas[0])
+            btindicators.MACDHistogram(self.datas[0])
+            btindicators.MovingAverageSimple(self.datas[0], period=30)
             btindicators.MovingAverageSimple(self.ind1, period=10)
-            btindicators.MovingAverageExponential(self.env.datas[0], period=30)
-            btindicators.MovingAverageWeighted(self.env.datas[0], period=30)
-            btindicators.RSI(self.env.datas[0])
-            btindicators.RSI(self.env.datas[0], matype=btindicators.MATypes.Exponential)
-            btindicators.StochasticFast(self.env.datas[0])
-            btindicators.StochasticSlow(self.env.datas[0])
+            btindicators.MovingAverageExponential(self.datas[0], period=30)
+            btindicators.MovingAverageWeighted(self.datas[0], period=30)
+            btindicators.RSI(self.datas[0])
+            btindicators.RSI(self.datas[0], matype=btindicators.MATypes.Exponential)
+            btindicators.StochasticFast(self.datas[0])
+            btindicators.StochasticFull(self.datas[0])
+            btindicators.StochasticSlow(self.datas[0])
 
         print '--------------------------------------------------'
         for indicator in self._indicators:
             print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
 
     def start(self):
-        self.tstart = datetime.datetime.now()
+        self.tcstart = tclock()
 
     def next(self):
         pass
 
     def stop(self):
-        tused = datetime.datetime.now() - self.tstart
+        tused = tclock() - self.tcstart
         print '--------------------------------------------------'
         print 'Time used', tused
 
