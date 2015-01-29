@@ -25,7 +25,6 @@ from time import clock as tclock
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btindicators
-import backtrader.strategy as btstrategy
 
 
 class TestStrategy(bt.Strategy):
