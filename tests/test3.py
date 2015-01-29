@@ -23,12 +23,12 @@ import testbase
 import datetime
 from time import clock as tclock
 
-from backtrader import BrokerBack, Cerebro, Order, Strategy
-from backtrader.feeds import YahooFinanceCSV
-from backtrader.indicators import MovingAverageSimple
+import backtrader as bt
+import backtrader.feeds as btfeeds
+import backtrader.indicators as btindicators
 
 
-class TestStrategy(Strategy):
+class TestStrategy(bt.Strategy):
     params = (
         ('maperiod', 15),
         ('stake', 10),
@@ -41,7 +41,7 @@ class TestStrategy(Strategy):
     def __init__(self):
         self.data = self.datas[0]
         self.dataclose = self.data.close
-        self.sma = MovingAverageSimple(self.data, period=self.params.maperiod)
+        self.sma = btindicators.MovingAverageSimple(self.data, period=self.params.maperiod)
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
 
@@ -49,12 +49,12 @@ class TestStrategy(Strategy):
         self.tstart = tclock()
 
     def ordernotify(self, order):
-        if order.status == Order.Completed:
-            if isinstance(order, BuyOrder):
+        if order.status == bt.Order.Completed:
+            if isinstance(order, bt.BuyOrder):
                 print '%s, BUY , %.2f' % (order.executed.dt.isoformat(), order.executed.price)
             else: # elif isinstance(order, SellOrder):
                 print '%s, SELL, %.2f' % (order.executed.dt.isoformat(), order.executed.price)
-        elif order.status == Order.Expired:
+        elif order.status == bt.Order.Expired:
             pass # Do nothing for expired orders
 
         # Allow new orders
@@ -76,7 +76,7 @@ class TestStrategy(Strategy):
                     self.data, size=self.params.stake, exectype=self.params.exectype, price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
-            self.orderid = self.sell(self.data, size=self.params.stake, exectype=Order.Market)
+            self.orderid = self.sell(self.data, size=self.params.stake, exectype=bt.Order.Market)
 
     def stop(self):
         tused = tclock() - self.tstart
@@ -84,9 +84,10 @@ class TestStrategy(Strategy):
         print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
 
 
-cerebro = Cerebro()
-cerebro.addbroker(BrokerBack(cash=1000))
-# cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-2000.csv'))
-cerebro.addfeed(YahooFinanceCSV('./datas/yahoo/oracle-1995-2014.csv'))
-cerebro.addstrategy(TestStrategy, printdata=False, exectype=Order.Limit, atlimitperc=1.00, expiredays=5)
+cerebro = bt.Cerebro()
+cerebro.addbroker(bt.BrokerBack(cash=1000))
+# data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
+data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
+cerebro.adddata(data)
+cerebro.addstrategy(TestStrategy, printdata=False, exectype=bt.Order.Limit, atlimitperc=1.00, expiredays=2)
 cerebro.run()
