@@ -22,13 +22,13 @@ import testbase
 
 from time import clock as tclock
 
-import backtrader.cerebro as btcerebro
+import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btindicators
 import backtrader.strategy as btstrategy
 
 
-class TestStrategy(btstrategy.Strategy):
+class TestStrategy(bt.Strategy):
 
     def __init__(self):
         self.ohlc = self.datas[0]
@@ -92,7 +92,7 @@ class TestStrategy(btstrategy.Strategy):
             print 'self.stocslow d', self.stocslow.lines.d[0]
 
 
-cerebro = btcerebro.Cerebro()
+cerebro = bt.Cerebro()
 data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
 cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
