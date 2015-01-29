@@ -19,8 +19,32 @@
 #
 ################################################################################
 import abc
+import itertools
+import sys
 
 # Subclassing from ABCMeta allows later the entire hierarchy to have abstract methods
+
+def findowner(owned, cls):
+    # skip this frame and the caller's -> start at 2
+    for framelevel in itertools.count(2):
+        try:
+            frame = sys._getframe(framelevel)
+        except ValueError:
+            # Frame depth exceeded ... no owner ... break away
+            break
+
+        # 'self' in regular code
+        self_ = frame.f_locals.get('self', None)
+        if self_ != owned and isinstance(self_, cls):
+            return self_
+
+        # '_obj' in metaclasses
+        obj_ = frame.f_locals.get('_obj', None)
+        if obj_ != owned and isinstance(obj_, cls):
+            return obj_
+
+    return None
+
 
 class MetaBase(abc.ABCMeta):
     def doprenew(cls, *args, **kwargs):
@@ -89,6 +113,9 @@ class Params(object):
 
         # Return the result
         return newcls
+
+    def _getkwargs(self):
+        return dict(map(lambda x: (x[0], getattr(self, x[0])), self._getparams()))
 
 
 class MetaParams(MetaBase):
