@@ -22,34 +22,17 @@
 import collections
 import functools
 import inspect
-import itertools
-import sys
+
 
 from lineseries import LineSeries
-
+import metabase
 
 class MetaLineIterator(LineSeries.__metaclass__):
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
         # Find the owner and store it
-        _obj._owner = None
-        for framelevel in itertools.count(1):
-            try:
-                frame = sys._getframe(framelevel)
-            except ValueError:
-                # Frame depth exceeded ... no owner ... break away
-                break
-
-            # 'self' in regular code ... and '_obj' in metaclasses
-            self_ = frame.f_locals.get('self', None)
-            obj_ = frame.f_locals.get('_obj', None)
-            if self_ != _obj and isinstance(self_, LineIterator):
-                _obj._owner = self_
-                break
-            elif obj_ != _obj and isinstance(obj_, LineIterator):
-                _obj._owner = obj_
-                break
+        _obj._owner = metabase.findowner(_obj, LineIterator)
 
         # Scan args for datas ... if none are found, use the _owner (to have a clock)
         _obj.datas = [x for x in args if isinstance(x, LineSeries)] or [_obj._owner,]
