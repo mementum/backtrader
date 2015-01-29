@@ -37,7 +37,7 @@ class Order(object):
     __metaclass__ = metabase.MetaParams
 
     Market, Close, Limit, Stop, StopLimit = range(5)
-    Buy, Sell = range(2)
+    Buy, Sell, Stop, StopLimit = range(4)
     Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
 
     params = (
@@ -70,11 +70,11 @@ class Order(object):
         self.status = Order.Canceled
         self.executed = self.data.datetime[0]
 
-    def execute(self, size, price, dtindex=0):
+    def execute(self, size, price, dt):
         if not size:
             return
 
-        self.executed.dt = self.data.datetime[dtindex]
+        self.executed.dt = dt
 
         oldexec = self.executed.size * (self.executed.price or 0.0)
         newexec = price * size
@@ -232,11 +232,11 @@ class BrokerBack(object):
         order = SellOrder(owner=owner, data=data, size=size, price=price, exectype=exectype, valid=valid)
         return self.submit(order)
 
-    def _execute(self, order, price, dtindex=0):
+    def _execute(self, order, price, dt):
         size = order.executed.remsize * (1 if isinstance(order, BuyOrder) else -1)
         # closing a position may return cash to meet margin requirements
         remsize = self.closeposition(order.data, size, price)
-        order.execute(abs(size) - abs(remsize), price, dtindex)
+        order.execute(abs(size) - abs(remsize), price, dt)
 
         if remsize:
             # if still opening a position check the margin/cash requirements
@@ -247,7 +247,7 @@ class BrokerBack(object):
 
             # Returned remaining size has the right sign already
             self.openposition(order.data, remsize, price)
-            order.execute(remsize, price, dtindex)
+            order.execute(remsize, price, dt)
 
         # We need to notify the owner
         order.owner._ordernotify(order)
@@ -306,16 +306,16 @@ class BrokerBack(object):
             self.params.cash += comminfo.cashadjust(position.size, order.data.close[1], order.data.close[0])
 
             if order.exectype == Order.Market:
-                self._execute(order, price=order.data.open[0])
+                self._execute(order, price=order.data.open[0], order.data.datetime[0])
 
             elif order.exectype == Order.Close:
                 # execute with the price of the closed bar
                 if order.data.datetime[0].time() != order.data.datetime[1].time():
                     # intraday: time changes in between bars
-                    self._execute(order, price=order.data.close[1], dtindex=1)
+                    self._execute(order, price=order.data.close[1], order.data.datetime[1])
                 elif order.data.datetime[0].date() != order.data.datetime[1].date():
                     # daily: time is equal, date changes
-                    self._execute(order, price=order.data.close[1], dtindex=1)
+                    self._execute(order, price=order.data.close[1], order.data.datetime[1])
 
             elif order.exectype == Order.Limit:
                 plow = order.data.low[0]
@@ -325,15 +325,15 @@ class BrokerBack(object):
 
                 if isinstance(order, BuyOrder):
                     if popen <= plimit:
-                        self._execute(order, popen)
+                        self._execute(order, popen, order.data.datetime[0])
                     elif plow <= plimit <= phigh:
-                        self._execute(order, plimit)
+                        self._execute(order, plimit, order.data.datetime[0])
 
                 else: # Sell
                     if popen >= plimit:
-                        self._execute(order, popen)
+                        self._execute(order, popen, order.data.datetime[0])
                     elif plow <= plimit <= phigh:
-                        self._execute(order, plimit)
+                        self._execute(order, plimit, order.data.datetime[0])
 
 
             if order.alive():
