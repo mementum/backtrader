@@ -232,7 +232,7 @@ class BrokerBack(object):
         order = SellOrder(owner=owner, data=data, size=size, price=price, exectype=exectype, valid=valid)
         return self.submit(order)
 
-    def _execute(self, order, price, dt):
+    def _execute(self, order, dt, price):
         size = order.executed.remsize * (1 if isinstance(order, BuyOrder) else -1)
         # closing a position may return cash to meet margin requirements
         remsize = self.closeposition(order.data, size, price)
@@ -306,16 +306,16 @@ class BrokerBack(object):
             self.params.cash += comminfo.cashadjust(position.size, order.data.close[1], order.data.close[0])
 
             if order.exectype == Order.Market:
-                self._execute(order, price=order.data.open[0], order.data.datetime[0])
+                self._execute(order, order.data.datetime[0], price=order.data.open[0])
 
             elif order.exectype == Order.Close:
                 # execute with the price of the closed bar
                 if order.data.datetime[0].time() != order.data.datetime[1].time():
                     # intraday: time changes in between bars
-                    self._execute(order, price=order.data.close[1], order.data.datetime[1])
+                    self._execute(order, order.data.datetime[1], price=order.data.close[1])
                 elif order.data.datetime[0].date() != order.data.datetime[1].date():
                     # daily: time is equal, date changes
-                    self._execute(order, price=order.data.close[1], order.data.datetime[1])
+                    self._execute(order, order.data.datetime[1], price=order.data.close[1])
 
             elif order.exectype == Order.Limit:
                 plow = order.data.low[0]
@@ -325,15 +325,15 @@ class BrokerBack(object):
 
                 if isinstance(order, BuyOrder):
                     if popen <= plimit:
-                        self._execute(order, popen, order.data.datetime[0])
+                        self._execute(order, order.data.datetime[0], price=popen)
                     elif plow <= plimit <= phigh:
-                        self._execute(order, plimit, order.data.datetime[0])
+                        self._execute(order, order.data.datetime[0], price=plimit)
 
                 else: # Sell
                     if popen >= plimit:
-                        self._execute(order, popen, order.data.datetime[0])
+                        self._execute(order, order.data.datetime[0], price=popen)
                     elif plow <= plimit <= phigh:
-                        self._execute(order, plimit, order.data.datetime[0])
+                        self._execute(order, order.data.datetime[0], price=plimit)
 
 
             if order.alive():

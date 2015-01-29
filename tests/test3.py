@@ -32,7 +32,7 @@ class TestStrategy(bt.Strategy):
     params = (
         ('maperiod', 15),
         ('stake', 10),
-        ('exectype', Order.Market),
+        ('exectype', bt.Order.Market),
         ('atlimitperc', 1.0),
         ('expiredays', 10),
         ('printdata', True),
