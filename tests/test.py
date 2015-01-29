@@ -27,8 +27,6 @@ import backtrader.feeds as btfeeds
 import backtrader.indicators as btindicators
 import backtrader.strategy as btstrategy
 
-feed = btfeeds.YahooFinanceCSV('./datas/yahoo/oracle-2000.csv')
-
 
 class TestStrategy(btstrategy.Strategy):
 
@@ -37,7 +35,7 @@ class TestStrategy(btstrategy.Strategy):
         self.close = self.ohlc.close
 
         if True:
-            btindicators.StochasticFast(self.datas[0])
+            btindicators.StochasticSlow(self.datas[0])
             pass
         else:
             self.stocslow = btindicators.StochasticSlow(self.datas[0])
@@ -95,6 +93,7 @@ class TestStrategy(btstrategy.Strategy):
 
 
 cerebro = btcerebro.Cerebro()
-cerebro.addfeed(feed)
+data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
+cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
-cerebro.run()
+cerebro.run(preload=True)
