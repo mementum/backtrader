@@ -19,16 +19,21 @@
 #
 ################################################################################
 
+
 class Cerebro(object):
     def __init__(self):
-        self.datas = list()
         self.feeds = list()
+        self.datas = list()
         self.strats = list()
         self.brokers = list()
 
-    def addfeed(self, feed):
-        self.feeds.append(feed)
-        self.datas.append(feed.getdata())
+    def adddata(self, data, name=None):
+        if name is not None:
+            data._name = name
+        self.datas.append(data)
+        feed = data.getfeed()
+        if feed and feed not in self.feeds:
+            self.feeds.append(feed)
 
     def addstrategy(self, strategy, *args, **kwargs):
         self.strats.append((strategy, args, kwargs))
@@ -36,9 +41,17 @@ class Cerebro(object):
     def addbroker(self, broker):
         self.brokers.append(broker)
 
-    def run(self):
+    def runpreload(self):
+        self.run(preload=True)
+
+    def run(self, preload=False):
         for feed in self.feeds:
             feed.start()
+
+        for data in self.datas:
+            data.start()
+            if preload:
+                data.preload()
 
         for broker in self.brokers:
             broker.start()
@@ -50,10 +63,11 @@ class Cerebro(object):
             strat.start()
             strats.append(strat)
 
-        while not [feed for feed in self.feeds if not feed.next()]:
-            for data in self.datas:
-                data.docalc()
-
+        # FIXME: the loop check if all datas are producing bars and only
+        # if none produces a bar, will the loop be over
+        # But if data[0] is the clock and synchronizer it should be the only
+        # one to be checked
+        while [data.next() for data in self.datas].count(True):
             for broker in self.brokers:
                 broker.next()
 
@@ -63,28 +77,8 @@ class Cerebro(object):
         for strat in strats:
             strat.stop()
 
-        for feed in self.feeds:
-            feed.stop()
-
-    def runonce(self):
-        for feed in self.feeds:
-            feed.start()
-
-        for feed in self.feeds:
-            feed.preload()
-
         for data in self.datas:
-            # data.docalc() # FULL CALCULATION ??
-            pass
-
-        for strat in self.strats:
-            strat.start()
-
-        for strat in self.strats:
-            strat._once()
-
-        for strat in self.strats:
-            strat.stop()
+            data.stop()
 
         for feed in self.feeds:
             feed.stop()
