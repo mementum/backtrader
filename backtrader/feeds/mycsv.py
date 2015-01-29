@@ -22,60 +22,24 @@ import datetime
 import itertools
 
 from .. import dataseries
+from .. import feed
 from .. import linebuffer
 
 
-class MyCSV1(dataseries.OHLCDateTime):
-
-    def __init__(self, path):
-        self.path = path
-        self.f = None
-
-    def getdata(self):
-        return self
-
-    def start(self):
-        self.reset()
-
-        try:
-            self.f = open(self.path, 'rb')
-        except IOError:
-            self.f = None
-        else:
-            # skip the headers line
-            self.f.readline()
-
-    def next(self):
-        if self.f is None:
-            return False
-
-        try:
-            line = self.f.readline()
-        except (IOError, ValueError,):
-            self.f.close()
-            self.f = None
-            return False
-
-        if not line:
-            return False
-
-        linetokens = line.rstrip('\r\n').split(',')
-
-        self.forward() # advance data pointer
+class MyCSVData(feed.CSVDataFeedBase):
+    def _load(self, linetokens):
         i = itertools.count(0)
         i.next() # skip ticker name
-        isday = linetokens[i.next()] == 'D'
+        i.next() # skip daily/intraday indication (intraday has simply a "null" time)
+
         dttxt = linetokens[i.next()]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
-        self.lines.datetime = datetime.datetime(y, m, d)
 
         tmtxt = linetokens[i.next()]
-        if not isday:
-            hh, mm, ss = int(tmtxt[0:2]), int(tmtxt[2:4]), int(tmtxt[4:6])
-            self.lines.time = hh * 60 * 60 + mm * 60 + ss
-        else:
-            self.lines.time = 0
+        hh, mmss = divmod(int(tmtxt), 10000)
+        mm, ss = divmod(mmss, 100)
 
+        self.lines.datetime = datetime.datetime(y, m, d, hh, mm, ss)
         self.lines.open = float(linetokens[i.next()])
         self.lines.high = float(linetokens[i.next()])
         self.lines.low = float(linetokens[i.next()])
@@ -85,95 +49,6 @@ class MyCSV1(dataseries.OHLCDateTime):
 
         return True
 
-    def stop(self):
-        if self.f is not None:
-            self.f.close()
-            self.f = None
 
-
-class MyCSV2(dataseries.OHLCDateTime):
-    def __init__(self, path):
-        self.path = path
-        self.f = None
-
-    def getdata(self):
-        return self
-
-    def start(self):
-        self.reset()
-
-        try:
-            self.f = open(self.path, 'rb')
-        except IOError:
-            self.f = None
-            return
-
-        # skip the headers line
-        self.f.readline()
-
-        while self.load():
-            pass
-
-        self.home()
-        self.blen = self.buflen()
-        self.curidx = 0
-
-    def preload(self):
-        # one time calculation
-        pass # done in start
-
-    def next(self):
-        if self.curidx < self.blen:
-            self.curidx += 1
-            self.advance()
-            return True
-        return False
-
-    def load(self):
-        if self.f is None:
-            return False
-
-        try:
-            line = self.f.readline()
-        except (IOError, ValueError,):
-            self.f.close()
-            self.f = None
-            return False
-
-        if not line:
-            return False
-
-        linetokens = line.rstrip('\r\n').split(',')
-
-        self.forward() # advance data pointer
-        i = itertools.count(0)
-        i.next() # skip ticker name
-        isday = linetokens[i.next()] == 'D'
-
-        dttxt = linetokens[i.next()]
-        y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
-        self.lines.datetime = datetime.datetime(y, m, d)
-
-        tmtxt = linetokens[i.next()]
-        if not isday:
-            hh, mm, ss = int(tmtxt[0:2]), int(tmtxt[2:4]), int(tmtxt[4:6])
-            self.lines.time = hh * 60 * 60 + mm * 60 + ss
-        else:
-            self.lines.time = 0
-
-        self.lines.open = float(linetokens[i.next()])
-        self.lines.high = float(linetokens[i.next()])
-        self.lines.low = float(linetokens[i.next()])
-        self.lines.close = float(linetokens[i.next()])
-        self.lines.volume = float(linetokens[i.next()])
-        self.lines.openinterest = float(linetokens[i.next()])
-
-        return True
-
-    def stop(self):
-        if self.f is not None:
-            self.f.close()
-            self.f = None
-
-
-MyCSV = MyCSV2
+class MyCSV(feed.CSVFeedBase):
+    DataCls = MyCSVData

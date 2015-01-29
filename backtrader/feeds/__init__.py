@@ -19,5 +19,5 @@
 #
 ################################################################################
 
-from mycsv import MyCSV
-from yahoo import YahooFinance, YahooFinanceCSV
+from mycsv import *
+from yahoo import *
