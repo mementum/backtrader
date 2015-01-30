@@ -26,11 +26,18 @@ import metabase
 
 
 class OrderData(object):
-    def __init__(self, dt=None, size=0, price=None, remsize=0):
+    def __init__(self, dt=None, size=0, price=None, pricelimit=None, remsize=0):
         self.dt = dt
         self.size = size
         self.remsize = remsize
         self.price = price
+        if not pricelimit:
+            # if no pricelimit is given, use the given price
+            self.pricelimit = self.price
+
+        if pricelimit and not price:
+            # price must always be set if pricelimit is set ...
+            self.price = pricelimit
 
 
 class Order(object):
@@ -41,8 +48,8 @@ class Order(object):
     Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
 
     params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None),
-        ('exectype', None), ('valid', None),
+        ('owner', None), ('data', None), ('size', None), ('price', None), ('pricelimit', None),
+        ('exectype', None), ('valid', None), ('triggered', True),
     )
 
     def __getattr__(self, name):
@@ -104,8 +111,28 @@ class BuyOrder(Order):
     ordtype = Order.Buy
 
 
+class StopBuyOrder(BuyOrder):
+    pass
+
+
+class StopLimitBuyOrder(BuyOrder):
+    def __init__(self):
+        super(StopLimitBuyOrder, self).__init__()
+        self.params.triggered = False
+
+
 class SellOrder(Order):
     ordtype = Order.Sell
+
+
+class StopSellOrder(SellOrder):
+    pass
+
+
+class StopLimitBuyOrder(SellOrder):
+    def __init__(self):
+        super(StopLimitSellOrder, self).__init__()
+        self.params.triggered = False
 
 
 class CommisionInfo(object):
@@ -305,35 +332,101 @@ class BrokerBack(object):
             # futures change cash in the broker in every bar to ensure margin requirements are met
             self.params.cash += comminfo.cashadjust(position.size, order.data.close[1], order.data.close[0])
 
+            plow = order.data.low[0]
+            phigh = order.data.high[0]
+            popen = order.data.open[0]
+            pclose = order.data.close[0]
+            pclose1 = order.data.close[1]
+            pcreated = order.created.price
+            plimit = order.created.pricelimit
+
             if order.exectype == Order.Market:
-                self._execute(order, order.data.datetime[0], price=order.data.open[0])
+                self._execute(order, order.data.datetime[0], price=popen)
 
             elif order.exectype == Order.Close:
                 # execute with the price of the closed bar
                 if order.data.datetime[0].time() != order.data.datetime[1].time():
                     # intraday: time changes in between bars
-                    self._execute(order, order.data.datetime[1], price=order.data.close[1])
+                    self._execute(order, order.data.datetime[1], price=pclose1)
                 elif order.data.datetime[0].date() != order.data.datetime[1].date():
                     # daily: time is equal, date changes
-                    self._execute(order, order.data.datetime[1], price=order.data.close[1])
+                    self._execute(order, order.data.datetime[1], price=pclose1)
 
-            elif order.exectype == Order.Limit:
-                plow = order.data.low[0]
-                phigh = order.data.high[0]
-                popen = order.data.close[0]
-                plimit = order.created.price
+            elif order.exectype == Order.Limit or \
+                (order.exectype == Order.StopLimit and order.triggered):
 
                 if isinstance(order, BuyOrder):
-                    if popen <= plimit:
+                    if plimit >= popen: # open smaller/equal than requested - buy cheaper
                         self._execute(order, order.data.datetime[0], price=popen)
-                    elif plow <= plimit <= phigh:
+                    elif plimit >= plow: # day low below req price ... match limit price
                         self._execute(order, order.data.datetime[0], price=plimit)
 
                 else: # Sell
-                    if popen >= plimit:
+                    if plimit <= popen: # open greater/equal than requested - sell more expensive
                         self._execute(order, order.data.datetime[0], price=popen)
-                    elif plow <= plimit <= phigh:
+                    elif plimit <= phigh: # day high above req price ... match limit price
                         self._execute(order, order.data.datetime[0], price=plimit)
+
+            elif order.exectype == Order.Stop:
+                if isinstance(order, BuyOrder):
+                    if popen >= pcreated:
+                        # price penetrated with an open gap - use open
+                        self._execute(order, order.data.datetime[0], price=popen)
+                    elif phigh >= pcreated:
+                        # price penetrated during the session - use trigger price
+                        self._execute(order, order.data.datetime[0], price=pcreated)
+
+                else: # Sell
+                    if popen <= pcreated:
+                        # price penetrated with an open gap - use open
+                        self._execute(order, order.data.datetime[0], price=popen)
+                    elif plow <= pcreated:
+                        # price penetrated during the session - use trigger price
+                        self._execute(order, order.data.datetime[0], price=pcreated)
+
+            elif order.exectype == Order.StopLimit:
+                if isinstance(order, BuyOrder):
+                    if popen >= pcreated:
+                        order.triggered = True
+                        # price penetrated with an open gap
+                        if plimit >= popen:
+                            self._execute(order, order.data.datetime[0], price=popen)
+                        elif plimit >= plow: # execute in same bar
+                            self._execute(order, order.data.datetime[0], price=plimit)
+
+                    elif phigh >= pcreated:
+                        # price penetrated upwards during the session
+                        order.triggered = True
+                        # can calculate execution for a few cases
+                        if popen > pclose:
+                            if plimit >= pcreated:
+                                self._execute(order, order.data.datetime[0], price=pcreated)
+                            elif plimit >= pclose:
+                                self._execute(order, order.data.datetime[0], price=plimit)
+                        else: # popen < pclose
+                            if plimit >= pcreated:
+                                self._execute(order, order.data.datetime[0], price=pcreated)
+                else: # Sell
+                    if popen <= pcreated:
+                        # price penetrated downwards with an open gap
+                        order.triggered = True
+                        if plimit <= open:
+                            self._execute(order, order.data.datetime[0], price=popen)
+                        elif plimit <= phigh: # execute in same bar
+                            self._execute(order, order.data.datetime[0], price=plimit)
+
+                    elif plow <= pcreated:
+                        # price penetrated downwards during the session
+                        order.triggered = True
+                        # can calculate execution for a few cases
+                        if popen <= pclose:
+                            if plimit <= pcreated:
+                                self._execute(order, order.data.datetime[0], price=pcreated)
+                            elif plimit <= pclose:
+                                self._execute(order, order.data.datetime[0], price=plimit)
+                        else: # popen > pclose
+                            if plimit <= pcreated:
+                                self._execute(order, order.data.datetime[0], price=pcreated)
 
 
             if order.alive():
