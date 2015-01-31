@@ -51,6 +51,7 @@ class LineBuffer(object):
     def reset(self):
         self.create_array()
         self.idx = -1
+        self.extension = 0
 
     def create_array(self):
         raise NotImplementedError()
@@ -59,7 +60,7 @@ class LineBuffer(object):
         return self.idx + 1
 
     def buflen(self):
-        return len(self.array)
+        return len(self.array) - self.extension
 
     def __getitem__(self, ago):
         return self.array[self.idx - ago]
@@ -89,6 +90,11 @@ class LineBuffer(object):
 
     def advance(self):
         self.idx += 1
+
+    def extend(self, value=NAN, size=0):
+        self.extension += size
+        for i in xrange(size):
+            self.array.append(value)
 
     def addbinding(self, binding):
         self.bindings.append(binding)

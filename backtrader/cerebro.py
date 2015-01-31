@@ -18,9 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+import metabase
 
 
 class Cerebro(object):
+    __metaclass__ = metabase.MetaParams
+
+    params = (('preload', False), ('lookahead', 0),)
+
     def __init__(self):
         self.feeds = list()
         self.datas = list()
@@ -41,16 +46,14 @@ class Cerebro(object):
     def addbroker(self, broker):
         self.brokers.append(broker)
 
-    def runpreload(self):
-        self.run(preload=True)
-
-    def run(self, preload=False):
+    def run(self):
         for feed in self.feeds:
             feed.start()
 
         for data in self.datas:
+            data.extend(size=self.params.lookahead)
             data.start()
-            if preload:
+            if self.params.preload:
                 data.preload()
 
         for broker in self.brokers:

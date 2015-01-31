@@ -97,6 +97,10 @@ class Lines(object):
         for line in self.lines:
             line.forward(value)
 
+    def extend(self, value=linebuffer.NAN, size=0):
+        for line in self.lines:
+            line.extend(value, size)
+
     def reset(self):
         for line in self.lines:
             line.reset()
