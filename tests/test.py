@@ -91,7 +91,6 @@ class TestStrategy(bt.Strategy):
             print 'self.stocslow d', self.stocslow.lines.d[0]
 
 
-data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
 cerebro = bt.Cerebro(preload=True)
 cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
