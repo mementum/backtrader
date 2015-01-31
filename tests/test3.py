@@ -84,7 +84,7 @@ class TestStrategy(bt.Strategy):
         print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
 
 
-cerebro = bt.Cerebro()
+cerebro = bt.Cerebro(preload=True)
 cerebro.addbroker(bt.BrokerBack(cash=1000))
 # data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
 data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
