@@ -30,6 +30,7 @@ class Cerebro(object):
         self.feeds = list()
         self.datas = list()
         self.strats = list()
+        self.runstrats = list()
         self.brokers = list()
 
     def adddata(self, data, name=None):
@@ -59,12 +60,11 @@ class Cerebro(object):
         for broker in self.brokers:
             broker.start()
 
-        strats = list()
         for stratcls, sargs, skwargs in self.strats:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
             strat.start()
-            strats.append(strat)
+            self.runstrats.append(strat)
 
         # FIXME: the loop check if all datas are producing bars and only
         # if none produces a bar, will the loop be over
@@ -74,10 +74,10 @@ class Cerebro(object):
             for broker in self.brokers:
                 broker.next()
 
-            for strat in strats:
+            for strat in self.runstrats:
                 strat._next()
 
-        for strat in strats:
+        for strat in self.runstrats:
             strat.stop()
 
         for data in self.datas:

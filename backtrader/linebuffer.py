@@ -54,7 +54,7 @@ class LineBuffer(object):
         self.extension = 0
 
     def create_array(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def __len__(self):
         return self.idx + 1
@@ -98,6 +98,9 @@ class LineBuffer(object):
 
     def addbinding(self, binding):
         self.bindings.append(binding)
+
+    def plot(self, idx=0, size=None):
+        return self.getzero(idx, size if size is not None else len(self))
 
 
 class LineBufferArray(LineBuffer):
