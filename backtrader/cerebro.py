@@ -24,7 +24,7 @@ import metabase
 class Cerebro(object):
     __metaclass__ = metabase.MetaParams
 
-    params = (('preload', False), ('lookahead', 0),)
+    params = (('preload', True), ('lookahead', 0),)
 
     def __init__(self):
         self.feeds = list()
