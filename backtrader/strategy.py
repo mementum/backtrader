@@ -20,13 +20,15 @@
 ################################################################################
 
 from lineiterator import LineIterator
+from broker import BrokerBack
 
 
 class MetaStrategy(LineIterator.__metaclass__):
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
-        _obj._broker = env.brokers[0] if env.brokers else None
+        _obj._broker = env.brokers[0] if env.brokers else (env.addbroker(BrokerBack()) or env.brokers[0])
+
         return _obj, args, kwargs
 
 
@@ -61,5 +63,7 @@ class Strategy(LineIterator):
     def sell(self, data, size, price=None, exectype=None, valid=None):
         return self._broker.sell(self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def position(self, data):
-        return self._broker.getposition(data)
+    def position(self, data=None):
+        return self._broker.getposition(data if data is not None else self.datas[0])
+
+    getposition = position
