@@ -82,8 +82,10 @@ class DataFeedBase(dataseries.OHLCDateTime):
 
     def next(self):
         if len(self) == self.buflen():
+            # not preloaded - request next bar
             return self.load()
 
+        # already preloaded - advance to next bar
         self.advance()
         return True
 
