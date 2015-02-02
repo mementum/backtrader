@@ -20,48 +20,30 @@
 ################################################################################
 from .. import Indicator
 
-
-class LineBinder(Indicator):
-    # lines = ('linebinder',)
-    extralines = 1
-    params = (('line0', 0), ('line1', 1),)
+class _LineBase(Indicator):
+    lines = ('line',)
+    params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0), ('factor', 1.0),)
 
     def __init__(self):
-        self.data0line = self.datas[0][self.params.line0]
-        self.data1line = self.datas[len(self.datas) > 1][self.params.line1]
-
-    def next(self):
-        self.data0line[0] = self.data1line[0]
-
-
-class LineDifference(Indicator):
-    lines = ('linedif',)
-    params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0))
-
-    def __init__(self):
-        self.data0line = self.datas[0][self.params.line0]
-        self.data1line = self.datas[1][self.params.line1]
+        self.lined0 = self.datas[0][self.params.line0]
+        self.lined1 = self.datas[len(self.datas) > 1][self.params.line1]
 
         self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
 
+
+class LineBinder(_LineBase):
     def next(self):
-        self.lines[0][0] = self.data0line[self.params.ago0] - self.data1line[self.params.ago1]
+        self.lined0[self.params.ago0] = self.lined1[self.params.ago1] * self.params.factor
 
 
-class LineDivision(Indicator):
-    lines = ('linediv',)
-    params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0), ('factor', 1.0))
-
-
-    def __init__(self):
-        self.data0line = self.datas[0][self.params.line0]
-        self.data1line = self.datas[1][self.params.line1]
-
-        self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
-
+class LineDifference(_LineBase):
     def next(self):
-        self.lines[0][0] = self.params.factor * \
-                           (self.data0line[self.params.ago0] / self.data1line[self.params.ago1])
+        self[0][0] = (self.lined0[self.params.ago0] - self.lined1[self.params.ago1]) * self.params.factor
+
+
+class LineDivision(_LineBase):
+    def next(self):
+        self[0][0] = (self.lined0[self.params.ago0] / self.lined1[self.params.ago1]) * self.params.factor
 
 
 class Highest(Indicator):
