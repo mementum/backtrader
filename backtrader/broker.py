@@ -135,10 +135,10 @@ class StopLimitBuyOrder(SellOrder):
         self.params.triggered = False
 
 
-class CommisionInfo(object):
+class CommissionInfo(object):
     __metaclass__ = metabase.MetaParams
 
-    params = (('comission', 0.0), ('mult', 1.0), ('margin', None),)
+    params = (('commission', 0.0), ('mult', 1.0), ('margin', None),)
 
     def __getattr__(self, name):
         # dig into self.params if not found as attribute, mostly for external access
@@ -176,7 +176,7 @@ class BrokerBack(object):
 
     Market, Close, Limit = Order.Market, Order.Close, Order.Limit
 
-    params = (('cash', 100.0), ('commission', CommisionInfo()),)
+    params = (('cash', 100.0), ('commission', CommissionInfo()),)
 
     class Position(object):
         def __init__(self):
@@ -201,7 +201,7 @@ class BrokerBack(object):
         return self.comminfo[None]
 
     def setcommissioninfo(self, commission=0.0, margin=None, mult=1.0, name=None):
-        self.comminfo[name] = CommissionInfo(comission=commission, margin=margin, mult=mult)
+        self.comminfo[name] = CommissionInfo(commission=commission, margin=margin, mult=mult)
 
     def addcommissioninfo(self, comminfo, name=None):
         self.comminfo[name] = comminfo
