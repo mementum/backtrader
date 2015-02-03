@@ -68,7 +68,7 @@ class TestStrategy(bt.Strategy):
             # if an order is active, no new orders are allowed
             return
 
-        if not self.position(self.data):
+        if not self.getposition(self.data):
             if self.dataclose[0] > self.sma[0][0]:
                 valid = self.data.datetime[0] + self.expiry
                 price = self.dataclose[0] * self.params.atlimitperc
