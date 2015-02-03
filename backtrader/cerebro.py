@@ -48,6 +48,9 @@ class Cerebro(object):
         self.brokers.append(broker)
 
     def run(self):
+        if not self.datas:
+            return
+
         for feed in self.feeds:
             feed.start()
 
@@ -66,11 +69,11 @@ class Cerebro(object):
             strat.start()
             self.runstrats.append(strat)
 
-        # FIXME: the loop check if all datas are producing bars and only
-        # if none produces a bar, will the loop be over
-        # But if data[0] is the clock and synchronizer it should be the only
-        # one to be checked
-        while [data.next() for data in self.datas].count(True):
+
+        while self.datas[0].next():
+            for data in self.datas[1:]:
+                data.next()
+
             for broker in self.brokers:
                 broker.next()
 
