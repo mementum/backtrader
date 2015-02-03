@@ -57,13 +57,34 @@ class Strategy(LineIterator):
     def ordernotify(self, order):
         pass
 
-    def buy(self, data, size, price=None, exectype=None, valid=None):
+    def buy(self, data=None, size=1, price=None, exectype=None, valid=None):
+        if data is None:
+            data = self.datas[0]
+
         return self._broker.buy(self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def sell(self, data, size, price=None, exectype=None, valid=None):
+    def sell(self, data=None, size=1, price=None, exectype=None, valid=None):
+        if data is None:
+            data = self.datas[0]
+
         return self._broker.sell(self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def position(self, data=None):
-        return self._broker.getposition(data if data is not None else self.datas[0])
+    def close(self, data=None, size=None, price=None, exectype=None, valid=None):
+        if data is None:
+            data = self.datas[0]
 
-    getposition = position
+        if size is None:
+            size = self.getposition(data)
+
+        if size > 0:
+            return self.sell(data, size, price, exectype, valid)
+        elif size < 0:
+            return self.buy(data, -size, price, exectype, valid)
+
+        return None
+
+    def getposition(self, data=None):
+        if data is None:
+            data = self.datas[0]
+
+        return self._broker.getposition(data)
