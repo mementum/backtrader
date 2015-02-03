@@ -18,11 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import abc
 import itertools
 import sys
 
-# Subclassing from ABCMeta allows later the entire hierarchy to have abstract methods
 
 def findowner(owned, cls):
     # skip this frame and the caller's -> start at 2
@@ -46,7 +44,7 @@ def findowner(owned, cls):
     return None
 
 
-class MetaBase(abc.ABCMeta):
+class MetaBase(type):
     def doprenew(cls, *args, **kwargs):
         return cls, args, kwargs
 
@@ -134,15 +132,15 @@ class MetaParams(MetaBase):
 
         return cls
 
-    def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaParams, cls).dopreinit(_obj, *args, **kwargs)
-        obj = cls.__new__(cls, *args, **kwargs)
+    def donew(cls, *args, **kwargs):
         # Create params and set the values from the kwargs
-        _obj.params = cls.params()
-        for kname in kwargs.keys():
-            if hasattr(_obj.params, kname):
-                setattr(_obj.params, kname, kwargs.pop(kname))
-        obj.params = cls.params()
+        params = cls.params()
+        for pname, pdef in cls.params._getparams():
+            setattr(params, pname, kwargs.pop(pname, pdef))
+
+        # Create the object and set the params in place
+        _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
+        _obj.params = params
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
