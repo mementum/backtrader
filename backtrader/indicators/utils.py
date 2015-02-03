@@ -20,6 +20,18 @@
 ################################################################################
 from .. import Indicator
 
+class LineCmpTo(Indicator):
+    lines = ('cmp',)
+
+    params = (('line', 0), ('ago', 0), ('cmpval', None),)
+
+    def __init__(self):
+        self.dline = self.datas[0].lines[self.params.line]
+
+    def next(self):
+        self[0][0] = cmp(self.dline[self.params.ago], self.params.cmpval)
+
+
 class _LineBase(Indicator):
     lines = ('line',)
     params = (('line0', 0), ('line1', 0), ('ago0', 0), ('ago1', 0), ('factor', 1.0),)
@@ -29,6 +41,11 @@ class _LineBase(Indicator):
         self.lined1 = self.datas[len(self.datas) > 1][self.params.line1]
 
         self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
+
+
+class LinesCmp(_LineBase):
+    def next(self):
+        self[0][0] = cmp(self.lined0[self.params.ago0], self.lined1[self.params.ago1])
 
 
 class LineBinder(_LineBase):
