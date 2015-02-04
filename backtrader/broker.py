@@ -156,8 +156,12 @@ class CommissionInfo(object):
     def checkmargin(self, size, price, cash):
         return cash >= (size * (self.params.margin or price))
 
-    def getcomission(self, order):
-        price = order.price if self.params.margin else 1.0
+    def getcomm_pricesize(self, size, price):
+        price = price if not self.params.margin else 1.0
+        return size * self.params.commission * price
+
+    def getcommission(self, order):
+        price = order.price if not self.params.margin else 1.0
         return order.size * self.params.commission * price
 
     def profitandloss(self, position, price):
