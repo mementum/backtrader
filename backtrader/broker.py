@@ -194,7 +194,6 @@ class BrokerBack(object):
             return self.size
 
     def __init__(self):
-
         self.orders = list() # will only be appending
         self.pending = collections.deque()
 
@@ -281,7 +280,7 @@ class BrokerBack(object):
 
             # Returned remaining size has the right sign already
             self.openposition(order.data, remsize, price)
-            order.execute(remsize, price, dt)
+            order.execute(abs(remsize), price, dt)
 
         # We need to notify the owner
         order.owner._ordernotify(order)
