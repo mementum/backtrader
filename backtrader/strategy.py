@@ -75,7 +75,7 @@ class Strategy(LineIterator):
 
         possize = self.getposition(data).size
         if size is None:
-            size = possize
+            size = possize # no size passed, close entire open position
 
         size = abs(size) # closing ... not opening anything
 
