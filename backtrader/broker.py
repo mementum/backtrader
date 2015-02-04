@@ -60,7 +60,7 @@ class Order(object):
         if hasattr(self.params, name):
             raise AttributeError
 
-        super(CommissionInfo, self).__setattribute__(name, value)
+        super(Order, self).__setattribute__(name, value)
 
     def __init__(self):
         if self.params.exectype is None:
