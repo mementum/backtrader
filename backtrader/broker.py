@@ -171,8 +171,8 @@ class CommissionInfo(object):
         return self.params.margin is not None
 
     def cashadjust(self, size, price, newprice):
-        if self.params.margin is None:
-            # No margin, no need to adjust -> stock
+        if not self.params.margin:
+            # No margin, no need to adjust -> stock like assume
             return 0.0
 
         return size * (newprice - price) * self.params.mult
