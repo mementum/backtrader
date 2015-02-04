@@ -49,12 +49,15 @@ class TestStrategy(bt.Strategy):
         self.tstart = tclock()
 
     def ordernotify(self, order):
+        if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
+            return # Await further notifications
+
         if order.status == bt.Order.Completed:
             if isinstance(order, bt.BuyOrder):
                 print '%s, BUY , %.2f' % (order.executed.dt.isoformat(), order.executed.price)
             else: # elif isinstance(order, SellOrder):
                 print '%s, SELL, %.2f' % (order.executed.dt.isoformat(), order.executed.price)
-        elif order.status == bt.Order.Expired:
+        elif order.status in [bt.Order.Expired, bt.Order.Canceled]:
             pass # Do nothing for expired orders
 
         # Allow new orders
@@ -62,20 +65,26 @@ class TestStrategy(bt.Strategy):
 
     def next(self):
         if self.params.printdata:
-            print '%s, Close, %f, Sma, %f' % (self.data.date[0].isoformat(), self.dataclose[0], self.sma[0][0])
+            print '%s, Open, High, Low, Close, %.2f, %.2f, %.2f, %.2f, Sma, %f' % \
+                (self.data.datetime[0].isoformat(),
+                 self.data.open[0], self.data.high[0], self.data.low[0], self.dataclose[0],
+                 self.sma[0][0])
 
         if self.orderid:
             # if an order is active, no new orders are allowed
             return
 
-        if not self.getposition(self.data):
+        position = self.getposition(self.data)
+        if not position.size:
             if self.dataclose[0] > self.sma[0][0]:
                 valid = self.data.datetime[0] + self.expiry
                 price = self.dataclose[0] * self.params.atlimitperc
+                print '%s, BUY CREATE , %.2f' % (self.data.datetime[0].isoformat(), self.dataclose[0])
                 self.orderid = self.buy(
                     self.data, size=self.params.stake, exectype=self.params.exectype, price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
+            print '%s, SELL CREATE , %.2f' % (self.data.datetime[0].isoformat(), self.dataclose[0])
             self.orderid = self.sell(self.data, size=self.params.stake, exectype=bt.Order.Market)
 
     def stop(self):
@@ -85,9 +94,14 @@ class TestStrategy(bt.Strategy):
 
 
 cerebro = bt.Cerebro(preload=True)
-cerebro.addbroker(bt.BrokerBack(cash=1000))
-# data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
-data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
+data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
+# data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
 cerebro.adddata(data)
-cerebro.addstrategy(TestStrategy, printdata=False, exectype=bt.Order.Limit, atlimitperc=1.00, expiredays=2)
+
+broker = bt.BrokerBack(cash=1000.0)
+broker.setcommissioninfo(commission=0.0005)
+cerebro.addbroker(broker)
+
+cerebro.addstrategy(TestStrategy, printdata=False,
+                    maperiod=15, exectype=bt.Order.Limit, atlimitperc=0.80, expiredays=7)
 cerebro.run()
