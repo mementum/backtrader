@@ -92,6 +92,9 @@ class Order(object):
         self.status = Order.Partial if self.executed.remsize else Order.Completed
 
     def expire(self):
+        if self.params.exectype == Order.Market:
+            return False # will be executed yes or yes
+
         if self.valid and self.data.datetime[0] > self.valid:
             self.status = Order.Expired
             self.executed = self.data.datetime[0]
