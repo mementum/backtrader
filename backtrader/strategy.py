@@ -73,13 +73,18 @@ class Strategy(LineIterator):
         if data is None:
             data = self.datas[0]
 
+        possize = self.getposition(data).size
         if size is None:
-            size = self.getposition(data)
+            size = possize
 
-        if size > 0:
-            return self.sell(data, size, price, exectype, valid)
-        elif size < 0:
-            return self.buy(data, -size, price, exectype, valid)
+        size = abs(size) # closing ... not opening anything
+
+        if possize > 0:
+            return self.sell(data, abs(size), price, exectype, valid)
+        elif possize < 0:
+            return self.buy(data, abs(size), price, exectype, valid)
+        else:
+            # if no positiondo nothing
 
         return None
 
