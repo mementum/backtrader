@@ -303,6 +303,8 @@ class BrokerBack(object):
 
         # original position is back plus/minus profitloss
         self.params.cash += position.price * closingabs + profitloss
+        comminfo = self.getcommissioninfo(data)
+        self.params.cash -= comminfo.getcomm_pricesize(closingabs, price)
 
         return size + closing
 
@@ -317,6 +319,10 @@ class BrokerBack(object):
 
         # Reduce the available cash according to new open position
         self.params.cash -= price * abs(size)
+
+        # Reduce according to commission scheme
+        comminfo = self.getcommissioninfo(data)
+        self.params.cash -= comminfo.getcomm_pricesize(abs(size), price)
 
     def notify(self, order):
         order.owner._ordernotify(order)
