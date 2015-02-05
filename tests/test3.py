@@ -45,6 +45,8 @@ class TestStrategy(bt.Strategy):
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
 
+        self.setpositionsizer(bt.PosSizerFix(stake=self.params.stake))
+
     def start(self):
         self.tstart = tclock()
 
@@ -82,12 +84,11 @@ class TestStrategy(bt.Strategy):
                 if self.params.exectype == bt.Order.Limit:
                     price *= self.params.atlimitperc
                 print '%s, BUY CREATE , %.2f' % (self.data.datetime[0].isoformat(), price)
-                self.orderid = self.buy(
-                    self.data, size=self.params.stake, exectype=self.params.exectype, price=price, valid=valid)
+                self.orderid = self.buy(exectype=self.params.exectype, price=price, valid=valid)
 
         elif self.dataclose[0] < self.sma[0][0]:
             print '%s, SELL CREATE , %.2f' % (self.data.datetime[0].isoformat(), self.dataclose[0])
-            self.orderid = self.sell(self.data, size=self.params.stake, exectype=bt.Order.Market)
+            self.orderid = self.sell(exectype=bt.Order.Market)
 
     def stop(self):
         tused = tclock() - self.tstart
