@@ -78,8 +78,10 @@ class TestStrategy(bt.Strategy):
         if not position.size:
             if self.dataclose[0] > self.sma[0][0]:
                 valid = self.data.datetime[0] + self.expiry
-                price = self.dataclose[0] * self.params.atlimitperc
-                print '%s, BUY CREATE , %.2f' % (self.data.datetime[0].isoformat(), self.dataclose[0])
+                price = self.dataclose[0]
+                if self.params.exectype == bt.Order.Limit:
+                    price *= self.params.atlimitperc
+                print '%s, BUY CREATE , %.2f' % (self.data.datetime[0].isoformat(), price)
                 self.orderid = self.buy(
                     self.data, size=self.params.stake, exectype=self.params.exectype, price=price, valid=valid)
 
@@ -99,7 +101,7 @@ data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', rev
 cerebro.adddata(data)
 
 broker = bt.BrokerBack(cash=1000.0)
-broker.setcommissioninfo(commission=0.0005)
+# broker.setcommissioninfo(commission=0.0005)
 cerebro.addbroker(broker)
 
 cerebro.addstrategy(TestStrategy, printdata=False,
