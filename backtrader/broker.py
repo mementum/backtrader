@@ -156,6 +156,18 @@ class CommissionInfo(object):
     def checkmargin(self, size, price, cash):
         return cash >= (size * (self.params.margin or price))
 
+    def getoperationcash(self, size, price):
+        if self.margin:
+            return size * self.margin
+
+        return size * price
+
+    def getvalue(self, position, price):
+        if self.margin:
+            return abs(position.size) * self.margin
+
+        return position.size * price
+
     def getcomm_pricesize(self, size, price):
         price = price if not self.params.margin else 1.0
         return size * self.params.commission * price
@@ -165,10 +177,13 @@ class CommissionInfo(object):
         return order.size * self.params.commission * price
 
     def profitandloss(self, position, price):
-        return position.size * (position.price - price) * self.params.mult
+        if self.margin:
+            return 0.0 # cash adjusted - no real profit and loss
+
+        return position.size * (position.price - price)
 
     def mustcheckmargin(self):
-        return self.params.margin is not None
+        return not self.params.margin
 
     def cashadjust(self, size, price, newprice):
         if not self.params.margin:
@@ -238,8 +253,9 @@ class BrokerBack(object):
 
         pos_value = 0.0
         for data in datas:
+            comminfo = self.getcommissioninfo(data)
             position = self.position[data]
-            pos_value += abs(position.size) * data.close[0]
+            pos_value += comminfo.getvalue(position, data.close[0])
 
         return self.params.cash + pos_value
 
@@ -318,16 +334,21 @@ class BrokerBack(object):
         position.price = (oldpos + newpos) / position.size
 
         # Reduce the available cash according to new open position
-        self.params.cash -= price * abs(size)
+        comminfo = self.getcommissioninfo(data)
+        self.params.cash -= comminfo.getoperationcash(abs(size), price)
 
         # Reduce according to commission scheme
-        comminfo = self.getcommissioninfo(data)
         self.params.cash -= comminfo.getcomm_pricesize(abs(size), price)
 
     def notify(self, order):
         order.owner._ordernotify(order)
 
     def next(self):
+        for data, pos in self.position.iteritems():
+            # futures change cash in the broker in every bar to ensure margin requirements are met
+            comminfo = self.getcommissioninfo(data)
+            self.params.cash += comminfo.cashadjust(pos.size, data.close[1], data.close[0])
+
         # Iterate once over all elements of the pending queue
         for i in xrange(len(self.pending)):
             order = self.pending.popleft()
@@ -335,14 +356,6 @@ class BrokerBack(object):
             if order.expire():
                 self.notify(order)
                 continue
-
-            # get the position on order data
-            position = self.position[order.data]
-            # get the commissioninfo for this object
-            comminfo = self.getcommissioninfo(order.data)
-
-            # futures change cash in the broker in every bar to ensure margin requirements are met
-            self.params.cash += comminfo.cashadjust(position.size, order.data.close[1], order.data.close[0])
 
             plow = order.data.low[0]
             phigh = order.data.high[0]
