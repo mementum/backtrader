@@ -51,6 +51,9 @@ class BrokerBack(object):
     def getcash(self):
         return self.params.cash
 
+    def setcash(self, cash):
+        self.startingcash = self.params.cash = cash
+
     def getcommissioninfo(self, data):
         if data._name in self.comminfo:
             return self.comminfo[data._name]
