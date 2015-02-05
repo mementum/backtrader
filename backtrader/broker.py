@@ -18,180 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 import collections
-import datetime
 
+from comminfo import CommissionInfo
 import metabase
-
-
-class OrderData(object):
-    def __init__(self, dt=None, size=0, price=None, pricelimit=None, remsize=0):
-        self.dt = dt
-        self.size = size
-        self.remsize = remsize
-        self.price = price
-        if not pricelimit:
-            # if no pricelimit is given, use the given price
-            self.pricelimit = self.price
-
-        if pricelimit and not price:
-            # price must always be set if pricelimit is set ...
-            self.price = pricelimit
-
-
-class Order(object):
-    __metaclass__ = metabase.MetaParams
-
-    Market, Close, Limit, Stop, StopLimit = range(5)
-    Buy, Sell, Stop, StopLimit = range(4)
-    Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
-
-    params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None), ('pricelimit', None),
-        ('exectype', None), ('valid', None), ('triggered', True),
-    )
-
-    def __getattr__(self, name):
-        # dig into self.params if not found as attribute, mostly for external access
-        return getattr(self.params, name)
-
-    def __setattribute__(self, name, value):
-        if hasattr(self.params, name):
-            raise AttributeError
-
-        super(Order, self).__setattribute__(name, value)
-
-    def __init__(self):
-        if self.params.exectype is None:
-            self.params.exectype = Order.Market
-
-        self.status = Order.Submitted
-        self.created = OrderData(self.data.datetime[0], self.params.size, self.params.price)
-        self.executed = OrderData(remsize=self.params.size)
-
-    def accept(self):
-        self.status = Order.Accepted
-
-    def cancel(self):
-        self.status = Order.Canceled
-        self.executed = self.data.datetime[0]
-
-    def execute(self, size, price, dt):
-        if not size:
-            return
-
-        self.executed.dt = dt
-
-        oldexec = self.executed.size * (self.executed.price or 0.0)
-        newexec = price * size
-        self.executed.size += size
-        self.executed.price = (oldexec + newexec) / self.executed.size
-        self.executed.remsize -= size
-
-        self.status = Order.Partial if self.executed.remsize else Order.Completed
-
-    def expire(self):
-        if self.params.exectype == Order.Market:
-            return False # will be executed yes or yes
-
-        if self.valid and self.data.datetime[0] > self.valid:
-            self.status = Order.Expired
-            self.executed = self.data.datetime[0]
-            return True
-
-        return False
-
-    def margin(self):
-        self.status = Order.Margin
-        self.executed.dt = self.data.datetime[0]
-
-    def alive(self):
-        return self.status in [Order.Partial, Order.Accepted]
-
-
-class BuyOrder(Order):
-    ordtype = Order.Buy
-
-
-class StopBuyOrder(BuyOrder):
-    pass
-
-
-class StopLimitBuyOrder(BuyOrder):
-    def __init__(self):
-        super(StopLimitBuyOrder, self).__init__()
-        self.params.triggered = False
-
-
-class SellOrder(Order):
-    ordtype = Order.Sell
-
-
-class StopSellOrder(SellOrder):
-    pass
-
-
-class StopLimitBuyOrder(SellOrder):
-    def __init__(self):
-        super(StopLimitSellOrder, self).__init__()
-        self.params.triggered = False
-
-
-class CommissionInfo(object):
-    __metaclass__ = metabase.MetaParams
-
-    params = (('commission', 0.0), ('mult', 1.0), ('margin', None),)
-
-    def __getattr__(self, name):
-        # dig into self.params if not found as attribute, mostly for external access
-        return getattr(self.params, name)
-
-    def __setattribute__(self, name, value):
-        if hasattr(self.params, name):
-            raise AttributeError
-
-        super(CommissionInfo, self).__setattribute__(name, value)
-
-    def checkmargin(self, size, price, cash):
-        return cash >= (size * (self.params.margin or price))
-
-    def getoperationcash(self, size, price):
-        if self.margin:
-            return size * self.margin
-
-        return size * price
-
-    def getvalue(self, position, price):
-        if self.margin:
-            return abs(position.size) * self.margin
-
-        return position.size * price
-
-    def getcomm_pricesize(self, size, price):
-        price = price if not self.params.margin else 1.0
-        return size * self.params.commission * price
-
-    def getcommission(self, order):
-        price = order.price if not self.params.margin else 1.0
-        return order.size * self.params.commission * price
-
-    def profitandloss(self, position, price):
-        if self.margin:
-            return 0.0 # cash adjusted - no real profit and loss
-
-        return position.size * (position.price - price)
-
-    def mustcheckmargin(self):
-        return not self.params.margin
-
-    def cashadjust(self, size, price, newprice):
-        if not self.params.margin:
-            # No margin, no need to adjust -> stock like assume
-            return 0.0
-
-        return size * (newprice - price) * self.params.mult
-
+from order import Order, BuyOrder, SellOrder
 
 class BrokerBack(object):
     __metaclass__ = metabase.MetaParams
@@ -209,11 +40,16 @@ class BrokerBack(object):
             return self.size
 
     def __init__(self):
+        self.startingcash = self.params.cash
+
         self.orders = list() # will only be appending
-        self.pending = collections.deque()
+        self.pending = collections.deque() # need to popleft and append(right)
 
         self.position = collections.defaultdict(BrokerBack.Position)
         self.comminfo = dict({None: self.params.commission})
+
+    def getcash(self):
+        return self.params.cash
 
     def getcommissioninfo(self, data):
         if data._name in self.comminfo:
@@ -236,16 +72,13 @@ class BrokerBack(object):
     def cancel(self, order):
         try:
             self.pending.remove(order)
-            order.cancel()
         except ValueError:
-            pass
+            # If the list didn't have the element we didn't cancel anything
+            return False
 
-        # We need to notify the owner even if nothing happened, because a notification is awaited
+        order.cancel()
         self.notify(order)
         return True
-
-        # If the list had no elements we didn't cancel anything
-        return False
 
     def getvalue(self, datas=None):
         if not datas:
@@ -335,7 +168,7 @@ class BrokerBack(object):
 
         # Reduce the available cash according to new open position
         comminfo = self.getcommissioninfo(data)
-        self.params.cash -= comminfo.getoperationcash(abs(size), price)
+        self.params.cash -= comminfo.getoperationcost(abs(size), price)
 
         # Reduce according to commission scheme
         self.params.cash -= comminfo.getcomm_pricesize(abs(size), price)

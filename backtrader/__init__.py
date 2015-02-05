@@ -25,6 +25,8 @@ from lineiterator import *
 from dataseries import *
 from indicator import *
 from strategy import *
+from order import *
+from comminfo import *
 from broker import *
 from cerebro import *
 
