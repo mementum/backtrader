@@ -84,7 +84,8 @@ class Strategy(LineIterator):
         elif possize < 0:
             return self.buy(data, abs(size), price, exectype, valid)
         else:
-            # if no positiondo nothing
+            # if no position do nothing
+            pass
 
         return None
 
