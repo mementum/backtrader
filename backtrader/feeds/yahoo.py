@@ -51,7 +51,7 @@ class YahooFinanceCSVData(feed.CSVDataFeedBase):
         self.f.close()
         self.f = f
 
-    def _load(self, linetokens):
+    def _loadline(self, linetokens):
         i = itertools.count(0)
 
         dttxt = linetokens[i.next()]
