@@ -95,6 +95,19 @@ class DataFeedBase(dataseries.OHLCDateTime):
         self.home()
 
     def load(self):
+        while self._load():
+            dt = self.lines.datetime[0]
+            if dt < self.params.fromdate:
+                continue
+            if dt > self.params.todate:
+                self.rewind()
+                break
+
+            return True
+
+        return False
+
+    def _load(self):
         return False
 
 
@@ -120,7 +133,7 @@ class CSVDataFeedBase(DataFeedBase):
             self.f = None
 
 
-    def load(self):
+    def _load(self):
         if self.f is None:
             return False
 
@@ -135,7 +148,7 @@ class CSVDataFeedBase(DataFeedBase):
 
         self.forward() # advance data pointer
 
-        return self._load(line.rstrip('\r\n').split(','))
+        return self._loadline(line.rstrip('\r\n').split(','))
 
 
 class CSVFeedBase(FeedBase):

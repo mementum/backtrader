@@ -27,7 +27,7 @@ from .. import linebuffer
 
 
 class MyCSVData(feed.CSVDataFeedBase):
-    def _load(self, linetokens):
+    def _loadline(self, linetokens):
         i = itertools.count(0)
         i.next() # skip ticker name
         i.next() # skip daily/intraday indication (intraday has simply a "null" time)
