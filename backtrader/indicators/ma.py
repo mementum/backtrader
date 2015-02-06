@@ -77,6 +77,9 @@ class MovingAverageSmoothed(MovingAverageSmoothing):
 class MASmoothedNAN(MovingAverageSmoothed):
     NAN = float('nan')
 
+    def __init__(self):
+        self.tofill = self.params.period - 1
+
     def next(self):
         value = self.dataline[0]
         lastout = self.lines[0][1]
@@ -88,11 +91,12 @@ class MASmoothedNAN(MovingAverageSmoothed):
         if lastout == lastout: # last output is NOT NAN
             super(MASmoothedNAN, self).next()
 
-        else: # still did a NAN output
-            if len(self.dq) == (self.params.period - 1):
+        else: # lastouput still NAN
+            if not self.tofill:
                 self.nextstart() # buffer will be full - kickstart
             else:
                 self.prenext() # buffer to be filled - still in prenext phase
+                self.tofill -= 1
 
 
 class MAEnum(object):
