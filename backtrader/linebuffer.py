@@ -84,12 +84,18 @@ class LineBuffer(object):
     def home(self):
         self.idx = -1
 
-    def forward(self, value=NAN):
-        self.idx += 1
-        self.array.append(value)
+    def forward(self, value=NAN, size=1):
+        self.idx += size
+        for i in xrange(size):
+            self.array.append(value)
 
-    def advance(self):
-        self.idx += 1
+    def rewind(self, size=1):
+        self.idx -= size
+        for i in xrange(size):
+            self.array.pop()
+
+    def advance(self, size=1):
+        self.idx += size
 
     def extend(self, value=NAN, size=0):
         self.extension += size

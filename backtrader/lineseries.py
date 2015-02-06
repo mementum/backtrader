@@ -97,6 +97,10 @@ class Lines(object):
         for line in self.lines:
             line.forward(value)
 
+    def rewind(self, size=1):
+        for line in self.lines:
+            line.rewind(size)
+
     def extend(self, value=linebuffer.NAN, size=0):
         for line in self.lines:
             line.extend(value, size)
