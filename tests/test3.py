@@ -77,6 +77,7 @@ class TestStrategy(bt.Strategy):
             )
 
         if self.orderid:
+            return # if an order is active, no new orders are allowed
 
         if not self.getposition(self.data):
             if self.dataclose[0] > self.sma[0][0]:
@@ -107,5 +108,5 @@ broker.setcommissioninfo(commission=0.0000)
 cerebro.addbroker(broker)
 
 cerebro.addstrategy(TestStrategy, printdata=False,
-                    maperiod=15, exectype=bt.Order.Limit, atlimitperc=0.80, expiredays=7)
+                    maperiod=15, exectype=bt.Order.Market, atlimitperc=0.80, expiredays=7)
 cerebro.run()
