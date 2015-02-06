@@ -37,7 +37,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj, args, kwargs = super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
         if not _obj._possizer:
-            _obj._possizer = PosSizerFix(_obj._broker)
+            _obj._possizer = PosSizerFix(broker=_obj._broker)
         elif not _obj._possizer.getbroker():
             _obj._possizer.setbroker(_obj._broker)
 
