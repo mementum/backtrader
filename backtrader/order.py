@@ -41,7 +41,10 @@ class Order(object):
 
     Market, Close, Limit, Stop, StopLimit = range(5)
     Buy, Sell, Stop, StopLimit = range(4)
+
     Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
+    Status =['Submitted', 'Accepted', 'Partial', 'Completed', 'Canceled', 'Expired', 'Margin']
+
 
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None), ('pricelimit', None),
