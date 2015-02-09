@@ -18,11 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import broker
 import metabase
 
 
-class PosSizerBase(object):
+class SizerBase(object):
     __metaclass__ = metabase.MetaParams
 
     params = (('broker', None,),)
@@ -41,7 +40,7 @@ class PosSizerBase(object):
         return self.params.broker
 
 
-class PosSizerFix(PosSizerBase):
+class SizerFix(SizerBase):
     params = (('stake', 1),)
 
     def _getsizing(self, comminfo, cash):
