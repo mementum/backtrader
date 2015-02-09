@@ -128,6 +128,7 @@ class BrokerBack(object):
             comminfo = self.getcommissioninfo(order.data)
             if not comminfo.checkmargin(size, price, self.params.cash):
                 order.margin()
+                self.notify(order)
                 return
 
             # Returned remaining size has the right sign already
@@ -135,7 +136,7 @@ class BrokerBack(object):
             order.execute(abs(remsize), price, dt)
 
         # We need to notify the owner
-        order.owner._ordernotify(order)
+        self.notify(order)
 
     def closeposition(self, data, size, price):
         position = self.position[data]
