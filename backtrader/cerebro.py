@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+from broker import BrokerBack
 import metabase
 
 
@@ -32,6 +33,7 @@ class Cerebro(object):
         self.strats = list()
         self.runstrats = list()
         self.brokers = list()
+        self.brokersbyname = dict()
 
     def adddata(self, data, name=None):
         if name is not None:
@@ -44,8 +46,24 @@ class Cerebro(object):
     def addstrategy(self, strategy, *args, **kwargs):
         self.strats.append((strategy, args, kwargs))
 
-    def addbroker(self, broker):
+    def addbroker(self, broker, name=None):
+        if name or not self.brokers:
+            self.brokersbyname[name or None] = broker
+
         self.brokers.append(broker)
+        return broker
+
+    def getbroker(self, broker=0):
+        if not broker and not self.brokers:
+            return self.addbroker(BrokerBack())
+
+        elif isinstance(broker, (int, long)):
+            return self.brokers[broker]
+
+        elif isinstance(broker, basestring):
+            return self.brokersbyname[broker]
+
+        return None
 
     def run(self):
         if not self.datas:
@@ -60,6 +78,9 @@ class Cerebro(object):
             if self.params.preload:
                 data.preload()
 
+        if not self.brokers:
+            self.addbroker(BrokerBack())
+
         for broker in self.brokers:
             broker.start()
 
@@ -68,7 +89,6 @@ class Cerebro(object):
             strat = stratcls(self, *sargs, **skwargs)
             strat.start()
             self.runstrats.append(strat)
-
 
         while self.datas[0].next():
             for data in self.datas[1:]:
