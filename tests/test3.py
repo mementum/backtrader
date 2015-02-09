@@ -49,7 +49,7 @@ class TestStrategy(bt.Strategy):
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
 
-        self.setpositionsizer(bt.PosSizerFix(stake=self.params.stake))
+        self.sizer = bt.SizerFix(stake=self.params.stake)
 
     def start(self):
         self.tstart = time.clock()
@@ -63,7 +63,8 @@ class TestStrategy(bt.Strategy):
                 self.log('BUY , %.2f' % order.executed.price, order.executed.dt)
             else: # elif isinstance(order, SellOrder):
                 self.log('SELL , %.2f' % order.executed.price, order.executed.dt)
-        elif order.status in [bt.Order.Expired, bt.Order.Canceled]:
+        elif order.status in [order.Expired, order.Canceled, order.Margin]:
+            self.log('%s ,' % order.Status[order.status])
             pass # Do nothing for expired orders
 
         # Allow new orders
@@ -79,7 +80,7 @@ class TestStrategy(bt.Strategy):
         if self.orderid:
             return # if an order is active, no new orders are allowed
 
-        if not self.getposition(self.data):
+        if not self.position.size:
             if self.dataclose[0] > self.sma[0][0]:
                 valid = self.data.datetime[0] + self.expiry
                 price = self.dataclose[0]
@@ -95,18 +96,17 @@ class TestStrategy(bt.Strategy):
     def stop(self):
         tused = time.clock() - self.tstart
         print 'Time used:', str(tused)
-        print 'Final portfolio value: %.2f' % self.getbroker().getvalue()
+        print 'Final portfolio value: %.2f' % self.broker.getvalue()
 
 
 cerebro = bt.Cerebro(preload=True)
+
 data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
 # data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
+
 cerebro.adddata(data)
 
-broker = bt.BrokerBack(cash=1000.0)
-broker.setcommissioninfo(commission=0.0000)
-cerebro.addbroker(broker)
-
-cerebro.addstrategy(TestStrategy, printdata=False,
-                    maperiod=15, exectype=bt.Order.Market, atlimitperc=0.80, expiredays=7)
+cerebro.getbroker().setcash(1000.0)
+cerebro.addstrategy(TestStrategy,
+                    printdata=False, maperiod=15, exectype=bt.Order.Market, atlimitperc=0.80, expiredays=7)
 cerebro.run()
