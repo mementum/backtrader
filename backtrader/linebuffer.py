@@ -106,7 +106,7 @@ class LineBuffer(object):
         self.bindings.append(binding)
 
     def plot(self, idx=0, size=None):
-        return self.getzero(idx, size if size is not None else len(self))
+        return self.getzero(idx, size or len(self))
 
 
 class LineBufferArray(LineBuffer):
