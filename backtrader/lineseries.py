@@ -82,6 +82,9 @@ class Lines(object):
         return len(self.lines[0])
 
     def size(self):
+        return len(self.lines) - self._getlinesextra()
+
+    def fullsize(self):
         return len(self.lines)
 
     def __getitem__(self, line):
