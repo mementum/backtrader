@@ -94,7 +94,20 @@ class Params(object):
     @classmethod
     def _derive(cls, name, params):
         # Prepare the full param list newclass = (baseclass + subclass)
-        newparams = cls._getparams() + params
+        baseparams = list(cls._getparams())
+        params = list(params)
+
+        # Update baseparams with newly defined params with the same name
+        # and remove them from the newly defined tuple
+        pnames = [pname for pname, pdefval in params]
+        for i, bparam in enumerate(baseparams):
+            bpname, bpdefvaf = bparam
+            if bpname in pnames:
+                baseparams[i] = params.pop(pnames.index(bpname))
+                pnames.remove(bpname) # to keep index sync'ed
+
+        # Put the "updated" baseparams and "trimmed newly defined" params together
+        newparams = tuple(baseparams + params)
 
         # Create subclass
         newcls = type(cls.__name__ + '_' + name, (cls,), {})
