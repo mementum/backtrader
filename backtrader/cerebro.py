@@ -20,7 +20,7 @@
 ################################################################################
 from broker import BrokerBack
 import metabase
-
+import plot
 
 class Cerebro(object):
     __metaclass__ = metabase.MetaParams
@@ -108,3 +108,9 @@ class Cerebro(object):
 
         for feed in self.feeds:
             feed.stop()
+
+    def plot(self, plotter=None, **kwargs):
+        plotter = plotter or plot.Plot(**kwargs)
+
+        for strat in self.runstrats:
+            plotter.plot(strat)
