@@ -43,9 +43,15 @@ class LineBuffer(object):
         obj.__init__(*args, **kwargs)
         return obj
 
-    def __init__(self, typecode=DefaultTypeCode):
+    def __init__(self, typecode=DefaultTypeCode, plotinfo=('plot',)):
         self.bindings = list()
         self.typecode = typecode
+        self.plotmethod = plotinfo[0]
+        if len(plotinfo) == 1:
+            self.plotargs = dict()
+        else:
+            self.plotargs = dict(plotinfo[1:])
+
         self.reset()
 
     def reset(self):

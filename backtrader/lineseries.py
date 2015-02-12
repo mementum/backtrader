@@ -68,9 +68,14 @@ class Lines(object):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
-            if not isinstance(linealias, basestring):
-                # a tuple or list was passed, 1st is name, 2nd is type code
-                kwargs['typecode'] = linealias[1]
+            if not isinstance(linealias, basestring): # a tuple and not just a string
+                if isinstance(linealias[1], basestring):
+                    # typecode is additional arg
+                    kwargs['typecode'] = linealias[1]
+
+                if not isinstance(linealias[1], basestring) or len(linealias) > 2:
+                    # plotinfo may be in argument 1 or 2
+                    kwargs['plotinfo'] = linealias[len(linealias) - 1]
 
             self.lines.append(linebuffer.LineBuffer(**kwargs))
 
