@@ -22,9 +22,6 @@ import testbase
 
 from time import clock as tclock
 
-import matplotlib.pyplot as mpplt
-import  matplotlib.widgets as mpwidgets
-
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btindicators
@@ -37,6 +34,8 @@ class TestStrategy(bt.Strategy):
         self.close = self.ohlc.close
 
         if True:
+            btindicators.MovingAverageSimple(self.datas[0], period=30)
+            btindicators.MovingAverageSimple(self.datas[0], period=50)
             self.ind = btindicators.StochasticSlow(self.datas[0])
             # self.ind = btindicators.RSI(self.datas[0])
             pass
@@ -96,19 +95,10 @@ class TestStrategy(bt.Strategy):
 
 
 cerebro = bt.Cerebro(preload=True)
-# data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
-data = btfeeds.MyCSVData(dataname='../../tmp/estx50-day-001-1991-2014.txt')
+data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
+# data = btfeeds.MyCSVData(dataname='../../tmp/estx50-day-001-1991-2014.txt')
 cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
 cerebro.run()
 
-fig, axis = mpplt.subplots(2, sharex=True)
-dt = data.datetime.plot()
-axis[0].plot(dt, data.close.plot())
-
-for i in xrange(cerebro.runstrats[0].ind.size()):
-    st = cerebro.runstrats[0].ind.lines[i].plot()
-    axis[1].plot(dt, st)
-
-fig.autofmt_xdate()
-mpplt.show()
+cerebro.plot()
