@@ -24,7 +24,11 @@ import math
 from .. import Indicator
 
 
-class MovingAverageSimple(Indicator):
+class MovingAverageBase(Indicator):
+    subplot = False
+
+
+class MovingAverageSimple(MovingAverageBase):
     lines = ('avg',)
     params = (('period', 30), ('line', 0))
 

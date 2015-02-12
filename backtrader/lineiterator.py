@@ -101,6 +101,9 @@ class MetaLineIterator(LineSeries.__metaclass__):
 class LineIterator(LineSeries):
     __metaclass__ = MetaLineIterator
 
+    plot = True
+    subplot = True
+
     def addindicator(self, indicator):
         self._indicators.append(indicator)
         self._minperiod = max(indicator._minperiod, self._minperiod)
