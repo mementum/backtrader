@@ -23,8 +23,9 @@ import itertools
 try:
     import matplotlib
     from matplotlib import pyplot
-    from matplotlib.ticker import Formatter, MaxNLocator
+    import matplotlib.ticker
     from matplotlib.finance import volume_overlay
+    import matplotlib.font_manager as font_manager
 except ImportError:
     matploblib = None
 
@@ -58,10 +59,12 @@ class Plot(object):
 
         i = itertools.count()
         for data in strategy.datas:
+            props = font_manager.FontProperties(size=9)
             # FIXME ... implement ohlc if so requested
             axdata = axis[i.next()]
-            axdata.plot(rdt, data.close.plot())
-            if self.params.volume:
+            axdata.plot(rdt, data.close.plot(), aa=True, label='_nolegend_')
+            axdata.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
+            if self.params.volume and max(data.volume.plot()):
                 # Push the data upwards
                 bot, top = axdata.get_ylim()
                 axdata.set_ylim(bot * 0.80, top)
@@ -75,6 +78,7 @@ class Plot(object):
                 # Keep it at the bottom
                 bot, top = axvol.get_ylim()
                 axvol.set_ylim(bot, top * 2)
+                axvol.set_yticks([])
 
         for ind in indplots:
             if ind.subplot:
@@ -86,14 +90,40 @@ class Plot(object):
                 pltidx = offset + indplots.index(ind._clock)
 
             indaxis = axis[pltidx]
+            indlabel = ind.plotlabel()
             for ii in xrange(ind.size()):
                 line = ind.lines[ii]
                 pltmethod = getattr(indaxis, line.plotmethod, 'plot')
-                pltmethod(rdt, line.plot(), aa=True, **line.plotargs)
+                if ind.subplot:
+                    label = ind.lines._getlinealias(ii).capitalize()
+                else:
+                    label = '_nolegend' if ii else indlabel
+                pltmethod(rdt, line.plot(), aa=True, label=label, **line.plotargs)
 
             if ind.subplot:
-                indaxis.set_ylabel(ind.__class__.__name__)
-                indaxis.yaxis.set_major_locator(MaxNLocator(bins=5, prune='upper'))
+                indaxis.text(0.005, 0.985, indlabel, va='top',
+                             transform=indaxis.transAxes, alpha=0.33, fontsize=9)
+
+                yticks = getattr(ind, 'plotticks', None)
+                if yticks:
+                    indaxis.set_yticks(yticks)
+                else:
+                    indaxis.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
+
+                hlines = getattr(ind, 'plotlines', [])
+                for hline in hlines:
+                    indaxis.axhline(hline)
+
+                legend = indaxis.legend(loc='lower left', shadow=False, fancybox=False, prop=props)
+                if legend:
+                    legend.get_frame().set_alpha(0.25)
+
+
+        for dataidx in xrange(len(strategy.datas)):
+            ax = axis[dataidx]
+            legend = axdata.legend(loc='center left', shadow=False, fancybox=False, prop=props)
+            if legend:
+                legend.get_frame().set_alpha(0.25)
 
         formatter = MyFormatter(dt)
         formatter2 = MyFormatter2(dt)
@@ -103,13 +133,15 @@ class Plot(object):
             ax.xaxis.set_minor_formatter(formatter2)
             ax.grid(True)
 
-        fig.subplots_adjust(hspace=0.0, top=0.90, left=0.1, bottom=0.1, right=0.90)
+        fig.subplots_adjust(hspace=0.0, top=0.90, left=0.1, bottom=0.1, right=0.95)
         fig.autofmt_xdate()
         pyplot.autoscale(axis='x', tight=True)
+
+    def show(self):
         pyplot.show()
 
 
-class MyFormatter(Formatter):
+class MyFormatter(matplotlib.ticker.Formatter):
     def __init__(self, dates, fmt='%Y-%m-%d'):
         self.dates = dates
         self.lendates = len(dates)
@@ -124,7 +156,7 @@ class MyFormatter(Formatter):
         return self.dates[ind].strftime(self.fmt)
 
 
-class MyFormatter2(Formatter):
+class MyFormatter2(matplotlib.ticker.Formatter):
     def __init__(self, dates, fmt='%b-%d'):
         self.dates = dates
         self.lendates = len(dates)
