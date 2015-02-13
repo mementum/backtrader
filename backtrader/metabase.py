@@ -128,6 +128,9 @@ class Params(object):
     def _getkwargs(self):
         return dict(map(lambda x: (x[0], getattr(self, x[0])), self._getparams()))
 
+    def _getvalues(self):
+        return map(lambda x: getattr(self, x[0]), self._getparams())
+
 
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
