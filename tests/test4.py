@@ -37,6 +37,7 @@ class TestStrategy(bt.Strategy):
             btindicators.MovingAverageSimple(self.datas[0], period=30)
             btindicators.MovingAverageSimple(self.datas[0], period=50)
             self.ind = btindicators.StochasticSlow(self.datas[0])
+            btindicators.MACDHisto(self.datas[0])
             # self.ind = btindicators.RSI(self.datas[0])
             pass
         else:
