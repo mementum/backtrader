@@ -64,6 +64,13 @@ class Lines(object):
 
         return newcls
 
+    @classmethod
+    def _getlinealias(cls, i):
+        linealias = cls._getlines()[i]
+        if not isinstance(linealias, basestring):
+            linealias = linealias[0]
+        return linealias
+
     def __init__(self):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
