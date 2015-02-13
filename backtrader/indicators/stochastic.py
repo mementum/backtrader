@@ -27,6 +27,12 @@ class StochasticFast(Indicator):
     lines = ('k', 'd',)
     params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),)
 
+    plotlines = plotticks = [20, 80]
+
+    def _plotlabel(self):
+        plabels = [self.params.period, self.params.period_dfast, self.params.matype.__name__]
+        return ','.join(map(str, plabels))
+
     def __init__(self):
         highesthigh = Highest(self.datas[0], period=self.params.period, line=DataSeries.High)
         lowestlow = Lowest(self.datas[0], period=self.params.period, line=DataSeries.Low)
@@ -38,6 +44,11 @@ class StochasticFast(Indicator):
 
 class StochasticInt(StochasticFast):
     params = (('period_dslow', 3),)
+
+    def _plotlabel(self):
+        plabels = [self.params.period, self.params.period_dfast, self.params.period_dslow,
+                   self.params.matype.__name__]
+        return ','.join(map(str, plabels))
 
     def __init__(self):
         if self.slow:
@@ -51,8 +62,8 @@ class StochasticFull(StochasticInt):
     slow = False
 
 
-class StochasticSlow(StochasticInt):
+class Stochastic(StochasticInt):
     slow = True
 
 
-Stochastic = StochasticSlow
+StochasticSlow = Stochastic
