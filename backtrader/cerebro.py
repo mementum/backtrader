@@ -114,3 +114,5 @@ class Cerebro(object):
 
         for strat in self.runstrats:
             plotter.plot(strat)
+
+        plotter.show()
