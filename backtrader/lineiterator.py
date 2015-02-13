@@ -62,13 +62,10 @@ class MetaLineIterator(LineSeries.__metaclass__):
 
             return []
 
-        bases = findbases(cls)
-        # Filter out bases from which the current __init__ was inherited
-        bases = filter(lambda x: cls.__init__ != x.__init__, findbases(cls))
-
-        # Call the needed inits along the chain
-        for base in bases:
-            base.__init__(_obj, *args, **kwargs)
+        # Find and call baseclasses __init__ (from top to bottom)
+        seen = set()
+        _ = [x.__init__(_obj, *args, **kwargs)
+             for x in findbases(cls) if x.__init__ not in seen and not seen.add(x.__init__)]
 
         _obj, args, kwargs = super(MetaLineIterator, cls).doinit(_obj, *args, **kwargs)
         return _obj, args, kwargs
