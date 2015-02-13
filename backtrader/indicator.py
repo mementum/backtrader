@@ -22,5 +22,14 @@ from lineiterator import LineIterator
 
 
 class Indicator(LineIterator):
+
+    def plotlabel(self):
+        name = getattr(self, 'plotname', self.__class__.__name__)
+        label = '%s (%s)' % (name, self._plotlabel())
+        return label
+
+    def _plotlabel(self):
+        return ','.join(map(str, self.params._getvalues()))
+
     # Branching away from things like Strategy and DataSeries, were it needed to differentiate
     pass
