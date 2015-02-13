@@ -24,8 +24,10 @@ from utils import LineDifference
 
 
 class MACDHisto(Indicator):
-    lines = ('macd', 'signal', 'histo',)
+    lines = ('macd', 'signal', ('histo', ('bar', ('alpha', 0.33))),)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
+
+    plotlines = [0]
 
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
@@ -43,6 +45,8 @@ class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
+    plotlines = [0]
+
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
         me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
@@ -51,7 +55,7 @@ class MACD(Indicator):
 
 
 class MACDHistogram(MACD):
-    lines = ('histo',) # adds a line
+    lines = (('histo', ('bar', ('alpha', 0.33))),) # adds a line
 
     def __init__(self):
         LineDifference(self, self, line0=0, line1=1).bindlines(2)
