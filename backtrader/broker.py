@@ -121,11 +121,23 @@ class BrokerBack(object):
         size = order.executed.remsize * (1 if isinstance(order, BuyOrder) else -1)
         # closing a position may return cash to meet margin requirements
         remsize = self.closeposition(order.data, size, price)
-        order.execute(abs(size) - abs(remsize), price, dt)
+
+        # Get comminfo object for the data
+        comminfo = self.getcommissioninfo(order.data)
+
+        closingsize = abs(remsize - size) # -1 - -1 = 0, -8 - -2 = -6, 8 - 2 = 6
+        # Get back cash for closed size
+        ordervalue = comminfo.getoperationcost(closingsize, price)
+        self.params.cash += ordervalue
+        # Discount commision
+        ordercomm = comminfo.getcomm_pricesize(closingsize, price)
+        self.params.cash -= ordercomm
+        # Re-adjust cash according to close price (it was discounted on loop enter)
+        self.params.cash -= comminfo.cashadjust(closingsize, price, order.data.close[0])
+
+        order.execute(abs(size) - abs(remsize), price, dt, ordervalue, ordercomm)
 
         if remsize:
-            # if still opening a position check the margin/cash requirements
-            comminfo = self.getcommissioninfo(order.data)
             if not comminfo.checkmargin(size, price, self.params.cash):
                 order.margin()
                 self.notify(order)
@@ -133,7 +145,20 @@ class BrokerBack(object):
 
             # Returned remaining size has the right sign already
             self.openposition(order.data, remsize, price)
-            order.execute(abs(remsize), price, dt)
+
+            sizeabs = abs(remsize)
+            # Re-adjust cash according to operatio cost
+            ordervalue = comminfo.getoperationcost(sizeabs, price)
+            self.params.cash -= ordervalue
+
+            # Reduce according to commission scheme
+            ordercomm = comminfo.getcomm_pricesize(sizeabs, price)
+            self.params.cash -= ordercomm
+
+            # Re-adjust cash according to close price
+            self.params.cash += comminfo.cashadjust(sizeabs, price, order.data.close[0])
+
+            order.execute(sizeabs, price, dt, ordervalue, ordercomm)
 
         # We need to notify the owner
         self.notify(order)
@@ -150,15 +175,6 @@ class BrokerBack(object):
         closing = positionsign * closingabs
 
         position.size -= closing
-
-        comminfo = self.getcommissioninfo(data)
-        # Get back cash for closed size
-        self.params.cash += comminfo.getoperationcost(closingabs, price)
-        # Discount commision
-        self.params.cash -= comminfo.getcomm_pricesize(closingabs, price)
-        # Re-adjust cash according to close price
-        self.params.cash -= comminfo.cashadjust(closingabs, price, data.close[0])
-
         return size + closing
 
     def openposition(self, data, size, price):
@@ -169,17 +185,6 @@ class BrokerBack(object):
 
         position.size += size
         position.price = (oldpos + newpos) / position.size
-
-        # Reduce the available cash according to new open position
-        sizeabs = abs(size)
-        comminfo = self.getcommissioninfo(data)
-        self.params.cash -= comminfo.getoperationcost(sizeabs, price)
-
-        # Reduce according to commission scheme
-        self.params.cash -= comminfo.getcomm_pricesize(sizeabs, price)
-
-        # Re-adjust cash according to close price
-        self.params.cash += comminfo.cashadjust(sizeabs, price, data.close[0])
 
     def notify(self, order):
         order.owner._ordernotify(order)
