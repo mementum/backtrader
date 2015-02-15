@@ -35,6 +35,9 @@ class OrderData(object):
             # price must always be set if pricelimit is set ...
             self.price = pricelimit
 
+        self.value = 0.0
+        self.comm = 0.0
+
 
 class Order(object):
     __metaclass__ = metabase.MetaParams
@@ -44,7 +47,6 @@ class Order(object):
 
     Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
     Status =['Submitted', 'Accepted', 'Partial', 'Completed', 'Canceled', 'Expired', 'Margin']
-
 
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None), ('pricelimit', None),
@@ -76,7 +78,7 @@ class Order(object):
         self.status = Order.Canceled
         self.executed = self.data.datetime[0]
 
-    def execute(self, size, price, dt):
+    def execute(self, size, price, dt, value, comm):
         if not size:
             return
 
@@ -87,6 +89,8 @@ class Order(object):
         self.executed.size += size
         self.executed.price = (oldexec + newexec) / self.executed.size
         self.executed.remsize -= size
+        self.executed.value += value
+        self.executed.comm += comm
 
         self.status = Order.Partial if self.executed.remsize else Order.Completed
 
