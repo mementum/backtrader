@@ -37,13 +37,10 @@ class CommissionInfo(object):
         super(CommInfo, self).__setattribute__(name, value)
 
     def checkmargin(self, size, price, cash):
-        return cash >= (size * (self.params.margin or price))
+        return cash >= (size * (self.margin or price))
 
     def getoperationcost(self, size, price):
-        if self.margin:
-            return size * self.margin
-
-        return size * price
+        return size * (self.margin or price)
 
     def getvalue(self, position, price):
         if self.margin:
@@ -52,25 +49,22 @@ class CommissionInfo(object):
         return position.size * price
 
     def getcomm_pricesize(self, size, price):
-        price = price if not self.params.margin else 1.0
-        return size * self.params.commission * price
+        price = price if not self.margin else 1.0
+        return size * self.commission * price
 
     def getcommission(self, order):
-        price = order.price if not self.params.margin else 1.0
-        return order.size * self.params.commission * price
+        price = order.price if not self.margin else 1.0
+        return order.size * self.commission * price
 
     def profitandloss(self, position, price):
-        if self.margin:
-            return 0.0 # cash adjusted - no real profit and loss
-
-        return position.size * (position.price - price)
+        return position.size * (price - position.price) * self.mult
 
     def mustcheckmargin(self):
-        return not self.params.margin
+        return not self.margin
 
     def cashadjust(self, size, price, newprice):
-        if not self.params.margin:
+        if not self.margin:
             # No margin, no need to adjust -> stock like assume
             return 0.0
 
-        return size * (newprice - price) * self.params.mult
+        return size * (newprice - price) * self.mult
