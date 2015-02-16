@@ -22,6 +22,7 @@ from broker import BrokerBack
 import metabase
 import plot
 
+
 class Cerebro(object):
     __metaclass__ = metabase.MetaParams
 
@@ -32,8 +33,7 @@ class Cerebro(object):
         self.datas = list()
         self.strats = list()
         self.runstrats = list()
-        self.brokers = list()
-        self.brokersbyname = dict()
+        self._broker = BrokerBack()
 
     def adddata(self, data, name=None):
         if name is not None:
@@ -46,24 +46,14 @@ class Cerebro(object):
     def addstrategy(self, strategy, *args, **kwargs):
         self.strats.append((strategy, args, kwargs))
 
-    def addbroker(self, broker, name=None):
-        if name or not self.brokers:
-            self.brokersbyname[name or None] = broker
-
-        self.brokers.append(broker)
+    def setbroker(self, broker):
+        self._broker = broker
         return broker
 
-    def getbroker(self, broker=0):
-        if not broker and not self.brokers:
-            return self.addbroker(BrokerBack())
+    def getbroker(self):
+        return self._broker
 
-        elif isinstance(broker, (int, long)):
-            return self.brokers[broker]
-
-        elif isinstance(broker, basestring):
-            return self.brokersbyname[broker]
-
-        return None
+    broker = property(getbroker, setbroker)
 
     def run(self):
         if not self.datas:
@@ -78,11 +68,7 @@ class Cerebro(object):
             if self.params.preload:
                 data.preload()
 
-        if not self.brokers:
-            self.addbroker(BrokerBack())
-
-        for broker in self.brokers:
-            broker.start()
+        self._broker.start()
 
         for stratcls, sargs, skwargs in self.strats:
             sargs = self.datas + list(sargs)
@@ -94,8 +80,10 @@ class Cerebro(object):
             for data in self.datas[1:]:
                 data.next()
 
-            for broker in self.brokers:
-                broker.next()
+            self._broker.next()
+            while self._broker.notifs:
+                order = self._broker.notifs.popleft()
+                order.owner._ordernotify(order)
 
             for strat in self.runstrats:
                 strat._next()
