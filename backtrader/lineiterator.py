@@ -43,7 +43,7 @@ class MetaLineIterator(LineSeries.__metaclass__):
         # To automatically set the period Start by scanning the found datas
         # No calculation can take place until all datas have yielded "data"
         # A data could be an indicator and it could take x bars until something is produced
-        _obj._minperiod = max([x._minperiod for x in _obj.datas] or [_obj._minperiod,])
+        _obj._minperiod = max([data._minperiod for data in _obj.datas] or [_obj._minperiod,])
 
         # Prepare to hold children
         _obj._indicators = list()
@@ -64,8 +64,14 @@ class MetaLineIterator(LineSeries.__metaclass__):
 
         # Find and call baseclasses __init__ (from top to bottom)
         seen = set()
-        _ = [x.__init__(_obj, *args, **kwargs)
-             for x in findbases(cls) if x.__init__ not in seen and not seen.add(x.__init__)]
+        ownimfunc = _obj.__init__.im_func.__call__
+        for x in findbases(cls):
+            ximfunc = x.__init__.im_func.__call__
+            if ximfunc not in seen:
+                seen.add(ximfunc)
+                # only execute the call if it's not our own init, which may have been inherited.
+                if ximfunc != ownimfunc:
+                    x.__init__(_obj, *args, **kwargs)
 
         _obj, args, kwargs = super(MetaLineIterator, cls).doinit(_obj, *args, **kwargs)
         return _obj, args, kwargs
