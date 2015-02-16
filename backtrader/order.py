@@ -37,6 +37,7 @@ class OrderData(object):
 
         self.value = 0.0
         self.comm = 0.0
+        self.margin = None
 
 
 class Order(object):
@@ -78,7 +79,7 @@ class Order(object):
         self.status = Order.Canceled
         self.executed = self.data.datetime[0]
 
-    def execute(self, size, price, dt, value, comm):
+    def execute(self, size, price, dt, value, comm, margin):
         if not size:
             return
 
@@ -91,6 +92,7 @@ class Order(object):
         self.executed.remsize -= size
         self.executed.value += value
         self.executed.comm += comm
+        self.executed.margin = margin
 
         self.status = Order.Partial if self.executed.remsize else Order.Completed
 
