@@ -27,23 +27,18 @@ class MetaStrategy(LineIterator.__metaclass__):
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
-
+        _obj.broker = env.broker
         _obj._sizer = None
-        _obj._broker = None
-
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
-        if not _obj._broker:
-            _obj.setbroker()
-
         if not _obj._sizer:
             _obj._sizer = _obj.setsizer(SizerFix())
 
         if not _obj._sizer.getbroker():
-            _obj._sizer.setbroker(_obj.getbroker())
+            _obj._sizer.setbroker(_obj.broker)
 
         return _obj, args, kwargs
 
@@ -60,57 +55,43 @@ class Strategy(LineIterator):
     def stop(self):
         pass
 
-    def setbroker(self, broker=0):
-        self._broker = self.env.getbroker(broker)
-        return self._broker # to allow chained calls
-
-    def getbroker(self):
-        return self._broker
-
-    broker = property(getbroker, setbroker)
-
     def _ordernotify(self, order):
         self.ordernotify(order)
 
     def ordernotify(self, order):
         pass
 
-    def _getdatabroker(self, data, broker):
-        return data or self.datas[0], broker or self._broker
+    def buy(self, data=None, size=None, price=None, exectype=None, valid=None):
+        data = data or self.datas[0]
+        size = size or self.getsizing(data)
+        return self.broker.buy(self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def buy(self, data=None, size=None, price=None, exectype=None, valid=None, broker=None):
-        data, broker = self._getdatabroker(data, broker)
-        if not size:
-            size = self.getsizing(data, broker)
+    def sell(self, data=None, size=None, price=None, exectype=None, valid=None):
+        data = data or self.datas[0]
+        size = size or self.getsizing(data)
+        return self.broker.sell(self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-        return broker.buy(self, data, size=size, price=price, exectype=exectype, valid=valid)
-
-    def sell(self, data=None, size=None, price=None, exectype=None, valid=None, broker=None):
-        data, broker = self._getdatabroker(data, broker)
-        if not size:
-            size = self.getsizing(data, broker)
-
-        return broker.sell(self, data, size=size, price=price, exectype=exectype, valid=valid)
-
-    def close(self, data=None, size=None, price=None, exectype=None, valid=None, broker=None):
+    def close(self, data=None, size=None, price=None, exectype=None, valid=None):
         possize = self.getposition(data, broker).size
         size = abs(size or possize)
 
         if possize > 0:
-            return self.sell(data, size, price, exectype, valid, broker)
+            return self.sell(data, size, price, exectype, valid)
         elif possize < 0:
-            return self.buy(data, size, price, exectype, valid, broker)
+            return self.buy(data, size, price, exectype, valid)
 
         return None
 
     def getposition(self, data=None, broker=None):
-        data, broker = self._getdatabroker(data, broker)
-        return broker.getposition(data)
+        data = data or self.datas[0]
+        return self.broker.getposition(data)
 
     position = property(getposition)
 
     def setsizer(self, sizer):
         self._sizer = sizer
+        if not sizer.getbroker():
+            sizer.setbroker(self.broker)
         return sizer
 
     def getsizer(self):
@@ -118,6 +99,6 @@ class Strategy(LineIterator):
 
     sizer = property(getsizer, setsizer)
 
-    def getsizing(self, data=None, broker=None):
-        data, broker = self._getdatabroker(data, broker)
-        return self._sizer.getsizing(data, broker)
+    def getsizing(self, data=None):
+        data = data or self.datas[0]
+        return self._sizer.getsizing(data)
