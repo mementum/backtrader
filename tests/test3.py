@@ -106,7 +106,7 @@ data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', rev
 
 cerebro.adddata(data)
 
-cerebro.getbroker().setcash(1000.0)
+cerebro.broker.setcash(1000.0)
 cerebro.addstrategy(TestStrategy,
                     printdata=False, maperiod=15, exectype=bt.Order.Market, atlimitperc=0.80, expiredays=7)
 cerebro.run()
