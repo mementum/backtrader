@@ -47,6 +47,7 @@ class BrokerBack(object):
 
         self.position = collections.defaultdict(BrokerBack.Position)
         self.comminfo = dict({None: self.params.commission})
+        self.notifs = collections.deque()
 
     def getcash(self):
         return self.params.cash
@@ -125,7 +126,7 @@ class BrokerBack(object):
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
 
-        closingsize = abs(remsize - size) # -1 - -1 = 0, -8 - -2 = -6, 8 - 2 = 6
+        closingsize = abs(size) - abs(remsize)
         # Get back cash for closed size
         ordervalue = comminfo.getoperationcost(closingsize, price)
         self.params.cash += ordervalue
@@ -135,7 +136,8 @@ class BrokerBack(object):
         # Re-adjust cash according to close price (it was discounted on loop enter)
         self.params.cash -= comminfo.cashadjust(closingsize, price, order.data.close[0])
 
-        order.execute(abs(size) - abs(remsize), price, dt, ordervalue, ordercomm)
+        # order.execute(abs(size) - abs(remsize), price, dt, ordervalue, ordercomm, comminfo.margin)
+        order.execute(closingsize, price, dt, ordervalue, ordercomm, comminfo.margin)
 
         if remsize:
             if not comminfo.checkmargin(size, price, self.params.cash):
@@ -158,7 +160,7 @@ class BrokerBack(object):
             # Re-adjust cash according to close price
             self.params.cash += comminfo.cashadjust(sizeabs, price, order.data.close[0])
 
-            order.execute(sizeabs, price, dt, ordervalue, ordercomm)
+            order.execute(sizeabs, price, dt, ordervalue, ordercomm, comminfo.margin)
 
         # We need to notify the owner
         self.notify(order)
@@ -187,7 +189,7 @@ class BrokerBack(object):
         position.price = (oldpos + newpos) / position.size
 
     def notify(self, order):
-        order.owner._ordernotify(order)
+        self.notifs.append(order)
 
     def next(self):
         for data, pos in self.position.iteritems():
