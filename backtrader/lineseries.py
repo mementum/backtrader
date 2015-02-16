@@ -184,5 +184,11 @@ class LineSeries(object):
     def __setitem__(self, line, value):
         self.lines[line][0] = value
 
+    def __init__(self):
+        # if any args, kwargs make it up to here, something is broken
+        # defining a __init__ guarantees the existence of im_func to findbases
+        # in lineiterator later, because object.__init__ has no im_func (object has slots)
+        pass
+
     def docalc(self):
         pass
