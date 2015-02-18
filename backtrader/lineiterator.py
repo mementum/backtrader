@@ -45,8 +45,11 @@ class MetaLineIterator(LineSeries.__metaclass__):
         # A data could be an indicator and it could take x bars until something is produced
         _obj._minperiod = max([data._minperiod for data in _obj.datas] or [_obj._minperiod,])
 
-        # Prepare to hold children
+        # Prepare to hold children that need to be calculated and influence minperiod
         _obj._indicators = list()
+
+        # Prepare to hold observers that
+        _obj._observers = list()
 
         # Remove the datas from the args ... already being given to the line iterator
         args = filter(lambda x: x not in _obj.datas, args)
@@ -108,8 +111,11 @@ class LineIterator(LineSeries):
     subplot = True
 
     def addindicator(self, indicator):
-        self._indicators.append(indicator)
-        self._minperiod = max(indicator._minperiod, self._minperiod)
+        if isinstance(indicator, LineObserver):
+            self._observers.append(indicator)
+        else:
+            self._indicators.append(indicator)
+            self._minperiod = max(indicator._minperiod, self._minperiod)
 
     def setminperiod(self, minperiod):
         # Add the extra requested by the indicator to the auto-calculated from datas
@@ -184,3 +190,7 @@ class LineIterator(LineSeries):
 
     def next(self):
         pass
+
+
+class LineObserver(LineIterator):
+    pass
