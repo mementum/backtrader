@@ -40,7 +40,7 @@ class _LineBase(Indicator):
         self.lined0 = self.datas[0][self.params.line0]
         self.lined1 = self.datas[len(self.datas) > 1][self.params.line1]
 
-        self.setminperiod(max([self.params.ago0, self.params.ago1]) + 1)
+        self.setminperiod(max([-self.params.ago0, -self.params.ago1]) + 1)
 
 
 class LinesCmp(_LineBase):

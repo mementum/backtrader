@@ -40,7 +40,7 @@ class Operations(lineiterator.LineObserver):
     def next(self):
         buy = list()
         sell = list()
-        lastpos = self.lines.position[1]
+        lastpos = self.lines.position[-1]
 
         while self.orders:
             order = self.orders.popleft()

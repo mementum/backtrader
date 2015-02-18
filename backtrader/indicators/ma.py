@@ -70,7 +70,7 @@ class MovingAverageSmoothing(MovingAverageSimple):
         super(MovingAverageSmoothing, self).next()
 
     def next(self):
-        previous = self.lines[0][1] * (1.0 - self.smoothfactor)
+        previous = self.lines[0][-1] * (1.0 - self.smoothfactor)
         current = self.dataline[0] * self.smoothfactor
         self.lines[0][0] = previous + current
 
@@ -99,7 +99,7 @@ class MASmoothedNAN(MovingAverageSmoothed):
 
     def next(self):
         value = self.dataline[0]
-        lastout = self.lines[0][1]
+        lastout = self.lines[0][-1]
 
         if value != value: # value is NAN
             self.lines[0][0] = lastout
