@@ -110,3 +110,4 @@ cerebro.broker.setcash(1000.0)
 cerebro.addstrategy(TestStrategy,
                     printdata=False, maperiod=15, exectype=bt.Order.Market, atlimitperc=0.80, expiredays=7)
 cerebro.run()
+cerebro.plot()
