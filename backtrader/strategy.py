@@ -18,8 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from lineiterator import LineIterator
 from broker import BrokerBack
+from lineiterator import LineIterator
+from operations import Operations
 from sizer import SizerFix
 
 
@@ -29,6 +30,11 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj.env = env
         _obj.broker = env.broker
         _obj._sizer = None
+
+        _obj.dataops = dict()
+        for data in _obj.datas:
+            _obj.dataops[data] = Operations()
+
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -55,7 +61,13 @@ class Strategy(LineIterator):
     def stop(self):
         pass
 
+    def _next(self):
+        super(Strategy, self)._next()
+        for data in self.datas:
+            self.dataops[data]._next()
+
     def _ordernotify(self, order):
+        self.dataops[order.data].addorder(order)
         self.ordernotify(order)
 
     def ordernotify(self, order):
