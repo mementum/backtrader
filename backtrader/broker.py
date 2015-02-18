@@ -197,7 +197,7 @@ class BrokerBack(object):
         for data, pos in self.position.iteritems():
             # futures change cash in the broker in every bar to ensure margin requirements are met
             comminfo = self.getcommissioninfo(data)
-            self.params.cash += comminfo.cashadjust(pos.size, data.close[1], data.close[0])
+            self.params.cash += comminfo.cashadjust(pos.size, data.close[-1], data.close[0])
 
         # Iterate once over all elements of the pending queue
         for i in xrange(len(self.pending)):
@@ -211,7 +211,7 @@ class BrokerBack(object):
             phigh = order.data.high[0]
             popen = order.data.open[0]
             pclose = order.data.close[0]
-            pclose1 = order.data.close[1]
+            pclose1 = order.data.close[-1]
             pcreated = order.created.price
             plimit = order.created.pricelimit
 
@@ -220,12 +220,12 @@ class BrokerBack(object):
 
             elif order.exectype == Order.Close:
                 # execute with the price of the closed bar
-                if order.data.datetime[0].time() != order.data.datetime[1].time():
+                if order.data.datetime[0].time() != order.data.datetime[-1].time():
                     # intraday: time changes in between bars
-                    self._execute(order, order.data.datetime[1], price=pclose1)
-                elif order.data.datetime[0].date() != order.data.datetime[1].date():
+                    self._execute(order, order.data.datetime[-1], price=pclose1)
+                elif order.data.datetime[0].date() != order.data.datetime[-1].date():
                     # daily: time is equal, date changes
-                    self._execute(order, order.data.datetime[1], price=pclose1)
+                    self._execute(order, order.data.datetime[-1], price=pclose1)
 
             elif order.exectype == Order.Limit or \
                 (order.exectype == Order.StopLimit and order.triggered):

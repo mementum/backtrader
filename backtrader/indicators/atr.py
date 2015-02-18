@@ -38,7 +38,7 @@ class TrueRange(Indicator):
         # If only 1 data is available the internally calculated index will be -1
         # which points to the end of the buffer, which is the beginning with only 1 data
         # The calculation makes sense finally and the 1st bar will always be 'th - tl'
-        yc = self.data_close[1]
+        yc = self.data_close[-1]
 
         self.lines[0][0] = max(th - tl, abs(yc - th), abs(yc - tl))
 

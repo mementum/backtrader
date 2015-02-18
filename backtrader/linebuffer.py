@@ -23,6 +23,7 @@ import collections
 import datetime
 import itertools
 
+
 NAN = float('NaN')
 
 
@@ -69,21 +70,21 @@ class LineBuffer(object):
         return len(self.array) - self.extension
 
     def __getitem__(self, ago):
-        return self.array[self.idx - ago]
+        return self.array[self.idx + ago]
 
     def get(self, ago=0, size=1):
-        return self.array[self.idx - ago - size + 1:self.idx - ago + 1]
+        return self.array[self.idx + ago - size + 1:self.idx + ago + 1]
 
     def getzero(self, idx=0, size=1):
         return self.array[idx:idx + size]
 
     def __setitem__(self, ago, value):
-        self.array[self.idx - ago] = value
+        self.array[self.idx + ago] = value
         for binding in self.bindings:
             binding[ago] = value
 
     def set(self, value, ago=0):
-        self.array[self.idx - ago] = value
+        self.array[self.idx + ago] = value
         for binding in self.bindings:
             binding[ago] = value
 
@@ -130,7 +131,7 @@ class LineBufferDeque(LineBuffer):
         self.array = collections.deque()
 
     def get(self, ago=0, size=1):
-        return list(itertools.islice(self.array, self.idx - ago - size + 1, self.idx - ago + 1))
+        return list(itertools.islice(self.array, self.idx + ago - size + 1, self.idx + ago + 1))
 
     def getzero(self, idx=0, size=1):
         return list(itertools.islice(self.array, idx, idx + size))

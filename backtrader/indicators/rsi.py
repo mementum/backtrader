@@ -43,7 +43,7 @@ class UpDays(Indicator):
         self.dataline = self.datas[0].lines[self.params.line]
 
     def next(self):
-        linediff = self.dataline[0] - self.dataline[1]
+        linediff = self.dataline[0] - self.dataline[-1]
         self.lines[0][0] = linediff if linediff > 0.0 else 0.0
 
 
@@ -55,7 +55,7 @@ class DownDays(Indicator):
         self.dataline = self.datas[0].lines[self.params.line]
 
     def next(self):
-        linediff = self.dataline[1] - self.dataline[0]
+        linediff = self.dataline[-1] - self.dataline[0]
         self.lines[0][0] = linediff if linediff > 0.0 else 0.0
 
 
