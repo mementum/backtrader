@@ -24,6 +24,7 @@ from comminfo import CommissionInfo
 import metabase
 from order import Order, BuyOrder, SellOrder
 
+
 class BrokerBack(object):
     __metaclass__ = metabase.MetaParams
 
@@ -166,6 +167,7 @@ class BrokerBack(object):
         self.notify(order)
 
     def closeposition(self, data, size, price):
+        # FIXME: Are we checking if the position is closing a position in the same direction ??
         position = self.position[data]
         if not position.size:
             return size
