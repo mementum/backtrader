@@ -126,7 +126,7 @@ class Plot(object):
                 for hline in hlines:
                     indaxis.axhline(hline)
 
-                legend = indaxis.legend(loc='lower left', shadow=False, fancybox=False, prop=props)
+                legend = indaxis.legend(loc='center left', shadow=False, fancybox=False, prop=props)
                 if legend:
                     legend.get_frame().set_alpha(0.25)
 
