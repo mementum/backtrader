@@ -25,15 +25,20 @@ from utils import LineBinder, LineDifference, LineDivision, Highest, Lowest
 
 class StochasticFast(Indicator):
     lines = ('k', 'd',)
-    params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),)
+    params = (
+        ('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
+        ('overbought', 80.0), ('oversold', 20.0),)
 
-    plotlines = plotticks = [20, 80]
+    plothlines = plotticks = [80.0, 20.0]
 
     def _plotlabel(self):
         plabels = [self.params.period, self.params.period_dfast, self.params.matype.__name__]
         return ','.join(map(str, plabels))
 
     def __init__(self):
+        self.plothlines = [self.params.overbought, self.params.oversold]
+        self.plotticks = [self.params.overbought, self.params.oversold]
+
         highesthigh = Highest(self.datas[0], period=self.params.period, line=DataSeries.High)
         lowestlow = Lowest(self.datas[0], period=self.params.period, line=DataSeries.Low)
         knum = LineDifference(self.datas[0], lowestlow)
