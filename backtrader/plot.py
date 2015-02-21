@@ -24,12 +24,41 @@ try:
     import matplotlib
     from matplotlib import pyplot
     import matplotlib.ticker
-    from matplotlib.finance import volume_overlay
+    from matplotlib.finance import volume_overlay, plot_day_summary2_ohlc, candlestick2_ohlc
     import matplotlib.font_manager as font_manager
 except ImportError:
     matploblib = None
 
 import metabase
+
+class PlotScheme(object):
+    pdist = 0.0
+
+    style = 'bar'
+    loc = 'blue'
+    barup = 'k'
+    bardown = 'r'
+    bartrans = 1.0
+
+    volup = 'g'
+    voldown = 'r'
+    voltrans = 0.5
+
+    subtxttrans = 0.66
+    subtxtsize = 9
+
+    legendtrans = 0.25
+
+    line0 = 'red'
+    line1 = 'blue'
+    line2 = 'green'
+    line3 = 'brown'
+    line4 = 'cyan'
+    line5 = 'magenta'
+    line6 = 'yellow'
+    line7 = 'black'
+
+    lines = [line0, line1, line2, line3, line4, line5, line6, line7]
 
 
 class Plot(object):
@@ -38,8 +67,13 @@ class Plot(object):
     LineOnClose, OhlcBar, Candlestick = range(3)
 
     params = (
-        ('style', LineOnClose),
         ('volume', True),
+        ('voloverlay', False),
+        ('volover_top', 2.5),
+        ('volover_bot', 0.85),
+        ('rowsmajor', 5),
+        ('rowsminor', 1),
+        ('scheme', PlotScheme()),
     )
 
     def __init__(self):
@@ -47,25 +81,51 @@ class Plot(object):
             raise ImportError('Please install matplotlib in order to enable plotting')
 
     def plot(self, strategy):
+        dataslen = len(strategy.datas)
+        if not dataslen:
+            return
+
+        fig = pyplot.figure(0)
+
+        nrows = self.params.rowsmajor + (dataslen - 1) * self.params.rowsminor
+        nrows += (not self.params.voloverlay) * dataslen * self.params.rowsminor
         indplots = [ind for ind in strategy._indicators if ind.plot]
-        nsubplots = len(strategy.datas) + sum([ind.subplot for ind in indplots])
-        fig, axis = pyplot.subplots(nsubplots, sharex=True)
-        if nsubplots < 2:
-            axis = list([axis,])
+        indsubplots = [ind for ind in indplots if ind.subplot]
+        nrows += sum([ind.subplot for ind in indplots]) * self.params.rowsminor
+
+        props = font_manager.FontProperties(size=9)
+        axis = list()
 
         # if "dates" are passed, matploblib adds non-existing dates (ie weekends) creating gaps
         # passing only the index number and combined with a formatter, only those are needed
         dt = strategy._clock.datetime.plot()
-
         rdt = range(len(strategy._clock.datetime))
 
-        i = itertools.count()
-        for data in strategy.datas:
-            props = font_manager.FontProperties(size=9)
-            # FIXME ... implement ohlc if so requested
-            axdata = axis[i.next()]
+        numvols = 0
+        for row, data in enumerate(strategy.datas):
+            if not row:
+                axdata = pyplot.subplot2grid((nrows, 1), (row, 0), rowspan=self.params.rowsmajor)
+            else:
+                axdata = pyplot.subplot2grid((nrows, 1), (self.params.rowsmajor + row + numvols, 0),
+                                             rowspan=self.params.rowsminor, sharex=axis[0])
+            axis.append(axdata)
             closes = data.close.plot()
-            axdata.plot(rdt, closes, aa=True, label='_nolegend_')
+            opens = data.open.plot()
+            if self.params.scheme.style.startswith('line'):
+                axdata.plot(rdt, closes, aa=True, label='_nolegend_')
+            else:
+                highs = data.high.plot()
+                lows = data.low.plot()
+                if self.params.scheme.style.startswith('candle'):
+                    candlestick2_ohlc(axdata, opens, highs, lows, closes, width=1.0,
+                                      colorup=self.params.scheme.barup, colordown=self.params.scheme.bardown,
+                                      alpha=self.params.scheme.bartrans)
+                elif self.params.scheme.style.startswith('bar') or True:
+                    # final default option
+                    plot_day_summary2_ohlc(axdata, opens, highs, lows, closes, ticksize=4,
+                                           colorup=self.params.scheme.barup,
+                                           colordown=self.params.scheme.bardown)
+
             axdata.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
 
             ops = strategy.dataops[data]
@@ -75,18 +135,34 @@ class Plot(object):
             if self.params.volume:
                 volumes = data.volume.plot()
                 if max(volumes):
-                    # Push the data upwards
-                    bot, top = axdata.get_ylim()
-                    axdata.set_ylim(bot * 0.85, top)
+                    if self.params.voloverlay:
+                        # Push the data upwards
+                        bot, top = axdata.get_ylim()
+                        axdata.set_ylim(bot * self.params.volover_bot, top)
 
-                    # Plot the volume
-                    axvol = axdata.twinx()
-                    bc = volume_overlay(axvol, data.open.plot(), closes, volumes, colorup='g', alpha=0.33, width=1)
-                    axvol.add_collection(bc)
-                    # Keep it at the bottom
-                    bot, top = axvol.get_ylim()
-                    axvol.set_ylim(bot, top * 2.5)
-                    axvol.set_yticks([])
+                        # Clone the data ax
+                        axvol = axdata.twinx()
+                    else:
+                        # Create independent subplot
+                        volrow = self.params.rowsmajor + row + numvols
+                        axvol = pyplot.subplot2grid((nrows, 1), (volrow, 0),
+                                                    rowspan=self.params.rowsminor, sharex=axis[0])
+                        numvols += 1
+                        axis.append(axvol)
+
+                    volalpha = 1.0 if not self.params.voloverlay else self.params.scheme.voltrans
+                    bc = volume_overlay(axvol, opens, closes, volumes,
+                                        colorup=self.params.scheme.volup,
+                                        colordown=self.params.scheme.voldown,
+                                        alpha=volalpha, width=1)
+
+                    if self.params.voloverlay:
+                        # Keep it at the bottom
+                        bot, top = axvol.get_ylim()
+                        axvol.set_ylim(bot, top * self.params.volover_top)
+                        axvol.set_yticks([])
+                    else:
+                        axvol.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
 
             # Make room for the labels at the top
             bot, top = axdata.get_ylim()
@@ -94,58 +170,79 @@ class Plot(object):
 
         for ind in indplots:
             if ind.subplot:
-                pltidx = i.next()
+                axind = pyplot.subplot2grid((nrows, 1), (self.params.rowsmajor + row + numvols, 0),
+                                            rowspan=self.params.rowsminor, sharex=axis[0])
+                row += 1
+                axis.append(axind)
             elif ind._clock in strategy.datas:
-                pltidx = strategy.datas.index(ind._clock)
+                axind = axis[strategy.datas.index(ind._clock)]
             else: # must be another indicator
-                offset = len(strategy.datas)
-                pltidx = offset + indplots.index(ind._clock)
+                idx = dataslen + numvols + indsubplots.index(ind._clock)
+                axind = axis[idx]
 
-            indaxis = axis[pltidx]
             indlabel = ind.plotlabel()
-            for ii in xrange(ind.size()):
-                line = ind.lines[ii]
-                pltmethod = getattr(indaxis, line.plotmethod, 'plot')
+            for lineidx in xrange(ind.size()):
+                line = ind.lines[lineidx]
+                linealias = ind.lines._getlinealias(lineidx)
                 if ind.subplot:
-                    label = ind.lines._getlinealias(ii).capitalize()
+                    label = linealias
                 else:
-                    label = '_nolegend' if ii else indlabel
-                pltmethod(rdt, line.plot(), aa=True, label=label, **line.plotargs)
+                    label = '_nolegend' if lineidx else indlabel
+
+                lineplotinfo = dict()
+                if hasattr(ind, 'plotinfo'):
+                    lineplotinfo = ind.plotinfo.get(linealias, dict())
+
+                pltmethod = getattr(axind, lineplotinfo.get('method', 'plot'))
+                plotkwargs = dict(aa=True, label=label, **lineplotinfo)
+                plotkwargs.pop('method', None)
+                if ind.subplot:
+                    plotkwargs['color'] = self.params.scheme.lines[lineidx]
+
+                pltmethod(rdt, line.plot(), **plotkwargs)
 
             if ind.subplot:
-                indaxis.text(0.005, 0.985, indlabel, va='top',
-                             transform=indaxis.transAxes, alpha=0.33, fontsize=9)
+                axind.text(0.005, 0.97, indlabel, va='top', transform=axind.transAxes,
+                           alpha=self.params.scheme.subtxttrans, fontsize=self.params.scheme.subtxtsize)
 
-                yticks = getattr(ind, 'plotticks', None)
-                if yticks:
-                    indaxis.set_yticks(yticks)
-                else:
-                    indaxis.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
+        # Go over the indicator subplots to put the legend in place
+        # if done before ... indicators over indicators (ex: movavg on rsi) will not show
+        # up in the legend, because such indicator is seen later in the previous loop
+        for indidx, ind in enumerate(indsubplots):
+            axind = axis[dataslen + numvols + indidx]
 
-                hlines = getattr(ind, 'plotlines', [])
-                for hline in hlines:
-                    indaxis.axhline(hline)
+            # Let's do the ticks here in case they are automatic and an indicator on indicator
+            # adds a bit to the automatic y scaling
+            yticks = getattr(ind, 'plotticks', None)
+            if yticks:
+                axind.set_yticks(yticks)
+            else:
+                axind.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
 
-                legend = indaxis.legend(loc='center left', shadow=False, fancybox=False, prop=props)
-                if legend:
-                    legend.get_frame().set_alpha(0.25)
+            # This can be done also in the previous loop ... but since we do the ticks here
+            hlines = getattr(ind, 'plothlines', [])
+            for hline in hlines:
+                axind.axhline(hline)
 
-        for dataidx in xrange(len(strategy.datas)):
+            # Legend must be done here to ensure legend includes lines from ind on ind
+            legend = axind.legend(loc='lower left', shadow=False, fancybox=False, prop=props)
+            if legend:
+                legend.get_frame().set_alpha(0.25)
+
+        for dataidx in xrange(dataslen):
             ax = axis[dataidx]
             legend = axdata.legend(
                 loc='upper center', shadow=False, fancybox=False, prop=props, numpoints=1, ncol=10)
             if legend:
-                legend.get_frame().set_alpha(0.25)
-
-        formatter = MyFormatter(dt)
-        formatter2 = MyFormatter2(dt)
+                legend.get_frame().set_alpha(self.params.scheme.legendtrans)
 
         for ax in axis:
-            ax.xaxis.set_major_formatter(formatter)
-            ax.xaxis.set_minor_formatter(formatter2)
             ax.grid(True)
 
-        fig.subplots_adjust(hspace=0.0, top=0.90, left=0.1, bottom=0.1, right=0.95)
+        axis[-1].xaxis.set_major_formatter(MyFormatter(dt))
+        axis[-1].xaxis.set_minor_formatter(MyFormatter2(dt))
+
+        fig.subplots_adjust(hspace=self.params.scheme.pdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
         fig.autofmt_xdate()
         pyplot.autoscale(axis='x', tight=True)
 
