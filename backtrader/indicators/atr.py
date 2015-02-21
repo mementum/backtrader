@@ -47,6 +47,11 @@ class AverageTrueRange(Indicator):
     lines = ('atr',)
     params = (('period', 14), ('matype', MATypes.Simple))
 
+    def _plotlabel(self):
+        return str(self.params.period)
+
+    plotname = 'ATR'
+
     def __init__(self):
         tr = TrueRange(self.datas[0])
         self.params.matype(tr, period=self.params.period).bindlines()
