@@ -24,10 +24,12 @@ from utils import LineDifference
 
 
 class MACDHisto(Indicator):
-    lines = ('macd', 'signal', ('histo', ('bar', ('alpha', 0.33))),)
+    lines = ('macd', 'signal', 'histo',)
+    plotinfo = dict(histo=dict(method='bar', alpha=0.33))
+
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
-    plotlines = [0]
+    plothlines = [0]
 
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
@@ -38,6 +40,7 @@ class MACDHisto(Indicator):
         LineDifference(macd, signal).bindlines(owner=2) # owner 2 <- own 0
 
     def next1(self):
+        # Faster than "LineDifference" above because no extra lines are accumulated
         self[2][0] = self[0][0] - self[1][0]
 
 
@@ -45,7 +48,7 @@ class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
-    plotlines = [0]
+    plothlines = [0.0]
 
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
@@ -55,11 +58,12 @@ class MACD(Indicator):
 
 
 class MACDHistogram(MACD):
-    lines = (('histo', ('bar', ('alpha', 0.33))),) # adds a line
+    lines = ('histo',)
+    plotinfo = {'histo': dict(method='bar', alpha=0.33)}
 
     def __init__(self):
         LineDifference(self, self, line0=0, line1=1).bindlines(2)
 
     def next1(self):
-        # Removing the LineDifference and implementing this is faster
+        # Faster than "LineDifference" above because no extra lines are accumulated
         self.lines[2][0] = self.lines[0][0] - self.lines[1][0]
