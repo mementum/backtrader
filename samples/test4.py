@@ -34,7 +34,15 @@ class TestStrategy(bt.Strategy):
         self.close = self.ohlc.close
 
         if True:
-            btindicators.StochasticSlow(self.datas[0])
+            btindicators.MovingAverageSimple(self.datas[0], period=30)
+            btindicators.MovingAverageSimple(self.datas[0], period=50)
+            self.ind = btindicators.StochasticSlow(self.datas[0])
+            btindicators.MACDHisto(self.datas[0])
+            # self.ind = btindicators.RSI(self.datas[0])
+            atr = btindicators.AverageTrueRange(self.datas[0])
+            btindicators.MovingAverageSimple(atr, period=10)
+            rsi = btindicators.RSI(self.datas[0])
+            btindicators.MovingAverageSimple(rsi, period=10)
             pass
         else:
             self.stocslow = btindicators.StochasticSlow(self.datas[0])
@@ -92,6 +100,9 @@ class TestStrategy(bt.Strategy):
 
 
 cerebro = bt.Cerebro(preload=True)
+data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
 cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
 cerebro.run()
+
+cerebro.plot()
