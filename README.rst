@@ -2,7 +2,9 @@ backtrader
 ==========
 BackTesting platform written in Python to test trading strategies.
 
-Read the full documentation at: `backtrader documentation http://backtrader.readthedocs.org/en/latest/introduction.html`_
+Read the full documentation at readthedocs.org:
+
+  - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
 
 Installation
 ============
@@ -41,10 +43,10 @@ Alternatives
 ============
 If after seeing the docs (see also the example below) you feel this is not your cup of tea, you can always have a look at similar Python platforms:
 
-  - `PyAlgoTrade https://github.com/gbeced/pyalgotrade`_
-  - `Zipline https://github.com/quantopian/zipline`_
-  - `Ultra-Finance https://code.google.com/p/ultra-finance/`_
-  - `ProfitPy https://code.google.com/p/profitpy/`_
+  - `PyAlgoTrade <https://github.com/gbeced/pyalgotrade>`_
+  - `Zipline <https://github.com/quantopian/zipline>`_
+  - `Ultra-Finance <https://code.google.com/p/ultra-finance/>`_
+  - `ProfitPy <https://code.google.com/p/profitpy/>`_
 
 Example:
 ========
