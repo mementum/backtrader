@@ -29,7 +29,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
         _obj.broker = env.broker
-        _obj._sizer = None
+        _obj._sizer = SizerFix()
 
         _obj.dataops = dict()
         for data in _obj.datas:
@@ -39,9 +39,6 @@ class MetaStrategy(LineIterator.__metaclass__):
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
-
-        if not _obj._sizer:
-            _obj._sizer = _obj.setsizer(SizerFix())
 
         if not _obj._sizer.getbroker():
             _obj._sizer.setbroker(_obj.broker)
