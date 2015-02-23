@@ -118,11 +118,8 @@ class CSVDataFeedBase(DataFeedBase):
         if hasattr(self.params.dataname, 'readline'):
             self.f = self.params.dataname
         else:
-            try:
-                self.f = open(self.params.dataname, 'rb')
-            except IOError:
-                self.f = None
-                return
+            # Let an exception propagate to let the caller know
+            self.f = open(self.params.dataname, 'rb')
 
         if self.params.headers:
             self.f.readline() # skip the headers
@@ -132,22 +129,17 @@ class CSVDataFeedBase(DataFeedBase):
             self.f.close()
             self.f = None
 
-
     def _load(self):
         if self.f is None:
             return False
 
-        try:
-            line = self.f.readline()
-        except (IOError, ValueError,):
-            self.f = None
-            return False
+        # Let an exception propagate to let the caller know
+        line = self.f.readline()
 
         if not line:
             return False
 
         self.forward() # advance data pointer
-
         return self._loadline(line.rstrip('\r\n').split(','))
 
 
