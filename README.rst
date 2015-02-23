@@ -50,7 +50,8 @@ If after seeing the docs (see also the example below) you feel this is not your 
 
 Example:
 ========
-::
+This buys/sells upon a Simple Moving Average crossing over the close price::
+
     import datetime
     import backtrader as bt
 
