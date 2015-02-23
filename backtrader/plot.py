@@ -34,7 +34,7 @@ import metabase
 class PlotScheme(object):
     pdist = 0.0
 
-    style = 'bar'
+    style = 'line'
     loc = 'blue'
     barup = 'k'
     bardown = 'r'
