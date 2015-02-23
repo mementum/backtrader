@@ -1,80 +1,105 @@
 backtrader
 ==========
+BackTesting platform written in Python to test trading strategies.
 
-BackTesting system in Python to test your trading strategies.
+Read the full documentation at: `backtrader documentation http://backtrader.readthedocs.org/en/latest/introduction.html`_
 
-As of Jan 15th and with the 1st commit the following is working:
+Installation
+============
+From pypi:
 
-- Creating Indicators
-- Creating Strategies
-- A basic Broker which accepts "AtMarket" orders (no notification yet)
-- Loading Data Feeds from Yahoo Online or from a Yahoo CSV file
+  - pip install backtrader
 
-  - Indicators provided:
-    - MovingAverages: Simple, Exponential, Smoothed, Weighted
-    - AverageTrueRange, MACD, RSI, Stochastic
-    - Minor Utilities: Highest, Lowest
+Or run directly from source by placing the *backtrader* directory found in the sources inside your project
 
-There are 3 test files under the "tests" directory
+Features:
+=========
+  - Bar/Tick based approach
 
-  - test.py - Intended to test individual indicators
-  - test2.py - Intented to test data feed loading
-  - test3.py - Sample reference test strategy to compare to PyAlgoTrade
+    Strategies/Indicators/Brokers will be called on each arriving bar
 
-    test3 is already (broker corrections pending) a fully fledged
-    implementation of a strategy.
+  - Data Feeds Supported
 
-Some other Python platforms do exist and are actually more complete
+    Yahoo Online and CSV
+    Another example of CSV is given
 
-  - PyAlgoTrade
-  - Zipline
-  - Ultra-Finance
+  - Indicators on Data Feeds or on Indicators
 
-Plotting, ratios, event notification and others are already an integral
-part of the platforms and you may find them better suited to your
-personal needs.
+  - Broker (attempting a realistic order execution simulation)
 
-They didn't suit my personal needs and that's how the platform was born
-with the following goals
+    With definable Commission schemes per assets and/or globally
 
-  - Simplicity
+  - Plotting
 
-    Mostly when creating an indicator and/or strategy. No need to "register"
-    to events and even no need to assign output values
+    Per strategy plot of datas, indicators and results (actual shown items are tunable)
 
-    Heavy use of metaclasses is done with this objective in mind.
+  - Analyzer (basic)
 
-    This has been mostly achieved even in the first version
+    As the name implies there is an analysis of the performance of the strategy
 
-  - Speed
+Alternatives
+============
+If after seeing the docs (see also the example below) you feel this is not your cup of tea, you can always have a look at similar Python platforms:
 
-    By having not only a quick "tick/bar" based system with no events but
-    also by provinding a single-shot calculation for all algorithms.
+  - `PyAlgoTrade https://github.com/gbeced/pyalgotrade`_
+  - `Zipline https://github.com/quantopian/zipline`_
+  - `Ultra-Finance https://code.google.com/p/ultra-finance/`_
+  - `ProfitPy https://code.google.com/p/profitpy/`_
 
-    Trying to work it out. Collides with simplicity and Elegance
+Example:
+========
+::
+    import datetime
+    import backtrader as bt
 
-  - Elegance
+    class TestStrategy(bt.Strategy):
+        params = (('maperiod', 15),)
 
-    In how the calculations for many indicators are laid out just during the
-    creation and having a "0"-backwards based system to reference produced/future
-    values
+        def log(self, txt, dt=None):
+            dt = dt or self.data.datetime[0]
+            print '%s, %s' % (dt.isoformat(), txt)
 
-    The last value is "0", the previous one is "1" and the next one is "-1"
+        def __init__(self):
+	    self.orderid = None
+            self.data = self.datas[0]
+            self.dataclose = self.data.close
+            self.sma = bt.indicators.MovingAverageSimple(self.data, period=self.params.maperiod)
 
-    This last part and the initial choice of "array.array" are (probably" things
-    bound to change if speed must be kept as a goal, specially for one-shot
-    calculations to avoid the overhead of Python function calls
+        def ordernotify(self, order):
+            if order.status == bt.Order.Completed:
+                if isinstance(order, bt.BuyOrder):
+                    self.log('EXEC BUY , Price: %.2f, Size: %d' % \
+                             (order.executed.price, order.executed.size), order.executed.dt)
+                else: # elif isinstance(order, SellOrder):
+                    self.log('EXEC SELL , Price: %.2f, Size: %d' % \
+                             (order.executed.price, order.executed.size), order.executed.dt)
 
-  - Flexibility
+                # Allow new orders
+                self.orderid = None
 
-    Indicators and systems should not be bound to "names" like "Close", "High".
+        def next(self):
+            if self.orderid:
+                return # if an order is active, no new orders are allowed
 
-    A MovingAverage of a "lineseries" (for example "close" prices") has nothing
-    to do with the regular OHLC bar components.
+            if not self.position.size:
+                if self.dataclose[0] > self.sma[0][0]:
+                    self.log('BUY CREATE , %.2f' % self.dataclose[0])
+                    self.orderid = self.buy()
 
-    This objective has been achieved
+            elif self.dataclose[0] < self.sma[0][0]:
+                self.log('SELL CREATE, %.2f' % self.dataclose[0])
+                self.orderid = self.sell()
 
 
-The platform is bound to evolve and add many more indicators and sample strategies.
+    # Create a Cerebro Engine, feed a data souce, a strategy and rund
+    cerebro = bt.Cerebro()
 
-It simply takes time ...
+    data = bt.feeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
+
+    cerebro.adddata(data)
+    cerebro.addstrategy(TestStrategy, maperiod=15) # same as default
+    cerebro.broker.setcash(1000.0)
+    print 'Starting Portfolio Value: %.2f' % cerebro.broker.getvalue()
+    cerebro.run()
+    print 'Final Portfolio Value: %.2f' % cerebro.broker.getvalue()
+    cerebro.plot() # matplotlib is needed for this to work
