@@ -30,7 +30,7 @@ class BrokerBack(object):
 
     Market, Close, Limit = Order.Market, Order.Close, Order.Limit
 
-    params = (('cash', 100.0), ('commission', CommissionInfo()),)
+    params = (('cash', 10000.0), ('commission', CommissionInfo()),)
 
     class Position(object):
         def __init__(self):
@@ -62,7 +62,7 @@ class BrokerBack(object):
 
         return self.comminfo[None]
 
-    def setcommissioninfo(self, commission=0.0, margin=None, mult=1.0, name=None):
+    def setcommission(self, commission=0.0, margin=None, mult=1.0, name=None):
         self.comminfo[name] = CommissionInfo(commission=commission, margin=margin, mult=mult)
 
     def addcommissioninfo(self, comminfo, name=None):
