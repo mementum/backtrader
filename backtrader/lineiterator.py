@@ -161,6 +161,8 @@ class LineIterator(LineSeries):
         for indicator in self._indicators:
             indicator._next()
 
+        self._notify()
+
         if clock_len > self._minperiod:
             self.next()
         elif clock_len == self._minperiod:
@@ -191,6 +193,11 @@ class LineIterator(LineSeries):
     def next(self):
         pass
 
+    def _addnotification(self, *args, **kwargs):
+        pass
+
+    def _notify(self):
+        pass
 
 class LineObserver(LineIterator):
     pass
