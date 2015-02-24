@@ -45,3 +45,6 @@ class SizerFix(SizerBase):
 
     def _getsizing(self, comminfo, cash):
         return self.params.stake
+
+    def setsizing(self, stake):
+        self.params.stake = stake
