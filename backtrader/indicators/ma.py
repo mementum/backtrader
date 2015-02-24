@@ -20,6 +20,7 @@
 ################################################################################
 import collections
 import math
+import operator
 
 from .. import Indicator
 
