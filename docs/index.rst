@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 3
 
    introduction
+   quickstart
 
 Indices and tables
 ==================

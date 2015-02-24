@@ -21,9 +21,10 @@ The basic building blocks in the platform that you'll become acquainted with are
   * Commissions
   * Position Sizers
   * Analyzers
+  * Plotters
   * Cerebro (the main looping engine)
 
-Don't panic!!! One of the targets of this platform is to make most of the inner working of the objects, relationships and interactions transparent to the platform user. For example: a broker with a preset commission scheme (no commission) is included along a fixed size Position sizer and a basic Analyzer.
+Don't panic!!! One of the targets of this platform is to make most of the inner working of the objects, relationships and interactions transparent to the platform user. For example: a broker with a preset commission scheme (no commission) is included along a fixed size Position sizer, a basic Analyzer and *sensible* defaults for plotting.
 
 Some operations are obviously the responsibility of the user, because the platform cannot know or decide if the user wishes to base the logic of a strategy on Moving Average or an Average True Range indicator (or maybe both will be used or one will use the other)
 
