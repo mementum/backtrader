@@ -73,7 +73,7 @@ This buys/sells upon a Simple Moving Average crossing over the close price::
                 if isinstance(order, bt.BuyOrder):
                     self.log('EXEC BUY , Price: %.2f, Size: %d' % \
                              (order.executed.price, order.executed.size), order.executed.dt)
-                else: # elif isinstance(order, SellOrder):
+                else: # elif isinstance(order, bt.SellOrder):
                     self.log('EXEC SELL , Price: %.2f, Size: %d' % \
                              (order.executed.price, order.executed.size), order.executed.dt)
 
@@ -94,7 +94,7 @@ This buys/sells upon a Simple Moving Average crossing over the close price::
                 self.orderid = self.sell()
 
 
-    # Create a Cerebro Engine, feed a data souce, a strategy and rund
+    # Create a Cerebro Engine, feed a data souce, a strategy and run
     cerebro = bt.Cerebro()
 
     data = bt.feeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
