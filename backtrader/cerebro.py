@@ -83,7 +83,7 @@ class Cerebro(object):
             self._broker.next()
             while self._broker.notifs:
                 order = self._broker.notifs.popleft()
-                order.owner._ordernotify(order)
+                order.owner._addnotification(order)
 
             for strat in self.runstrats:
                 strat._next()

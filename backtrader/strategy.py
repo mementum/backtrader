@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+import collections
+
 from broker import BrokerBack
 from lineiterator import LineIterator
 from operations import Operations
@@ -30,6 +32,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj.env = env
         _obj.broker = env.broker
         _obj._sizer = SizerFix()
+        _obj._notifs = collections.deque()
 
         _obj.dataops = dict()
         for data in _obj.datas:
@@ -63,11 +66,16 @@ class Strategy(LineIterator):
         for data in self.datas:
             self.dataops[data]._next()
 
-    def _ordernotify(self, order):
-        self.dataops[order.data].addorder(order)
-        self.ordernotify(order)
+    def _addnotification(self, order):
+        self._notifs.append(order)
 
-    def ordernotify(self, order):
+    def _notify(self):
+        while self._notifs:
+            order = self._notifs.popleft()
+            self.dataops[order.data].addorder(order)
+            self.notify(order)
+
+    def notify(self, order):
         pass
 
     def buy(self, data=None, size=None, price=None, exectype=None, valid=None):
