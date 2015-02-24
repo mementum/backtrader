@@ -98,9 +98,10 @@ class DataFeedBase(dataseries.OHLCDateTime):
         while self._load():
             dt = self.lines.datetime[0]
             if dt < self.params.fromdate:
+                self.rewind() # discard loaded bar
                 continue
             if dt > self.params.todate:
-                self.rewind()
+                self.rewind() # discard loaded bar
                 break
 
             return True
