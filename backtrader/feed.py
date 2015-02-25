@@ -113,7 +113,7 @@ class DataFeedBase(dataseries.OHLCDateTime):
 
 
 class CSVDataFeedBase(DataFeedBase):
-    params = (('headers', True),)
+    params = (('headers', True), ('separator', ','),)
 
     def start(self):
         if hasattr(self.params.dataname, 'readline'):
@@ -141,7 +141,7 @@ class CSVDataFeedBase(DataFeedBase):
             return False
 
         self.forward() # advance data pointer
-        return self._loadline(line.rstrip('\r\n').split(','))
+        return self._loadline(line.rstrip('\r\n').split(self.params.separator))
 
 
 class CSVFeedBase(FeedBase):
