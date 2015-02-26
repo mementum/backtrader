@@ -24,38 +24,6 @@ import dataseries
 import metabase
 
 
-class FeedBase(object):
-    __metaclass__ = metabase.MetaParams
-
-    params = (('fromdate', datetime.datetime.min), ('todate', datetime.datetime.max),)
-
-    def __init__(self):
-        self.datas = list()
-
-    def start(self):
-        for data in self.datas:
-            data.start()
-
-    def stop(self):
-        for data in self.datas:
-            data.stop()
-
-    def getdata(self, dataname, name=None, **kwargs):
-        for pname, pvalue in self.params._getparams():
-            kwargs.setdefault(pname, getattr(self.params, pname))
-
-        data = self._getdata(dataname, **kwargs)
-        data._name = name
-        self.datas.append(data)
-        return data
-
-    def _getdata(self, dataname, **kwargs):
-        for pname, pvalue in self.params._getparams():
-            kwargs.setdefault(pname, getattr(self.params, pname))
-
-        return self.DataCls(data=dataname, **kwargs)
-
-
 class MetaDataFeedBase(dataseries.OHLCDateTime.__metaclass__):
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
@@ -69,7 +37,9 @@ class MetaDataFeedBase(dataseries.OHLCDateTime.__metaclass__):
 class DataFeedBase(dataseries.OHLCDateTime):
     _feed = metabase.Parameter(None)
 
-    params = (('dataname', None),) + FeedBase.params._getparams()
+    params = (('dataname', None),
+              ('fromdate', datetime.datetime.min),
+              ('todate', datetime.datetime.max),)
 
     def getfeed(self):
         return self._feed
@@ -110,6 +80,37 @@ class DataFeedBase(dataseries.OHLCDateTime):
 
     def _load(self):
         return False
+
+class FeedBase(object):
+    __metaclass__ = metabase.MetaParams
+
+    params = () + DataFeedBase.params._getparams()
+
+    def __init__(self):
+        self.datas = list()
+
+    def start(self):
+        for data in self.datas:
+            data.start()
+
+    def stop(self):
+        for data in self.datas:
+            data.stop()
+
+    def getdata(self, dataname, name=None, **kwargs):
+        for pname, pvalue in self.params._getparams():
+            kwargs.setdefault(pname, getattr(self.params, pname))
+
+        data = self._getdata(dataname, **kwargs)
+        data._name = name
+        self.datas.append(data)
+        return data
+
+    def _getdata(self, dataname, **kwargs):
+        for pname, pvalue in self.params._getparams():
+            kwargs.setdefault(pname, getattr(self.params, pname))
+
+        return self.DataCls(data=dataname, **kwargs)
 
 
 class CSVDataFeedBase(DataFeedBase):
