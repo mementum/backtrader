@@ -12,7 +12,9 @@ Contents:
    :maxdepth: 3
 
    introduction
+   installation
    quickstart
+   backtrader
 
 Indices and tables
 ==================
