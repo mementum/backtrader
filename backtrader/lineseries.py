@@ -25,6 +25,16 @@ import metabase
 
 
 class LineAlias(object):
+    ''' Descriptor class that store a line reference and returns that line from the owner
+
+    Keyword Args:
+        line (int): reference to the line that will be returned fro owner's *lines* buffer
+
+    As a convenience the __set__ method of the descriptor is used not set the *line* reference
+    because this is a constant along the live of the descriptor instance, but rather to
+    set the value of the *line* at the instant '0' (the current one)
+    '''
+
     def __init__(self, line):
         self.line = line
 
