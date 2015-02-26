@@ -2,32 +2,6 @@
 Quickstart
 ##########
 
-************
-Installation
-************
-
-There are 3 ways to install and use **backtrader**:
-
-  - Install with from pypi. For example usin pip::
-
-      pip install backtrader
-
-    You may of course also use *easy_install*.
-
-  - Install from source
-
-    First downloading a release or the latest tarball from the github site: https://github.com/mementum/backtrader
-
-    And the running the command::
-
-      python setup.py install
-
-  - Copy to your project
-
-    Again download a release or the latest tarball from the github site: https://github.com/mementum/backtrader
-
-    And then copy the *backtrader* package directory to your own project
-
 ******************
 Using the platform
 ******************
@@ -82,9 +56,9 @@ The previously output value uses index *-1*, such as::
 
 .. note:: The line output by *MovingAverageSimple* also has an alias that can be used for access: *avg*. With it he notation will be: *self.sma.avg[0]* or *self.sma.avg[-1]* for the last output value.
 
-
+**************************
 From 0 to 100: the samples
-==========================
+**************************
 
 Basic Setup
 -----------
@@ -238,6 +212,10 @@ After the execution the output is::
 
 Several "BUY" creation orders were issued, our porftolio value was decremented. A couple of important things are clearly missing.
 
+  - The order was created but it is unknown if it was executed, when and at what price.
+
+    The next example will build upon that by listening to notifications of order status.
+
 The curious reader may ask how many shares are being bought, what asset is being bouth and how are orders being executed. Where possible (and in this case it is) the platform fills in the gaps:
 
   - self.datas[0] (the main data aka system clock) is the target asset if no other one is specified
@@ -257,7 +235,7 @@ The *"exit concept"* will be an easy one:
 
   - Exit after 5 bars (on the 6th bar) have elapsed for good or for worse
 
-    Please notice that ther is no "time" or "timeframe" implied: number of bars. The bars can represent 1 minute, 1 hour, 1 day, 1 week or any other time period.
+    Please notice that there is no "time" or "timeframe" implied: number of bars. The bars can represent 1 minute, 1 hour, 1 day, 1 week or any other time period.
 
     Although we know the data source is a daily one, the strategy makes no assumption about that.
 
