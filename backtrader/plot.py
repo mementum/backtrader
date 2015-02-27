@@ -32,7 +32,14 @@ except ImportError:
 import metabase
 
 class PlotScheme(object):
-    pdist = 0.0
+    volume = True
+    voloverlay = False
+    volover_top = 2.5
+    volover_bot =0.85
+    rowsmajor = 5
+    rowsminor = 1
+
+    plotdist = 0.0
 
     style = 'line'
     loc = 'blue'
@@ -64,21 +71,16 @@ class PlotScheme(object):
 class Plot(object):
     __metaclass__ = metabase.MetaParams
 
-    LineOnClose, OhlcBar, Candlestick = range(3)
-
     params = (
-        ('volume', True),
-        ('voloverlay', False),
-        ('volover_top', 2.5),
-        ('volover_bot', 0.85),
-        ('rowsmajor', 5),
-        ('rowsminor', 1),
         ('scheme', PlotScheme()),
     )
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         if not matplotlib:
             raise ImportError('Please install matplotlib in order to enable plotting')
+
+        for pname, pvalue in kwargs.iteritems():
+            setattr(self.params.scheme, pname, pvalue)
 
     def plot(self, strategy):
         dataslen = len(strategy.datas)
@@ -87,11 +89,11 @@ class Plot(object):
 
         fig = pyplot.figure(0)
 
-        nrows = self.params.rowsmajor + (dataslen - 1) * self.params.rowsminor
-        nrows += (not self.params.voloverlay) * dataslen * self.params.rowsminor
+        nrows = self.params.scheme.rowsmajor + (dataslen - 1) * self.params.scheme.rowsminor
+        nrows += (not self.params.scheme.voloverlay) * dataslen * self.params.scheme.rowsminor
         indplots = [ind for ind in strategy._indicators if ind.plot]
         indsubplots = [ind for ind in indplots if ind.subplot]
-        nrows += sum([ind.subplot for ind in indplots]) * self.params.rowsminor
+        nrows += sum([ind.subplot for ind in indplots]) * self.params.scheme.rowsminor
 
         props = font_manager.FontProperties(size=9)
         axis = list()
@@ -104,10 +106,10 @@ class Plot(object):
         numvols = 0
         for row, data in enumerate(strategy.datas):
             if not row:
-                axdata = pyplot.subplot2grid((nrows, 1), (row, 0), rowspan=self.params.rowsmajor)
+                axdata = pyplot.subplot2grid((nrows, 1), (row, 0), rowspan=self.params.scheme.rowsmajor)
             else:
-                axdata = pyplot.subplot2grid((nrows, 1), (self.params.rowsmajor + row + numvols, 0),
-                                             rowspan=self.params.rowsminor, sharex=axis[0])
+                axdata = pyplot.subplot2grid((nrows, 1), (self.params.scheme.rowsmajor + row + numvols, 0),
+                                             rowspan=self.params.scheme.rowsminor, sharex=axis[0])
             axis.append(axdata)
             closes = data.close.plot()
             opens = data.open.plot()
@@ -132,34 +134,34 @@ class Plot(object):
             axdata.plot(rdt, ops.buy.plot(), color='g', marker='^', ls='-', fillstyle='none', label='Buy')
             axdata.plot(rdt, ops.sell.plot(), color='r', marker='v', fillstyle='none', label='Sell')
 
-            if self.params.volume:
+            if self.params.scheme.volume:
                 volumes = data.volume.plot()
                 if max(volumes):
-                    if self.params.voloverlay:
+                    if self.params.scheme.voloverlay:
                         # Push the data upwards
                         bot, top = axdata.get_ylim()
-                        axdata.set_ylim(bot * self.params.volover_bot, top)
+                        axdata.set_ylim(bot * self.params.scheme.volover_bot, top)
 
                         # Clone the data ax
                         axvol = axdata.twinx()
                     else:
                         # Create independent subplot
-                        volrow = self.params.rowsmajor + row + numvols
+                        volrow = self.params.scheme.rowsmajor + row + numvols
                         axvol = pyplot.subplot2grid((nrows, 1), (volrow, 0),
-                                                    rowspan=self.params.rowsminor, sharex=axis[0])
+                                                    rowspan=self.params.scheme.rowsminor, sharex=axis[0])
                         numvols += 1
                         axis.append(axvol)
 
-                    volalpha = 1.0 if not self.params.voloverlay else self.params.scheme.voltrans
+                    volalpha = 1.0 if not self.params.scheme.voloverlay else self.params.scheme.voltrans
                     bc = volume_overlay(axvol, opens, closes, volumes,
                                         colorup=self.params.scheme.volup,
                                         colordown=self.params.scheme.voldown,
                                         alpha=volalpha, width=1)
 
-                    if self.params.voloverlay:
+                    if self.params.scheme.voloverlay:
                         # Keep it at the bottom
                         bot, top = axvol.get_ylim()
-                        axvol.set_ylim(bot, top * self.params.volover_top)
+                        axvol.set_ylim(bot, top * self.params.scheme.volover_top)
                         axvol.set_yticks([])
                     else:
                         axvol.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
@@ -170,8 +172,8 @@ class Plot(object):
 
         for ind in indplots:
             if ind.subplot:
-                axind = pyplot.subplot2grid((nrows, 1), (self.params.rowsmajor + row + numvols, 0),
-                                            rowspan=self.params.rowsminor, sharex=axis[0])
+                axind = pyplot.subplot2grid((nrows, 1), (self.params.scheme.rowsmajor + row + numvols, 0),
+                                            rowspan=self.params.scheme.rowsminor, sharex=axis[0])
                 row += 1
                 axis.append(axind)
             elif ind._clock in strategy.datas:
@@ -242,7 +244,7 @@ class Plot(object):
         axis[-1].xaxis.set_major_formatter(MyFormatter(dt))
         axis[-1].xaxis.set_minor_formatter(MyFormatter2(dt))
 
-        fig.subplots_adjust(hspace=self.params.scheme.pdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
+        fig.subplots_adjust(hspace=self.params.scheme.plotdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
         fig.autofmt_xdate()
         pyplot.autoscale(axis='x', tight=True)
 
