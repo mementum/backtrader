@@ -34,5 +34,35 @@ class Indicator(LineIterator):
     def _plotlabel(self):
         return ','.join(map(str, self.params._getvalues()))
 
+    def preonce(self, start, end):
+        # generic implementation
+        for i in xrange(start, end):
+            for data in self.datas:
+                data.advance()
+
+            if self._clockindicator:
+                self._clock.advance()
+
+            for indicator in self._indicators:
+                indicator.advance()
+
+            self.advance()
+            self.prenext()
+
+    def once(self, start, end):
+        # generic implementation
+        for i in xrange(start, end):
+            for data in self.datas:
+                data.advance()
+
+            if self._clockindicator:
+                self._clock.advance()
+
+            for indicator in self._indicators:
+                indicator.advance()
+
+            self.advance()
+            self.next()
+
     # Branching away from things like Strategy and DataSeries, were it needed to differentiate
     pass
