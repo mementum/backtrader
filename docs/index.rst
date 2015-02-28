@@ -14,6 +14,7 @@ Contents:
    introduction
    installation
    quickstart
+   advanced
    backtrader
 
 Indices and tables
