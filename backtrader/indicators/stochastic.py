@@ -46,6 +46,9 @@ class StochasticFast(Indicator):
         kperc = LineDivision(knum, kden, factor=100.0).bindlines()
         self.params.matype(kperc, period=self.params.period_dfast).bindlines(1)
 
+    def once(self, start, end):
+        pass
+
 
 class StochasticInt(StochasticFast):
     params = (('period_dslow', 3),)

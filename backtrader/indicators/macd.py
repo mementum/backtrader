@@ -23,27 +23,6 @@ from ma import MovingAverageExponential
 from utils import LineDifference
 
 
-class MACDHisto(Indicator):
-    lines = ('macd', 'signal', 'histo',)
-    plotinfo = dict(histo=dict(method='bar', alpha=0.33))
-
-    params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
-
-    plothlines = [0]
-
-    def __init__(self):
-        me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
-        me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
-
-        macd = LineDifference(me1, me2).bindlines() # owner 0 <- own 0
-        signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(owner=1)
-        LineDifference(macd, signal).bindlines(owner=2) # owner 2 <- own 0
-
-    def next1(self):
-        # Faster than "LineDifference" above because no extra lines are accumulated
-        self[2][0] = self[0][0] - self[1][0]
-
-
 class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
@@ -53,17 +32,15 @@ class MACD(Indicator):
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
         me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
-        macd = LineDifference(me1, me2).bindlines(0)
+        macd = LineDifference(me1, me2).bindlines(0) # owner 0 <- own 0
         signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(1)
 
+    def once(self, start, end):
+        pass #
 
 class MACDHistogram(MACD):
     lines = ('histo',)
-    plotinfo = {'histo': dict(method='bar', alpha=0.33)}
+    plotinfo = {'histo': dict(_method='bar', alpha=0.33)}
 
     def __init__(self):
-        LineDifference(self, self, line0=0, line1=1).bindlines(2)
-
-    def next1(self):
-        # Faster than "LineDifference" above because no extra lines are accumulated
-        self.lines[2][0] = self.lines[0][0] - self.lines[1][0]
+        LineDifference(self, self, line0=0, line1=1).bindlines(owner=2) # owner 2 <- own 0

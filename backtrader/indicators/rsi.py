@@ -34,6 +34,13 @@ class LineNormalize(Indicator):
         norm = self.params.norm
         self.lines[0][0] = norm - norm / (1.0 + self.dataline[0])
 
+    def once(self, start, end):
+        darray = self.dataline.array
+        larray = self.lines[0].array
+        norm = self.params.norm
+        for i in xrange(start, end):
+            larray[i] = norm - norm / (1.0 + darray[i])
+
 
 class UpDays(Indicator):
     lines = ('up',)
@@ -46,6 +53,13 @@ class UpDays(Indicator):
         linediff = self.dataline[0] - self.dataline[-1]
         self.lines[0][0] = linediff if linediff > 0.0 else 0.0
 
+    def once(self, start, end):
+        darray = self.dataline.array
+        larray = self.lines[0].array
+        for i in xrange(start, end):
+            linediff = darray[i] - darray[i - 1]
+            larray[i] = linediff if linediff > 0.0 else 0.0
+
 
 class DownDays(Indicator):
     lines = ('down',)
@@ -57,6 +71,13 @@ class DownDays(Indicator):
     def next(self):
         linediff = self.dataline[-1] - self.dataline[0]
         self.lines[0][0] = linediff if linediff > 0.0 else 0.0
+
+    def once(self, start, end):
+        darray = self.dataline.array
+        larray = self.lines[0].array
+        for i in xrange(start, end):
+            linediff = darray[i - 1] - darray[i]
+            larray[i] = linediff if linediff > 0.0 else 0.0
 
 
 class RSI(Indicator):
@@ -75,23 +96,30 @@ class RSI(Indicator):
 
         updays = UpDays(self.datas[0])
         downdays = DownDays(self.datas[0])
+        self.maup = self.params.matype(updays, period=self.params.period)
+        self.madown = self.params.matype(downdays, period=self.params.period)
         if False:
-            maup = self.params.matype(updays, period=self.params.period)
-            madown = self.params.matype(downdays, period=self.params.period)
             rs = LineDivision(maup, madown)
             rsi = LineNormalize(rs).bindlines()
-        else:
-            self.maup = self.params.matype(updays, period=self.params.period)
-            self.madown = self.params.matype(downdays, period=self.params.period)
 
     def next(self):
         # Explanation:
         # Next is much faster (40%) than having a LineDivision and LineNormalize objects
         # because values are being stored and the only needed thing is a division
         # The code in __init__ with the objects is much more elegant but really ineffective
-
         rs = self.maup[0][0] / self.madown[0][0]
         rsi = 100.0 - 100.0 / (1.0 + rs)
         self.lines[0][0] = rsi
+
+    def once(self, start, end):
+        larray = self.lines[0].array
+        muarray = self.maup[0].array
+        mdarray = self.madown[0].array
+
+        for i in xrange(start, end):
+            rs = muarray[i] / mdarray[i]
+            rsi = 100.0 - 100. / (1.0 + rs)
+            larray[i] = rsi
+
 
 __all__ = ['RSI',]
