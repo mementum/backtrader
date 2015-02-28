@@ -22,6 +22,9 @@ from lineiterator import LineIterator
 
 
 class Indicator(LineIterator):
+    plotlegend = True
+    plot = True
+    subplot = True
 
     def plotlabel(self):
         name = getattr(self, 'plotname', self.__class__.__name__)
