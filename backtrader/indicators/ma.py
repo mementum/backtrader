@@ -54,13 +54,14 @@ class MovingAverageSimple(MovingAverageBase):
 
     def once(self, start, end):
         # Cache all dictionary accesses in local variables to speed up the loop
+        period = self.params.period
         fperiod = self.fperiod
         darray = self.dataline.array
         larray = self.lines[0].array
         mfsum = math.fsum
 
         for i in xrange(start, end):
-            larray[i] = math.fsum(darray[i - period + 1, i + 1]) / self.fperiod
+            larray[i] = mfsum(darray[i - period + 1: i + 1]) / fperiod
 
     def preonce_backup(self, start, end):
         for i in xrange(start, end):
