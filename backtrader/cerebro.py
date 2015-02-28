@@ -26,7 +26,11 @@ import plot
 class Cerebro(object):
     __metaclass__ = metabase.MetaParams
 
-    params = (('preload', True), ('lookahead', 0),)
+    params = (
+        ('preload', True),
+        ('runonce', True),
+        ('lookahead', 0),
+    )
 
     def __init__(self):
         self.feeds = list()
@@ -55,9 +59,19 @@ class Cerebro(object):
 
     broker = property(getbroker, setbroker)
 
+    def plot(self, plotter=None, **kwargs):
+        plotter = plotter or plot.Plot(**kwargs)
+
+        for strat in self.runstrats:
+            plotter.plot(strat)
+
+        plotter.show()
+
     def run(self):
         if not self.datas:
             return
+
+        self._broker.start()
 
         for feed in self.feeds:
             feed.start()
@@ -68,14 +82,29 @@ class Cerebro(object):
             if self.params.preload:
                 data.preload()
 
-        self._broker.start()
-
         for stratcls, sargs, skwargs in self.strats:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
-            strat.start()
             self.runstrats.append(strat)
 
+        for strat in self.runstrats: # loop separated for clarity
+            strat.start()
+
+        if self.params.preload and self.params.runonce:
+            self._runonce()
+        else:
+            self._runnext()
+
+        for strat in self.runstrats:
+            strat.stop()
+
+        for data in self.datas:
+            data.stop()
+
+        for feed in self.feeds:
+            feed.stop()
+
+    def _runnext(self):
         while self.datas[0].next():
             for data in self.datas[1:]:
                 data.next()
@@ -88,19 +117,27 @@ class Cerebro(object):
             for strat in self.runstrats:
                 strat._next()
 
+    def _runonce(self):
         for strat in self.runstrats:
-            strat.stop()
+            strat._once()
 
-        for data in self.datas:
-            data.stop()
+        for i in xrange(self.datas[0].buflen()):
+            for data in self.datas:
+                data.advance()
 
-        for feed in self.feeds:
-            feed.stop()
+            self._broker.next()
+            while self._broker.notifs:
+                order = self._broker.notifs.popleft()
+                order.owner._addnotification(order)
 
-    def plot(self, plotter=None, **kwargs):
-        plotter = plotter or plot.Plot(**kwargs)
+            for strat in self.runstrats:
+                for indicator in strat._indicators:
+                    indicator.advance()
 
-        for strat in self.runstrats:
-            plotter.plot(strat)
+                strat.advance()
+                strat._notify()
+                strat.next()
 
-        plotter.show()
+                for observer in strat._observers:
+                    observer.advance()
+                    observer.next()
