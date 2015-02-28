@@ -165,19 +165,48 @@ class LineIterator(LineSeries):
         elif clock_len == self._minperiod:
             self.nextstart() # only called for the 1st value
         else:
-            # FIXME: Add a differentiation between preperiod and prenext
+            # POTENTIAL IDEA: Add an extra method before "prenext" is reached
             self.prenext()
 
+        for observer in self._observers:
+            observer._next()
+
     def _once(self):
+        self.forward(size=self._clock.buflen())
+
+        if self._clockindicator:
+            self._clock._once()
+
         for indicator in self._indicators:
             indicator._once()
 
-        self.once()
+        for observer in self._observers:
+            observer.forward(size=self.buflen())
 
-    def once(self):
+        for data in self.datas:
+            data.home()
+
+        if self._clockindicator:
+            self._clock.home()
+
+        for indicator in self._indicators:
+            indicator.home()
+
+        for observer in self._observers:
+            observer.home()
+
+        self.home()
+
+        self.preonce(0, self._minperiod - 1)
+        self.once(self._minperiod - 1, self.buflen())
+
+        for line in self.lines:
+            line.oncebinding()
+
+    def preonce(self, start, end):
         pass
 
-    def preperiod(self):
+    def once(self, start, end):
         pass
 
     def prenext(self):
