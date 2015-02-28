@@ -42,6 +42,19 @@ class TrueRange(Indicator):
 
         self.lines[0][0] = max(th - tl, abs(yc - th), abs(yc - tl))
 
+    def once(self, start, end):
+        dharray = self.data_high.array
+        dlarray= self.data_low.array
+        dcarray = self.data_close.array
+        larray = self.lines[0].array
+
+        for i in xrange(start, end):
+            th = dharray[i]
+            tl = dlarray[i]
+            yc = dcarray[i - 1]
+
+            larray[i] = max(th - tl, abs(yc - th), abs(yc - tl))
+
 
 class AverageTrueRange(Indicator):
     lines = ('atr',)
@@ -55,5 +68,9 @@ class AverageTrueRange(Indicator):
     def __init__(self):
         tr = TrueRange(self.datas[0])
         self.params.matype(tr, period=self.params.period).bindlines()
+
+    def once(self, start, end):
+        pass # bindings are in place ... skip the default once -> next implementation
+
 
 ATR = AverageTrueRange
