@@ -254,6 +254,13 @@ class LineBuffer(object):
         '''
         return self.getzero(idx, size or len(self))
 
+    def oncebinding(self):
+        sarray = self.array
+        for binding in self.bindings:
+            barray = binding.array
+            for i in xrange(0, self.buflen()):
+                barray[i] = sarray[i]
+
 
 class LineBufferArray(LineBuffer):
     ''' Line buffer concrete implementation with array.array
