@@ -61,11 +61,6 @@ class Strategy(LineIterator):
     def stop(self):
         pass
 
-    def _next(self):
-        super(Strategy, self)._next()
-        for data in self.datas:
-            self.dataops[data]._next()
-
     def _addnotification(self, order):
         self._notifs.append(order)
 
