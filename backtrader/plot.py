@@ -82,6 +82,9 @@ class PlotScheme(object):
     sellcolor = 'r'
     buymarkersize = sellmarkersize = 8.0
 
+    plotcashvalue = True
+
+
 class Plot(object):
     __metaclass__ = metabase.MetaParams
 
@@ -110,7 +113,13 @@ class Plot(object):
         indsubplots = [ind for ind in indplots if ind.subplot]
         nrows += sum([ind.subplot for ind in indplots]) * self.params.scheme.rowsminor
 
-        props = font_manager.FontProperties(size=9)
+        if self.params.scheme.plotcashvalue:
+            nrows += len(strategy.valobs)
+
+            indplots = strategy.valobs + indplots
+            indsubplots = strategy.valobs + indsubplots
+
+        props = font_manager.FontProperties(size=self.params.scheme.subtxtsize)
         axis = list()
 
         # if "dates" are passed, matploblib adds non-existing dates (ie weekends) creating gaps
