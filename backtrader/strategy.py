@@ -22,7 +22,7 @@ import collections
 
 from broker import BrokerBack
 from lineiterator import LineIterator
-from operations import Operations
+from operations import Operations, CashObserver, ValueObserver, CashValueObserver
 from sizer import SizerFix
 
 
@@ -37,6 +37,14 @@ class MetaStrategy(LineIterator.__metaclass__):
         _obj.dataops = dict()
         for data in _obj.datas:
             _obj.dataops[data] = Operations()
+
+        _obj.valobs = list()
+
+        if kwargs.get('_cash_plus_value', True):
+            _obj.valobs.append(CashValueObserver())
+        else:
+            _obj.valobs.append(CashObserver())
+            _obj.valobs.append(ValueObserver())
 
         return _obj, args, kwargs
 
@@ -54,6 +62,8 @@ class Strategy(LineIterator):
 
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
+
+    _cash_plus_value = True #: calculate and show cash and value together in plot
 
     def start(self):
         pass

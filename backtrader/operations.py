@@ -24,8 +24,37 @@ import math
 import lineiterator
 import order as ordmod
 
-class Operations(lineiterator.LineObserver):
 
+class CashObserver(lineiterator.LineObserver):
+    lines = ('cash',)
+
+    def next(self):
+        self.lines[0][0] = self._owner.broker.getcash()
+
+
+class ValueObserver(lineiterator.LineObserver):
+    lines = ('value',)
+
+    def next(self):
+        self.lines[0][0] = self._owner.broker.getvalue()
+
+
+class CashValueObserver(lineiterator.LineObserver):
+    lines = ('cash', 'value')
+
+    def next(self):
+        self.lines[0][0] = self._owner.broker.getcash()
+        self.lines[1][0] = self._owner.broker.getvalue()
+
+
+class ValueObserver(lineiterator.LineObserver):
+    lines = ('value',)
+
+    def next(self):
+        self.lines.value = self._owner.broker.getvalue()
+
+
+class Operations(lineiterator.LineObserver):
     lines = ('buy', 'sell', 'position')
 
     def __init__(self):
