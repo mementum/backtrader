@@ -20,7 +20,10 @@
 ################################################################################
 import testbase
 
-from time import clock as tclock
+import datetime
+import os.path
+import time
+import sys
 
 import backtrader as bt
 import backtrader.feeds as btfeeds
@@ -34,7 +37,7 @@ class TestStrategy(bt.Strategy):
         self.close = self.ohlc.close
 
         if True:
-            btindicators.StochasticSlow(self.datas[0])
+            btindicators.MovingAverageSimple(self.datas[0], period=30)
             pass
         else:
             self.stocslow = btindicators.StochasticSlow(self.datas[0])
@@ -58,13 +61,13 @@ class TestStrategy(bt.Strategy):
             print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
 
     def start(self):
-        self.tcstart = tclock()
+        self.tcstart = time.clock()
 
     def next(self):
         pass
 
     def stop(self):
-        tused = tclock() - self.tcstart
+        tused = time.clock() - self.tcstart
         print '--------------------------------------------------'
         print 'Time used', tused
 
@@ -79,21 +82,14 @@ class TestStrategy(bt.Strategy):
 
             print basetxt
 
-        if False:
-            print '--------------------------------------------------'
-            print 'self.macd2 macd', self.macd2.lines.macd[0]
-            print 'self.macd2 signal', self.macd2.lines.signal[0]
-            print 'self.macd2 histo', self.macd2.lines.histo[0]
+cerebro = bt.Cerebro(preload=True, runonce=True)
 
-        if False:
-            print '--------------------------------------------------'
-            print 'self.stocslow k', self.stocslow.lines.k[0]
-            print 'self.stocslow d', self.stocslow.lines.d[0]
+# The datas are in a subdirectory of the samples. Need to find where the script is
+# because it could have been called from anywhere
+modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
+data = bt.feeds.YahooFinanceCSVData(dataname=datapath, reversed=True)
 
-
-cerebro = bt.Cerebro(preload=True)
-# data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-2000.csv', reversed=True)
-data = btfeeds.YahooFinanceCSVData(dataname='./datas/yahoo/oracle-1995-2014.csv', reversed=True)
 cerebro.adddata(data)
 cerebro.addstrategy(TestStrategy)
 cerebro.run()
