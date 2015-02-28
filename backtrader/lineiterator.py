@@ -107,9 +107,6 @@ class MetaLineIterator(LineSeries.__metaclass__):
 class LineIterator(LineSeries):
     __metaclass__ = MetaLineIterator
 
-    plot = True
-    subplot = True
-
     def addindicator(self, indicator):
         if isinstance(indicator, LineObserver):
             self._observers.append(indicator)
