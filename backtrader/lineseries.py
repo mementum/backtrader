@@ -113,9 +113,9 @@ class Lines(object):
     def __setitem__(self, line, value):
         self.lines[line][0] = value
 
-    def forward(self, value=linebuffer.NAN):
+    def forward(self, value=linebuffer.NAN, size=1):
         for line in self.lines:
-            line.forward(value)
+            line.forward(value, size=size)
 
     def rewind(self, size=1):
         for line in self.lines:
