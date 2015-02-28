@@ -55,6 +55,13 @@ class PlotScheme(object):
     subtxtsize = 9
 
     legendtrans = 0.25
+    legendind = True
+    legendindloc = 'center left'
+    skipmainsinglelabels = True
+
+    hlinescolor = 'black'
+    hlinesstyle = '--'
+    hlineswidth = 1.0
 
     line0 = 'red'
     line1 = 'blue'
@@ -67,6 +74,13 @@ class PlotScheme(object):
 
     lines = [line0, line1, line2, line3, line4, line5, line6, line7]
 
+    buymarker = '^'
+    buylabel = 'Buy'
+    buycolor = 'g'
+    sellmarker = 'v'
+    selllabel = 'Sell'
+    sellcolor = 'r'
+    buymarkersize = sellmarkersize = 8.0
 
 class Plot(object):
     __metaclass__ = metabase.MetaParams
@@ -81,6 +95,7 @@ class Plot(object):
 
         for pname, pvalue in kwargs.iteritems():
             setattr(self.params.scheme, pname, pvalue)
+
 
     def plot(self, strategy):
         dataslen = len(strategy.datas)
@@ -131,8 +146,19 @@ class Plot(object):
             axdata.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
 
             ops = strategy.dataops[data]
-            axdata.plot(rdt, ops.buy.plot(), color='g', marker='^', ls='-', fillstyle='none', label='Buy')
-            axdata.plot(rdt, ops.sell.plot(), color='r', marker='v', fillstyle='none', label='Sell')
+            axdata.plot(rdt, ops.buy.plot(),
+                        color=self.params.scheme.buycolor,
+                        marker=self.params.scheme.buymarker,
+                        markersize=self.params.scheme.buymarkersize,
+                        ls='-',
+                        fillstyle='none',
+                        label=self.params.scheme.buylabel)
+            axdata.plot(rdt, ops.sell.plot(),
+                        color=self.params.scheme.sellcolor,
+                        marker=self.params.scheme.sellmarker,
+                        markersize=self.params.scheme.sellmarkersize,
+                        fillstyle='none',
+                        label=self.params.scheme.selllabel)
 
             if self.params.scheme.volume:
                 volumes = data.volume.plot()
@@ -171,6 +197,7 @@ class Plot(object):
             axdata.set_ylim(bot, top * 1.03)
 
         for ind in indplots:
+            indplotinfo = getattr(ind, 'plotinfo', dict())
             if ind.subplot:
                 axind = pyplot.subplot2grid((nrows, 1), (self.params.scheme.rowsmajor + row + numvols, 0),
                                             rowspan=self.params.scheme.rowsminor, sharex=axis[0])
@@ -186,18 +213,30 @@ class Plot(object):
             for lineidx in xrange(ind.size()):
                 line = ind.lines[lineidx]
                 linealias = ind.lines._getlinealias(lineidx)
+
+                lineplotinfo = indplotinfo.get(linealias, dict())
+                plotlines = lineplotinfo
+
                 if ind.subplot:
-                    label = linealias
+                    # plotting on own subplot
+                    if lineplotinfo.pop('_plotskip', False):
+                        label = '_nolegend'
+                    elif ind.size() == 1:
+                        if self.params.scheme.skipmainsinglelabels:
+                            label = '_nolegend'
+                        elif not indplotinfo.get('_plotsinglelines', False):
+                            label = '_nolegend'
+                        else:
+                            label = linealias
+                    else:
+                        label = linealias
                 else:
+                    # plotting on someone else's ... indicator label to be shown
                     label = '_nolegend' if lineidx else indlabel
 
-                lineplotinfo = dict()
-                if hasattr(ind, 'plotinfo'):
-                    lineplotinfo = ind.plotinfo.get(linealias, dict())
-
-                pltmethod = getattr(axind, lineplotinfo.get('method', 'plot'))
+                pltmethod = getattr(axind, lineplotinfo.get('_method', 'plot'))
                 plotkwargs = dict(aa=True, label=label, **lineplotinfo)
-                plotkwargs.pop('method', None)
+                plotkwargs.pop('_method', None) # avoid passing an unknown parameter
                 if ind.subplot:
                     plotkwargs['color'] = self.params.scheme.lines[lineidx]
 
@@ -224,12 +263,20 @@ class Plot(object):
             # This can be done also in the previous loop ... but since we do the ticks here
             hlines = getattr(ind, 'plothlines', [])
             for hline in hlines:
-                axind.axhline(hline)
+                axind.axhline(hline,
+                              color=self.params.scheme.hlinescolor,
+                              ls=self.params.scheme.hlinesstyle,
+                              lw=self.params.scheme.hlineswidth)
 
-            # Legend must be done here to ensure legend includes lines from ind on ind
-            legend = axind.legend(loc='lower left', shadow=False, fancybox=False, prop=props)
-            if legend:
-                legend.get_frame().set_alpha(0.25)
+            if self.params.scheme.legendind and getattr(ind, 'plotlegend', True):
+                handles, labels = axind.get_legend_handles_labels()
+                # Ensure that we have something to show
+                if labels:
+                    # Legend must be done here to ensure legend includes lines from ind on ind
+                    legend = axind.legend(loc=self.params.scheme.legendindloc,
+                                          shadow=False, fancybox=True, prop=props)
+                    if legend:
+                        legend.get_frame().set_alpha(0.25)
 
         for dataidx in xrange(dataslen):
             ax = axis[dataidx]
