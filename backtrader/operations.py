@@ -22,8 +22,7 @@ import collections
 import math
 
 import lineiterator
-import order as ordmod
-
+import datapos
 
 class CashObserver(lineiterator.LineObserver):
     lines = ('cash',)
@@ -55,39 +54,86 @@ class ValueObserver(lineiterator.LineObserver):
 
 
 class Operations(lineiterator.LineObserver):
-    lines = ('buy', 'sell', 'position')
+    lines = ('buy', 'sell', 'position', 'pnl')
 
     def __init__(self):
         self.orders = collections.deque()
+        self.lastpos = 0.0
+
+        self.longs = 0
+        self.shorts = 0
+        self.position = datapos.Position()
 
     def addorder(self, order):
         self.orders.append(order)
 
-    def prenext(self):
-        self.lines.position = 0.0
-
     def next(self):
         buy = list()
         sell = list()
-        lastpos = self.lines.position[-1]
 
+        curpos = 0
         while self.orders:
             order = self.orders.popleft()
             # ordpos = order.executed.position
             if not order.executed.size:
                 continue # no size ... no execution
 
-            # Need to determine operation nature ... a buy is not necessarily a "long"
-            # a "long" is having opened a positive operation from a previous pos <= 0
-            # and viceversa for short
-
-            if isinstance(order, ordmod.BuyOrder):
+            if order.isbuy():
                 buy.append(order.executed.price)
             else:
                 sell.append(order.executed.price)
 
-            # lastpos = order.executed.position
+            if False:
+                curpos = order.position
+                if not self.lastpos:
+                    if curpos > 0:
+                        self.longs += 1
+                        self.pos.update(order.executed.size, order.executed.price)
+                    elif curpos < 0:
+                        self.shorts += 1
+                        self.pos.update(-order.executed.size, order.executed.price)
 
+                elif self.lastpos > 0:
+                    if curpos > self.lastpos:
+                        # long position added to long position
+                        # update only with extra seen
+                        self.pos.update(curpos - self.lastpos, order.executed.price)
+                    elif curpos > 0 and curpos <= self.lastpos:
+                        # position has been reduced or is equal ...
+                        # need to add pnl to this operation
+                        pass
+                    elif curpos == 0:
+                        # position closed, add net profit/loss to line
+                        # self.lines.pnl[0] = calculated profit and loss
+                        pass
+
+                    elif curpos < 0:
+                        # position closed, add net profit/loss to line
+                        # self.lines.pnl[0] = calculated profit and loss
+                        # add a short
+                        self.shorts += 1
+
+                else: # self.lastpos < 0:
+                    if curpos < self.lastpos:
+                        # short position added to long position
+                        # change average price
+                        pass
+                    elif curpos == 0:
+                        # position closed, add net profit/loss to line
+                        # self.lines.pnl[0] = calculated profit and loss
+                        pass
+
+                    elif curpos > 0:
+                        # position closed, add net profit/loss to line
+                        # self.lines.pnl[0] = calculated profit and loss
+                        # add a long
+                        self.longs += 1
+
+            else:
+                curpos = self.lastpos
+                lastpost = curpos
+
+        # Write down the average buy/sell price
         self.lines.buy[0] = math.fsum(buy)/float(len(buy) or 'NaN')
         self.lines.sell[0] = math.fsum(sell)/float(len(sell) or 'NaN')
-        self.lines.position[0] = lastpos
+        self.lines.position[0] = curpos

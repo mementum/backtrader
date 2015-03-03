@@ -71,6 +71,10 @@ class Order(object):
         self.status = Order.Submitted
         self.created = OrderData(self.data.datetime[0], self.params.size, self.params.price)
         self.executed = OrderData(remsize=self.params.size)
+        self.position = 0
+
+    def setposition(self, position):
+        self.position = position
 
     def isbuy(self):
         return isinstance(self, BuyOrder)
