@@ -18,6 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import itertools
 import sys
 
@@ -109,8 +112,8 @@ class Params(object):
         # Put the "updated" baseparams and "trimmed newly defined" params together
         newparams = tuple(baseparams + params)
 
-        # Create subclass
-        newcls = type(cls.__name__ + '_' + name, (cls,), {})
+        # Create subclass - str for Python 2/3 compatibility
+        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
         # Keep a copy of _getparams ... to access the params
         setattr(newcls, '_getparamsbase', getattr(newcls, '_getparams'))
@@ -129,7 +132,7 @@ class Params(object):
         return dict(map(lambda x: (x[0], getattr(self, x[0])), self._getparams()))
 
     def _getvalues(self):
-        return map(lambda x: getattr(self, x[0]), self._getparams())
+        return [getattr(self, x[0]) for x in  self._getparams()]
 
 
 class MetaParams(MetaBase):

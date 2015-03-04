@@ -18,11 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 import math
 
-import lineiterator
-import datapos
+from . import lineiterator
+from . import datapos
+
 
 class CashObserver(lineiterator.LineObserver):
     lines = ('cash',)

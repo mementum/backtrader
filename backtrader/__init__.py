@@ -19,17 +19,19 @@
 #
 ################################################################################
 
-from linebuffer import *
-from lineseries import *
-from lineiterator import *
-from dataseries import *
-from indicator import *
-from strategy import *
-from order import *
-from comminfo import *
-from broker import *
-from cerebro import *
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import indicators
-import strategies
-import feeds
+from .linebuffer import *
+from .lineseries import *
+from .lineiterator import *
+from .dataseries import *
+from .indicator import *
+from .strategy import *
+from .order import *
+from .comminfo import *
+from .broker import *
+from .cerebro import *
+
+from . import indicators
+from . import strategies
+from . import feeds

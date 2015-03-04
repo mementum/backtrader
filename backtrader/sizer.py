@@ -18,11 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import metabase
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+
+from .metabase import MetaParams
 
 
-class SizerBase(object):
-    __metaclass__ = metabase.MetaParams
+class SizerBase(six.with_metaclass(MetaParams, object)):
 
     params = (('broker', None,),)
 

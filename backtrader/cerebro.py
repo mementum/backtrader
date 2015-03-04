@@ -18,13 +18,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from broker import BrokerBack
-import metabase
-import plot
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+
+from .broker import BrokerBack
+from .metabase import MetaParams
+from . import plot
 
 
-class Cerebro(object):
-    __metaclass__ = metabase.MetaParams
+class Cerebro(six.with_metaclass(MetaParams, object)):
 
     params = (
         ('preload', True),
@@ -121,7 +125,7 @@ class Cerebro(object):
         for strat in self.runstrats:
             strat._once()
 
-        for i in xrange(self.datas[0].buflen()):
+        for i in range(self.datas[0].buflen()):
             for data in self.datas:
                 data.advance()
 

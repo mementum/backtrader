@@ -19,15 +19,16 @@
 #
 ################################################################################
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
-import functools
-import inspect
 
+import six
 
-from lineseries import LineSeries
-import metabase
+from .lineseries import LineSeries
+from . import metabase
 
-class MetaLineIterator(LineSeries.__metaclass__):
+class MetaLineIterator(LineSeries.__class__):
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
@@ -65,16 +66,24 @@ class MetaLineIterator(LineSeries.__metaclass__):
 
             return []
 
-        # Find and call baseclasses __init__ (from top to bottom)
-        seen = set()
-        ownimfunc = _obj.__init__.im_func.__call__
-        for x in findbases(cls):
-            ximfunc = x.__init__.im_func.__call__
-            if ximfunc not in seen:
-                seen.add(ximfunc)
-                # only execute the call if it's not our own init, which may have been inherited.
-                if ximfunc != ownimfunc:
-                    x.__init__(_obj, *args, **kwargs)
+        if getattr(cls, '_autoinit', False):
+            # Find and call baseclasses __init__ (from top to bottom)
+            seen = set()
+            try:
+                ownimfunc = _obj.__init__.im_func.__call__ # Python 2 with unbound methods
+            except AttributeError:
+                ownimfunc = _obj.__init__.__call__ # Python 3 - function object
+            for x in findbases(cls):
+                try:
+                    ximfunc = x.__init__.im_func.__call__ # Python 2 with unbound methods
+                except AttributeError:
+                    ximfunc = x.__init__.__call__ # Python 3 - function object
+
+                if ximfunc not in seen:
+                    seen.add(ximfunc)
+                    # only execute the call if it's not our own init, which may have been inherited.
+                    if ximfunc != ownimfunc:
+                        x.__init__(_obj, *args, **kwargs)
 
         _obj, args, kwargs = super(MetaLineIterator, cls).doinit(_obj, *args, **kwargs)
         return _obj, args, kwargs
@@ -104,8 +113,7 @@ class MetaLineIterator(LineSeries.__metaclass__):
         return _obj, args, kwargs
 
 
-class LineIterator(LineSeries):
-    __metaclass__ = MetaLineIterator
+class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     plotlegend = True
     plot = True
@@ -130,7 +138,7 @@ class LineIterator(LineSeries):
             owner = [owner,]
 
         if not own:
-            own = xrange(len(owner))
+            own = range(len(owner))
         if not isinstance(own, collections.Iterable):
             own = [own,]
 
@@ -144,7 +152,7 @@ class LineIterator(LineSeries):
             lines = [lines,]
 
         if itlines is None:
-            itlines = xrange(len(lines))
+            itlines = range(len(lines))
         elif not isinstance(itlines, collections.Iterable):
             itlines = [itlines,]
 

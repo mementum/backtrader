@@ -18,9 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from six.moves import xrange
+
 from .. import Indicator
-from ma import MATypes
-from utils import LineDifference, LineDivision
+from .ma import MATypes
+from .utils import LineDifference, LineDivision
 
 
 class LineNormalize(Indicator):

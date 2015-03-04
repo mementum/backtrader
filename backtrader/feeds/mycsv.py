@@ -18,6 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import datetime
 import itertools
 
@@ -29,23 +32,23 @@ from .. import linebuffer
 class MyCSVData(feed.CSVDataFeedBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
-        i.next() # skip ticker name
-        i.next() # skip daily/intraday indication (intraday has simply a "null" time)
+        next(i) # skip ticker name
+        next(i) # skip daily/intraday indication (intraday has simply a "null" time)
 
-        dttxt = linetokens[i.next()]
+        dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
 
-        tmtxt = linetokens[i.next()]
+        tmtxt = linetokens[next(i)]
         hh, mmss = divmod(int(tmtxt), 10000)
         mm, ss = divmod(mmss, 100)
 
         self.lines.datetime = datetime.datetime(y, m, d, hh, mm, ss)
-        self.lines.open = float(linetokens[i.next()])
-        self.lines.high = float(linetokens[i.next()])
-        self.lines.low = float(linetokens[i.next()])
-        self.lines.close = float(linetokens[i.next()])
-        self.lines.volume = float(linetokens[i.next()])
-        self.lines.openinterest = float(linetokens[i.next()])
+        self.lines.open = float(linetokens[next(i)])
+        self.lines.high = float(linetokens[next(i)])
+        self.lines.low = float(linetokens[next(i)])
+        self.lines.close = float(linetokens[next(i)])
+        self.lines.volume = float(linetokens[next(i)])
+        self.lines.openinterest = float(linetokens[next(i)])
 
         return True
 

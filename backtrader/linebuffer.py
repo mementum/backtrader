@@ -29,11 +29,12 @@ with appends, forwarding, rewinding, resetting and other
 
 
 '''
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import array
 import collections
 import datetime
 import itertools
-
 
 NAN = float('NaN')
 
@@ -79,7 +80,7 @@ class LineBuffer(object):
                 'dq' meant for datetime objects  - the array will be a collections.deque
                 'ls' meant for datetime objects  - the array will be a list
         '''
-        typecode = kwargs.get('typecode', cls.DefaultTypeCode)
+        typecode = kwargs.pop('typecode', cls.DefaultTypeCode)
 
         if typecode == 'dq':
             newcls = LineBufferDeque
@@ -196,7 +197,7 @@ class LineBuffer(object):
             size (int): How many extra positions to enlarge the buffer
         '''
         self.idx += size
-        for i in xrange(size):
+        for i in range(size):
             self.array.append(value)
 
     def rewind(self, size=1):
@@ -206,7 +207,7 @@ class LineBuffer(object):
             size (int): How many extra positions to rewind and reduce the buffer
         '''
         self.idx -= size
-        for i in xrange(size):
+        for i in range(size):
             self.array.pop()
 
     def advance(self, size=1):
@@ -228,7 +229,7 @@ class LineBuffer(object):
         in the buffer "future"
         '''
         self.extension += size
-        for i in xrange(size):
+        for i in range(size):
             self.array.append(value)
 
     def addbinding(self, binding):
@@ -255,11 +256,10 @@ class LineBuffer(object):
         return self.getzero(idx, size or len(self))
 
     def oncebinding(self):
-        sarray = self.array
+        larray = self.array
+        blen = self.buflen()
         for binding in self.bindings:
-            barray = binding.array
-            for i in xrange(0, self.buflen()):
-                barray[i] = sarray[i]
+            binding.array[0:blen] = larray[0:blen]
 
 
 class LineBufferArray(LineBuffer):
@@ -271,7 +271,8 @@ class LineBufferArray(LineBuffer):
     def create_array(self):
         ''' Instantiates the internal array to array.array
         '''
-        self.array = array.array(self.typecode)
+        # str needed for Python 2/3 bytes/unicode compatibility
+        self.array = array.array(str(self.typecode))
 
 
 class LineBufferList(LineBuffer):
@@ -303,9 +304,11 @@ class LineBufferDeque(LineBuffer):
     def get(self, ago=0, size=1):
         ''' Specialized implementation using itertools.islice. No behavior changes
         '''
+        # Need to return a list because the return value may be reused several times
         return list(itertools.islice(self.array, self.idx + ago - size + 1, self.idx + ago + 1))
 
     def getzero(self, idx=0, size=1):
         ''' Specialized implementation using itertools.islice. No behavior changes
         '''
+        # Need to return a list because the return value may be reused several times
         return list(itertools.islice(self.array, idx, idx + size))

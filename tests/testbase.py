@@ -18,10 +18,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os
 import sys
 
 # append module root directory to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backtrader.utils import flushfile
+import backtrader.utils.flushfile

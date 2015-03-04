@@ -18,15 +18,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 
-from broker import BrokerBack
-from lineiterator import LineIterator
-from operations import Operations, CashObserver, ValueObserver, CashValueObserver
-from sizer import SizerFix
+import six
+
+from .broker import BrokerBack
+from .lineiterator import LineIterator
+from .operations import Operations, CashObserver, ValueObserver, CashValueObserver
+from .sizer import SizerFix
 
 
-class MetaStrategy(LineIterator.__metaclass__):
+class MetaStrategy(LineIterator.__class__):
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
@@ -57,8 +61,7 @@ class MetaStrategy(LineIterator.__metaclass__):
         return _obj, args, kwargs
 
 
-class Strategy(LineIterator):
-    __metaclass__ = MetaStrategy
+class Strategy(six.with_metaclass(MetaStrategy, LineIterator)):
 
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1

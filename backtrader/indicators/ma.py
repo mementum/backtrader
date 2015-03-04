@@ -18,9 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 import math
 import operator
+
+from six.moves import xrange
 
 from .. import Indicator
 
@@ -85,26 +90,25 @@ class MovingAverageWeighted(MovingAverageSimple):
     plotname = 'WMA'
 
     def __init__(self):
-        self.weights = map(float, range(1, self.params.period + 1))
+        super(MovingAverageWeighted, self).__init__()
+        self.weights = [float(x) for x in range(1, self.params.period + 1)]
         self.coef = 2.0 / (self.fperiod * (self.fperiod + 1.0))
 
     def next(self):
         self.dq.append(self.dataline[0])
-        self.lines[0][0] = self.coef * sum(map(operator.mul, self.dq, self.weights))
+        self.lines[0][0] = self.coef * math.fsum(map(operator.mul, self.dq, self.weights))
 
     def once(self, start, end):
         # Cache all dictionary accesses in local variables to speed up the loop
-        dq = self.dq
-        dqappend = dq.append
         darray = self.dataline.array
         larray = self.lines[0].array
         opmul = operator.mul
         coef = self.coef
         weights = self.weights
+        period = self.params.period
 
         for i in xrange(start, end):
-            dqappend(darray[i])
-            larray[i] = coef * sum(map(opmul, dq, weights))
+            larray[i] = coef * math.fsum(map(opmul, weights, darray[i - period + 1:i + 1]))
 
 
 class MovingAverageSmoothing(MovingAverageSimple):
@@ -136,6 +140,7 @@ class MovingAverageExponential(MovingAverageSmoothing):
     plotname = 'EMA'
 
     def __init__(self):
+        super(MovingAverageExponential, self).__init__()
         self.smoothfactor = 2.0 / (1.0 + self.fperiod)
 
 
@@ -143,6 +148,7 @@ class MovingAverageSmoothed(MovingAverageSmoothing):
     plotname = 'SMA'
 
     def __init__(self):
+        super(MovingAverageSmoothed, self).__init__()
         self.smoothfactor = 1.0 / self.fperiod
 
 
@@ -152,6 +158,7 @@ class MASmoothedNAN(MovingAverageSmoothed):
     NAN = float('nan')
 
     def __init__(self):
+        super(MASmoothedNAN, self).__init__()
         self.tofill = self.params.period - 1
 
     def prenext(self):

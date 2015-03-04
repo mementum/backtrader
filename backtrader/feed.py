@@ -18,15 +18,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import datetime
 
-import dataseries
-import metabase
+import six
+
+from . import dataseries
+from . import metabase
 
 
-class MetaDataFeedBase(dataseries.OHLCDateTime.__metaclass__):
+class MetaDataFeedBase(dataseries.OHLCDateTime.__class__):
     def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = super(MetaDataFeedBase, cls).dopreinit(_obj, *args, **kwargs)
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
@@ -34,8 +39,8 @@ class MetaDataFeedBase(dataseries.OHLCDateTime.__metaclass__):
         return _obj, args, kwargs
 
 
-class DataFeedBase(dataseries.OHLCDateTime):
-    _feed = metabase.Parameter(None)
+class DataFeedBase(six.with_metaclass(MetaDataFeedBase, dataseries.OHLCDateTime)):
+    _feed = metabase.Parameter(None) # explicitly not using "params" because an attribute is sought
 
     params = (('dataname', None),
               ('fromdate', datetime.datetime.min),
@@ -81,9 +86,7 @@ class DataFeedBase(dataseries.OHLCDateTime):
     def _load(self):
         return False
 
-class FeedBase(object):
-    __metaclass__ = metabase.MetaParams
-
+class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
     params = () + DataFeedBase.params._getparams()
 
     def __init__(self):
@@ -142,7 +145,7 @@ class CSVDataFeedBase(DataFeedBase):
             return False
 
         self.forward() # advance data pointer
-        return self._loadline(line.rstrip('\r\n').split(self.params.separator))
+        return self._loadline(line.rstrip(six.b('\r\n')).split(six.b(self.params.separator)))
 
 
 class CSVFeedBase(FeedBase):

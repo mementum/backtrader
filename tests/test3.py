@@ -18,6 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from six.moves import xrange
+
 import testbase
 
 import datetime
@@ -42,7 +47,7 @@ class TestStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
         dt = dt or self.data.datetime[0]
-        print '%s, %s' % (dt.isoformat(), txt)
+        print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         self.data = self.datas[0]
@@ -98,8 +103,8 @@ class TestStrategy(bt.Strategy):
 
     def stop(self):
         tused = time.clock() - self.tstart
-        print 'Time used:', str(tused)
-        print 'Final portfolio value: %.2f' % self.broker.getvalue()
+        print('Time used:', str(tused))
+        print('Final portfolio value: %.2f' % self.broker.getvalue())
 
 
 cerebro = bt.Cerebro()
