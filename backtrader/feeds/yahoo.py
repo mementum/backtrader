@@ -18,14 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 import datetime
+import io
 import itertools
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-import urllib2
+
+from six.moves import urllib
 
 from .. import dataseries
 from .. import feed
@@ -46,7 +47,7 @@ class YahooFinanceCSVData(feed.CSVDataFeedBase):
         for line in self.f:
             dq.appendleft(line)
 
-        f = StringIO()
+        f = io.StringIO()
         f.writelines(dq)
         self.f.close()
         self.f = f
@@ -54,18 +55,18 @@ class YahooFinanceCSVData(feed.CSVDataFeedBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
 
-        dttxt = linetokens[i.next()]
+        dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
 
         self.lines.datetime = datetime.datetime(y, m, d)
-        self.lines.open = float(linetokens[i.next()])
-        self.lines.high = float(linetokens[i.next()])
-        self.lines.low = float(linetokens[i.next()])
-        self.lines.close = float(linetokens[i.next()])
-        self.lines.volume = float(linetokens[i.next()])
+        self.lines.open = float(linetokens[next(i)])
+        self.lines.high = float(linetokens[next(i)])
+        self.lines.low = float(linetokens[next(i)])
+        self.lines.close = float(linetokens[next(i)])
+        self.lines.volume = float(linetokens[next(i)])
         self.lines.openinterest = 0.0
         if self.params.adjclose:
-            adjustedclose = float(linetokens[i.next()])
+            adjustedclose = float(linetokens[next(i)])
             adjfactor = self.lines.close[0] / adjustedclose
 
             self.lines.open = round(self.lines.open[0] / adjfactor, 2)
@@ -97,7 +98,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         url += '&ignore=.csv'
 
         try:
-            datafile = urllib2.urlopen(url)
+            datafile = urllib.urlopen(url)
         except IOError as e:
             self.error = str(e)
             # leave us empty
@@ -115,7 +116,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         if self.params.buffered:
             # buffer everything from the socket into a local buffer
-            f = StringIO(datafile.read())
+            f = io.StringIO(datafile.read())
             datafile.close()
         else:
             f = datafile

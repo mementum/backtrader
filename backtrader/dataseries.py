@@ -18,7 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from lineseries import LineSeries
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+
+from .lineseries import LineSeries
 
 
 class DataSeries(LineSeries):
@@ -34,11 +38,3 @@ class OHLC(DataSeries):
 
 class OHLCDateTime(OHLC):
     lines = (('datetime', 'dq'),)
-
-
-class OHLCDateTimeTestExt(OHLC):
-    lines = ('hlavg', 'hlcavg',)
-
-    def docalc(self):
-        self.lines.hlavg = (self.lines.high[0] + self.lines.low[0]) / 2.0
-        self.lines.hlcavg = (self.lines.high[0] + self.lines.low[0] + self.lines.close[0]) / 3.0

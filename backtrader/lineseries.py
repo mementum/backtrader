@@ -18,10 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 
-import linebuffer
-import metabase
+import six
+
+from . import linebuffer
+from . import metabase
 
 
 class LineAlias(object):
@@ -58,7 +63,8 @@ class Lines(object):
 
         newextralines = cls._getlinesextra() + extralines
 
-        newcls = type(cls.__name__ + '_' + name, (cls,), {})
+        # str for Python 2/3 compatibility
+        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
         setattr(newcls, '_getlinesbase', getattr(newcls, '_getlines'))
         setattr(newcls, '_getlines', classmethod(lambda cls: newlines))
@@ -67,7 +73,7 @@ class Lines(object):
         setattr(newcls, '_getlinesextra', classmethod(lambda cls: newextralines))
 
         for line, linealias in enumerate(lines, start=len(baselines)):
-            if not isinstance(linealias, basestring):
+            if not isinstance(linealias, six.string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
             setattr(cls, linealias, LineAlias(line))
@@ -77,7 +83,7 @@ class Lines(object):
     @classmethod
     def _getlinealias(cls, i):
         linealias = cls._getlines()[i]
-        if not isinstance(linealias, basestring):
+        if not isinstance(linealias, six.string_types):
             linealias = linealias[0]
         return linealias
 
@@ -85,14 +91,14 @@ class Lines(object):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
-            if not isinstance(linealias, basestring): # a tuple and not just a string
+            if not isinstance(linealias, six.string_types): # a tuple and not just a string
                 # typecode is additional arg
                 kwargs['typecode'] = linealias[1]
 
             self.lines.append(linebuffer.LineBuffer(**kwargs))
 
         # Add the required extralines
-        for i in xrange(self._getlinesextra()):
+        for i in range(self._getlinesextra()):
             self.lines.append(linebuffer.LineBuffer())
 
     def __len__(self):
@@ -169,8 +175,7 @@ class MetaLineSeries(metabase.MetaParams):
         return _obj, args, kwargs
 
 
-class LineSeries(object):
-    __metaclass__ = MetaLineSeries
+class LineSeries(six.with_metaclass(MetaLineSeries, object)):
 
     # Use Parameter but install directly as class attribute
     _name = metabase.Parameter(None)
@@ -193,7 +198,4 @@ class LineSeries(object):
         # if any args, kwargs make it up to here, something is broken
         # defining a __init__ guarantees the existence of im_func to findbases
         # in lineiterator later, because object.__init__ has no im_func (object has slots)
-        pass
-
-    def docalc(self):
         pass

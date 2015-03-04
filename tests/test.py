@@ -18,6 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import testbase
 
 import datetime
@@ -38,6 +41,19 @@ class TestStrategy(bt.Strategy):
 
         if True:
             btindicators.MovingAverageSimple(self.datas[0], period=30)
+            if True:
+                btindicators.AverageTrueRange(self.datas[0])
+                btindicators.MACD(self.datas[0])
+                btindicators.MACDHistogram(self.datas[0])
+                btindicators.MovingAverageSimple(self.datas[0], period=30)
+                # btindicators.MovingAverageSimple(self.ind1, period=10)
+                btindicators.MovingAverageExponential(self.datas[0], period=30)
+                btindicators.MovingAverageWeighted(self.datas[0], period=30)
+                btindicators.RSI(self.datas[0])
+                btindicators.RSI(self.datas[0], matype=btindicators.MATypes.Exponential)
+                btindicators.StochasticFast(self.datas[0])
+                btindicators.StochasticFull(self.datas[0])
+                btindicators.StochasticSlow(self.datas[0])
             pass
         else:
             self.stocslow = btindicators.StochasticSlow(self.datas[0])
@@ -56,9 +72,9 @@ class TestStrategy(bt.Strategy):
             btindicators.StochasticFull(self.datas[0])
             btindicators.StochasticSlow(self.datas[0])
 
-        print '--------------------------------------------------'
+        print('--------------------------------------------------')
         for indicator in self._indicators:
-            print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
+            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
 
     def start(self):
         self.tcstart = time.clock()
@@ -68,19 +84,19 @@ class TestStrategy(bt.Strategy):
 
     def stop(self):
         tused = time.clock() - self.tcstart
-        print '--------------------------------------------------'
-        print 'Time used', tused
+        print('--------------------------------------------------')
+        print('Time used', tused)
 
         for indicator in self._indicators:
-            print '--------------------------------------------------'
-            print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
+            print('--------------------------------------------------')
+            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
             basetxt = '%5d: %s - Close %.2f - Indicator' \
                       % (len(self.ohlc), self.ohlc.datetime[0].isoformat(), self.close[0])
 
-            for i in xrange(indicator.size()):
+            for i in range(indicator.size()):
                 basetxt += ' %.2f' % (indicator.lines[i][0],)
 
-            print basetxt
+            print(basetxt)
 
 cerebro = bt.Cerebro(preload=True, runonce=True)
 

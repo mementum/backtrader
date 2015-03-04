@@ -18,7 +18,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+from six.moves import xrange
+if six.PY3:
+    cmp = lambda x, y: (x > y) - (x < y)
+
 from .. import Indicator
+
+
 
 class LineCmpTo(Indicator):
     lines = ('cmp',)

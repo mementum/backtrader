@@ -18,7 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import itertools
+
+import six
 
 try:
     import matplotlib
@@ -29,7 +34,8 @@ try:
 except ImportError:
     matploblib = None
 
-import metabase
+from .metabase import MetaParams
+
 
 class PlotScheme(object):
     volume = True
@@ -85,18 +91,15 @@ class PlotScheme(object):
     plotcashvalue = True
 
 
-class Plot(object):
-    __metaclass__ = metabase.MetaParams
+class Plot(six.with_metaclass(MetaParams, object)):
 
-    params = (
-        ('scheme', PlotScheme()),
-    )
+    params = (('scheme', PlotScheme()),)
 
     def __init__(self, **kwargs):
         if not matplotlib:
             raise ImportError('Please install matplotlib in order to enable plotting')
 
-        for pname, pvalue in kwargs.iteritems():
+        for pname, pvalue in kwargs.items():
             setattr(self.params.scheme, pname, pvalue)
 
 
@@ -219,7 +222,7 @@ class Plot(object):
                 axind = axis[idx]
 
             indlabel = ind.plotlabel()
-            for lineidx in xrange(ind.size()):
+            for lineidx in range(ind.size()):
                 line = ind.lines[lineidx]
                 linealias = ind.lines._getlinealias(lineidx)
 
@@ -287,7 +290,7 @@ class Plot(object):
                     if legend:
                         legend.get_frame().set_alpha(0.25)
 
-        for dataidx in xrange(dataslen):
+        for dataidx in range(dataslen):
             ax = axis[dataidx]
             legend = axdata.legend(
                 loc='upper center', shadow=False, fancybox=False, prop=props, numpoints=1, ncol=10)
@@ -315,7 +318,7 @@ class MyFormatter(matplotlib.ticker.Formatter):
         self.fmt = fmt
 
     def __call__(self, x, pos=0):
-        'Return the label for time x at position pos'
+        '''Return the label for time x at position pos'''
         ind = int(round(x))
         if ind >= self.lendates or ind < 0:
             return ''
@@ -330,7 +333,7 @@ class MyFormatter2(matplotlib.ticker.Formatter):
         self.fmt = fmt
 
     def __call__(self, x, pos=0):
-        'Return the label for time x at position pos'
+        '''Return the label for time x at position pos'''
         ind = int(round(x))
         if ind >= self.lendates or ind < 0:
             return ''

@@ -18,6 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import testbase
 
 import datetime
@@ -67,9 +70,9 @@ class TestStrategy(bt.Strategy):
             btindicators.StochasticFull(self.datas[0])
             btindicators.StochasticSlow(self.datas[0])
 
-        print '--------------------------------------------------'
+        print('--------------------------------------------------')
         for indicator in self._indicators:
-            print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
+            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
 
     def start(self):
         self.tcstart = time.clock()
@@ -79,47 +82,37 @@ class TestStrategy(bt.Strategy):
 
     def stop(self):
         tused = time.clock() - self.tcstart
-        print '--------------------------------------------------'
-        print 'Time used', tused
+        print('--------------------------------------------------')
+        print('Time used', tused)
 
         for indicator in self._indicators:
-            print '--------------------------------------------------'
-            print '%s period %d' % (indicator.__class__.__name__, indicator._minperiod)
+            print('--------------------------------------------------')
+            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
             basetxt = '%5d: %s - Close %.2f - Indicator' \
                       % (len(self.ohlc), self.ohlc.datetime[0].isoformat(), self.close[0])
 
-            for i in xrange(indicator.size()):
+            for i in range(indicator.size()):
                 basetxt += ' %.2f' % (indicator.lines[i][0],)
 
-            print basetxt
+            print(basetxt)
 
-        if False:
-            print '--------------------------------------------------'
-            print 'self.macd2 macd', self.macd2.lines.macd[0]
-            print 'self.macd2 signal', self.macd2.lines.signal[0]
-            print 'self.macd2 histo', self.macd2.lines.histo[0]
+if __name__ == '__main__':
 
-        if False:
-            print '--------------------------------------------------'
-            print 'self.stocslow k', self.stocslow.lines.k[0]
-            print 'self.stocslow d', self.stocslow.lines.d[0]
+    cerebro = bt.Cerebro(preload=True)
 
+    # The datas are in a subdirectory of the samples. Need to find where the script is
+    # because it could have been called from anywhere
+    modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+    datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
 
-cerebro = bt.Cerebro(preload=True)
+    data = bt.feeds.YahooFinanceCSVData(
+        dataname=datapath,
+        fromdate=datetime.datetime(2000, 1, 1), # Do not pass values before this date
+        todate=datetime.datetime(2000, 12, 31), # Do not pass values after this date
+        reversed=True)
 
-# The datas are in a subdirectory of the samples. Need to find where the script is
-# because it could have been called from anywhere
-modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
+    cerebro.adddata(data)
+    cerebro.addstrategy(TestStrategy)
+    cerebro.run()
 
-data = bt.feeds.YahooFinanceCSVData(
-    dataname=datapath,
-    fromdate=datetime.datetime(2000, 01, 01), # Do not pass values before this date
-    todate=datetime.datetime(2000, 12, 31), # Do not pass values after this date
-    reversed=True)
-
-cerebro.adddata(data)
-cerebro.addstrategy(TestStrategy)
-cerebro.run()
-
-cerebro.plot(voloverlay=False)
+    cerebro.plot(voloverlay=False)

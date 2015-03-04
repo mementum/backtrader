@@ -18,9 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from .. indicator import Indicator
-from ma import MovingAverageExponential
-from utils import LineDifference
+from .ma import MovingAverageExponential
+from .utils import LineDifference
 
 
 class MACD(Indicator):
@@ -43,4 +46,5 @@ class MACDHistogram(MACD):
     plotinfo = {'histo': dict(_method='bar', alpha=0.33)}
 
     def __init__(self):
+        super(MACDHistogram, self).__init__()
         LineDifference(self, self, line0=0, line1=1).bindlines(owner=2) # owner 2 <- own 0

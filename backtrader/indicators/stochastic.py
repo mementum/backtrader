@@ -18,9 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from .. import DataSeries, Indicator
-from ma import MATypes
-from utils import LineBinder, LineDifference, LineDivision, Highest, Lowest
+from .ma import MATypes
+from .utils import LineBinder, LineDifference, LineDivision, Highest, Lowest
 
 
 class StochasticFast(Indicator):
@@ -59,6 +62,7 @@ class StochasticInt(StochasticFast):
         return ','.join(map(str, plabels))
 
     def __init__(self):
+        super(StochasticInt, self).__init__()
         if self.slow:
             LineBinder(self, line0=0, line1=1)
 

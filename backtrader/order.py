@@ -18,7 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import metabase
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+
+from .metabase import MetaParams
 
 
 class OrderData(object):
@@ -40,8 +45,7 @@ class OrderData(object):
         self.margin = None
 
 
-class Order(object):
-    __metaclass__ = metabase.MetaParams
+class Order(six.with_metaclass(MetaParams, object)):
 
     Market, Close, Limit, Stop, StopLimit = range(5)
     Buy, Sell, Stop, StopLimit = range(4)

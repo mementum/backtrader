@@ -19,12 +19,14 @@
 #
 ################################################################################
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 # The modules below should/must define __all__ with the Indicator objects
 # of prepend an "_" (underscore) to private classes/variables
 
-from atr import *
-from ma import *
-from macd import *
-from rsi import *
-from stochastic import *
-from utils import *
+from .atr import *
+from .ma import *
+from .macd import *
+from .rsi import *
+from .stochastic import *
+from .utils import *

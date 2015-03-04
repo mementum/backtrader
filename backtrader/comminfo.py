@@ -18,11 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-import metabase
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import six
+
+from .metabase import MetaParams
 
 
-class CommissionInfo(object):
-    __metaclass__ = metabase.MetaParams
+class CommissionInfo(six.with_metaclass(MetaParams)):
 
     params = (('commission', 0.0), ('mult', 1.0), ('margin', None),)
 

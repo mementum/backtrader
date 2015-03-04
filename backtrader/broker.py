@@ -18,17 +18,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import collections
 
-from comminfo import CommissionInfo
-import metabase
-from order import Order, BuyOrder, SellOrder
+import six
+
+from .comminfo import CommissionInfo
+from .metabase import MetaParams
+from .order import Order, BuyOrder, SellOrder
 
 
-class BrokerBack(object):
-    __metaclass__ = metabase.MetaParams
-
-    Market, Close, Limit = Order.Market, Order.Close, Order.Limit
+class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     params = (('cash', 10000.0), ('commission', CommissionInfo()),)
 
@@ -46,7 +48,7 @@ class BrokerBack(object):
         self.orders = list() # will only be appending
         self.pending = collections.deque() # need to popleft and append(right)
 
-        self.position = collections.defaultdict(BrokerBack.Position)
+        self.positions = collections.defaultdict(BrokerBack.Position)
         self.comminfo = dict({None: self.params.commission})
         self.notifs = collections.deque()
 
@@ -87,18 +89,18 @@ class BrokerBack(object):
 
     def getvalue(self, datas=None):
         if not datas:
-            datas = self.position.iterkeys()
+            datas = six.iterkeys(self.positions)
 
         pos_value = 0.0
         for data in datas:
             comminfo = self.getcommissioninfo(data)
-            position = self.position[data]
+            position = self.positions[data]
             pos_value += comminfo.getvalue(position, data.close[0])
 
         return self.params.cash + pos_value
 
     def getposition(self, data):
-        return self.position[data]
+        return self.positions[data]
 
     def submit(self, order):
         # FIXME: When an order is submitted, a margin check requirement has to be done before it
@@ -168,7 +170,7 @@ class BrokerBack(object):
 
     def closeposition(self, data, size, price):
         # FIXME: Are we checking if the position is closing a position in the same direction ??
-        position = self.position[data]
+        position = self.positions[data]
         if not position.size:
             return size
 
@@ -182,7 +184,7 @@ class BrokerBack(object):
         return size + closing
 
     def openposition(self, data, size, price):
-        position = self.position[data]
+        position = self.positions[data]
         # Calculate the new average price
         oldpos = position.price * position.size
         newpos = price * size
@@ -194,13 +196,13 @@ class BrokerBack(object):
         self.notifs.append(order)
 
     def next(self):
-        for data, pos in self.position.iteritems():
+        for data, pos in self.positions.items():
             # futures change cash in the broker in every bar to ensure margin requirements are met
             comminfo = self.getcommissioninfo(data)
             self.params.cash += comminfo.cashadjust(pos.size, data.close[-1], data.close[0])
 
         # Iterate once over all elements of the pending queue
-        for i in xrange(len(self.pending)):
+        for i in range(len(self.pending)):
             order = self.pending.popleft()
 
             if order.expire():

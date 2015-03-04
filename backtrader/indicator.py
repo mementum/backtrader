@@ -18,7 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from lineiterator import LineIterator
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from six.moves import xrange
+
+from .lineiterator import LineIterator
 
 
 class Indicator(LineIterator):
@@ -52,6 +57,3 @@ class Indicator(LineIterator):
 
             self.advance()
             self.next()
-
-    # Branching away from things like Strategy and DataSeries, were it needed to differentiate
-    pass
