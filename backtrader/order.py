@@ -26,8 +26,35 @@ import six
 from .metabase import MetaParams
 
 
+class OrderExecutionBit(object):
+    def __init__(self,
+                 dt=None, size=0, price=0.0,
+                 closed=0, closedvalue=0.0, closedcomm=0.0,
+                 opened=0, openedvalue=0.0, openedcomm=0.0,
+                 psize=0, pprice=0.0):
+
+        self.dt = dt
+        self.size = size
+        self.price = price
+
+        self.closed = closed
+        self.opened = opened
+        self.closedvalue = closedvalue
+        self.openedvalue = openedvalue
+        self.closedcomm = closedcomm
+        self.openedcomm = openedcomm
+
+        self.value = closedvalue + openedvalue
+        self.comm = closedcomm + openedcomm
+
+        self.psize = psize
+        self.pprice = pprice
+
+
 class OrderData(object):
-    def __init__(self, dt=None, size=0, price=None, pricelimit=None, remsize=0):
+    def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0):
+        self.exbits = list()
+
         self.dt = dt
         self.size = size
         self.remsize = remsize
@@ -43,6 +70,41 @@ class OrderData(object):
         self.value = 0.0
         self.comm = 0.0
         self.margin = None
+
+        self.psize = 0
+        self.pprice = 0
+
+    def __len__(self):
+        return len(self.exbits)
+
+    def __getitem__(self, key):
+        return self.exbits[key]
+
+    def add(self, dt, size, price,
+            closed, closedvalue, closedcommission,
+            opened, openedvalue, openedcomm,
+            psize, pprice):
+
+        self.addbit(
+            OrderExecutionBit(dt, size, price,
+                              closed, closedvalue, closedcommission,
+                              opened, openedvalue, openedcomm,
+                              psize, pprice))
+
+    def addbit(self, exbit):
+        self.exbits.append(exbit)
+
+        self.remsize -= exbit.size
+
+        self.dt = exbit.dt
+        oldvalue = self.size * self.price
+        newvalue = exbit.size * exbit.price
+        self.size += exbit.size
+        self.price = (oldvalue + newvalue) / self.size
+        self.value += exbit.value
+        self.comm += exbit.comm
+        self.psize = exbit.psize
+        self.pprice = exbit.pprice
 
 
 class Order(six.with_metaclass(MetaParams, object)):
@@ -64,15 +126,17 @@ class Order(six.with_metaclass(MetaParams, object)):
 
     def __setattribute__(self, name, value):
         if hasattr(self.params, name):
-            raise AttributeError
-
-        super(Order, self).__setattribute__(name, value)
+            setattr(self.params, name, value)
+        else:
+            super(Order, self).__setattribute__(name, value)
 
     def __init__(self):
         if self.params.exectype is None:
             self.params.exectype = Order.Market
 
         self.status = Order.Submitted
+        if not self.isbuy():
+            self.params.size = -self.params.size
         self.created = OrderData(self.data.datetime[0], self.params.size, self.params.price)
         self.executed = OrderData(remsize=self.params.size)
         self.position = 0
@@ -91,23 +155,21 @@ class Order(six.with_metaclass(MetaParams, object)):
 
     def cancel(self):
         self.status = Order.Canceled
-        self.executed = self.data.datetime[0]
+        self.executed.dt = self.data.datetime[0]
 
-    def execute(self, size, price, dt, value, comm, margin):
+    def execute(self, dt, size, price,
+                closed, closedvalue, closedcomm,
+                opened, openedvalue, openedcomm,
+                margin, psize, pprice):
         if not size:
             return
 
-        self.executed.dt = dt
-
-        oldexec = self.executed.size * (self.executed.price or 0.0)
-        newexec = price * size
-        self.executed.size += size
-        self.executed.price = (oldexec + newexec) / self.executed.size
-        self.executed.remsize -= size
-        self.executed.value += value
-        self.executed.comm += comm
+        # NOTE: MARGIN ... DO I NEED THAT IN THE ORDER ...
+        self.executed.add(dt, size, price,
+                          closed, closedvalue, closedcomm,
+                          opened, openedvalue, openedcomm,
+                          psize, pprice)
         self.executed.margin = margin
-
         self.status = Order.Partial if self.executed.remsize else Order.Completed
 
     def expire(self):
