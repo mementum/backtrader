@@ -30,11 +30,30 @@ class Position(object):
     def __len__(self):
         return self.size
 
-    def update(self, size, price=None):
+    def update(self, size, price):
+        newvalue = price * size
+        oldsize = self.size
+        oldvalue = self.price * oldsize
         self.size += size
+        self.price = (oldvalue + newvalue) / (self.size or 1.0)
 
-        if price:
-            oldpos = self.price * self.size
-            newpos = price * size
+        if not self.size:
+            opened, closed = 0, abs(oldsize)
+        elif not oldsize:
+            opened, closed = abs(size), 0
+        elif oldsize > 0:
+            if size > 0:
+                opened, closed = size, 0
+            elif newpos >= 0:
+                opened, closed = 0, -size
+            else: # newpos < 0
+                opened, closed = -newpos, oldsize
+        elif oldsize < 0:
+            if size < 0:
+                opened, closed = -size, 0
+            elif newpos <= 0:
+                opened, closed = 0, size
+            else: # newpos > 0
+                opened, closed = newpos, -oldsize
 
-            self.price = (oldpos + newpos) / self.size
+        return self.size, self.price, opened, closed
