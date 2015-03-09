@@ -26,6 +26,7 @@ import collections
 import six
 
 from .comminfo import CommissionInfo
+from .datapos import Position
 from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
 
@@ -34,21 +35,13 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     params = (('cash', 10000.0), ('commission', CommissionInfo()),)
 
-    class Position(object):
-        def __init__(self):
-            self.size = 0
-            self.price = 0.0
-
-        def __len__(self):
-            return self.size
-
     def __init__(self):
         self.startingcash = self.params.cash
 
         self.orders = list() # will only be appending
         self.pending = collections.deque() # need to popleft and append(right)
 
-        self.positions = collections.defaultdict(BrokerBack.Position)
+        self.positions = collections.defaultdict(Position)
         self.comminfo = dict({None: self.params.commission})
         self.notifs = collections.deque()
 
@@ -88,11 +81,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return True
 
     def getvalue(self, datas=None):
-        if not datas:
-            datas = six.iterkeys(self.positions)
-
         pos_value = 0.0
-        for data in datas:
+        for data in datas or self.positions.keys():
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
             pos_value += comminfo.getvalue(position, data.close[0])
@@ -122,75 +112,48 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.submit(order)
 
     def _execute(self, order, dt, price):
-        size = order.executed.remsize * (1 if isinstance(order, BuyOrder) else -1)
-        # closing a position may return cash to meet margin requirements
-        remsize = self.closeposition(order.data, size, price)
+        # Orders are fully executed, get operation size
+        size = order.executed.remsize
+
+        # Adjust position with operation size
+        position = self.positions[order.data]
+        psize, pprice, opened, closed = position.update(size, price)
 
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
 
-        closingsize = abs(size) - abs(remsize)
-        # Get back cash for closed size
-        ordervalue = comminfo.getoperationcost(closingsize, price)
-        self.params.cash += ordervalue
-        # Discount commision
-        ordercomm = comminfo.getcomm_pricesize(closingsize, price)
-        self.params.cash -= ordercomm
-        # Re-adjust cash according to close price (it was discounted on loop enter)
-        self.params.cash -= comminfo.cashadjust(closingsize, price, order.data.close[0])
+        if closed:
+            # Adjust according to returned value from closed items and acquired opened items
+            closedvalue = comminfo.getoperationcost(closed, price)
+            self.params.cash += closedvalue
+            # Calculate and substract commission
+            closedcomm = comminfo.getcomm_pricesize(closed, price)
+            self.params.cash -= closedcomm
+            # Re-adjust cash according to future-like movements
+            # Restore cash which was already taken at the start of the day
+            self.params.cash -= comminfo.cashadjust(closed, price, order.data.close[0])
+        else:
+            closedvalue = closedcomm = 0.0
 
-        # order.execute(abs(size) - abs(remsize), price, dt, ordervalue, ordercomm, comminfo.margin)
-        order.execute(closingsize, price, dt, ordervalue, ordercomm, comminfo.margin)
+        if opened:
+            openedvalue = comminfo.getoperationcost(opened, price)
+            self.params.cash -= openedvalue
 
-        if remsize:
-            if not comminfo.checkmargin(size, price, self.params.cash):
-                order.margin()
-                self.notify(order)
-                return
+            openedcomm = comminfo.getcomm_pricesize(opened, price)
+            self.params.cash -= openedcomm
 
-            # Returned remaining size has the right sign already
-            self.openposition(order.data, remsize, price)
+            # Remove cash for the new opened contracts
+            self.params.cash += comminfo.cashadjust(opened, price, order.data.close[0])
+        else:
+            openedvalue = openedcomm = 0.0
 
-            sizeabs = abs(remsize)
-            # Re-adjust cash according to operatio cost
-            ordervalue = comminfo.getoperationcost(sizeabs, price)
-            self.params.cash -= ordervalue
+        # Execute and notify the order
+        order.execute(dt, size, price,
+                      closed, closedvalue, closedcomm,
+                      opened, openedvalue, openedcomm,
+                      comminfo.margin, psize, pprice)
 
-            # Reduce according to commission scheme
-            ordercomm = comminfo.getcomm_pricesize(sizeabs, price)
-            self.params.cash -= ordercomm
-
-            # Re-adjust cash according to close price
-            self.params.cash += comminfo.cashadjust(sizeabs, price, order.data.close[0])
-
-            order.execute(sizeabs, price, dt, ordervalue, ordercomm, comminfo.margin)
-
-        # We need to notify the owner
         self.notify(order)
-
-    def closeposition(self, data, size, price):
-        # FIXME: Are we checking if the position is closing a position in the same direction ??
-        position = self.positions[data]
-        if not position.size:
-            return size
-
-        positionsign = position.size/abs(position.size)
-
-        # number of contracts to close is the entire position or just the size
-        closingabs = min(abs(position.size), abs(size))
-        closing = positionsign * closingabs
-
-        position.size -= closing
-        return size + closing
-
-    def openposition(self, data, size, price):
-        position = self.positions[data]
-        # Calculate the new average price
-        oldpos = position.price * position.size
-        newpos = price * size
-
-        position.size += size
-        position.price = (oldpos + newpos) / position.size
 
     def notify(self, order):
         self.notifs.append(order)
