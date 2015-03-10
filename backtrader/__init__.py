@@ -32,6 +32,7 @@ from .comminfo import *
 from .broker import *
 from .cerebro import *
 
-from . import indicators
-from . import strategies
 from . import feeds
+from . import indicators
+from . import observers
+from . import strategies
