@@ -108,15 +108,18 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.stop()
 
+    def _brokernotify(self):
+        self._broker.next()
+        while self._broker.notifs:
+            order = self._broker.notifs.popleft()
+            order.owner._addnotification(order)
+
     def _runnext(self):
         while self.datas[0].next():
             for data in self.datas[1:]:
                 data.next()
 
-            self._broker.next()
-            while self._broker.notifs:
-                order = self._broker.notifs.popleft()
-                order.owner._addnotification(order)
+            self._brokernotify()
 
             for strat in self.runstrats:
                 strat._next()
@@ -125,23 +128,15 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for strat in self.runstrats:
             strat._once()
 
+        # The default once for strategies does nothing and therefore has not moved
+        # forward all datas/indicators/observers that were homed before calling once
+        # Hence no "need" to do it here again, because pointers are at 0
+
         for i in range(self.datas[0].buflen()):
             for data in self.datas:
                 data.advance()
 
-            self._broker.next()
-            while self._broker.notifs:
-                order = self._broker.notifs.popleft()
-                order.owner._addnotification(order)
+            self._brokernotify()
 
             for strat in self.runstrats:
-                for indicator in strat._indicators:
-                    indicator.advance()
-
-                strat.advance()
-                strat._notify()
-                strat.next()
-
-                for observer in strat._observers:
-                    observer.advance()
-                    observer.next()
+                strat._oncepost()
