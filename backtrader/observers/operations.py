@@ -34,6 +34,8 @@ class OperationsPnLObserver(object):
 class _OperationsPnLObserver(lineiterator.LineObserver):
     lines = ('pnl',)
 
+    plotname = 'Operation Gross Profit/Loss'
+
     plotinfo = dict(
         pnl=dict(marker='o', markersize=8.0, fillstyle='none',),
     )
@@ -49,7 +51,7 @@ class _OperationsPnLObserver(lineiterator.LineObserver):
 
             for exbit in order.executed.exbits:
                 self.operation.update(exbit.closed, exbit.price, exbit.closedvalue, exbit.closedcomm)
-                if not self.operation:
+                if self.operation.wasclosed:
                     # operation closed, record the pnl
                     self.lines.pnl = self.operation.pnl
 
