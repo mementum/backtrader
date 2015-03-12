@@ -137,7 +137,7 @@ class Order(six.with_metaclass(MetaParams, object)):
         self.status = Order.Submitted
         if not self.isbuy():
             self.params.size = -self.params.size
-        self.created = OrderData(self.data.datetime[0], self.params.size, self.params.price)
+        self.created = OrderData(dt=self.data.datetime[0], size=self.params.size, price=self.params.price)
         self.executed = OrderData(remsize=self.params.size)
         self.position = 0
 
