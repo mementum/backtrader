@@ -20,13 +20,11 @@
 ################################################################################
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import collections
-
 import six
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator
-from .operations import Operations, CashObserver, ValueObserver, CashValueObserver
+from .observers import CashValueObserver, BuySellObserver, OperationsPnLObserver
 from .sizer import SizerFix
 
 
@@ -36,19 +34,12 @@ class MetaStrategy(LineIterator.__class__):
         _obj.env = env
         _obj.broker = env.broker
         _obj._sizer = SizerFix()
-        _obj._notifs = collections.deque()
+        _obj._orders = list()
+        _obj._orderspending = list()
 
-        _obj.dataops = dict()
-        for data in _obj.datas:
-            _obj.dataops[data] = Operations()
-
-        _obj.valobs = list()
-
-        if kwargs.get('_cash_plus_value', True):
-            _obj.valobs.append(CashValueObserver())
-        else:
-            _obj.valobs.append(CashObserver())
-            _obj.valobs.append(ValueObserver())
+        CashValueObserver()
+        BuySellObserver(_obj.datas)
+        OperationsPnLObserver(_obj.datas)
 
         return _obj, args, kwargs
 
@@ -68,19 +59,39 @@ class Strategy(six.with_metaclass(MetaStrategy, LineIterator)):
 
     _cash_plus_value = True #: calculate and show cash and value together in plot
 
+    def _oncepost(self):
+        for indicator in self._indicators:
+            indicator.advance()
+
+        self.advance()
+        self._notify()
+        self.next()
+
+        for observer in self._observers:
+            observer.advance()
+            observer.next()
+
+        self.clear()
+
+    def _next(self):
+         super(Strategy, self)._next()
+         self.clear()
+
     def start(self):
         pass
 
     def stop(self):
         pass
 
+    def clear(self):
+        self._orders.extend(self._orderspending)
+        self._orderspending = list()
+
     def _addnotification(self, order):
-        self._notifs.append(order)
+        self._orderspending.append(order)
 
     def _notify(self):
-        while self._notifs:
-            order = self._notifs.popleft()
-            self.dataops[order.data].addorder(order)
+        for order in self._orderspending:
             self.notify(order)
 
     def notify(self, order):
