@@ -177,7 +177,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         elif clock_len == self._minperiod:
             self.nextstart() # only called for the 1st value
         else:
-            # POTENTIAL IDEA: Add an extra method before "prenext" is reached
+            # POTENTIAL IDEA: Add an extra method before "prenext" is reached (preminperiod)
             self.prenext()
 
         for observer in self._observers:
