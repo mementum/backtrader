@@ -118,32 +118,33 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         # Adjust position with operation size
         position = self.positions[order.data]
         psize, pprice, opened, closed = position.update(size, price)
+        abopened, abclosed = abs(opened), abs(closed)
 
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
 
         if closed:
             # Adjust according to returned value from closed items and acquired opened items
-            closedvalue = comminfo.getoperationcost(closed, price)
+            closedvalue = comminfo.getoperationcost(abclosed, price)
             self.params.cash += closedvalue
             # Calculate and substract commission
-            closedcomm = comminfo.getcomm_pricesize(closed, price)
+            closedcomm = comminfo.getcomm_pricesize(abclosed, price)
             self.params.cash -= closedcomm
             # Re-adjust cash according to future-like movements
             # Restore cash which was already taken at the start of the day
-            self.params.cash -= comminfo.cashadjust(closed, price, order.data.close[0])
+            self.params.cash -= comminfo.cashadjust(abclosed, price, order.data.close[0])
         else:
             closedvalue = closedcomm = 0.0
 
         if opened:
-            openedvalue = comminfo.getoperationcost(opened, price)
+            openedvalue = comminfo.getoperationcost(abopened, price)
             self.params.cash -= openedvalue
 
-            openedcomm = comminfo.getcomm_pricesize(opened, price)
+            openedcomm = comminfo.getcomm_pricesize(abopened, price)
             self.params.cash -= openedcomm
 
             # Remove cash for the new opened contracts
-            self.params.cash += comminfo.cashadjust(opened, price, order.data.close[0])
+            self.params.cash += comminfo.cashadjust(abopened, price, order.data.close[0])
         else:
             openedvalue = openedcomm = 0.0
 
