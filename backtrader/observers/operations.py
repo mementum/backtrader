@@ -34,11 +34,8 @@ class OperationsPnLObserver(object):
 class _OperationsPnLObserver(lineiterator.LineObserver):
     lines = ('pnl',)
 
-    plotname = 'Operation Gross Profit/Loss'
-
-    plotinfo = dict(
-        pnl=dict(marker='o', markersize=8.0, fillstyle='none',),
-    )
+    plotinfo = dict(plotname='Operation Gross Profit/Loss')
+    plotlines = dict(pnl=dict(marker='o', markersize=8.0, fillstyle='none'))
 
     def __init__(self):
         self.data = self.datas[0]

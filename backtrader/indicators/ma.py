@@ -31,7 +31,7 @@ from .. import Indicator
 
 
 class MovingAverageBase(Indicator):
-    subplot = False
+    plotinfo = dict(subplot=False)
 
     def _plotlabel(self):
         return str(self.params.period)
@@ -41,7 +41,7 @@ class MovingAverageSimple(MovingAverageBase):
     lines = ('avg',)
     params = (('period', 30), ('line', 0))
 
-    plotname = 'MA'
+    plotinfo = dict(plotname='MA')
 
     def __init__(self):
         self.dataline = self.datas[0][self.params.line]
@@ -87,7 +87,7 @@ class MovingAverageSimple(MovingAverageBase):
 
 
 class MovingAverageWeighted(MovingAverageSimple):
-    plotname = 'WMA'
+    plotinfo = dict(plotname='WMA')
 
     def __init__(self):
         super(MovingAverageWeighted, self).__init__()
@@ -137,7 +137,7 @@ class MovingAverageSmoothing(MovingAverageSimple):
 
 
 class MovingAverageExponential(MovingAverageSmoothing):
-    plotname = 'EMA'
+    plotinfo = dict(plotname='EMA')
 
     def __init__(self):
         super(MovingAverageExponential, self).__init__()
@@ -145,7 +145,7 @@ class MovingAverageExponential(MovingAverageSmoothing):
 
 
 class MovingAverageSmoothed(MovingAverageSmoothing):
-    plotname = 'SMA'
+    plotinfo = dict(plotname='SMA')
 
     def __init__(self):
         super(MovingAverageSmoothed, self).__init__()
@@ -153,7 +153,7 @@ class MovingAverageSmoothed(MovingAverageSmoothing):
 
 
 class MASmoothedNAN(MovingAverageSmoothed):
-    plotname = 'SMA_NAN'
+    plotinfo = dict(plotname='SMA_NAN')
 
     NAN = float('nan')
 
