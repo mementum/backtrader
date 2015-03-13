@@ -158,7 +158,7 @@ class Operation(object):
         Updates the current operation. The logic does not check if the operation is reversed, which
         is not conceptually supported by the object.
 
-        If an update sets the size attribute to null "wasclosed" will be set to true
+        If an update sets the size attribute to null, "wasclosed" will be set to true
 
         Args:
             size (int): amount to update the order
