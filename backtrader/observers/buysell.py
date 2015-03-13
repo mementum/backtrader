@@ -34,10 +34,9 @@ class BuySellObserver(object):
 
 class _BuySellObserver(lineiterator.LineObserver):
     lines = ('buy', 'sell',)
-    subplot = False
 
-    plotinfo = dict(
-        _plotlinelabels=True,
+    plotinfo = dict(subplot=False, linelabels=True)
+    plotlines = dict(
         buy=dict(marker='^', markersize=8.0, color='g', fillstyle='none'),
         sell=dict(marker='v', markersize=8.0, color='r', fillstyle='none')
     )

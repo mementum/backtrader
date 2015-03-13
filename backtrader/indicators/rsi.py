@@ -92,12 +92,11 @@ class RSI(Indicator):
     def _plotlabel(self):
         return ','.join(map(str, [self.params.period, self.params.matype.__name__]))
 
-    plotname = 'RSI'
-    plothlines = plotticks = [70.0, 30.0]
+    plotinfo = dict(plotname='RSI')
 
     def __init__(self):
-        self.plothlines = [self.params.overbought, self.params.oversold]
-        self.plotticks = [self.params.overbought, self.params.oversold]
+        self.plotinfo.hlines = [self.params.overbought, self.params.oversold]
+        self.plotinfo.yticks = [self.params.overbought, self.params.oversold]
 
         updays = UpDays(self.datas[0])
         downdays = DownDays(self.datas[0])

@@ -68,7 +68,7 @@ class AverageTrueRange(Indicator):
     def _plotlabel(self):
         return str(self.params.period)
 
-    plotname = 'ATR'
+    plotinfo = dict(plotname='ATR')
 
     def __init__(self):
         tr = TrueRange(self.datas[0])

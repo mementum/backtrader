@@ -41,7 +41,7 @@ class ValueObserver(lineiterator.LineObserver):
 class CashValueObserver(lineiterator.LineObserver):
     lines = ('cash', 'value')
 
-    plotname = 'Cash/Market Value'
+    plotinfo = dict(plotname='Cash/Market Value')
 
     def next(self):
         self.lines.cash = self._owner.broker.getcash()

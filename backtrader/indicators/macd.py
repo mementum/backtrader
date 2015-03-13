@@ -30,7 +30,7 @@ class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
-    plothlines = [0.0]
+    plotinfo = dict(hlines=[0.0])
 
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
@@ -43,7 +43,7 @@ class MACD(Indicator):
 
 class MACDHistogram(MACD):
     lines = ('histo',)
-    plotinfo = {'histo': dict(_method='bar', alpha=0.33)}
+    plotlines = dict(histo=dict(_method='bar', alpha=0.33))
 
     def __init__(self):
         super(MACDHistogram, self).__init__()
