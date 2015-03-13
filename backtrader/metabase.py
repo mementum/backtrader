@@ -128,11 +128,19 @@ class Params(object):
         # Return the result
         return newcls
 
+    def _getkwargsdefault(self):
+        # return dict(zip(self._getkeys(), self._getvalues()))
+        return dict(map(lambda x: (x[0], x[1]), self._getparams()))
+
     def _getkwargs(self):
+        # return dict(zip(self._getkeys(), self._getvalues()))
         return dict(map(lambda x: (x[0], getattr(self, x[0])), self._getparams()))
 
     def _getvalues(self):
         return [getattr(self, x[0]) for x in  self._getparams()]
+
+    def _getkeys(self):
+        return [x[0] for x in  self._getparams()]
 
 
 class MetaParams(MetaBase):
@@ -163,3 +171,58 @@ class MetaParams(MetaBase):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
+
+
+class AutoInfoClass(object):
+    _getinfobase = classmethod(lambda cls: dict())
+    _getinfo = classmethod(lambda cls: dict())
+    _getrecurse = classmethod(lambda cls: False)
+
+    @classmethod
+    def _derive(cls, name, info, recurse=False):
+        newinfo = cls._getinfo().copy()
+        # To ensure the base can update from "info"
+        info = dict(info)
+        newinfo.update(info.copy())
+
+        # str for Python 2/3 compatibility
+        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
+
+        setattr(newcls, '_getinfobase', getattr(newcls, '_getinfo'))
+        setattr(newcls, '_getinfo', classmethod(lambda cls: newinfo))
+        setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
+
+        for infoname, infoval in info.items():
+            if recurse:
+                recursecls = getattr(newcls, infoname, AutoInfoClass)
+                infoval = recursecls._derive(name + '_' + infoname, infoval)
+
+            setattr(newcls, infoname, infoval)
+
+        return newcls
+
+    def _get(self, name, default=None):
+        return getattr(self, name, default)
+
+    def _getkwargsdefault(self):
+        return self._getinfo.copy()
+
+    def _getkwargs(self, skip_=False):
+        l = [(x, getattr(self, x)) for x in self._getkeys() if not skip_ or not x.startswith('_')]
+        return dict(l)
+
+    def _getvalues(self):
+        return list(map(lambda x: getattr(self, x), self._getkeys()))
+
+    def _getkeys(self):
+        return list(self._getinfo().keys())
+
+    def __new__(cls, *args, **kwargs):
+        obj = super(AutoInfoClass, cls).__new__(cls, *args, **kwargs)
+
+        if cls._getrecurse():
+            for infoname in obj._getkeys():
+                recursecls = getattr(cls, infoname)
+                setattr(obj, infoname, recursecls())
+
+        return obj
