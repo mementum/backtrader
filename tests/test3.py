@@ -56,6 +56,9 @@ class TestStrategy(bt.Strategy):
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
         btindicators.ATR(self.data)
+        btindicators.MACDHistogram(self.data)
+        btindicators.Stochastic(self.data)
+        btindicators.RSI(self.data)
 
         self.sizer = bt.SizerFix(stake=self.params.stake)
 
