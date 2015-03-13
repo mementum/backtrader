@@ -115,9 +115,7 @@ class MetaLineIterator(LineSeries.__class__):
 
 class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
-    plotlegend = True
-    plot = True
-    subplot = True
+    plotinfo = dict(plot=True, subplot=True, plotname='')
 
     def addindicator(self, indicator):
         if isinstance(indicator, LineObserver):
@@ -238,7 +236,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         pass
 
     def plotlabel(self):
-        label = getattr(self, 'plotname', self.__class__.__name__)
+        label = self.plotinfo.plotname or self.__class__.__name__
         sublabel = self._plotlabel()
         if sublabel:
             label += ' (%s)' % sublabel
