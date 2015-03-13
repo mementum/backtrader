@@ -153,12 +153,31 @@ class MetaLineSeries(metabase.MetaParams):
         newlines = dct.pop('lines', ())
         extralines = dct.pop('extralines', 0)
 
+        # remove the new plotinfo/plotlines definition if any
+        newplotinfo = dict(dct.pop('plotinfo', dict()))
+        newplotlines = dict(dct.pop('plotlines', dict()))
+
         # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
         lines = getattr(cls, 'lines', Lines)
 
         # Create a subclass of the lines class with our name and newlines and put it in the class
         cls.lines = lines._derive(name, newlines, extralines)
+
+        # Get a copy from base class plotinfo/plotlines (created with the class or set a default)
+        plotinfo = getattr(cls, 'plotinfo', metabase.AutoInfoClass)
+        plotlines = getattr(cls, 'plotlines', metabase.AutoInfoClass)
+
+        # Create a plotinfo/plotlines subclass and set it in the class
+        cls.plotinfo = plotinfo._derive(name, newplotinfo)
+
+        # Before doing plotline newlines have been added and no plotlineinfo is there add a default
+        for line in newlines:
+            if not isinstance(line, six.string_types):
+                line = line[0]
+            newplotlines.setdefault(line, dict())
+
+        cls.plotlines = plotlines._derive(name, newplotlines, recurse=True)
 
         # return the class
         return cls
@@ -169,6 +188,10 @@ class MetaLineSeries(metabase.MetaParams):
         # _obj.lines shadows the lines (class) definition in the class
         _obj.lines = cls.lines()
 
+        # _obj.plotinfo shadows the plotinfo (class) definition in the class
+        _obj.plotinfo = cls.plotinfo()
+        _obj.plotlines = cls.plotlines()
+
         # Set the minimum period for any LineSeries (sub)class instance (do it at classlevel ?)
         _obj._minperiod = 1
 
@@ -178,7 +201,7 @@ class MetaLineSeries(metabase.MetaParams):
 class LineSeries(six.with_metaclass(MetaLineSeries, object)):
 
     # Use Parameter but install directly as class attribute
-    _name = metabase.Parameter(None)
+    _name = ''
 
     def __getattr__(self, name):
         # to refer to line by name directly if the attribute was not found in this object
