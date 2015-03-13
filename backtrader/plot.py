@@ -108,8 +108,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         sharex = axis[0]
 
         for ind in indplots:
-            indplotinfo = getattr(ind, 'plotinfo', dict())
-            if ind.subplot:
+            if ind.plotinfo.subplot:
                 ax = pyplot.subplot2grid((nrows, 1), (next(rows), 0), rowspan=next(rowspans), sharex=sharex)
                 axis.append(ax)
                 daxis[ind] = ax
@@ -120,40 +119,41 @@ class Plot(six.with_metaclass(MetaParams, object)):
             for lineidx in range(ind.size()):
                 line = ind.lines[lineidx]
                 linealias = ind.lines._getlinealias(lineidx)
-                lineplotinfo = indplotinfo.get(linealias, dict())
-                plotlines = lineplotinfo
+                lineplotinfo = getattr(ind.plotlines, linealias)
 
-                if ind.subplot:
+                if ind.plotinfo.subplot:
                     # plotting on own subplot
-                    if lineplotinfo.pop('_plotskip', False):
+                    if lineplotinfo._get('_plotskip', False):
+                        # CHECK: Should we not add a "continue"
                         label = '_nolegend'
                     elif ind.size() == 1:
                         if self.params.scheme.skipmainsinglelabels:
                             label = '_nolegend'
-                        elif not indplotinfo.get('_plotsinglelines', False):
+                        elif not ind.plotinfo._get('singlelineslabels', False):
                             label = '_nolegend'
                         else:
                             label = linealias
                     else:
                         label = linealias
                 else: # plotting on something else's plot
-                    if not indplotinfo.get('_plotlinelabels', False):
+                    if not ind.plotinfo._get('linelabels', False):
                         label = '_nolegend' if lineidx else indlabel
                     else:
                         label = linealias
 
                     # plotting on someone else's ... indicator label to be shown
 
-                pltmethod = getattr(ax, lineplotinfo.get('_method', 'plot'))
                 plotkwargs = dict()
-                if ind.subplot:
+                if ind.plotinfo.subplot:
                     plotkwargs['color'] = self.params.scheme.lines[lineidx]
-                plotkwargs.update(dict(aa=True, label=label, **lineplotinfo))
-                plotkwargs.pop('_method', None) # avoid passing an unknown parameter
 
+                plotkwargs.update(dict(aa=True, label=label))
+                plotkwargs.update(**lineplotinfo._getkwargs(skip_=True))
+
+                pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
                 pltmethod(rdt, line.plot(), **plotkwargs)
 
-            if ind.subplot:
+            if ind.plotinfo.subplot:
                 ax.text(0.005, 0.97, indlabel, va='top', transform=ax.transAxes,
                         alpha=self.params.scheme.subtxttrans, fontsize=self.params.scheme.subtxtsize)
 
@@ -165,21 +165,21 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             # Let's do the ticks here in case they are automatic and an indicator on indicator
             # adds a bit to the automatic y scaling
-            yticks = getattr(ind, 'plotticks', None)
+            yticks = ind.plotinfo._get('yticks', None)
             if yticks is not None:
                 ax.set_yticks(yticks)
             else:
                 ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
 
             # This can be done also in the previous loop ... but since we do the ticks here
-            hlines = getattr(ind, 'plothlines', [])
+            hlines = ind.plotinfo._get('hlines', [])
             for hline in hlines:
                 ax.axhline(hline,
                            color=self.params.scheme.hlinescolor,
                            ls=self.params.scheme.hlinesstyle,
                            lw=self.params.scheme.hlineswidth)
 
-            if self.params.scheme.legendind and getattr(ind, 'plotlegend', True):
+            if self.params.scheme.legendind and ind.plotinfo._get('legend', True):
                 handles, labels = ax.get_legend_handles_labels()
                 # Ensure that we have something to show
                 if labels:
@@ -198,8 +198,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         rowspans = list()
 
-        obplots = [ob for ob in strategy._observers if ob.plot]
-        obsubplots = [ob for ob in obplots if ob.subplot]
+        obplots = [ob for ob in strategy._observers if ob.plotinfo.plot]
+        obsubplots = [ob for ob in obplots if ob.plotinfo.subplot]
         obsize = len(obsubplots)
         rowspans += [self.params.scheme.rowsminor] * obsize
 
@@ -212,8 +212,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         datasize += volsize
 
-        indplots = [ind for ind in strategy._indicators if ind.plot]
-        indsubplots = [ind for ind in indplots if ind.subplot]
+        indplots = [ind for ind in strategy._indicators if ind.plotinfo.plot]
+        indsubplots = [ind for ind in indplots if ind.plotinfo.subplot]
         indsize = len(indsubplots)
         rowspans += [self.params.scheme.rowsminor] * len(indsubplots)
 
