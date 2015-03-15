@@ -187,7 +187,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                     legend = ax.legend(loc=self.params.scheme.legendindloc,
                                        shadow=False, fancybox=True, prop=props)
                     if legend:
-                        legend.get_frame().set_alpha(0.25)
+                        legend.get_frame().set_alpha(self.params.scheme.legendtrans)
 
     def plot(self, strategy):
         if not strategy.datas:
