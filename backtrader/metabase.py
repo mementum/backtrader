@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import collections
 import itertools
 import sys
 
@@ -74,122 +75,23 @@ class MetaBase(type):
         return _obj
 
 
-class Parameter(object):
-    def __init__(self, default):
-        self.default = default
-        # Allow access to descriptor __call__ via 'None' (ex: get default value)
-        self.cache = dict([[None, self],])
-
-    def __set__(self, obj, value):
-        self.cache[obj] = value
-
-    def __get__(self, obj, cls=None):
-        return self.cache.setdefault(obj, self.default)
-
-    def __call__(self):
-        return self
-
-
-class Params(object):
-    _getparamsbase = classmethod(lambda cls: ())
-    _getparams = classmethod(lambda cls: ())
-
-    @classmethod
-    def _derive(cls, name, params):
-        # Prepare the full param list newclass = (baseclass + subclass)
-        baseparams = list(cls._getparams())
-        params = list(params)
-
-        # Update baseparams with newly defined params with the same name
-        # and remove them from the newly defined tuple
-        pnames = [pname for pname, pdefval in params]
-        for i, bparam in enumerate(baseparams):
-            bpname, bpdefvaf = bparam
-            if bpname in pnames:
-                baseparams[i] = params.pop(pnames.index(bpname))
-                pnames.remove(bpname) # to keep index sync'ed
-
-        # Put the "updated" baseparams and "trimmed newly defined" params together
-        newparams = tuple(baseparams + params)
-
-        # Create subclass - str for Python 2/3 compatibility
-        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
-
-        # Keep a copy of _getparams ... to access the params
-        setattr(newcls, '_getparamsbase', getattr(newcls, '_getparams'))
-
-        # Set the lambda classmethod in the new class that returns the new params (closure)
-        setattr(newcls, '_getparams', classmethod(lambda cls: newparams))
-
-        # Create Parameter descriptors for new params, the others come from the base class
-        for pname, pdefault in params:
-            setattr(newcls, pname, Parameter(pdefault))
-
-        # Return the result
-        return newcls
-
-    def _getkwargsdefault(self):
-        # return dict(zip(self._getkeys(), self._getvalues()))
-        return dict(map(lambda x: (x[0], x[1]), self._getparams()))
-
-    def _getkwargs(self):
-        # return dict(zip(self._getkeys(), self._getvalues()))
-        return dict(map(lambda x: (x[0], getattr(self, x[0])), self._getparams()))
-
-    def _getvalues(self):
-        return [getattr(self, x[0]) for x in  self._getparams()]
-
-    def _getkeys(self):
-        return [x[0] for x in  self._getparams()]
-
-
-class MetaParams(MetaBase):
-    def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance (and hence "repetition")
-        newparams = dct.pop('params', ())
-
-        # Create the new class - this pulls predefined "params"
-        cls = super(MetaParams, meta).__new__(meta, name, bases, dct)
-
-        # Pulls the param class out of it - default is the empty class
-        params = getattr(cls, 'params', Params)
-
-        # Subclass and store the newly derived params class
-        cls.params = params._derive(name, newparams)
-
-        return cls
-
-    def donew(cls, *args, **kwargs):
-        # Create params and set the values from the kwargs
-        params = cls.params()
-        for pname, pdef in cls.params._getparams():
-            setattr(params, pname, kwargs.pop(pname, pdef))
-
-        # Create the object and set the params in place
-        _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
-        _obj.params = params
-
-        # Parameter values have now been set before __init__
-        return _obj, args, kwargs
-
-
 class AutoInfoClass(object):
-    _getinfobase = classmethod(lambda cls: dict())
-    _getinfo = classmethod(lambda cls: dict())
+    _getpairsbase = classmethod(lambda cls: ())
+    _getpairs = classmethod(lambda cls: ())
     _getrecurse = classmethod(lambda cls: False)
 
     @classmethod
     def _derive(cls, name, info, recurse=False):
-        newinfo = cls._getinfo().copy()
-        # To ensure the base can update from "info"
-        info = dict(info)
-        newinfo.update(info.copy())
+        newinfo = collections.OrderedDict(cls._getpairs())
+
+        info = collections.OrderedDict(info)
+        newinfo.update(info)
 
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
-        setattr(newcls, '_getinfobase', getattr(newcls, '_getinfo'))
-        setattr(newcls, '_getinfo', classmethod(lambda cls: newinfo))
+        setattr(newcls, '_getpairsbase', getattr(newcls, '_getpairs'))
+        setattr(newcls, '_getpairs', classmethod(lambda cls: tuple(newinfo.items())))
         setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
 
         for infoname, infoval in info.items():
@@ -204,18 +106,24 @@ class AutoInfoClass(object):
     def _get(self, name, default=None):
         return getattr(self, name, default)
 
+    @classmethod
     def _getkwargsdefault(self):
-        return self._getinfo.copy()
+        return collections.OrderedDict(cls._getpairs())
 
     def _getkwargs(self, skip_=False):
         l = [(x, getattr(self, x)) for x in self._getkeys() if not skip_ or not x.startswith('_')]
-        return dict(l)
+        return collections.OrderedDict(l)
+
+    @classmethod
+    def _getdefaults(cls):
+        return [x[1] for x in cls._getpairs()]
 
     def _getvalues(self):
-        return list(map(lambda x: getattr(self, x), self._getkeys()))
+        return [getattr(self, x[0]) for x in self._getpairs()]
 
-    def _getkeys(self):
-        return list(self._getinfo().keys())
+    @classmethod
+    def _getkeys(cls):
+        return [x[0] for x in cls._getpairs()]
 
     def __new__(cls, *args, **kwargs):
         obj = super(AutoInfoClass, cls).__new__(cls, *args, **kwargs)
@@ -226,3 +134,33 @@ class AutoInfoClass(object):
                 setattr(obj, infoname, recursecls())
 
         return obj
+
+
+class MetaParams(MetaBase):
+    def __new__(meta, name, bases, dct):
+        # Remove params from class definition to avod inheritance (and hence "repetition")
+        newparams = dct.pop('params', ())
+
+        # Create the new class - this pulls predefined "params"
+        cls = super(MetaParams, meta).__new__(meta, name, bases, dct)
+
+        # Pulls the param class out of it - default is the empty class
+        params = getattr(cls, 'params', AutoInfoClass)
+
+        # Subclass and store the newly derived params class
+        cls.params = params._derive(name, newparams)
+
+        return cls
+
+    def donew(cls, *args, **kwargs):
+        # Create params and set the values from the kwargs
+        params = cls.params()
+        for pname, pdef in cls.params._getpairs():
+            setattr(params, pname, kwargs.pop(pname, pdef))
+
+        # Create the object and set the params in place
+        _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
+        _obj.params = params
+
+        # Parameter values have now been set before __init__
+        return _obj, args, kwargs
