@@ -182,6 +182,20 @@ class MetaLineSeries(metabase.MetaParams):
         # return the class
         return cls
 
+    def donew(cls, *args, **kwargs):
+        # _obj.plotinfo shadows the plotinfo (class) definition in the class
+        plotinfo = cls.plotinfo()
+
+        for pname, pdef in cls.plotinfo._getpairs():
+            setattr(plotinfo, pname, kwargs.pop(pname, pdef))
+
+        # Create the object and set the params in place
+        _obj, args, kwargs = super(MetaLineSeries, cls).donew(*args, **kwargs)
+        _obj.plotinfo = plotinfo
+
+        # Parameter values have now been set before __init__
+        return _obj, args, kwargs
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(_obj, *args, **kwargs)
 
@@ -189,7 +203,6 @@ class MetaLineSeries(metabase.MetaParams):
         _obj.lines = cls.lines()
 
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
-        _obj.plotinfo = cls.plotinfo()
         _obj.plotlines = cls.plotlines()
 
         # Set the minimum period for any LineSeries (sub)class instance (do it at classlevel ?)
