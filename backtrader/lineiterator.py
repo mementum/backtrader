@@ -47,10 +47,7 @@ class MetaLineIterator(LineSeries.__class__):
         _obj._minperiod = max([data._minperiod for data in _obj.datas] or [_obj._minperiod,])
 
         # Prepare to hold children that need to be calculated and influence minperiod
-        _obj._indicators = list()
-
-        # Prepare to hold observers that
-        _obj._observers = list()
+        _obj._lineiterators = collections.defaultdict(list)
 
         # Remove the datas from the args ... already being given to the line iterator
         args = filter(lambda x: x not in _obj.datas, args)
@@ -97,31 +94,40 @@ class MetaLineIterator(LineSeries.__class__):
         if _obj._owner is not None:
             _obj._owner.addindicator(_obj)
 
-        # Avoid duplicates in own _indicators, keeping order
-        seen = set()
-        _obj._indicators = [x for x in _obj._indicators if x not in seen and not seen.add(x)]
-
+        # check if the object clock is an indicator (to avoid duplicate calculation)
         _obj._clockindicator = False
-        if _obj._clock in _obj._indicators:
-            # If the clock has not moved forward we won't move our own clock forward
-            # Therefore this "clockindidator" has to be calculated first before our clock moves
-            # by also taking the "clock" out of the indicator slicing the _indicators member
-            # variable must not be done each and every time
-            _obj._clockindicator = True
-            _obj._indicators = self._indicators[1:] # clock is always first, leave it aside
+
+        for ltype, liters in _obj._lineiterators.items():
+            if _obj._clock in liters:
+                # If the clock has not moved forward we won't move our own clock forward
+                # Therefore this "clockindidator" has to be calculated first before our clock moves
+                # by also taking the "clock" out of the indicator slicing the _lineterators[ltype]
+                # member variable must not be done each and every time
+                _obj._clockindicator = True
+                _obj._lineiterators[ltype] = liters[1:] # clock is always first, leave it aside
+                break
 
         return _obj, args, kwargs
 
 
 class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
+    IndType, StratType, ObsType = list(range(3))
+
+    _ltype = IndType
 
     plotinfo = dict(plot=True, subplot=True, plotname='')
 
+    def getindicators(self):
+        return self._lineiterators[LineIterator.IndType]
+
+    def getobservers(self):
+        return self._lineiterators[LineIterator.ObsType]
+
     def addindicator(self, indicator):
-        if isinstance(indicator, LineObserver):
-            self._observers.append(indicator)
-        else:
-            self._indicators.append(indicator)
+        # store in right queue
+        self._lineiterators[indicator._ltype].append(indicator)
+        # if needed used its minperiod
+        if indicator._ltype in [LineIterator.IndType, LineIterator.StratType,]:
             self._minperiod = max(indicator._minperiod, self._minperiod)
 
     def setminperiod(self, minperiod):
@@ -165,7 +171,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         if clock_len != len(self):
             self.forward()
 
-        for indicator in self._indicators:
+        for indicator in self._lineiterators[LineIterator.IndType]:
             indicator._next()
 
         self._notify()
@@ -178,7 +184,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
             # POTENTIAL IDEA: Add an extra method before "prenext" is reached (preminperiod)
             self.prenext()
 
-        for observer in self._observers:
+        for observer in self._lineiterators[LineIterator.ObsType]:
             observer._next()
 
     def _once(self):
@@ -187,10 +193,10 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         if self._clockindicator:
             self._clock._once()
 
-        for indicator in self._indicators:
+        for indicator in self._lineiterators[LineIterator.IndType]:
             indicator._once()
 
-        for observer in self._observers:
+        for observer in self._lineiterators[LineIterator.ObsType]:
             observer.forward(size=self.buflen())
 
         for data in self.datas:
@@ -199,10 +205,10 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         if self._clockindicator:
             self._clock.home()
 
-        for indicator in self._indicators:
+        for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.home()
 
-        for observer in self._observers:
+        for observer in self._lineiterators[LineIterator.ObsType]:
             observer.home()
 
         self.home()
@@ -244,7 +250,3 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     def _plotlabel(self):
         return ','.join(map(str, self.params._getvalues()))
-
-
-class LineObserver(LineIterator):
-    pass
