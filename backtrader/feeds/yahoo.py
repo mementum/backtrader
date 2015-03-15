@@ -130,4 +130,4 @@ class YahooFinanceData(YahooFinanceCSVData):
 class YahooFinance(feed.DataFeedBase):
     DataCls = YahooFinanceData
 
-    params = DataCls.params._getparams()
+    params = DataCls.params._getpairs()
