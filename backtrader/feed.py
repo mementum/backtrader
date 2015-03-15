@@ -40,7 +40,7 @@ class MetaDataFeedBase(dataseries.OHLCDateTime.__class__):
 
 
 class DataFeedBase(six.with_metaclass(MetaDataFeedBase, dataseries.OHLCDateTime)):
-    _feed = metabase.Parameter(None) # explicitly not using "params" because an attribute is sought
+    _feed = None
 
     params = (('dataname', None),
               ('fromdate', datetime.datetime.min),
@@ -87,7 +87,7 @@ class DataFeedBase(six.with_metaclass(MetaDataFeedBase, dataseries.OHLCDateTime)
         return False
 
 class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
-    params = () + DataFeedBase.params._getparams()
+    params = () + DataFeedBase.params._getpairs()
 
     def __init__(self):
         self.datas = list()
@@ -101,7 +101,7 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
             data.stop()
 
     def getdata(self, dataname, name=None, **kwargs):
-        for pname, pvalue in self.params._getparams():
+        for pname, pvalue in self.params._getpairs():
             kwargs.setdefault(pname, getattr(self.params, pname))
 
         data = self._getdata(dataname, **kwargs)
@@ -110,7 +110,7 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
         return data
 
     def _getdata(self, dataname, **kwargs):
-        for pname, pvalue in self.params._getparams():
+        for pname, pvalue in self.params._getpairs():
             kwargs.setdefault(pname, getattr(self.params, pname))
 
         return self.DataCls(data=dataname, **kwargs)
@@ -149,7 +149,7 @@ class CSVDataFeedBase(DataFeedBase):
 
 
 class CSVFeedBase(FeedBase):
-    params = (('basepath', ''),) + CSVDataFeedBase.params._getparams()
+    params = (('basepath', ''),) + CSVDataFeedBase.params._getpairs()
 
     def _getdata(self, dataname, **kwargs):
         return self.DataCls(dataname=self.params.basepath + dataname, **self.params._getkwargs())
