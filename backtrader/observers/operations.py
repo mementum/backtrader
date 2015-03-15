@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .. import lineiterator
+from .. import LineObserver
 from ..datapos import Operation
 
 
@@ -31,7 +31,7 @@ class OperationsPnLObserver(object):
             _OperationsPnLObserver(data)
 
 
-class _OperationsPnLObserver(lineiterator.LineObserver):
+class _OperationsPnLObserver(LineObserver):
     lines = ('pnl',)
 
     plotinfo = dict(plotname='Operation Gross Profit/Loss')
@@ -40,6 +40,7 @@ class _OperationsPnLObserver(lineiterator.LineObserver):
     def __init__(self):
         self.data = self.datas[0]
         self.operation = Operation()
+        self.operations = list()
 
     def next(self):
         for order in self._owner._orderspending:
@@ -48,9 +49,10 @@ class _OperationsPnLObserver(lineiterator.LineObserver):
 
             for exbit in order.executed.exbits:
                 self.operation.update(exbit.closed, exbit.price, exbit.closedvalue, exbit.closedcomm)
-                if self.operation.wasclosed:
+                if self.operation.isclosed:
                     # operation closed, record the pnl
                     self.lines.pnl = self.operation.pnl
+                    self.operations.append(self.operation)
 
                     # Open the next operation
                     self.operation = Operation()
