@@ -32,7 +32,7 @@ import sys
 
 import backtrader as bt
 import backtrader.feeds as btfeeds
-import backtrader.indicators as btindicators
+import backtrader.indicators as btind
 
 
 class TestStrategy(bt.Strategy):
@@ -52,13 +52,16 @@ class TestStrategy(bt.Strategy):
     def __init__(self):
         self.data = self.datas[0]
         self.dataclose = self.data.close
-        self.sma = btindicators.MovingAverageSimple(self.data, period=self.params.maperiod)
+        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod)
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
-        btindicators.ATR(self.data)
-        btindicators.MACDHistogram(self.data)
-        btindicators.Stochastic(self.data)
-        btindicators.RSI(self.data)
+        btind.ATR(self.data)
+        btind.MACDHistogram(self.data)
+        btind.Stochastic(self.data)
+        btind.RSI(self.data)
+        btind.MovingAverageExponential(self.data, period=int(0.8 * self.params.maperiod))
+        btind.MovingAverageSmoothed(self.data, period=int(1.2 * self.params.maperiod))
+        btind.MovingAverageWeighted(self.data, period=int(1.5 * self.params.maperiod))
 
         self.sizer = bt.SizerFix(stake=self.params.stake)
 
