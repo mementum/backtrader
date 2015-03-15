@@ -135,7 +135,8 @@ class Operation(object):
         commission (float): current accumulated commission
         pnl (float): current profit and loss of the operation (gross pnl)
         pnlcomm (float): current profit and loss of the operation minus commission (net pnl)
-        wasclosed (bool): records if the last update closed (set size to null) the operation
+        isclosed (bool): records if the last update closed (set size to null) the operation
+        isopen (bool): records if any update has opened the operation
     '''
     def __init__(self, size=0, price=0.0, value=0.0, commission=0.0):
         self.size = size
@@ -146,7 +147,8 @@ class Operation(object):
         self.pnl = 0.0
         self.pnlcomm = 0.0
 
-        self.wasclosed = False
+        self.isopen = False
+        self.isclosed = False
 
     def __len__(self):
         return self.size
@@ -158,7 +160,7 @@ class Operation(object):
         Updates the current operation. The logic does not check if the operation is reversed, which
         is not conceptually supported by the object.
 
-        If an update sets the size attribute to null, "wasclosed" will be set to true
+        If an update sets the size attribute to null, "closed" will be set to true
 
         Args:
             size (int): amount to update the order
@@ -179,8 +181,11 @@ class Operation(object):
         oldsize = self.size
         self.size += size # size will carry the opposite sign if reducing
 
+        # Any size means the operation was opened
+        self.isopen = True
+
         # record if the position was closed (set to null)
-        self.wasclosed = not self.size
+        self.isclosed = not self.size
 
         if abs(self.size) > abs(oldsize):
             # position increased (be it positive or negative)
@@ -198,11 +203,3 @@ class Operation(object):
             self.pnlcomm = self.pnl - self.commission
 
         self.value = self.size * self.price
-
-
-if __name__ == '__main__':
-    pos = Position()
-    print('size %d, price %.2f, opened %d, closed %d' % pos.update(10, 5.0))
-    print('size %d, price %.2f, opened %d, closed %d' % pos.update(-15, 7.0))
-    print('size %d, price %.2f, opened %d, closed %d' % pos.update(3, 6.0))
-    print('size %d, price %.2f, opened %d, closed %d' % pos.update(-3, 6.0))
