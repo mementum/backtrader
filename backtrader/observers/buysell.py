@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 
-from .. import lineiterator
+from .. import LineObserver
 
 
 class BuySellObserver(object):
@@ -32,7 +32,7 @@ class BuySellObserver(object):
             _BuySellObserver(data)
 
 
-class _BuySellObserver(lineiterator.LineObserver):
+class _BuySellObserver(LineObserver):
     lines = ('buy', 'sell',)
 
     plotinfo = dict(subplot=False, linelabels=True)
