@@ -154,8 +154,8 @@ class MetaLineSeries(metabase.MetaParams):
         extralines = dct.pop('extralines', 0)
 
         # remove the new plotinfo/plotlines definition if any
-        newplotinfo = dict(dct.pop('plotinfo', dict()))
-        newplotlines = dict(dct.pop('plotlines', dict()))
+        newplotinfo = dict(dct.pop('plotinfo', {}))
+        newplotlines = dict(dct.pop('plotlines', {}))
 
         # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
@@ -200,7 +200,6 @@ class MetaLineSeries(metabase.MetaParams):
 
 class LineSeries(six.with_metaclass(MetaLineSeries, object)):
 
-    # Use Parameter but install directly as class attribute
     _name = ''
 
     def __getattr__(self, name):
