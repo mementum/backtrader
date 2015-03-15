@@ -27,6 +27,8 @@ from .lineiterator import LineIterator
 
 
 class Indicator(LineIterator):
+    _ltype = LineIterator.IndType
+
 
     def preonce(self, start, end):
         # generic implementation
@@ -37,7 +39,7 @@ class Indicator(LineIterator):
             if self._clockindicator:
                 self._clock.advance()
 
-            for indicator in self._indicators:
+            for indicator in self._lineiterators[LineIterator.IndType]:
                 indicator.advance()
 
             self.advance()
@@ -52,7 +54,7 @@ class Indicator(LineIterator):
             if self._clockindicator:
                 self._clock.advance()
 
-            for indicator in self._indicators:
+            for indicator in self._lineiterators[LineIterator.IndType]:
                 indicator.advance()
 
             self.advance()
