@@ -23,13 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 
-from .. import LineObserver
-
-
-class BuySellObserver(object):
-    def __init__(self, datas):
-        for data in datas:
-            _BuySellObserver(data)
+from ..observer import LineObserver, ObserverPot
 
 
 class _BuySellObserver(LineObserver):
@@ -41,8 +35,8 @@ class _BuySellObserver(LineObserver):
         sell=dict(marker='v', markersize=8.0, color='r', fillstyle='none')
     )
 
-    def __init__(self):
-        self.data = self.datas[0]
+    def __init__(self, dataidx):
+        self.data = self.datas[dataidx]
 
     def next(self):
         buy = list()
@@ -60,3 +54,7 @@ class _BuySellObserver(LineObserver):
         # Write down the average buy/sell price
         self.lines.buy = math.fsum(buy)/float(len(buy) or 'NaN')
         self.lines.sell = math.fsum(sell)/float(len(sell) or 'NaN')
+
+
+class BuySellObserver(ObserverPot):
+    _ObserverCls = _BuySellObserver
