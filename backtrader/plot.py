@@ -198,7 +198,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         rowspans = list()
 
-        obplots = [ob for ob in strategy.getobservers() if ob.plotinfo.plot]
+        obplots = [ob for ob in strategy.getobservers() if ob.plotinfo.plot and not ob.plotinfo.plotskip]
         obsubplots = [ob for ob in obplots if ob.plotinfo.subplot]
         obsize = len(obsubplots)
         rowspans += [self.params.scheme.rowsminor] * obsize
@@ -212,7 +212,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         datasize += volsize
 
-        indplots = [ind for ind in strategy.getindicators() if ind.plotinfo.plot]
+        indplots = [ind for ind in strategy.getindicators() if ind.plotinfo.plot and not ind.plotinfo.plotskip]
         indsubplots = [ind for ind in indplots if ind.plotinfo.subplot]
         indsize = len(indsubplots)
         rowspans += [self.params.scheme.rowsminor] * len(indsubplots)
