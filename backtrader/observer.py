@@ -21,8 +21,39 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .lineiterator import LineIterator
+import six
+
+from .metabase import MetaParams
+from .lineiterator import LineIterator, LineObserverBase, StrategyBase
 
 
-class LineObserver(LineIterator):
+class MetaLineObserver(LineObserverBase.__class__):
+
+    def dopreinit(cls, _obj, *args, **kwargs):
+        # Make a copy of the owner datas .. this ensures the clock up the chain
+        # will be taken from the datas - slice or object reference ...
+        _obj.datas = _obj._owner.datas
+
+        _obj, args, kwargs = super(MetaLineObserver, cls).dopreinit(_obj, *args, **kwargs)
+
+        return _obj, args, kwargs
+
+
+class LineObserver(six.with_metaclass(MetaLineObserver, LineObserverBase)):
+    _OwnerCls = StrategyBase
     _ltype = LineIterator.ObsType
+
+    extralines = 1
+
+
+# class ObserverPot(six.with_metaclass(MetaParams, object)):
+class ObserverPot(LineObserver):
+    plotinfo = dict(plot=False, plotskip=True)
+
+    def __init__(self, *args, **kwargs):
+        self.pot = dict()
+        for didx, data in enumerate(self.datas):
+            self.pot[data] = self._ObserverCls(didx, *args, plot=self.plotinfo.plot, **kwargs)
+
+    def __getitem__(self, key):
+        return self.pot[key]
