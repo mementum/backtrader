@@ -23,12 +23,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from six.moves import xrange
 
-from .lineiterator import LineIterator
+from .lineiterator import LineIterator, IndicatorBase
 
 
-class Indicator(LineIterator):
+class Indicator(IndicatorBase):
     _ltype = LineIterator.IndType
-
 
     def preonce(self, start, end):
         # generic implementation
