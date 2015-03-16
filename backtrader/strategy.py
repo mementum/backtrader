@@ -23,12 +23,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 
 from .broker import BrokerBack
-from .lineiterator import LineIterator
-from .observers import CashValueObserver, BuySellObserver, OperationsPnLObserver
+from .lineiterator import LineIterator, StrategyBase
+from .analyzer import Analyzer
 from .sizer import SizerFix
 
 
-class MetaStrategy(LineIterator.__class__):
+class MetaStrategy(StrategyBase.__class__):
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
@@ -37,9 +37,12 @@ class MetaStrategy(LineIterator.__class__):
         _obj._orders = list()
         _obj._orderspending = list()
 
-        CashValueObserver()
-        BuySellObserver(_obj.datas)
-        OperationsPnLObserver(_obj.datas)
+        # Create an analyzer
+        if _obj.params.analyzer:
+            _obj.analyzer = Analyzer()
+
+        # Keep a copy of the created observers by the Analyzer
+        _obj._analyzer_obs = _obj._lineiterators[LineIterator.ObsType][:]
 
         return _obj, args, kwargs
 
@@ -52,22 +55,25 @@ class MetaStrategy(LineIterator.__class__):
         return _obj, args, kwargs
 
 
-class Strategy(six.with_metaclass(MetaStrategy, LineIterator)):
+class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
+    _ltype = LineIterator.StratType
 
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
+    params = (('analyzer', True),)
+
     _cash_plus_value = True #: calculate and show cash and value together in plot
 
     def _oncepost(self):
-        for indicator in self._indicators:
+        for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.advance()
 
         self.advance()
         self._notify()
         self.next()
 
-        for observer in self._observers:
+        for observer in self._lineiterators[LineIterator.ObsType]:
             observer.advance()
             observer.next()
 
@@ -138,3 +144,21 @@ class Strategy(six.with_metaclass(MetaStrategy, LineIterator)):
     def getsizing(self, data=None):
         data = data or self.datas[0]
         return self._sizer.getsizing(data)
+
+    def delanalyzer(self):
+        '''
+        This is a one time operation, because is meant to replace the automatically
+        generated "analyzer" by (before init) keeping a list of the observers created
+        by the analyzer.
+
+        A user-generated analyzer can be kept in a member variable by the user.
+        No need to keep it in the system any longer
+        '''
+
+        # Remove the observers added by the previous analyzer
+        observers = _obj._lineiterators[LineIterator.ObsType]
+        for obs in _obj._analyzer_obs:
+            observers.remove(obs)
+
+        self.analyzer = None
+        _obj._analyzer_obs = list()
