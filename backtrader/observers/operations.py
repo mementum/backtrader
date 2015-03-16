@@ -21,14 +21,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .. import LineObserver
+from .. import LineObserver, ObserverPot
 from ..datapos import Operation
-
-
-class OperationsPnLObserver(object):
-    def __init__(self, datas):
-        for data in datas:
-            _OperationsPnLObserver(data)
 
 
 class _OperationsPnLObserver(LineObserver):
@@ -37,8 +31,8 @@ class _OperationsPnLObserver(LineObserver):
     plotinfo = dict(plotname='Operation Gross Profit/Loss')
     plotlines = dict(pnl=dict(marker='o', markersize=8.0, fillstyle='none'))
 
-    def __init__(self):
-        self.data = self.datas[0]
+    def __init__(self, dataidx):
+        self.data = self.datas[dataidx]
         self.operation = Operation()
         self.operations = list()
 
@@ -59,3 +53,7 @@ class _OperationsPnLObserver(LineObserver):
 
                 # Updated
                 self.operation.update(exbit.opened, exbit.price, exbit.openedvalue, exbit.openedcomm)
+
+
+class OperationsPnLObserver(ObserverPot):
+    _ObserverCls = _OperationsPnLObserver
