@@ -115,7 +115,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     _ltype = IndType
 
-    plotinfo = dict(plot=True, subplot=True, plotname='')
+    plotinfo = dict(plot=True, subplot=True, plotname='', plotskip=False)
 
     def getindicators(self):
         return self._lineiterators[LineIterator.IndType]
