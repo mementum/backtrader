@@ -250,3 +250,19 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     def _plotlabel(self):
         return ','.join(map(str, self.params._getvalues()))
+
+
+# This 3 subclasses can be used for identification purposes within LineIterator
+# or even outside (like in LineObservers)
+# for the 3 subbranches without generating circular import references
+
+class IndicatorBase(LineIterator):
+    pass
+
+
+class LineObserverBase(LineIterator):
+    pass
+
+
+class StrategyBase(LineIterator):
+    pass
