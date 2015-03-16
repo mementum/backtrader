@@ -27,6 +27,7 @@ from .lineiterator import *
 from .dataseries import *
 from .indicator import *
 from .observer import *
+from .analyzer import *
 from .strategy import *
 from .order import *
 from .comminfo import *
