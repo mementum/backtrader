@@ -28,15 +28,29 @@ import six
 from .lineseries import LineSeries
 from . import metabase
 
+
 class MetaLineIterator(LineSeries.__class__):
+    def donew(cls, *args, **kwargs):
+        _obj, args, kwargs = super(MetaLineIterator, cls).donew(*args, **kwargs)
+
+        # Find the owner and store it
+        _obj._owner = metabase.findowner(_obj, _obj._OwnerCls or LineIterator)
+
+        # Scan args for datas ... if none are found, use the _owner (to have a clock)
+        _obj.datas = [x for x in args if isinstance(x, LineSeries)]
+
+        # Remove the datas from the args ... already being given to the line iterator
+        args = [x for x in args if x not in _obj.datas]
+
+        # Parameter values have now been set before __init__
+        return _obj, args, kwargs
+
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
-        # Find the owner and store it
-        _obj._owner = metabase.findowner(_obj, LineIterator)
-
-        # Scan args for datas ... if none are found, use the _owner (to have a clock)
-        _obj.datas = [x for x in args if isinstance(x, LineSeries)] or [_obj._owner,]
+        # if no datas were found use, use the _owner (to have a clock)
+        _obj.datas = _obj.datas or [_obj._owner,]
 
         # 1st data source is our ticking clock
         _obj._clock = _obj.datas[0]
@@ -48,9 +62,6 @@ class MetaLineIterator(LineSeries.__class__):
 
         # Prepare to hold children that need to be calculated and influence minperiod
         _obj._lineiterators = collections.defaultdict(list)
-
-        # Remove the datas from the args ... already being given to the line iterator
-        args = filter(lambda x: x not in _obj.datas, args)
 
         return _obj, args, kwargs
 
@@ -111,6 +122,8 @@ class MetaLineIterator(LineSeries.__class__):
 
 
 class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
+    _OwnerCls = None
+
     IndType, StratType, ObsType = list(range(3))
 
     _ltype = IndType
