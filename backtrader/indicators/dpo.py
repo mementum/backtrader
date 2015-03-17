@@ -38,9 +38,8 @@ class DetrendedPriceOscillator(Indicator):
 
     def __init__(self):
         ma = self.params.matype(self.datas[0], period=self.params.period, line=self.params.line)
-        shift = self.params.period // 2 + 1
-        LineDifference(self.datas[0], ma, line0=self.params.line, ago1=-shift).bindlines(0)
-        self.setminperiod(shift)
+        shift = -(self.params.period // 2 + 1)
+        LineDifference(self.datas[0], ma, line0=self.params.line, ago1=shift).bindlines(0)
 
 
 DPO = DetrendedPriceOscillator
