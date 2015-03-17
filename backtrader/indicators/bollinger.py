@@ -83,7 +83,7 @@ class SquareRoot(Indicator):
         self.dline = self.datas[0].lines[self.params.line]
 
     def next(self):
-        self.lines.sqsum = sel.params.factor * math.sqrt(self.dline[self.params.ago])
+        self.lines.sqsum = self.params.factor * math.sqrt(self.dline[self.params.ago])
 
     def once(self, start, end):
         darray = self.dline.array
