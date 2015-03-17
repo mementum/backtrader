@@ -29,7 +29,7 @@ from .. import feed
 from .. import linebuffer
 
 
-class MyCSVData(feed.CSVDataFeedBase):
+class VChartCSVData(feed.CSVDataFeedBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
         next(i) # skip ticker name
@@ -53,5 +53,5 @@ class MyCSVData(feed.CSVDataFeedBase):
         return True
 
 
-class MyCSV(feed.CSVFeedBase):
-    DataCls = MyCSVData
+class VChartCSV(feed.CSVFeedBase):
+    DataCls = VChartCSVData
