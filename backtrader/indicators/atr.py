@@ -35,14 +35,15 @@ class TrueRange(Indicator):
         self.data_low = self.datas[0].lines[DataSeries.Low]
         self.data_close = self.datas[0].lines[DataSeries.Close]
 
-        self.setminperiod(1)
+    def nextstart(self):
+        th = self.data_high[0]
+        tl = self.data_low[0]
+
+        self.lines[0][0] = th - tl
 
     def next(self):
         th = self.data_high[0]
         tl = self.data_low[0]
-        # If only 1 data is available the internally calculated index will be -1
-        # which points to the end of the buffer, which is the beginning with only 1 data
-        # The calculation makes sense finally and the 1st bar will always be 'th - tl'
         yc = self.data_close[-1]
 
         self.lines[0][0] = max(th - tl, abs(yc - th), abs(yc - tl))
@@ -53,7 +54,11 @@ class TrueRange(Indicator):
         dcarray = self.data_close.array
         larray = self.lines[0].array
 
-        for i in xrange(start, end):
+        th = dharray[start]
+        tl = dlarray[start]
+        larray[start] = th - tl
+
+        for i in xrange(start + 1, end):
             th = dharray[i]
             tl = dlarray[i]
             yc = dcarray[i - 1]
