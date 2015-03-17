@@ -52,16 +52,18 @@ class TestStrategy(bt.Strategy):
     def __init__(self):
         self.data = self.datas[0]
         self.dataclose = self.data.close
-        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod)
+        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod, plot=False)
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
         btind.ATR(self.data)
         btind.MACDHistogram(self.data)
         btind.Stochastic(self.data)
         btind.RSI(self.data)
-        btind.MovingAverageExponential(self.data, period=int(0.8 * self.params.maperiod))
-        btind.MovingAverageSmoothed(self.data, period=int(1.2 * self.params.maperiod))
-        btind.MovingAverageWeighted(self.data, period=int(1.5 * self.params.maperiod))
+        if False:
+            btind.MovingAverageExponential(self.data, period=int(0.8 * self.params.maperiod))
+            btind.MovingAverageSmoothed(self.data, period=int(1.2 * self.params.maperiod))
+            btind.MovingAverageWeighted(self.data, period=int(1.5 * self.params.maperiod))
+        btind.BollingerBands(self.data)
 
         self.sizer = bt.SizerFix(stake=self.params.stake)
 
@@ -122,8 +124,9 @@ datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
 data = bt.feeds.YahooFinanceCSVData(
     dataname=datapath,
     reversed=True,
-    fromdate=datetime.datetime(2000, 1, 1),
-    todate=datetime.datetime(2000, 12, 31)
+    fromdate=datetime.datetime(2014, 1, 1),
+    # fromdate=datetime.datetime(2000, 1, 1),
+    # todate=datetime.datetime(2000, 12, 31)
 )
 
 cerebro.adddata(data)

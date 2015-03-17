@@ -21,13 +21,14 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import math
+
 import six
 from six.moves import xrange
 if six.PY3:
     cmp = lambda x, y: (x > y) - (x < y)
 
 from .. import Indicator
-
 
 
 class LineCmpTo(Indicator):
@@ -89,6 +90,22 @@ class LineBinder(_LineBase):
 
         for i in xrange(start, end):
             d0array[i + ago0] = d1array[i + ago1] * factor
+
+
+class LineSummation(_LineBase):
+    def next(self):
+        self[0][0] = (self.lined0[self.params.ago0] + self.lined1[self.params.ago1]) * self.params.factor
+
+    def once(self, start, end):
+        d0array = self.lined0.array
+        d1array = self.lined1.array
+        larray = self[0].array
+        factor = self.params.factor
+        ago0 = self.params.ago0
+        ago1 = self.params.ago1
+
+        for i in xrange(start, end):
+            larray[i] = (d0array[i + ago0] + d1array[i + ago1]) * factor
 
 
 class LineDifference(_LineBase):

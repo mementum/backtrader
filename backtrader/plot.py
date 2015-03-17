@@ -116,6 +116,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 ax = daxis[ind._clock]
 
             indlabel = ind.plotlabel()
+            lastcolor = self.params.scheme.lines[0] # to avoid a user error if first line defines _samecolor
             for lineidx in range(ind.size()):
                 line = ind.lines[lineidx]
                 linealias = ind.lines._getlinealias(lineidx)
@@ -147,11 +148,19 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 if ind.plotinfo.subplot:
                     plotkwargs['color'] = self.params.scheme.lines[lineidx]
 
+                if lineplotinfo._get('_samecolor', False):
+                    plotkwargs['color'] = lastcolor
+
                 plotkwargs.update(dict(aa=True, label=label))
                 plotkwargs.update(**lineplotinfo._getkwargs(skip_=True))
 
                 pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
-                pltmethod(rdt, line.plot(), **plotkwargs)
+                plottedline = pltmethod(rdt, line.plot(), **plotkwargs)
+                try:
+                    lastcolor = plottedline[0].get_color()
+                except AttributeError:
+                    # missing get_color() for example in bar plots for histograms
+                    pass
 
             if ind.plotinfo.subplot:
                 ax.text(0.005, 0.97, indlabel, va='top', transform=ax.transAxes,
