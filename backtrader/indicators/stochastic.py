@@ -33,6 +33,7 @@ class StochasticFast(Indicator):
         ('overbought', 80.0), ('oversold', 20.0),)
 
     plotinfo = dict(plotname='StochasticFast')
+    plotlines = dict(d=dict(ls='-.'))
 
     def _plotlabel(self):
         plabels = [self.params.period, self.params.period_dfast, self.params.matype.__name__]
@@ -72,6 +73,7 @@ class StochasticInt(StochasticFast):
 class StochasticFull(StochasticInt):
     lines = ('dd',)
     slow = False
+    plotlines = dict(dd=dict(ls=':'))
 
     plotinfo = dict(plotname='StochasticFull')
 

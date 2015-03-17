@@ -31,6 +31,7 @@ class MACD(Indicator):
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
 
     plotinfo = dict(hlines=[0.0])
+    plotlines = dict(signal=dict(ls='--'))
 
     def __init__(self):
         me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
