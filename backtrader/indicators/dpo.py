@@ -21,14 +21,26 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+from .. import Indicator
+from .ma import MATypes
+from .utils import LineDifference
 
-from .atr import *
-from .bollinger import *
-from .dpo import *
-from .ma import *
-from .macd import *
-from .rsi import *
-from .stochastic import *
-from .utils import *
+
+class DetrendedPriceOscillator(Indicator):
+    lines = ('dpo',)
+    params = (('period', 20), ('line', 0), ('matype', MATypes.Simple),)
+
+    plotinfo = dict(plotname='DPO', hlines=[0.0,],)
+
+    def _plotlabel(self):
+        plabels = [self.params.period,]
+        return ','.join(map(str, plabels))
+
+    def __init__(self):
+        ma = self.params.matype(self.datas[0], period=self.params.period, line=self.params.line)
+        shift = self.params.period // 2 + 1
+        LineDifference(self.datas[0], ma, line0=self.params.line, ago1=-shift).bindlines(0)
+        self.setminperiod(shift)
+
+
+DPO = DetrendedPriceOscillator
