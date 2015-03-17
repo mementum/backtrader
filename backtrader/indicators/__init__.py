@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # of prepend an "_" (underscore) to private classes/variables
 
 from .atr import *
+from .bollinger import *
 from .ma import *
 from .macd import *
 from .rsi import *
