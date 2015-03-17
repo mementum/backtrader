@@ -71,7 +71,14 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
         self.advance()
         self._notify()
-        self.next()
+
+        l = len(self)
+        if l > self._minperiod:
+            self.next()
+        elif l == self._minperiod:
+            self.nextstart() # only called for the 1st value
+        else:
+            self.prenext()
 
         for observer in self._lineiterators[LineIterator.ObsType]:
             observer.advance()
