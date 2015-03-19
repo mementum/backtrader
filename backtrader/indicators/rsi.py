@@ -112,30 +112,8 @@ class RSI(Indicator):
         downdays = DownDays(self.datas[0])
         self.maup = self.params.matype(updays, period=self.params.period)
         self.madown = self.params.matype(downdays, period=self.params.period)
-        if not self.usenext:
-            rs = LineDivision(self.maup, self.madown)
-            rsi = LineNormalize(rs).bindlines()
-
-    def next(self):
-        if self.usenext:
-            # Explanation:
-            # Next is much faster (40%) than having a LineDivision and LineNormalize objects
-            # because values are being stored and the only needed thing is a division
-            # The code in __init__ with the objects is much more elegant but really ineffective
-            rs = self.maup[0][0] / self.madown[0][0]
-            rsi = 100.0 - 100.0 / (1.0 + rs)
-            self.lines[0][0] = rsi
-
-    def once(self, start, end):
-        if self.usenext:
-            larray = self.lines[0].array
-            muarray = self.maup[0].array
-            mdarray = self.madown[0].array
-
-            for i in xrange(start, end):
-                rs = muarray[i] / mdarray[i]
-                rsi = 100.0 - 100.0 / (1.0 + rs)
-                larray[i] = rsi
+        rs = LineDivision(self.maup, self.madown)
+        rsi = LineNormalize(rs).bindlines()
 
 
 __all__ = ['RSI',]
