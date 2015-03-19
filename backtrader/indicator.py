@@ -21,13 +21,40 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 from six.moves import xrange
 
 from .lineiterator import LineIterator, IndicatorBase
 
 
-class Indicator(IndicatorBase):
+class MetaIndicator(IndicatorBase.__class__):
+    def donew(cls, *args, **kwargs):
+
+        if IndicatorBase.next == cls.next:
+            # if next has not been overriden, there is no need for a "once" because
+            # the indicator is using indicator composition and line binding
+            # avoid calling the one step at a time "next"
+            cls.once = cls.once_empty
+        else:
+            # next overriden. Either once is from Indicator or also overriden -> do nothing
+            pass
+
+        if IndicatorBase.prenext == cls.prenext:
+            cls.preonce = cls.preonce_empty
+        else:
+            pass
+
+        _obj, args, kwargs = super(MetaIndicator, cls).donew(*args, **kwargs)
+
+        # return the values
+        return _obj, args, kwargs
+
+
+class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
     _ltype = LineIterator.IndType
+
+    def preonce_empty(self, start, end):
+        return
 
     def preonce(self, start, end):
         # generic implementation
@@ -43,6 +70,9 @@ class Indicator(IndicatorBase):
 
             self.advance()
             self.prenext()
+
+    def once_empty(self, start, end):
+        return
 
     def once(self, start, end):
         # generic implementation
