@@ -39,8 +39,6 @@ class MACD(Indicator):
         macd = LineDifference(me1, me2).bindlines(0) # owner 0 <- own 0
         signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(1)
 
-    def once(self, start, end):
-        pass #
 
 class MACDHistogram(MACD):
     lines = ('histo',)
