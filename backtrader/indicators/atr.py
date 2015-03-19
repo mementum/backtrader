@@ -79,8 +79,5 @@ class AverageTrueRange(Indicator):
         tr = TrueRange(self.datas[0])
         self.params.matype(tr, period=self.params.period).bindlines()
 
-    def once(self, start, end):
-        pass # bindings are in place ... skip the default once -> next implementation
-
 
 ATR = AverageTrueRange
