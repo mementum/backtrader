@@ -28,11 +28,9 @@ from .utils import LineBinder, LineDifference, LineDivision, Highest, Lowest
 
 class StochasticFast(Indicator):
     lines = ('k', 'd',)
-    params = (
-        ('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
-        ('overbought', 80.0), ('oversold', 20.0),)
+    params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
+              ('overbought', 80.0), ('oversold', 20.0),)
 
-    plotinfo = dict(plotname='StochasticFast')
     plotlines = dict(d=dict(ls='-.'))
 
     def _plotlabel(self):
@@ -40,21 +38,17 @@ class StochasticFast(Indicator):
         return ','.join(map(str, plabels))
 
     def __init__(self):
-        self.plotinfo.hlines = [self.params.overbought, self.params.oversold]
-        self.plotinfo.yticks = [self.params.overbought, self.params.oversold]
+        self.plotinfo.hlines = self.plotinfo.yticks = [self.params.overbought, self.params.oversold]
 
         highesthigh = Highest(self.datas[0], period=self.params.period, line=DataSeries.High)
         lowestlow = Lowest(self.datas[0], period=self.params.period, line=DataSeries.Low)
         knum = LineDifference(self.datas[0], lowestlow)
         kden = LineDifference(highesthigh, lowestlow)
-        kperc = LineDivision(knum, kden, factor=100.0).bindlines()
-        self.params.matype(kperc, period=self.params.period_dfast).bindlines(1)
-
-    def once(self, start, end):
-        pass
+        kperc = LineDivision(knum, kden, factor=100.0).bindlines('k')
+        self.params.matype(kperc, period=self.params.period_dfast).bindlines('d')
 
 
-class StochasticInt(StochasticFast):
+class _StochasticInt(StochasticFast):
     params = (('period_dslow', 3),)
 
     def _plotlabel(self):
@@ -62,25 +56,20 @@ class StochasticInt(StochasticFast):
                    self.params.matype.__name__]
         return ','.join(map(str, plabels))
 
+
+class Stochastic(_StochasticInt):
     def __init__(self):
-        super(StochasticInt, self).__init__()
-        if self.slow:
-            LineBinder(self, line0=0, line1=1)
-
-        self.params.matype(self, period=self.params.period_dslow, line=1).bindlines(2 - self.slow)
-
-
-class StochasticFull(StochasticInt):
-    lines = ('dd',)
-    slow = False
-    plotlines = dict(dd=dict(ls=':'))
-
-    plotinfo = dict(plotname='StochasticFull')
-
-
-class Stochastic(StochasticInt):
-    slow = True
-
-    plotinfo = dict(plotname='Stochastic')
+        super(Stochastic, self).__init__()
+        LineBinder(self, line0=0, line1=1)
+        self.params.matype(self, period=self.params.period_dslow, line=1).bindlines('d')
 
 StochasticSlow = Stochastic
+
+
+class StochasticFull(_StochasticInt):
+    lines = ('dd',)
+    plotlines = dict(dd=dict(ls=':'))
+
+    def __init__(self):
+        super(StochasticFull, self).__init__()
+        self.params.matype(self, period=self.params.period_dslow, line=1).bindlines('dd')
