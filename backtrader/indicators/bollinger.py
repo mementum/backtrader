@@ -26,6 +26,56 @@ from .. import Indicator
 from .ma import MATypes, MovingAverageSimple
 from .utils import LineDivision, LineDifference, LineSummation
 
+class SumN(Indicator):
+    lines = ('sum',)
+    params = (('line', 0), ('ago', 0), ('period', 10),)
+
+    def __init__(self):
+        self.dline = self.datas[0].lines[self.params.line]
+
+    def next(self):
+        self.lines.sum = math.fsum(self.dline.get(ago=self.params.ago, size=self.params.period))
+
+    def once(self, start, end):
+        darray = self.dline.array
+        larray = self.lines.sum.array
+        ago = self.params.ago
+        period = self.params.period
+
+        for i in xrange(start, end):
+            larray[i] = math.fsum(darray[i + ago - period + 1: i + ago + 1])
+
+
+class Pow(Indicator):
+    lines = ('pow',)
+    params = (('exp', 2.0), ('line', 0), ('ago', 0),)
+
+    def __init__(self):
+        self.dline = self.datas[0].lines[self.params.line]
+
+    def next(self):
+        self.lines.pow = math.pow(self.dline[self.params.ago], self.params.exp)
+
+    def once(self, start, end):
+        darray = self.dline.array
+        larray = self.lines.sum.array
+        ago = self.params.ago
+        period = self.params.period
+        exp = self.param.exp
+
+        for i in xrange(start, end):
+            larray[i] = math.pow(darray[i + ago], exp)
+
+
+class SumPow(Indicator):
+    lines = ('powsum',)
+    params = (('exp', 2.0), ('period', 10), ('line', 0), ('ago', 0),)
+
+    def __init__(self):
+        sum = Sum(self.datas[0], line=self.params.line, period=self.params.period, ago=self.params.ago)
+        Pow(sum, exp=self.params.exp).bindlines(0)
+
+
 class SquaredSum(Indicator):
     lines = ('sum',)
 
@@ -111,9 +161,6 @@ class StdDev(Indicator):
 
         stddev = SquareRoot(sum_minus_squared, factor=self.params.factor).bindlines(0)
 
-    def once(self, start, end):
-        pass
-
 
 class BollingerBands(Indicator):
     lines = ('mid', 'top', 'bot',)
@@ -142,6 +189,3 @@ class BollingerBands(Indicator):
 
         LineSummation(ma, stddev).bindlines(1)
         LineDifference(ma, stddev).bindlines(2)
-
-    def once(self, start, end):
-        pass
