@@ -63,8 +63,6 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     params = (('analyzer', True),)
 
-    _cash_plus_value = True #: calculate and show cash and value together in plot
-
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.advance()
