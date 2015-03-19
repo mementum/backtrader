@@ -66,14 +66,6 @@ class MetaLineIterator(LineSeries.__class__):
         return _obj, args, kwargs
 
     def doinit(cls, _obj, *args, **kwargs):
-        def findbases(kls):
-            for base in kls.__bases__:
-                if issubclass(base, LineSeries):
-                    lst = findbases(base)
-                    return lst.append(base) or lst
-
-            return []
-
         if getattr(cls, '_autoinit', False):
             # Find and call baseclasses __init__ (from top to bottom)
             seen = set()
