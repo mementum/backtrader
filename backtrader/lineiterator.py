@@ -134,16 +134,25 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
     def bindlines(self, owner=None, own=None):
         if not owner:
             owner = 0
-        if not isinstance(owner, collections.Iterable):
+
+        if isinstance(owner, six.string_types):
+            owner = [owner,]
+        elif not isinstance(owner, collections.Iterable):
             owner = [owner,]
 
         if not own:
             own = range(len(owner))
-        if not isinstance(own, collections.Iterable):
+
+        if isinstance(own, six.string_types):
+            own = [own,]
+        elif not isinstance(own, collections.Iterable):
             own = [own,]
 
         for lineowner, lineown in zip(owner, own):
-            self.lines[lineown].addbinding(self._owner.lines[lineowner])
+            if isinstance(lineowner, six.string_types):
+                lownerref = getattr(self._owner.lines, lineowner)
+            else:
+                lownerref = self._owner.lines[lineowner]
 
         return self
 
@@ -156,8 +165,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         elif not isinstance(itlines, collections.Iterable):
             itlines = [itlines,]
 
-        for i, line in enumerate(lines):
-            lineit.lines[itlines[i]].addbinding(self.lines[line])
+        return self
 
     def _next(self):
         if self._clockindicator:
