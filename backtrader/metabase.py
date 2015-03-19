@@ -26,6 +26,15 @@ import itertools
 import sys
 
 
+def findbases(kls, topclass):
+    for base in kls.__bases__:
+        if issubclass(base, topclass):
+            lst = findbases(base, topclass)
+            return lst.append(base) or lst
+
+    return []
+
+
 def findowner(owned, cls):
     # skip this frame and the caller's -> start at 2
     for framelevel in itertools.count(2):
