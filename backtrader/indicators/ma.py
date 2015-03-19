@@ -31,6 +31,8 @@ from .. import Indicator
 
 
 class MovingAverageBase(Indicator):
+    _autoinit = True
+
     plotinfo = dict(subplot=False)
 
     def _plotlabel(self):
@@ -41,7 +43,7 @@ class MovingAverageSimple(MovingAverageBase):
     lines = ('avg',)
     params = (('period', 30), ('line', 0))
 
-    plotinfo = dict(plotname='MA')
+    plotinfo = dict(plotname='SMA')
 
     def __init__(self):
         self.dataline = self.datas[0][self.params.line]
@@ -67,23 +69,6 @@ class MovingAverageSimple(MovingAverageBase):
 
         for i in xrange(start, end):
             larray[i] = mfsum(darray[i - period + 1: i + 1]) / fperiod
-
-    def preonce_backup(self, start, end):
-        for i in xrange(start, end):
-            self.dq.append(self.dataline.array[i])
-
-    def once_backup(self, start, end):
-        # Cache all dictionary accesses in local variables to speed up the loop
-        fperiod = self.fperiod
-        dq = self.dq
-        dqappend = dq.append
-        darray = self.dataline.array
-        larray = self.lines[0].array
-        mfsum = math.fsum
-
-        for i in xrange(start, end):
-            dqappend(darray[i])
-            larray[i] = mfsum(dq) / fperiod
 
 
 class MovingAverageWeighted(MovingAverageSimple):
@@ -140,25 +125,22 @@ class MovingAverageExponential(MovingAverageSmoothing):
     plotinfo = dict(plotname='EMA')
 
     def __init__(self):
-        super(MovingAverageExponential, self).__init__()
         self.smoothfactor = 2.0 / (1.0 + self.fperiod)
 
 
 class MovingAverageSmoothed(MovingAverageSmoothing):
-    plotinfo = dict(plotname='SMA')
+    plotinfo = dict(plotname='SMMA')
 
     def __init__(self):
-        super(MovingAverageSmoothed, self).__init__()
         self.smoothfactor = 1.0 / self.fperiod
 
 
 class MASmoothedNAN(MovingAverageSmoothed):
-    plotinfo = dict(plotname='SMA_NAN')
+    plotinfo = dict(plotname='SMMA_NAN')
 
     NAN = float('nan')
 
     def __init__(self):
-        super(MASmoothedNAN, self).__init__()
         self.tofill = self.params.period - 1
 
     def prenext(self):
