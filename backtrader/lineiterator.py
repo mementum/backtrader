@@ -154,16 +154,12 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
             else:
                 lownerref = self._owner.lines[lineowner]
 
-        return self
+            if isinstance(lineown, six.string_types):
+                lownref = getattr(self.lines, lineown)
+            else:
+                lownref = self.lines[lineown]
 
-    def bind2lines(self, lines, lineit, itlines=None):
-        if not isinstance(lines, collections.Iterable):
-            lines = [lines,]
-
-        if itlines is None:
-            itlines = range(len(lines))
-        elif not isinstance(itlines, collections.Iterable):
-            itlines = [itlines,]
+            lownref.addbinding(lownerref)
 
         return self
 
