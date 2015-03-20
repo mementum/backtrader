@@ -39,6 +39,12 @@ class MetaLineIterator(LineSeries.__class__):
         # Scan args for datas ... if none are found, use the _owner (to have a clock)
         _obj.datas = [x for x in args if isinstance(x, LineSeries)]
 
+        # For each found data add access member - for the first data 2 (data and data0)
+        if _obj.datas:
+            _obj.data = _obj.datas[0]
+            for i, data in enumerate(_obj.datas):
+                setattr(_obj, 'data%d' % i, data)
+
         # Remove the datas from the args ... already being given to the line iterator
         args = [x for x in args if x not in _obj.datas]
 
