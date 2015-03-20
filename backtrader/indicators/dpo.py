@@ -18,28 +18,38 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
+# Python 2/3 compatibility imports
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .. import Indicator
+from .. import DataSeries, Indicator
 from .ma import MATypes
 from .utils import LineDifference
 
 
-class DetrendedPriceOscillator(Indicator):
+class DPO(Indicator):
+    # Named output lines
     lines = ('dpo',)
-    params = (('period', 20), ('line', 0), ('matype', MATypes.Simple),)
 
-    plotinfo = dict(plotname='DPO', hlines=[0.0,],)
+    # Accepted parameters (and defaults) - Moving Average Type also a parameter
+    params = (('period', 20), ('line', DataSeries.Close), ('matype', MATypes.Simple),)
+
+    # Emphasize central 0.0 line in plot
+    plotinfo = dict(hlines=[0.0,],)
 
     def _plotlabel(self):
         plabels = [self.params.period,]
         return ','.join(map(str, plabels))
 
     def __init__(self):
-        ma = self.params.matype(self.datas[0], period=self.params.period, line=self.params.line)
-        shift = -(self.params.period // 2 + 1)
-        LineDifference(self.datas[0], ma, line0=self.params.line, ago1=shift).bindlines(0)
+        # Create the Moving Average
+        ma = self.params.matype(self.datas[0], line=self.params.line, period=self.params.period)
+
+        # Calculate the backwards distance - // division ensures an int is returned
+        shiftback = -(self.params.period // 2 + 1)
+
+        # Calculate the value and bind it to the output 'dpo' line
+        LineDifference(self.datas[0], ma, line0=self.params.line, ago1=shiftback).bind2lines('dpo')
 
 
-DPO = DetrendedPriceOscillator
+# Alias for DPO
+DetrendedPriceOscillator = DPO
