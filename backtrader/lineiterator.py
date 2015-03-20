@@ -163,6 +163,9 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
         return self
 
+    # Alias which may be more readable
+    bind2lines = bindlines
+
     def _next(self):
         if self._clockindicator:
             self._clock._next()
