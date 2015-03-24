@@ -170,6 +170,7 @@ class MetaParams(MetaBase):
         # Create the object and set the params in place
         _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
         _obj.params = params
+        _obj.p = params # shorter alias
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
