@@ -157,6 +157,9 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         # Substract 1 which is the minimum period to avoid carrying over an extra 1
         self._minperiod += minperiod - 1
 
+    def addminperiod(self, minperiod):
+        self._minperiod += minperiod
+
     def bindlines(self, owner=None, own=None):
         if not owner:
             owner = 0
