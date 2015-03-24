@@ -33,8 +33,3 @@ from .order import *
 from .comminfo import *
 from .broker import *
 from .cerebro import *
-
-from . import feeds
-from . import indicators
-from . import observers
-from . import strategies
