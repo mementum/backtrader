@@ -224,12 +224,17 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
         self.preonce(0, self._minperiod - 1)
         self.once(self._minperiod - 1, self.buflen())
+        self.oncestart(self._minperiod - 1, self._minperiod)
+        self.once(self._minperiod, self.buflen())
 
         for line in self.lines:
             line.oncebinding()
 
     def preonce(self, start, end):
         pass
+
+    def oncestart(self, start, end):
+        self.once(start, end)
 
     def once(self, start, end):
         pass
