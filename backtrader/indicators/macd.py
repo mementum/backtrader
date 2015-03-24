@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .. indicator import Indicator
 from .ma import MovingAverageExponential
-from .utils import LineDifference
+from .linesutils import LinesDifference
 
 
 class MACD(Indicator):
@@ -34,10 +34,10 @@ class MACD(Indicator):
     plotlines = dict(signal=dict(ls='--'))
 
     def __init__(self):
-        me1 = MovingAverageExponential(self.datas[0], period=self.params.period_me1)
-        me2 = MovingAverageExponential(self.datas[0], period=self.params.period_me2)
-        macd = LineDifference(me1, me2).bindlines(0) # owner 0 <- own 0
-        signal = MovingAverageExponential(macd, period=self.params.period_signal).bindlines(1)
+        me1 = MovingAverageExponential(self.data, period=self.p.period_me1)
+        me2 = MovingAverageExponential(self.data, period=self.p.period_me2)
+        macd = LinesDifference(me1, me2).bind2lines('macd')
+        MovingAverageExponential(macd, period=self.p.period_signal).bind2lines('signal')
 
 
 class MACDHistogram(MACD):
@@ -45,5 +45,4 @@ class MACDHistogram(MACD):
     plotlines = dict(histo=dict(_method='bar', alpha=0.33))
 
     def __init__(self):
-        super(MACDHistogram, self).__init__()
-        LineDifference(self, self, line0=0, line1=1).bindlines(owner=2) # owner 2 <- own 0
+        LinesDifference(self, self, line=0, line1=1).bind2lines('histo')
