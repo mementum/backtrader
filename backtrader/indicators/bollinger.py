@@ -23,143 +23,25 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import math
 
 from .. import Indicator
-from .ma import MATypes, MovingAverageSimple
-from .utils import LineDivision, LineDifference, LineSummation
-
-class SumN(Indicator):
-    lines = ('sum',)
-    params = (('line', 0), ('ago', 0), ('period', 10),)
-
-    def __init__(self):
-        self.dline = self.datas[0].lines[self.params.line]
-
-    def next(self):
-        self.lines.sum = math.fsum(self.dline.get(ago=self.params.ago, size=self.params.period))
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines.sum.array
-        ago = self.params.ago
-        period = self.params.period
-
-        for i in xrange(start, end):
-            larray[i] = math.fsum(darray[i + ago - period + 1: i + ago + 1])
-
-
-class Pow(Indicator):
-    lines = ('pow',)
-    params = (('exp', 2.0), ('line', 0), ('ago', 0),)
-
-    def __init__(self):
-        self.dline = self.datas[0].lines[self.params.line]
-
-    def next(self):
-        self.lines.pow = math.pow(self.dline[self.params.ago], self.params.exp)
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines.sum.array
-        ago = self.params.ago
-        period = self.params.period
-        exp = self.param.exp
-
-        for i in xrange(start, end):
-            larray[i] = math.pow(darray[i + ago], exp)
-
-
-class SumPow(Indicator):
-    lines = ('powsum',)
-    params = (('exp', 2.0), ('period', 10), ('line', 0), ('ago', 0),)
-
-    def __init__(self):
-        sum = Sum(self.datas[0], line=self.params.line, period=self.params.period, ago=self.params.ago)
-        Pow(sum, exp=self.params.exp).bindlines(0)
-
-
-class SquaredSum(Indicator):
-    lines = ('sum',)
-
-    params = (('line', 0), ('ago', 0), ('period', 10),)
-
-    def __init__(self):
-        self.dline = self.datas[0].lines[self.params.line]
-
-    def next(self):
-        s = math.pow(math.fsum(self.dline.get(ago=self.params.ago, size=self.params.period)), 2.0)
-        self.lines.sum = s
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines.sum.array
-        ago = self.params.ago
-        period = self.params.period
-
-        for i in xrange(start, end):
-            larray[i] = math.pow(math.fsum(darray[i + ago - period + 1: i + ago + 1]), 2.0)
-
-
-class NSumSquared(Indicator):
-    lines = ('sqsum',)
-
-    params = (('line', 0), ('ago', 0), ('period', 10),)
-
-    def __init__(self):
-        self.dline = self.datas[0].lines[self.params.line]
-        self.fperiod = float(self.params.period)
-
-    def next(self):
-        squared = [math.pow(x, 2.0) for x in self.dline.get(ago=self.params.ago, size=self.params.period)]
-        sqsum = math.fsum(squared)
-        self.lines.sqsum = self.fperiod * sqsum
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines.sqsum.array
-        ago = self.params.ago
-        period = self.params.period
-        fperiod = self.fperiod
-
-        for i in xrange(start, end):
-            sqsum = math.fsum([math.pow(x, 2.0) for x in darray[i + ago - period + 1: i + ago + 1]])
-            larray[i] = fperiod * sqsum
-
-
-class SquareRoot(Indicator):
-    lines = ('sqroot',)
-
-    params = (('line', 0), ('ago', 0), ('factor', 1.0),)
-
-    def __init__(self):
-        self.dline = self.datas[0].lines[self.params.line]
-
-    def next(self):
-        self.lines.sqsum = self.params.factor * math.sqrt(self.dline[self.params.ago])
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines.sqsum.array
-        ago = self.params.ago
-        factor = self.params.factor
-
-        for i in xrange(start, end):
-            larray[i] = factor * math.sqrt(darray[i + ago])
+from .ma import MATypes
+from .lineutils import SquareRoot, Squared, SumAv
+from .linesutils import LinesDifference, LinesSummation
 
 
 class StdDev(Indicator):
     lines = ('stddev',)
 
-    params = (('period', 10), ('line',0), ('factor', 1.0),)
+    params = (('period', 20), ('line',0), ('factor', 1.0),)
 
     def __init__(self):
-        self.data = self.datas[0]
+        sumavsq = SumAv(Squared(self.data, line=self.p.line), period=self.p.period)
+        data1 = self.data if len(self.datas) == 1 else self.data1
+        sqsumav = Squared(SumAv(data1, period=self.p.period, line=self.p.line))
+        SquareRoot(LinesDifference(sumavsq, sqsumav), factor=self.p.factor).bindlines('stddev')
 
-        sum_n_squared = NSumSquared(self.data, line=self.params.line, period=self.params.period)
-        squared_sum = SquaredSum(self.data, line=self.params.line, period=self.params.period)
 
-        sum_minus_squared = LineDifference(
-            sum_n_squared, squared_sum, factor=1.0/float(pow(self.params.period, 2)))
-
-        stddev = SquareRoot(sum_minus_squared, factor=self.params.factor).bindlines(0)
+class StandardDeviation(StdDev):
+    pass
 
 
 class BollingerBands(Indicator):
@@ -175,17 +57,13 @@ class BollingerBands(Indicator):
     )
 
     def _plotlabel(self):
-        plabels = [self.params.period, self.params.stddev]
+        plabels = [self.p.period, self.p.stddev]
         return ','.join(map(str, plabels))
 
     def __init__(self):
-        self.data = self.datas[0]
+        ma = self.p.matype(self.data, line=self.p.line, period=self.p.period)
+        ma.bind2lines('mid')
 
-        ma = self.params.matype(self.data, line=self.params.line, period=self.params.period)
-        ma.bindlines(0)
-
-        stddev = StdDev(self.data, line=self.params.line, period=self.params.period,
-                        factor=self.params.stddev)
-
-        LineSummation(ma, stddev).bindlines(1)
-        LineDifference(ma, stddev).bindlines(2)
+        stddev = StdDev(self.data, line=self.p.line, period=self.p.period, factor=self.p.stddev)
+        LinesSummation(ma, stddev).bind2lines('top')
+        LinesDifference(ma, stddev).bind2lines('bot')
