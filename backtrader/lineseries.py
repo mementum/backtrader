@@ -229,7 +229,7 @@ class LineSeries(six.with_metaclass(MetaLineSeries, object)):
     def __setitem__(self, line, value):
         self.lines[line][0] = value
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # if any args, kwargs make it up to here, something is broken
         # defining a __init__ guarantees the existence of im_func to findbases
         # in lineiterator later, because object.__init__ has no im_func (object has slots)
