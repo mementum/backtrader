@@ -40,7 +40,7 @@ class DPO(Indicator):
     def _plotlabel(self):
         plabels = [self.p.period,]
         if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__]
+            plabels += [self.params.matype.__name__,]
         return ','.join(map(str, plabels))
 
     def __init__(self):
