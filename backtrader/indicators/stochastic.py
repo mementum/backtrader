@@ -37,7 +37,7 @@ class StochasticFast(Indicator):
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast,]
         if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__]
+            plabels += [self.params.matype.__name__,]
         return ','.join(map(str, plabels))
 
     def __init__(self):
@@ -57,7 +57,7 @@ class _StochasticInt(StochasticFast):
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow,]
         if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__]
+            plabels += [self.params.matype.__name__,]
         return ','.join(map(str, plabels))
 
 

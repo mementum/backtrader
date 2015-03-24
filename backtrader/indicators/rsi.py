@@ -56,7 +56,10 @@ class RSI(Indicator):
     params = (('period', 14), ('matype', MATypes.Smoothed), ('overbought', 70.0), ('oversold', 30.0),)
 
     def _plotlabel(self):
-        return ','.join(map(str, [self.p.period, self.p.matype.__name__]))
+        plabels = [self.p.period,]
+        if self.p.matype != MATypes.Simple:
+            plabels += [self.params.matype.__name__,]
+        return ','.join(map(str, plabels))
 
     plotinfo = dict(plotname='RSI')
 
