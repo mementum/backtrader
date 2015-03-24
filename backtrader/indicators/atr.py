@@ -21,63 +21,39 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import xrange
-
 from .. import DataSeries, Indicator
 from .ma import MATypes
+from .linesutils import LinesDifference, LinesMax
 
 
-class TrueRange(Indicator):
+class TR(Indicator):
     lines = ('tr',)
 
     def __init__(self):
-        self.data_high = self.datas[0].lines[DataSeries.High]
-        self.data_low = self.datas[0].lines[DataSeries.Low]
-        self.data_close = self.datas[0].lines[DataSeries.Close]
+        hl = LinesDifference(self.data, line=DataSeries.High, line1=DataSeries.Low)
+        hc = LinesDifference(self.data, line=DataSeries.High, line1=DataSeries.Close, ago1=1)
+        cl = LinesDifference(self.data, line=DataSeries.Close, ago=1, line1=DataSeries.Low)
 
-    def nextstart(self):
-        th = self.data_high[0]
-        tl = self.data_low[0]
-
-        self.lines[0][0] = th - tl
-
-    def next(self):
-        th = self.data_high[0]
-        tl = self.data_low[0]
-        yc = self.data_close[-1]
-
-        self.lines[0][0] = max(th - tl, abs(yc - th), abs(yc - tl))
-
-    def once(self, start, end):
-        dharray = self.data_high.array
-        dlarray= self.data_low.array
-        dcarray = self.data_close.array
-        larray = self.lines[0].array
-
-        th = dharray[start]
-        tl = dlarray[start]
-        larray[start] = th - tl
-
-        for i in xrange(start + 1, end):
-            th = dharray[i]
-            tl = dlarray[i]
-            yc = dcarray[i - 1]
-
-            larray[i] = max(th - tl, abs(yc - th), abs(yc - tl))
+        LinesMax(hl, LinesMax(hc, cl)).bindlines('tr')
 
 
-class AverageTrueRange(Indicator):
+class TrueRange(TR):
+    pass
+
+
+class ATR(Indicator):
     lines = ('atr',)
     params = (('period', 14), ('matype', MATypes.Simple))
 
     def _plotlabel(self):
-        return str(self.params.period)
-
-    plotinfo = dict(plotname='ATR')
+        plabels = [self.p.period,]
+        if self.p.matype != MATypes.Simple:
+            plabels += [self.params.matype.__name__]
+        return ','.join(map(str, plabels))
 
     def __init__(self):
-        tr = TrueRange(self.datas[0])
-        self.params.matype(tr, period=self.params.period).bindlines()
+        self.p.matype(TR(self.data), period=self.p.period).bind2lines('atr')
 
 
-ATR = AverageTrueRange
+class AverageTrueRange(ATR):
+    pass
