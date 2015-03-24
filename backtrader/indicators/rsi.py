@@ -21,77 +21,34 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six.moves import xrange
-
 from .. import Indicator
 from .ma import MATypes
-from .utils import LineDifference, LineDivision
+from .lineoperations import MaxVal, ValDiv, ValMinus, PlusVal
+from .lineutils import _LineBase
+from .linesutils import LinesDiff, LinesDivision
 
 
-class LineNormalize(Indicator):
-    lines = ('linenorm',)
-    params = (('norm', 100.0), ('line', 0))
-
-    def __init__(self):
-        self.dataline = self.datas[0][self.params.line]
-
-    def next(self):
-        norm = self.params.norm
-        self.lines[0][0] = norm - norm / (1.0 + self.dataline[0])
-
-    def once(self, start, end):
-        darray = self.dataline.array
-        larray = self.lines[0].array
-        norm = self.params.norm
-        for i in xrange(start, end):
-            larray[i] = norm - norm / (1.0 + darray[i])
-
-
-class UpDays(Indicator):
-    lines = ('up',)
-    params = (('line', 0),)
+class LineNormalize(_LineBase):
+    params = (('factor', 100.0),)
 
     def __init__(self):
-        self.dataline = self.datas[0].lines[self.params.line]
-
-    def nextstart(self):
-        self.lines[0][0] = 0.0
-
-    def next(self):
-        linediff = self.dataline[0] - self.dataline[-1]
-        self.lines[0][0] = max(linediff, 0.0)
-
-    def once(self, start, end):
-        darray = self.dataline.array
-        larray = self.lines[0].array
-        larray[start] = 0.0
-        for i in xrange(start + 1, end):
-            linediff = darray[i] - darray[i - 1]
-            larray[i] = max(linediff, 0.0)
+        den = PlusVal(self.data, 1.0, line=self.p.line, ago=self.p.ago)
+        minus = ValDiv(self.p.factor, den)
+        ValMinus(self.p.factor, minus).bind2lines()
 
 
-class DownDays(Indicator):
-    lines = ('down',)
-    params = (('line', 0),)
-
+class UpDays(_LineBase):
+    params = (('line', Indicator.Close),)
     def __init__(self):
-        self.dataline = self.datas[0].lines[self.params.line]
+        ld = LinesDiff(self.data, line=self.p.line, ago=self.p.ago, line1=self.p.line, ago1=self.p.ago + 1)
+        MaxVal(ld, 0.0).bind2lines()
 
-    def nextstart(self):
-        self.lines[0][0] = 0.0
 
-    def next(self):
-        linediff = self.dataline[-1] - self.dataline[0]
-        self.lines[0][0] = max(linediff, 0.0)
-
-    def once(self, start, end):
-        darray = self.dataline.array
-        larray = self.lines[0].array
-
-        larray[start] = 0.0
-        for i in xrange(start + 1, end):
-            linediff = darray[i - 1] - darray[i]
-            larray[i] = max(linediff, 0.0)
+class DownDays(_LineBase):
+    params = (('line', Indicator.Close),)
+    def __init__(self):
+        ld = LinesDiff(self.data, line=self.p.line, ago=self.p.ago + 1, line1=self.p.line, ago1=self.p.ago)
+        MaxVal(ld, 0.0).bind2lines()
 
 
 class RSI(Indicator):
@@ -99,20 +56,16 @@ class RSI(Indicator):
     params = (('period', 14), ('matype', MATypes.Smoothed), ('overbought', 70.0), ('oversold', 30.0),)
 
     def _plotlabel(self):
-        return ','.join(map(str, [self.params.period, self.params.matype.__name__]))
+        return ','.join(map(str, [self.p.period, self.p.matype.__name__]))
 
     plotinfo = dict(plotname='RSI')
 
     def __init__(self):
-        self.usenext = False
-        self.plotinfo.hlines = [self.params.overbought, self.params.oversold]
-        self.plotinfo.yticks = self.plotinfo.hlines
+        self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold]
 
-        updays = UpDays(self.datas[0])
-        downdays = DownDays(self.datas[0])
-        self.maup = self.params.matype(updays, period=self.params.period)
-        self.madown = self.params.matype(downdays, period=self.params.period)
-        rs = LineDivision(self.maup, self.madown)
+        maup = self.p.matype(UpDays(self.data), period=self.p.period)
+        madown = self.p.matype(DownDays(self.data), period=self.p.period)
+        rs = LinesDivision(maup, madown)
         rsi = LineNormalize(rs).bindlines()
 
 
