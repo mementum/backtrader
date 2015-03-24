@@ -26,6 +26,7 @@ import collections
 import six
 
 from .lineseries import LineSeries
+from .dataseries import DataSeries
 from . import metabase
 
 
@@ -41,9 +42,6 @@ class MetaLineIterator(LineSeries.__class__):
 
         # For each found data add access member - for the first data 2 (data and data0)
         if _obj.datas:
-            _obj.data = _obj.datas[0]
-            for i, data in enumerate(_obj.datas):
-                setattr(_obj, 'data%d' % i, data)
             _obj.data = data = _obj.datas[0]
 
             for l in range(data.size()):
@@ -70,7 +68,6 @@ class MetaLineIterator(LineSeries.__class__):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
-
 
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
@@ -246,7 +243,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         self.home()
 
         self.preonce(0, self._minperiod - 1)
-        self.once(self._minperiod - 1, self.buflen())
         self.oncestart(self._minperiod - 1, self._minperiod)
         self.once(self._minperiod, self.buflen())
 
@@ -293,13 +289,23 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 # or even outside (like in LineObservers)
 # for the 3 subbranches without generating circular import references
 
-class IndicatorBase(LineIterator):
+class DataAccessor(LineIterator):
+    Close = DataSeries.Close
+    Low = DataSeries.Low
+    High = DataSeries.High
+    Open = DataSeries.Open
+    Volume = DataSeries.Volume
+    OpenInteres = DataSeries.OpenInterest
+    DateTime = DataSeries.DateTime
+
+
+class IndicatorBase(DataAccessor):
     pass
 
 
-class LineObserverBase(LineIterator):
+class LineObserverBase(DataAccessor):
     pass
 
 
-class StrategyBase(LineIterator):
+class StrategyBase(DataAccessor):
     pass
