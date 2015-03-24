@@ -51,6 +51,7 @@ class MetaIndicator(IndicatorBase.__class__):
 
 
 class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
+    _autoinit = True
     _ltype = LineIterator.IndType
 
     def preonce_empty(self, start, end):
