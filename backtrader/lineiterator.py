@@ -44,6 +44,26 @@ class MetaLineIterator(LineSeries.__class__):
             _obj.data = _obj.datas[0]
             for i, data in enumerate(_obj.datas):
                 setattr(_obj, 'data%d' % i, data)
+            _obj.data = data = _obj.datas[0]
+
+            for l in range(data.size()):
+                line = data.lines[l]
+                linealias = data._getlinealias(l)
+                setattr(_obj, 'dataline%d' % l, line)
+                setattr(_obj, 'dl%d' % l, line)
+                setattr(_obj, 'data_%s' % linealias , line)
+                setattr(_obj, 'd_%s' % linealias, line)
+
+            for d, data in enumerate(_obj.datas):
+                setattr(_obj, 'data%d' % d, data)
+
+                for l in range(data.size()):
+                    line = data.lines[l]
+                    linealias = data._getlinealias(l)
+                    setattr(_obj, 'data%dline%d' % (d, l), line)
+                    setattr(_obj, 'd%dl%d' % (d, l), line)
+                    setattr(_obj, 'data%d_%s' % (d, linealias), line)
+                    setattr(_obj, 'd%d_%s' % (d, linealias), line)
 
         # Remove the datas from the args ... already being given to the line iterator
         args = [x for x in args if x not in _obj.datas]
