@@ -22,6 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import math
+import operator
 
 import six
 from six.moves import xrange
@@ -152,6 +153,7 @@ class SumAv(Sum):
     def __init__(self):
         self.p.factor = 1.0 / self.p.period
 
+
 class SumAvWeighted(Sum):
     def __init__(self):
         self.p.factor = 2.0 / (self.p.period * (self.p.period + 1.0))
@@ -167,10 +169,11 @@ class SumAvWeighted(Sum):
         ago = self.p.ago
         period = self.p.period
         factor = self.p.factor
+        weights = self.weights
 
         for i in xrange(start, end):
-            datas = darray[i - ago - period + 1: i - ago + 1]
-            larray[i] = factor * math.fsum(map(operator.mul, datas, self.weights))
+            data = darray[i - ago - period + 1: i - ago + 1]
+            larray[i] = factor * math.fsum(map(operator.mul, data, weights))
 
 
 class SumAvSmoothing(SumAv):
