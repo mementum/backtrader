@@ -28,12 +28,13 @@ import sys
 
 
 def findbases(kls, topclass):
+    retval = list()
     for base in kls.__bases__:
         if issubclass(base, topclass):
-            lst = findbases(base, topclass)
-            return lst.append(base) or lst
+            retval.extend(findbases(base, topclass))
+            retval.append(base)
 
-    return []
+    return retval
 
 
 def findowner(owned, cls):
@@ -91,22 +92,36 @@ class AutoInfoClass(object):
     _getrecurse = classmethod(lambda cls: False)
 
     @classmethod
-    def _derive(cls, name, info, recurse=False):
-        newinfo = cls._getpairs().copy()
-        info = collections.OrderedDict(info)
-        newinfo.update(info)
+    def _derive(cls, name, info, otherbases, recurse=False):
+        # collect the 3 set of infos
+        # info = collections.OrderedDict(info)
+        baseinfo = cls._getpairs().copy()
+        obasesinfo = collections.OrderedDict()
+        for obase in otherbases:
+            obasesinfo.update(obase._getpairs())
+
+        # update the info of this class (base) with that from the other bases
+        baseinfo.update(obasesinfo)
+
+        # The info of the new class is a copy of the full base info plus and update from parameter
+        clsinfo = baseinfo.copy()
+        clsinfo.update(info)
+
+        # The new items to update/set are those from the otherbase plus the new
+        info2add = obasesinfo.copy()
+        info2add.update(info)
 
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
-        setattr(newcls, '_getpairsbase', getattr(newcls, '_getpairs'))
-        setattr(newcls, '_getpairs', classmethod(lambda cls: newinfo.copy()))
+        setattr(newcls, '_getpairsbase', classmethod(lambda cls: basesinfo.copy()))
+        setattr(newcls, '_getpairs', classmethod(lambda cls: clsinfo.copy()))
         setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
 
-        for infoname, infoval in info.items():
+        for infoname, infoval in info2add.items():
             if recurse:
                 recursecls = getattr(newcls, infoname, AutoInfoClass)
-                infoval = recursecls._derive(name + '_' + infoname, infoval)
+                infoval = recursecls._derive(name + '_' + infoname, infoval, [])
 
             setattr(newcls, infoname, infoval)
 
@@ -117,7 +132,7 @@ class AutoInfoClass(object):
 
     @classmethod
     def _getkwargsdefault(cls):
-        return cls._getpairs().copy()
+        return cls._getpairs()
 
     @classmethod
     def _getkeys(cls):
@@ -153,67 +168,6 @@ class AutoInfoClass(object):
         return obj
 
 
-class AutoInfoClass2(object):
-    _getpairsbase = classmethod(lambda cls: ())
-    _getpairs = classmethod(lambda cls: ())
-    _getrecurse = classmethod(lambda cls: False)
-
-    @classmethod
-    def _derive(cls, name, info, recurse=False):
-        newinfo = collections.OrderedDict(cls._getpairs())
-
-        info = collections.OrderedDict(info)
-        newinfo.update(info)
-
-        # str for Python 2/3 compatibility
-        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
-
-        setattr(newcls, '_getpairsbase', getattr(newcls, '_getpairs'))
-        setattr(newcls, '_getpairs', classmethod(lambda cls: tuple(newinfo.items())))
-        setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
-
-        for infoname, infoval in info.items():
-            if recurse:
-                recursecls = getattr(newcls, infoname, AutoInfoClass)
-                infoval = recursecls._derive(name + '_' + infoname, infoval)
-
-            setattr(newcls, infoname, infoval)
-
-        return newcls
-
-    def _get(self, name, default=None):
-        return getattr(self, name, default)
-
-    @classmethod
-    def _getkwargsdefault(self):
-        return collections.OrderedDict(cls._getpairs())
-
-    def _getkwargs(self, skip_=False):
-        l = [(x, getattr(self, x)) for x in self._getkeys() if not skip_ or not x.startswith('_')]
-        return collections.OrderedDict(l)
-
-    @classmethod
-    def _getdefaults(cls):
-        return [x[1] for x in cls._getpairs()]
-
-    def _getvalues(self):
-        return [getattr(self, x[0]) for x in self._getpairs()]
-
-    @classmethod
-    def _getkeys(cls):
-        return [x[0] for x in cls._getpairs()]
-
-    def __new__(cls, *args, **kwargs):
-        obj = super(AutoInfoClass, cls).__new__(cls, *args, **kwargs)
-
-        if cls._getrecurse():
-            for infoname in obj._getkeys():
-                recursecls = getattr(cls, infoname)
-                setattr(obj, infoname, recursecls())
-
-        return obj
-
-
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
         # Remove params from class definition to avod inheritance (and hence "repetition")
@@ -225,8 +179,11 @@ class MetaParams(MetaBase):
         # Pulls the param class out of it - default is the empty class
         params = getattr(cls, 'params', AutoInfoClass)
 
+        # get extra (to the right) base classes which have a param attribute
+        morebasesparams = [x.params for x in bases[1:] if hasattr(x, 'params')]
+
         # Subclass and store the newly derived params class
-        cls.params = params._derive(name, newparams)
+        cls.params = params._derive(name, newparams, morebasesparams)
 
         return cls
 
