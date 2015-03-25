@@ -57,22 +57,33 @@ class Lines(object):
     _getlinesextrabase = classmethod(lambda cls: 0)
 
     @classmethod
-    def _derive(cls, name, lines, extralines):
-        baselines = cls._getlines()
-        newlines = baselines + lines
+    def _derive(cls, name, lines, extralines, otherbases):
 
-        newextralines = cls._getlinesextra() + extralines
+        obaseslines = ()
+        obasesextralines = 0
+
+        for otherbase in otherbases:
+            obaseslines += otherbase._getlines()
+            obasesextralines += otherbase._getlinesextra()
+
+        baselines = cls._getlines() + obaseslines
+        baseextralines = cls._getlinesextra() + obasesextralines
+
+        clslines = baselines + lines
+        clsextralines = baseextralines + extralines
+
+        lines2add = obaseslines + lines
 
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
-        setattr(newcls, '_getlinesbase', getattr(newcls, '_getlines'))
-        setattr(newcls, '_getlines', classmethod(lambda cls: newlines))
+        setattr(newcls, '_getlinesbase', classmethod(lambda cls: baselines))
+        setattr(newcls, '_getlines', classmethod(lambda cls: clslines))
 
-        setattr(newcls, '_getlinesextrabase', getattr(newcls, '_getlinesextra'))
-        setattr(newcls, '_getlinesextra', classmethod(lambda cls: newextralines))
+        setattr(newcls, '_getlinesextrabase', classmethod(lambda cls: baseextralines))
+        setattr(newcls, '_getlinesextra', classmethod(lambda cls: clsextralines))
 
-        for line, linealias in enumerate(lines, start=len(baselines)):
+        for line, linealias in enumerate(lines2add, start=len(cls._getlines())):
             if not isinstance(linealias, six.string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
@@ -162,14 +173,16 @@ class MetaLineSeries(metabase.MetaParams):
         lines = getattr(cls, 'lines', Lines)
 
         # Create a subclass of the lines class with our name and newlines and put it in the class
-        cls.lines = lines._derive(name, newlines, extralines)
+        morebaseslines = [x.lines for x in bases[1:] if hasattr(x, 'lines')]
+        cls.lines = lines._derive(name, newlines, extralines, morebaseslines)
 
         # Get a copy from base class plotinfo/plotlines (created with the class or set a default)
         plotinfo = getattr(cls, 'plotinfo', metabase.AutoInfoClass)
         plotlines = getattr(cls, 'plotlines', metabase.AutoInfoClass)
 
         # Create a plotinfo/plotlines subclass and set it in the class
-        cls.plotinfo = plotinfo._derive(name, newplotinfo)
+        morebasesplotinfo = [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
+        cls.plotinfo = plotinfo._derive(name, newplotinfo, morebasesplotinfo)
 
         # Before doing plotline newlines have been added and no plotlineinfo is there add a default
         for line in newlines:
@@ -177,7 +190,8 @@ class MetaLineSeries(metabase.MetaParams):
                 line = line[0]
             newplotlines.setdefault(line, dict())
 
-        cls.plotlines = plotlines._derive(name, newplotlines, recurse=True)
+        morebasesplotlines = [x.plotlines for x in bases[1:] if hasattr(x, 'plotlines')]
+        cls.plotlines = plotlines._derive(name, newplotlines, morebasesplotlines, recurse=True)
 
         # return the class
         return cls
