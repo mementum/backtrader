@@ -21,11 +21,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math
-import operator
-
 from .. import Indicator
-from .lineutils import SumAv, SumAvSmoothing
+from .lineutils import SumAv, SumAvSmoothing, SumAvWeighted
 
 
 class ExecOnces(Indicator):
@@ -49,27 +46,33 @@ class ExecOnces(Indicator):
         self.data.once = self.data.once_empty
 
 
-class MovingAverageBase(object):
+class MovingAverageBase(Indicator):
+    plotinfo = dict(subplot=False)
+
     def _plotlabel(self):
         return str(self.p.period)
 
 
-class MovingAverageSimple(MovingAverageBase, SumAv):
-    plotinfo = dict(subplot=False, plotname='SMA')
+class MovingAverageSimple(SumAv, MovingAverageBase):
+    plotinfo = dict(plotname='SMA')
 
 
-class MovingAverageExponential(MovingAverageBase, SumAvSmoothing):
-    plotinfo = dict(subplot=False, plotname='EMA')
+class MovingAverageExponential(SumAvSmoothing, MovingAverageBase):
+    plotinfo = dict(plotname='EMA')
 
     def getsmoothfactor(self):
         return 2.0 / (1.0 + self.p.period)
 
 
-class MovingAverageSmoothed(MovingAverageBase, SumAvSmoothing):
-    plotinfo = dict(subplot=False, plotname='SMMA')
+class MovingAverageSmoothed(SumAvSmoothing, MovingAverageBase):
+    plotinfo = dict(plotname='SMMA')
 
     def getsmoothfactor(self):
         return 1.0 / self.p.period
+
+
+class MovingAverageWeighted(SumAvWeighted, MovingAverageBase):
+    plotinfo = dict(plotname='WMA')
 
 
 class MAEnum(object):
@@ -89,4 +92,4 @@ class MATypes(object):
     Simple = MovingAverageSimple
     Exponential = MovingAverageExponential
     Smoothed = MovingAverageSmoothed
-    # Weighted = MovingAverageWeighted
+    Weighted = MovingAverageWeighted
