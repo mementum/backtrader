@@ -186,7 +186,7 @@ class MetaLineSeries(metabase.MetaParams):
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         plotinfo = cls.plotinfo()
 
-        for pname, pdef in cls.plotinfo._getpairs():
+        for pname, pdef in cls.plotinfo._getitems():
             setattr(plotinfo, pname, kwargs.pop(pname, pdef))
 
         # Create the object and set the params in place

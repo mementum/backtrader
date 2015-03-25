@@ -22,6 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
+from collections import OrderedDict
 import itertools
 import sys
 
@@ -85,6 +86,74 @@ class MetaBase(type):
 
 
 class AutoInfoClass(object):
+    _getpairsbase = classmethod(lambda cls: collections.OrderedDict())
+    _getpairs = classmethod(lambda cls: collections.OrderedDict())
+    _getrecurse = classmethod(lambda cls: False)
+
+    @classmethod
+    def _derive(cls, name, info, recurse=False):
+        newinfo = cls._getpairs().copy()
+        info = collections.OrderedDict(info)
+        newinfo.update(info)
+
+        # str for Python 2/3 compatibility
+        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
+
+        setattr(newcls, '_getpairsbase', getattr(newcls, '_getpairs'))
+        setattr(newcls, '_getpairs', classmethod(lambda cls: newinfo.copy()))
+        setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
+
+        for infoname, infoval in info.items():
+            if recurse:
+                recursecls = getattr(newcls, infoname, AutoInfoClass)
+                infoval = recursecls._derive(name + '_' + infoname, infoval)
+
+            setattr(newcls, infoname, infoval)
+
+        return newcls
+
+    def _get(self, name, default=None):
+        return getattr(self, name, default)
+
+    @classmethod
+    def _getkwargsdefault(cls):
+        return cls._getpairs().copy()
+
+    @classmethod
+    def _getkeys(cls):
+        return cls._getpairs().keys()
+
+    @classmethod
+    def _getdefaults(cls):
+        return [cls._getpairs.values()]
+
+    @classmethod
+    def _getitems(cls):
+        return cls._getpairs().items()
+
+    @classmethod
+    def _gettuple(cls):
+        return tuple(cls._getpairs().items())
+
+    def _getkwargs(self, skip_=False):
+        l = [(x, getattr(self, x)) for x in self._getkeys() if not skip_ or not x.startswith('_')]
+        return collections.OrderedDict(l)
+
+    def _getvalues(self):
+        return [getattr(self, x) for x in self._getkeys()]
+
+    def __new__(cls, *args, **kwargs):
+        obj = super(AutoInfoClass, cls).__new__(cls, *args, **kwargs)
+
+        if cls._getrecurse():
+            for infoname in obj._getkeys():
+                recursecls = getattr(cls, infoname)
+                setattr(obj, infoname, recursecls())
+
+        return obj
+
+
+class AutoInfoClass2(object):
     _getpairsbase = classmethod(lambda cls: ())
     _getpairs = classmethod(lambda cls: ())
     _getrecurse = classmethod(lambda cls: False)
@@ -164,7 +233,7 @@ class MetaParams(MetaBase):
     def donew(cls, *args, **kwargs):
         # Create params and set the values from the kwargs
         params = cls.params()
-        for pname, pdef in cls.params._getpairs():
+        for pname, pdef in cls.params._getitems():
             setattr(params, pname, kwargs.pop(pname, pdef))
 
         # Create the object and set the params in place
