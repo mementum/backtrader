@@ -54,7 +54,7 @@ class _LineBasePeriod(_LineBase):
 
 class Highest(_LineBasePeriod):
     def next(self):
-        self.lines[0] = max(self.dataline.get(size=self.p.period, ago=self.p.ago))
+        self.lines[0] = max(self.dline.get(size=self.p.period, ago=self.p.ago))
 
     def once(self, start, end):
         darray = self.dline.array
@@ -73,7 +73,7 @@ class Max(Highest):
 
 class Lowest(_LineBasePeriod):
     def next(self):
-        self.lines[0] = min(self.dataline.get(size=self.p.period, ago=self.p.ago))
+        self.lines[0] = min(self.dline.get(size=self.p.period, ago=self.p.ago))
 
     def once(self, start, end):
         darray = self.dline.array
