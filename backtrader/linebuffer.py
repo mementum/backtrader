@@ -82,7 +82,7 @@ class LineBuffer(object):
                 'ls' meant for datetime objects  - the array will be a list
         '''
         typecode = kwargs.get('typecode', cls.DefaultTypeCode)
-        owner = kwargs.get('owner') # has to be there
+        owner = kwargs['owner'] # has to be there
 
         if typecode == 'dq':
             newcls = LineBufferDeque
