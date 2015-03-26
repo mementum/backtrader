@@ -98,10 +98,11 @@ class Lines(object):
             linealias = linealias[0]
         return linealias
 
-    def __init__(self):
+    def __init__(self, owner):
+        self.owner = owner
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
-            kwargs = dict()
+            kwargs = dict(owner=self.owner)
             if not isinstance(linealias, six.string_types): # a tuple and not just a string
                 # typecode is additional arg
                 kwargs['typecode'] = linealias[1]
@@ -110,7 +111,7 @@ class Lines(object):
 
         # Add the required extralines
         for i in range(self._getlinesextra()):
-            self.lines.append(linebuffer.LineBuffer())
+            self.lines.append(linebuffer.LineBuffer(owner=self.owner))
 
     def __len__(self):
         return len(self.lines[0])
@@ -214,7 +215,7 @@ class MetaLineSeries(metabase.MetaParams):
         _obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(_obj, *args, **kwargs)
 
         # _obj.lines shadows the lines (class) definition in the class
-        _obj.lines = cls.lines()
+        _obj.lines = cls.lines(owner=_obj)
 
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         _obj.plotlines = cls.plotlines()

@@ -36,6 +36,7 @@ import collections
 import datetime
 import itertools
 
+
 NAN = float('NaN')
 
 
@@ -80,7 +81,8 @@ class LineBuffer(object):
                 'dq' meant for datetime objects  - the array will be a collections.deque
                 'ls' meant for datetime objects  - the array will be a list
         '''
-        typecode = kwargs.pop('typecode', cls.DefaultTypeCode)
+        typecode = kwargs.get('typecode', cls.DefaultTypeCode)
+        owner = kwargs.get('owner') # has to be there
 
         if typecode == 'dq':
             newcls = LineBufferDeque
@@ -89,11 +91,10 @@ class LineBuffer(object):
         else:
             newcls = LineBufferArray
 
-        obj = super(LineBuffer, newcls).__new__(newcls, *args, **kwargs)
-        obj.__init__(*args, **kwargs)
-        return obj
+        return super(LineBuffer, newcls).__new__(newcls, *args, **kwargs)
 
-    def __init__(self, typecode=DefaultTypeCode):
+
+    def __init__(self, owner, typecode='d'):
         '''
         Keyword Args:
             typecode (str): type of data hold at each point of the line
@@ -101,9 +102,9 @@ class LineBuffer(object):
                 'dq' meant for datetime objects  - the array will be a collections.deque
                 'ls' meant for datetime objects  - the array will be a list
         '''
-
-        self.bindings = list()
+        self.owner = owner
         self.typecode = typecode
+        self.bindings = list()
         self.reset()
 
     def reset(self):
@@ -265,9 +266,6 @@ class LineBuffer(object):
 class LineBufferArray(LineBuffer):
     ''' Line buffer concrete implementation with array.array
     '''
-    def __init__(self, typecode='d'):
-        super(LineBufferArray, self).__init__(typecode=typecode)
-
     def create_array(self):
         ''' Instantiates the internal array to array.array
         '''
@@ -278,9 +276,6 @@ class LineBufferArray(LineBuffer):
 class LineBufferList(LineBuffer):
     ''' Line buffer concrete implementation with list
     '''
-    def __init__(self, typecode='ls'):
-        super(LineBufferArray, self).__init__(typecode=typecode)
-
     def create_array(self):
         ''' Instantiates the internal array to list
         '''
@@ -293,9 +288,6 @@ class LineBufferDeque(LineBuffer):
     Some work is needed with get and getzero to return slices, because
     collections.deque has no direct support
     '''
-    def __init__(self, typecode='dq'):
-        super(LineBufferDeque, self).__init__(typecode=typecode)
-
     def create_array(self):
         ''' Instantiates the internal array to list
         '''
