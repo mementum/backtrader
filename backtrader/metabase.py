@@ -48,12 +48,12 @@ def findowner(owned, cls):
 
         # 'self' in regular code
         self_ = frame.f_locals.get('self', None)
-        if self_ != owned and isinstance(self_, cls):
+        if self_ is not owned and isinstance(self_, cls):
             return self_
 
         # '_obj' in metaclasses
         obj_ = frame.f_locals.get('_obj', None)
-        if obj_ != owned and isinstance(obj_, cls):
+        if obj_ is not owned and isinstance(obj_, cls):
             return obj_
 
     return None
