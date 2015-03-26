@@ -249,3 +249,25 @@ class LineSeries(six.with_metaclass(MetaLineSeries, object)):
         # defining a __init__ guarantees the existence of im_func to findbases
         # in lineiterator later, because object.__init__ has no im_func (object has slots)
         pass
+
+    def __lt__(self, other):
+        return self[0][0] < other
+
+    def __gt__(self, other):
+        return self[0][0] > other
+
+    def __le__(self, other):
+        return self[0][0] <= other
+
+    def __ge__(self, other):
+        return self[0][0] >= other
+
+    def __eq__(self, other):
+        if isinstance(other, LineSeries):
+            return other is LineSeries
+        return self[0][0] == other
+
+    def __ne__(self, other):
+        if isinstance(other, LineSeries):
+            return other is not LineSeries
+        return self[0][0] != other
