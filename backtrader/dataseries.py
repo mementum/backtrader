@@ -36,4 +36,4 @@ class OHLC(DataSeries):
 
 
 class OHLCDateTime(OHLC):
-    lines = (('datetime', 'dq'),)
+    lines = (('datetime', 'ls'),)

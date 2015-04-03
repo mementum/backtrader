@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .. import Indicator
 from .ma import MATypes
-from .linesutils import LinesDiff
 
 
 class DPO(Indicator):
@@ -31,7 +30,7 @@ class DPO(Indicator):
     lines = ('dpo',)
 
     # Accepted parameters (and defaults) - MovAvg also parameter to allow experimentation
-    params = (('period', 20), ('line', Indicator.Close), ('matype', MATypes.Simple),)
+    params = (('period', 20), ('matype', MATypes.Simple),)
 
     # Emphasize central 0.0 line in plot
     plotinfo = dict(hlines=[0.0,],)
@@ -39,16 +38,16 @@ class DPO(Indicator):
     # Indicator information after the name (in brackets)
     def _plotlabel(self):
         plabels = [self.p.period,]
-        if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__,]
-        return ','.join(map(str, plabels))
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
     def __init__(self):
         # Create the Moving Average
-        ma = self.p.matype(self.data, line=self.p.line, period=self.p.period)
+        ma = self.p.matype(self.data, period=self.p.period)
 
-        # Calculate the value (look back ago1 in MovAvg)  and bind it to the output 'dpo' line
-        LinesDiff(self.data, ma, line=self.p.line, ago1=self.p.period // 2 + 1).bind2lines('dpo')
+        # Calculate the value (look back period/2 + 1 in MA) and bind to 'dpo' line
+        dpo = self.data - ma(self.p.period // 2 + 1)
+        dpo.bind2line('dpo') # dpo.bind2line() also valid ... binds to the 1st (and only) line
 
 
 # Alias for DPO

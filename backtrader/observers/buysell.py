@@ -43,7 +43,7 @@ class _BuySellObserver(LineObserver):
         sell = list()
 
         for order in self._owner._orderspending:
-            if order.data != self.data or not order.executed.size:
+            if order.data is not self.data or not order.executed.size:
                 continue
 
             if order.isbuy():
@@ -52,8 +52,8 @@ class _BuySellObserver(LineObserver):
                 sell.append(order.executed.price)
 
         # Write down the average buy/sell price
-        self.lines.buy = math.fsum(buy)/float(len(buy) or 'NaN')
-        self.lines.sell = math.fsum(sell)/float(len(sell) or 'NaN')
+        self.lines.buy[0] = math.fsum(buy)/float(len(buy) or 'NaN')
+        self.lines.sell[0] = math.fsum(sell)/float(len(sell) or 'NaN')
 
 
 class BuySellObserver(ObserverPot):

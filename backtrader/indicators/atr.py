@@ -21,24 +21,24 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .. import DataSeries, Indicator
+from .. import Indicator
 from .ma import MATypes
-from .linesutils import LinesDifference, LinesMax
+from .lineoperations import Max
 
 
 class TR(Indicator):
     lines = ('tr',)
 
     def __init__(self):
-        hl = LinesDifference(self.data, line=DataSeries.High, line1=DataSeries.Low)
-        hc = LinesDifference(self.data, line=DataSeries.High, line1=DataSeries.Close, ago1=1)
-        cl = LinesDifference(self.data, line=DataSeries.Close, ago=1, line1=DataSeries.Low)
+        high = self.data[self.PriceHigh]
+        low = self.data[self.PriceLow]
+        close1 = self.data[self.PriceClose](1)
 
-        LinesMax(hl, LinesMax(hc, cl)).bindlines('tr')
+        Max(high - low, abs(high - close1), abs(close1 - low)).bind2line()
 
 
 class TrueRange(TR):
-    pass
+    pass # alias
 
 
 class ATR(Indicator):
@@ -47,13 +47,12 @@ class ATR(Indicator):
 
     def _plotlabel(self):
         plabels = [self.p.period,]
-        if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__,]
-        return ','.join(map(str, plabels))
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
     def __init__(self):
-        self.p.matype(TR(self.data), period=self.p.period).bind2lines('atr')
+        self.p.matype(TR(self.data), period=self.p.period).bind2line()
 
 
 class AverageTrueRange(ATR):
-    pass
+    pass # alias

@@ -37,9 +37,9 @@ def findbases(kls, topclass):
     return retval
 
 
-def findowner(owned, cls):
+def findowner(owned, cls, startlevel=2, skip=None):
     # skip this frame and the caller's -> start at 2
-    for framelevel in itertools.count(2):
+    for framelevel in itertools.count(startlevel):
         try:
             frame = sys._getframe(framelevel)
         except ValueError:
@@ -48,13 +48,15 @@ def findowner(owned, cls):
 
         # 'self' in regular code
         self_ = frame.f_locals.get('self', None)
-        if self_ is not owned and isinstance(self_, cls):
-            return self_
+        if skip is not self_:
+            if self_ is not owned and isinstance(self_, cls):
+                return self_
 
         # '_obj' in metaclasses
         obj_ = frame.f_locals.get('_obj', None)
-        if obj_ is not owned and isinstance(obj_, cls):
-            return obj_
+        if skip is not obj_:
+            if obj_ is not owned and isinstance(obj_, cls):
+                return obj_
 
     return None
 
@@ -127,6 +129,12 @@ class AutoInfoClass(object):
 
         return newcls
 
+    def isdefault(self, pname):
+        return self._get(pname) == self._getkwargsdefault()[pname]
+
+    def notdefault(self, pname):
+        return self._get(pname) != self._getkwargsdefault()[pname]
+
     def _get(self, name, default=None):
         return getattr(self, name, default)
 
@@ -140,7 +148,7 @@ class AutoInfoClass(object):
 
     @classmethod
     def _getdefaults(cls):
-        return [cls._getpairs.values()]
+        return [cls._getpairs().values()]
 
     @classmethod
     def _getitems(cls):

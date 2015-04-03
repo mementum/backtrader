@@ -22,22 +22,27 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .. indicator import Indicator
-from .ma import MovingAverageExponential
-from .linesutils import LinesDifference
+from .ma import MATypes
 
 
 class MACD(Indicator):
     lines = ('macd', 'signal',)
-    params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9))
+    params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
+              ('matype', MATypes.Exponential),)
 
     plotinfo = dict(hlines=[0.0])
     plotlines = dict(signal=dict(ls='--'))
 
+    def _plotlabel(self):
+        plabels = super(MACD, self)._plotlabel()
+        plabels.remove(self.p.matype) if self.p.isdefault('matype') else None
+        return plabels
+
     def __init__(self):
-        me1 = MovingAverageExponential(self.data, period=self.p.period_me1)
-        me2 = MovingAverageExponential(self.data, period=self.p.period_me2)
-        macd = LinesDifference(me1, me2).bind2lines('macd')
-        MovingAverageExponential(macd, period=self.p.period_signal).bind2lines('signal')
+        me1 = self.p.matype(self.data, period=self.p.period_me1)
+        me2 = self.p.matype(self.data, period=self.p.period_me2)
+        macd = (me1 - me2).bind2line('macd')
+        signal = self.p.matype(macd, period=self.p.period_signal).bind2line('signal')
 
 
 class MACDHistogram(MACD):
@@ -45,4 +50,5 @@ class MACDHistogram(MACD):
     plotlines = dict(histo=dict(_method='bar', alpha=0.33))
 
     def __init__(self):
-        LinesDifference(self, self, line=0, line1=1).bind2lines('histo')
+        super(MACDHistogram, self).__init__()
+        (self.lines.macd - self.lines.signal).bind2line('histo')

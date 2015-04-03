@@ -69,16 +69,16 @@ class PlotScheme(object):
     hlinesstyle = '--'
     hlineswidth = 1.0
 
-    line0 = 'red'
-    line1 = 'blue'
-    line2 = 'green'
-    line3 = 'brown'
-    line4 = 'cyan'
-    line5 = 'magenta'
-    line6 = 'yellow'
-    line7 = 'black'
+    lcolor0 = 'red'
+    lcolor1 = 'blue'
+    lcolor2 = 'green'
+    lcolor3 = 'brown'
+    lcolor4 = 'cyan'
+    lcolor5 = 'magenta'
+    lcolor6 = 'yellow'
+    lcolor7 = 'black'
 
-    lines = [line0, line1, line2, line3, line4, line5, line6, line7]
+    lcolors = [lcolor0, lcolor1, lcolor2, lcolor3, lcolor4, lcolor5, lcolor6, lcolor7]
 
     buymarker = '^'
     buylabel = 'Buy'
@@ -113,10 +113,14 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 axis.append(ax)
                 daxis[ind] = ax
             else: # plotted over data source (which may be data or indicator)
-                ax = daxis[ind._clock]
+                if ind._clock in daxis:
+                    ax = daxis[ind._clock]
+                elif hasattr(ind._clock, 'owner'):
+                    # It's a LineBuffer and hence the owner is needed
+                    ax = daxis[ind._clock.owner]
 
             indlabel = ind.plotlabel()
-            lastcolor = self.params.scheme.lines[0] # to avoid a user error if first line defines _samecolor
+            lastcolor = self.params.scheme.lcolors[0] # to avoid a user error if first line defines _samecolor
             for lineidx in range(ind.size()):
                 line = ind.lines[lineidx]
                 linealias = ind.lines._getlinealias(lineidx)
@@ -146,7 +150,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
                 plotkwargs = dict()
                 if ind.plotinfo.subplot:
-                    plotkwargs['color'] = self.params.scheme.lines[lineidx]
+                    coloridx = lineidx % len(self.params.scheme.lcolors)
+                    plotkwargs['color'] = self.params.scheme.lcolors[coloridx]
 
                 if lineplotinfo._get('_samecolor', False):
                     plotkwargs['color'] = lastcolor
@@ -340,6 +345,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Activate grid in all axes if requested
         for ax in axis:
+            ax.yaxis.tick_right()
             ax.grid(self.params.scheme.grid)
 
         # Date formatting for the x axis - only the last one needs it
@@ -348,9 +354,11 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Put the subplots as indicated by hspace (0 is touching each other)
         fig.subplots_adjust(hspace=self.params.scheme.plotdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
-        fig.autofmt_xdate()
+        fig.autofmt_xdate(bottom=0.05, rotation=15)
+
         # Things must be tight along the x axis (to fill both ends)
-        pyplot.autoscale(axis='x', tight=True)
+        # pyplot.autoscale(axis='x', tight=True)
+        pyplot.autoscale(tight=True)
 
     def show(self):
         pyplot.show()

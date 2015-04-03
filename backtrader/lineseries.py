@@ -22,10 +22,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
+import operator
 
 import six
 
-from . import linebuffer
+from .linebuffer import LineBuffer, LinesOperation, LineDelay, LineAssign, NAN
+from .lineroot import LineSingle, LineMultiple
+from .metabase import AutoInfoClass
 from . import metabase
 
 
@@ -47,7 +50,8 @@ class LineAlias(object):
         return obj.lines[self.line]
 
     def __set__(self, obj, value):
-        obj.lines[self.line][0] = value
+        # obj.lines[self.line][0] = value
+        LineAssign(obj.lines[self.line], value)
 
 
 class Lines(object):
@@ -93,25 +97,30 @@ class Lines(object):
 
     @classmethod
     def _getlinealias(cls, i):
-        linealias = cls._getlines()[i]
+        lines = cls._getlines()
+        if i >= len(lines):
+            return ''
+        linealias = lines[i]
         if not isinstance(linealias, six.string_types):
             linealias = linealias[0]
         return linealias
 
-    def __init__(self, owner):
-        self.owner = owner
+    def __init__(self, initlines=None):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
-            kwargs = dict(owner=self.owner)
+            kwargs = dict()
             if not isinstance(linealias, six.string_types): # a tuple and not just a string
                 # typecode is additional arg
                 kwargs['typecode'] = linealias[1]
 
-            self.lines.append(linebuffer.LineBuffer(**kwargs))
+            self.lines.append(LineBuffer(**kwargs))
 
         # Add the required extralines
         for i in range(self._getlinesextra()):
-            self.lines.append(linebuffer.LineBuffer(owner=self.owner))
+            if not initlines:
+                self.lines.append(LineBuffer())
+            else:
+                self.lines.append(initlines[i])
 
     def __len__(self):
         return len(self.lines[0])
@@ -122,6 +131,9 @@ class Lines(object):
     def fullsize(self):
         return len(self.lines)
 
+    def extrasize(self):
+        return self._getlinesextra()
+
     def __getitem__(self, line):
         return self.lines[line]
 
@@ -131,7 +143,7 @@ class Lines(object):
     def __setitem__(self, line, value):
         self.lines[line][0] = value
 
-    def forward(self, value=linebuffer.NAN, size=1):
+    def forward(self, value=NAN, size=1):
         for line in self.lines:
             line.forward(value, size=size)
 
@@ -139,7 +151,7 @@ class Lines(object):
         for line in self.lines:
             line.rewind(size)
 
-    def extend(self, value=linebuffer.NAN, size=0):
+    def extend(self, value=NAN, size=0):
         for line in self.lines:
             line.extend(value, size)
 
@@ -159,7 +171,7 @@ class Lines(object):
         return self.lines[line].buflen()
 
 
-class MetaLineSeries(metabase.MetaParams):
+class MetaLineSeries(LineMultiple.__class__):
     def __new__(meta, name, bases, dct):
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
@@ -178,8 +190,8 @@ class MetaLineSeries(metabase.MetaParams):
         cls.lines = lines._derive(name, newlines, extralines, morebaseslines)
 
         # Get a copy from base class plotinfo/plotlines (created with the class or set a default)
-        plotinfo = getattr(cls, 'plotinfo', metabase.AutoInfoClass)
-        plotlines = getattr(cls, 'plotlines', metabase.AutoInfoClass)
+        plotinfo = getattr(cls, 'plotinfo', AutoInfoClass)
+        plotlines = getattr(cls, 'plotlines', AutoInfoClass)
 
         # Create a plotinfo/plotlines subclass and set it in the class
         morebasesplotinfo = [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
@@ -206,28 +218,31 @@ class MetaLineSeries(metabase.MetaParams):
 
         # Create the object and set the params in place
         _obj, args, kwargs = super(MetaLineSeries, cls).donew(*args, **kwargs)
+
+        # set the plotinfo member in the class
         _obj.plotinfo = plotinfo
 
-        # Parameter values have now been set before __init__
-        return _obj, args, kwargs
-
-    def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaLineSeries, cls).dopreinit(_obj, *args, **kwargs)
-
         # _obj.lines shadows the lines (class) definition in the class
-        _obj.lines = cls.lines(owner=_obj)
+        _obj.lines = cls.lines()
+        if _obj.lines.fullsize():
+            _obj.array = _obj.lines[0].array
 
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         _obj.plotlines = cls.plotlines()
 
-        # Set the minimum period for any LineSeries (sub)class instance (do it at classlevel ?)
-        _obj._minperiod = 1
+        # add aliases for lines
+        if _obj.lines.fullsize():
+            setattr(_obj, 'line', _obj.lines[0])
 
+        for l, line in enumerate(_obj.lines):
+            setattr(_obj, 'line_%d' % l, line)
+            setattr(_obj, 'line%d' % l, line)
+
+        # Parameter values have now been set before __init__
         return _obj, args, kwargs
 
 
-class LineSeries(six.with_metaclass(MetaLineSeries, object)):
-
+class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
     _name = ''
 
     def __getattr__(self, name):
@@ -250,6 +265,34 @@ class LineSeries(six.with_metaclass(MetaLineSeries, object)):
         # in lineiterator later, because object.__init__ has no im_func (object has slots)
         pass
 
+    def plotlabel(self):
+        label = self.plotinfo.plotname or self.__class__.__name__
+        sublabels = self._plotlabel()
+        if sublabels:
+            for i, sublabel in enumerate(sublabels):
+                # if isinstance(sublabel, LineSeries): ## DOESN'T WORK ???
+                if hasattr(sublabel, 'plotinfo'):
+                    sublabels[i] = sublabel.plotinfo.plotname or sublabel.__class__.__name__
+            label += ' (%s)' % ', '.join(map(str, sublabels))
+        return label
+
+    def _plotlabel(self):
+        return self.params._getvalues()
+
+    def __call__(self, ago, line=0):
+        return LineDelay(self.lines[line], ago, _ownerskip=self)
+
+    def _operation(self, other, operation, r=False):
+        if isinstance(other, LineMultiple):
+            # FIXME: ideally return a LineSeries object at least as long as the
+            # smallest size of both operands
+            return LinesOperation(self.lines[0], other[0], operation, r, _ownerskip=self)
+        elif isinstance(other, LineSingle):
+            return LinesOperation(self.lines[0], other, operation, r, _ownerskip=self)
+
+        # assume other is a standard type
+        return LinesOperation(self.lines[0], other, operation, r, _ownerskip=self)
+
     def __lt__(self, other):
         return self[0][0] < other
 
@@ -271,3 +314,20 @@ class LineSeries(six.with_metaclass(MetaLineSeries, object)):
         if isinstance(other, LineSeries):
             return other is not LineSeries
         return self[0][0] != other
+
+
+class LineSeriesStub(LineSeries):
+    extralines = 1
+
+    def __init__(self, line):
+        self.lines = self.__class__.lines(initlines=[line,])
+        # give a change to find the line owner (for plotting at least)
+        self.owner = line._owner
+        self._minperiod = line._minperiod
+
+
+def LineSeriesMaker(arg):
+    if isinstance(arg, LineSeries):
+        return arg
+
+    return LineSeriesStub(arg)

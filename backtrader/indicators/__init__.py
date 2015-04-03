@@ -31,6 +31,4 @@ from .ma import *
 from .macd import *
 from .rsi import *
 from .stochastic import *
-from .lineutils import *
 from .lineoperations import *
-from .linesutils import *

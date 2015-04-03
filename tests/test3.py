@@ -52,7 +52,7 @@ class TestStrategy(bt.Strategy):
     def __init__(self):
         self.data = self.datas[0]
         self.dataclose = self.data.close
-        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod, plot=False)
+        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod, plot=True)
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
         btind.ATR(self.data)
@@ -115,7 +115,7 @@ class TestStrategy(bt.Strategy):
         print('Final portfolio value: %.2f' % self.broker.getvalue())
 
 
-cerebro = bt.Cerebro()
+cerebro = bt.Cerebro(runonce=False)
 
 # The datas are in a subdirectory of the samples. Need to find where the script is
 # because it could have been called from anywhere
@@ -137,6 +137,8 @@ cerebro.addstrategy(TestStrategy,
                     maperiod=15,
                     exectype=bt.Order.Market,
                     atlimitperc=0.80,
-                    expiredays=7)
+                    expiredays=7,
+                    analyzer=True)
+
 cerebro.run()
 cerebro.plot()

@@ -25,7 +25,8 @@ import collections
 
 import six
 
-from .lineseries import LineSeries
+from .lineroot import LineRoot
+from .lineseries import LineSeries, LineSeriesMaker
 from .dataseries import DataSeries
 from . import metabase
 
@@ -34,40 +35,33 @@ class MetaLineIterator(LineSeries.__class__):
     def donew(cls, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).donew(*args, **kwargs)
 
-        # Find the owner and store it
-        _obj._owner = metabase.findowner(_obj, _obj._OwnerCls or LineIterator)
-
         # Scan args for datas ... if none are found, use the _owner (to have a clock)
-        _obj.datas = [x for x in args if isinstance(x, LineSeries)]
+        _obj.datas = [LineSeriesMaker(x) for x in args if isinstance(x, LineRoot)]
+
+        # Remove the datas from the args ... already being given to the line iterator
+        newargs = [x for x in args if not isinstance(x, LineRoot)]
 
         # For each found data add access member - for the first data 2 (data and data0)
         if _obj.datas:
             _obj.data = data = _obj.datas[0]
 
-            for l in range(data.size()):
-                line = data.lines[l]
+            for l, line in enumerate(data.lines):
                 linealias = data._getlinealias(l)
-                setattr(_obj, 'dataline%d' % l, line)
-                setattr(_obj, 'dl%d' % l, line)
-                setattr(_obj, 'data_%s' % linealias , line)
-                setattr(_obj, 'd_%s' % linealias, line)
+                if linealias:
+                    setattr(_obj, 'data_%s' % linealias , line)
+                setattr(_obj, 'data_%d' % l , line)
 
             for d, data in enumerate(_obj.datas):
                 setattr(_obj, 'data%d' % d, data)
 
-                for l in range(data.size()):
-                    line = data.lines[l]
+                for l, line in enumerate(data.lines):
                     linealias = data._getlinealias(l)
-                    setattr(_obj, 'data%dline%d' % (d, l), line)
-                    setattr(_obj, 'd%dl%d' % (d, l), line)
-                    setattr(_obj, 'data%d_%s' % (d, linealias), line)
-                    setattr(_obj, 'd%d_%s' % (d, linealias), line)
-
-        # Remove the datas from the args ... already being given to the line iterator
-        args = [x for x in args if x not in _obj.datas]
+                    if linealias:
+                        setattr(_obj, 'data%d_%s' % (d, linealias), line)
+                    setattr(_obj, 'data%d_%d' % (d, l), line)
 
         # Parameter values have now been set before __init__
-        return _obj, args, kwargs
+        return _obj, newargs, kwargs
 
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
@@ -81,58 +75,32 @@ class MetaLineIterator(LineSeries.__class__):
         # To automatically set the period Start by scanning the found datas
         # No calculation can take place until all datas have yielded "data"
         # A data could be an indicator and it could take x bars until something is produced
-        _obj._minperiod = max([data._minperiod for data in _obj.datas] or [_obj._minperiod,])
+        _obj._minperiod = max([x._minperiod for x in _obj.datas] or [_obj._minperiod,])
+
+        # The lines carry at least the same minperiod as that provided by the datas
+        for line in _obj.lines:
+            line.addminperiod(_obj._minperiod)
 
         # Prepare to hold children that need to be calculated and influence minperiod
         _obj._lineiterators = collections.defaultdict(list)
 
         return _obj, args, kwargs
 
-    def doinit(cls, _obj, *args, **kwargs):
-        if getattr(cls, '_autoinit', False):
-            # Find and call baseclasses __init__ (from top to bottom)
-            seen = set()
-            owninit = _obj.__class__.__init__
-            for xinit in map(lambda x: x.__init__, metabase.findbases(cls, LineSeries)):
-                if xinit not in seen:
-                    seen.add(xinit)
-                    if xinit != owninit:
-                        xinit(_obj, *args, **kwargs)
-
-        _obj, args, kwargs = super(MetaLineIterator, cls).doinit(_obj, *args, **kwargs)
-        return _obj, args, kwargs
-
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineIterator, cls).dopostinit(_obj, *args, **kwargs)
 
-        # Register (my)self as indicator (lineiterator) to the owner
-        # This can't be done any earlier because my own "minperiod" depens on child indicators
-        # which have only registered to myself once "init" is over
+        # my minperiod is as large as the minperiod of my lines
+        _obj._minperiod = max([x._minperiod for x in _obj.lines])
+
+        # Register (my)self as indicator to owner once _minperiod has been calculated
         if _obj._owner is not None:
             _obj._owner.addindicator(_obj)
-
-        # check if the object clock is an indicator (to avoid duplicate calculation)
-        _obj._clockindicator = False
-
-        for ltype, liters in _obj._lineiterators.items():
-            if _obj._clock in liters:
-                # If the clock has not moved forward we won't move our own clock forward
-                # Therefore this "clockindidator" has to be calculated first before our clock moves
-                # by also taking the "clock" out of the indicator slicing the _lineterators[ltype]
-                # member variable must not be done each and every time
-                _obj._clockindicator = True
-                _obj._lineiterators[ltype] = liters[1:] # clock is always first, leave it aside
-                break
 
         return _obj, args, kwargs
 
 
 class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
-    _OwnerCls = None
-
-    IndType, StratType, ObsType = list(range(3))
-
-    _ltype = IndType
+    _ltype = LineSeries.IndType
 
     plotinfo = dict(plot=True, subplot=True, plotname='', plotskip=False)
 
@@ -145,17 +113,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
     def addindicator(self, indicator):
         # store in right queue
         self._lineiterators[indicator._ltype].append(indicator)
-        # if needed used its minperiod
-        if indicator._ltype in [LineIterator.IndType, LineIterator.StratType,]:
-            self._minperiod = max(indicator._minperiod, self._minperiod)
-
-    def setminperiod(self, minperiod):
-        # Add the extra requested by the indicator to the auto-calculated from datas
-        # Substract 1 which is the minimum period to avoid carrying over an extra 1
-        self._minperiod += minperiod - 1
-
-    def addminperiod(self, minperiod):
-        self._minperiod += minperiod
 
     def bindlines(self, owner=None, own=None):
         if not owner:
@@ -191,11 +148,9 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     # Alias which may be more readable
     bind2lines = bindlines
+    bind2line = bind2lines
 
     def _next(self):
-        if self._clockindicator:
-            self._clock._next()
-
         clock_len = len(self._clock)
         if clock_len != len(self):
             self.forward()
@@ -210,7 +165,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         elif clock_len == self._minperiod:
             self.nextstart() # only called for the 1st value
         else:
-            # POTENTIAL IDEA: Add an extra method before "prenext" is reached (preminperiod)
             self.prenext()
 
         for observer in self._lineiterators[LineIterator.ObsType]:
@@ -218,9 +172,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
     def _once(self):
         self.forward(size=self._clock.buflen())
-
-        if self._clockindicator:
-            self._clock._once()
 
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator._once()
@@ -230,9 +181,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
         for data in self.datas:
             data.home()
-
-        if self._clockindicator:
-            self._clock.home()
 
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.home()
@@ -274,29 +222,19 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
     def _notify(self):
         pass
 
-    def plotlabel(self):
-        label = self.plotinfo.plotname or self.__class__.__name__
-        sublabel = self._plotlabel()
-        if sublabel:
-            label += ' (%s)' % sublabel
-        return label
-
-    def _plotlabel(self):
-        return ','.join(map(str, self.params._getvalues()))
-
 
 # This 3 subclasses can be used for identification purposes within LineIterator
 # or even outside (like in LineObservers)
 # for the 3 subbranches without generating circular import references
 
 class DataAccessor(LineIterator):
-    Close = DataSeries.Close
-    Low = DataSeries.Low
-    High = DataSeries.High
-    Open = DataSeries.Open
-    Volume = DataSeries.Volume
-    OpenInteres = DataSeries.OpenInterest
-    DateTime = DataSeries.DateTime
+    PriceClose = DataSeries.Close
+    PriceLow = DataSeries.Low
+    PriceHigh = DataSeries.High
+    PriceOpen = DataSeries.Open
+    PriceVolume = DataSeries.Volume
+    PriceOpenInteres = DataSeries.OpenInterest
+    PriceDateTime = DataSeries.DateTime
 
 
 class IndicatorBase(DataAccessor):
