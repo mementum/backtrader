@@ -23,32 +23,21 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .. import Indicator
 from .ma import MATypes
-from .lineoperations import MaxVal, ValDiv, ValMinus, PlusVal
-from .lineutils import _LineBase
-from .linesutils import LinesDiff, LinesDivision
+from .lineoperations import Max
 
 
-class LineNormalize(_LineBase):
-    params = (('factor', 100.0),)
+class UpDays(Indicator):
+    lines = ('up',)
 
     def __init__(self):
-        den = PlusVal(self.data, 1.0, line=self.p.line, ago=self.p.ago)
-        minus = ValDiv(self.p.factor, den)
-        ValMinus(self.p.factor, minus).bind2lines()
+        Max(self.data - self.data(1), 0.0).bind2lines()
 
 
-class UpDays(_LineBase):
-    params = (('line', Indicator.Close),)
+class DownDays(Indicator):
+    lines = ('down',)
+
     def __init__(self):
-        ld = LinesDiff(self.data, line=self.p.line, ago=self.p.ago, line1=self.p.line, ago1=self.p.ago + 1)
-        MaxVal(ld, 0.0).bind2lines()
-
-
-class DownDays(_LineBase):
-    params = (('line', Indicator.Close),)
-    def __init__(self):
-        ld = LinesDiff(self.data, line=self.p.line, ago=self.p.ago + 1, line1=self.p.line, ago1=self.p.ago)
-        MaxVal(ld, 0.0).bind2lines()
+        Max(self.data(1) - self.data, 0.0).bind2lines()
 
 
 class RSI(Indicator):
@@ -57,19 +46,21 @@ class RSI(Indicator):
 
     def _plotlabel(self):
         plabels = [self.p.period,]
-        if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__,]
-        return ','.join(map(str, plabels))
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
     plotinfo = dict(plotname='RSI')
 
     def __init__(self):
         self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold]
 
-        maup = self.p.matype(UpDays(self.data), period=self.p.period)
-        madown = self.p.matype(DownDays(self.data), period=self.p.period)
-        rs = LinesDivision(maup, madown)
-        rsi = LineNormalize(rs).bindlines()
+        updays = UpDays(self.data)
+        downdays = DownDays(self.data)
+        maup = self.p.matype(updays, period=self.p.period)
+        madown = self.p.matype(downdays, period=self.p.period)
+        rs = maup / madown
+        rsi = 100.0 - 100.0 / (1.0 + rs)
+        rsi.bind2line('rsi')
 
 
 __all__ = ['RSI',]

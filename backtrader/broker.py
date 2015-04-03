@@ -163,7 +163,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         for data, pos in self.positions.items():
             # futures change cash in the broker in every bar to ensure margin requirements are met
             comminfo = self.getcommissioninfo(data)
-            self.params.cash += comminfo.cashadjust(pos.size, data.close[-1], data.close[0])
+            self.params.cash += comminfo.cashadjust(pos.size, data.close[1], data.close[0])
 
         # Iterate once over all elements of the pending queue
         for i in range(len(self.pending)):

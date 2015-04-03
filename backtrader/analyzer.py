@@ -37,7 +37,7 @@ class Analyzer(LineObserver):
     params = dict(
         plotbuysell=True,
         plotcashvalue=True,
-        plotoperations=False,
+        plotoperations=True,
     )
 
     def __init__(self, *args, **kwargs):

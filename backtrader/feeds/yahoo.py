@@ -58,22 +58,22 @@ class YahooFinanceCSVData(feed.CSVDataFeedBase):
         dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
 
-        self.lines.datetime = datetime.datetime(y, m, d)
-        self.lines.open = float(linetokens[next(i)])
-        self.lines.high = float(linetokens[next(i)])
-        self.lines.low = float(linetokens[next(i)])
-        self.lines.close = float(linetokens[next(i)])
-        self.lines.volume = float(linetokens[next(i)])
-        self.lines.openinterest = 0.0
+        self.lines.datetime[0] = datetime.datetime(y, m, d)
+        self.lines.open[0] = float(linetokens[next(i)])
+        self.lines.high[0] = float(linetokens[next(i)])
+        self.lines.low[0] = float(linetokens[next(i)])
+        self.lines.close[0] = float(linetokens[next(i)])
+        self.lines.volume[0] = float(linetokens[next(i)])
+        self.lines.openinterest[0] = 0.0
         if self.params.adjclose:
             adjustedclose = float(linetokens[next(i)])
             adjfactor = self.lines.close[0] / adjustedclose
 
-            self.lines.open = round(self.lines.open[0] / adjfactor, 2)
-            self.lines.high = round(self.lines.high[0] / adjfactor, 2)
-            self.lines.low = round(self.lines.low[0] / adjfactor, 2)
-            self.lines.close = round(adjustedclose, 2)
-            self.lines.volume = round(self.lines.volume[0] / adjfactor, 2)
+            self.lines.open[0] = round(self.lines.open[0] / adjfactor, 2)
+            self.lines.high[0] = round(self.lines.high[0] / adjfactor, 2)
+            self.lines.low[0] = round(self.lines.low[0] / adjfactor, 2)
+            self.lines.close[0] = round(adjustedclose, 2)
+            self.lines.volume[0] = round(self.lines.volume[0] / adjfactor, 2)
 
         return True
 

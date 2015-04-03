@@ -21,100 +21,115 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import math
+import operator
 
 from .. import Indicator
-from .lineutils import _SingleLineBase
 
 
-class _LineValOperation(_SingleLineBase):
+class ExecOnces(Indicator):
+    extralines = 1
+
+    def prenext(self):
+        pass # to avoid preonce be optimized away in metaclass
+
+    def next(self):
+        pass # to avoid once be optimized away in metaclass
+
+    def preonce(self, start, end):
+        self.data.preonce(start, end)
+        self.data.preonce = self.data.once_empty
+
+    def oncestart(self, start, end):
+        self.data.oncestart(start, end)
+        self.data.oncestart = self.data.once_empty
+
+    def once(self, start, end):
+        self.data.once = self.data.once_empty
+
+
+# See Stochastic for example of how to bind lines by assigning
+class LinesBinder(Indicator):
+    extralines = 1
+
+    def next(self):
+        self.data_0[0] = self.data1_0[0]
+
+    def once(self, start, end):
+        dst = self.data_0.array
+        src = self.data1_0.array
+
+        for i in xrange(start, end):
+            dst[i] = src[i]
+
+
+class OperationN(Indicator):
+    extralines = 1
+    params = (('period', 1),)
+
+    def __init__(self):
+        self.addminperiod(self.p.period)
+
+    def next(self):
+        self.line[0] = self.func(self.data_0.get(size=self.p.period))
+
+    def once(self, start, end):
+        darray = self.data_0.array
+        larray = self.line.array
+        period = self.p.period
+        func = self.func
+
+        for i in xrange(start, end):
+            larray[i] = func(darray[i - period + 1: i + 1])
+
+
+class MaxN(OperationN):
+    func = max
+
+class Highest(MaxN):
+    pass
+
+class MinN(OperationN):
+    func = min
+
+class Lowest(MinN):
+    pass
+
+class SumN(OperationN):
+    func = math.fsum
+
+
+class Operation1(Indicator):
+    extralines = 1
+
     def __init__(self, *args):
-        self.val = args[0]
+        self.dlines = [x.lines[0] for x in self.datas]
+        self.getitem0 = operator.itemgetter(0)
 
+        if args:
+            self.args = list(args)
+            self.next = self.next_args
 
-class MultVal(_LineValOperation):
+    def next_args(self):
+        func = self.func
+        self.line[0] = func(func(map(self.getitem0, self.dlines), self.args))
+
     def next(self):
-        self.lines[0] = self.dline[self.p.ago] * self.val
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = darray[i - ago] * val
+        self.line[0] = self.func(map(self.getitem0, self.dlines))
 
 
-class DivVal(MultVal):
-    def __init__(self, *args):
-        self.val = 1.0 / self.val
+class Max(Operation1):
+    func = max
+
+class High(Max):
+    pass
+
+class Min(Operation1):
+    func = max
+
+class Low(Min):
+    pass
 
 
-class ValDiv(_LineValOperation):
-    def next(self):
-        self.lines[0] = self.val / self.dline[self.p.ago]
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = val / darray[i - ago]
-
-
-class PlusVal(_LineValOperation):
-    def next(self):
-        self.lines[0] = self.dlines[self.p.ago] + self.val
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = darray[i - ago] + val
-
-
-class MinusVal(_LineValOperation):
-    def next(self):
-        self.lines[0] = self.dlines[self.p.ago] - self.val
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = darray[i - ago] - val
-
-
-class ValMinus(_LineValOperation):
-    def next(self):
-        self.lines[0] = self.val - self.dlines[self.p.ago]
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = val - darray[i - ago]
-
-
-class MaxVal(_LineValOperation):
-    def next(self):
-        self.lines[0] = max(self.dlines[self.p.ago], self.val)
-
-    def once(self, start, end):
-        darray = self.dline.array
-        larray = self.lines[0].array
-        ago = self.p.ago
-        val = self.val
-
-        for i in xrange(start, end):
-            larray[i] = max(darray[i - ago], val)
+class Sum(Operation1):
+    func = math.fsum

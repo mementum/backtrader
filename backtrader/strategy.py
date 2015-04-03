@@ -49,6 +49,11 @@ class MetaStrategy(StrategyBase.__class__):
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
+        # Set the minperiod
+        minperiods = [x._minperiod for x in _obj._lineiterators[LineIterator.IndType]]
+        _obj._minperiod = max(minperiods or [_obj._minperiod,])
+
+
         if not _obj._sizer.getbroker():
             _obj._sizer.setbroker(_obj.broker)
 

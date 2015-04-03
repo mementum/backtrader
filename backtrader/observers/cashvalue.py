@@ -48,8 +48,8 @@ class CashValueObserver(LineObserver):
         self.peak = float('-inf')
 
     def next(self):
-        self.lines.cash = self._owner.broker.getcash()
-        self.lines.value = value = self._owner.broker.getvalue()
+        self.lines.cash[0] = self._owner.broker.getcash()
+        self.lines.value[0] = value = self._owner.broker.getvalue()
 
         # update the maximum seen peak
         if value > self.peak:

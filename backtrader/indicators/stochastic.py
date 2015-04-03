@@ -21,10 +21,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .. import DataSeries, Indicator
+from .. import Indicator
 from .ma import MATypes
-from .lineutils import Highest, Lowest
-from .linesutils import LinesBinder, LinesDifference, LinesDivision
+from .lineoperations import Highest, Lowest
 
 
 class StochasticFast(Indicator):
@@ -36,19 +35,19 @@ class StochasticFast(Indicator):
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast,]
-        if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__,]
-        return ','.join(map(str, plabels))
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
     def __init__(self):
-        self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold]
+        self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold,]
 
-        highesthigh = Highest(self.data, period=self.p.period, line=self.High)
-        lowestlow = Lowest(self.data, period=self.p.period, line=self.Low)
-        knum = LinesDifference(self.data, lowestlow)
-        kden = LinesDifference(highesthigh, lowestlow)
-        kperc = LinesDivision(knum, kden, factor=100.0).bind2lines('k')
-        self.p.matype(kperc, period=self.p.period_dfast).bind2lines('d')
+        highesthigh = Highest(self.data[self.PriceHigh], period=self.p.period)
+        lowestlow = Lowest(self.data[self.PriceLow], period=self.p.period)
+        knum = self.data[self.PriceClose] - lowestlow
+        kden = highesthigh - lowestlow
+        kperc = 100.0 * (knum / kden)
+        kperc.bind2line('k')
+        self.p.matype(kperc, period=self.p.period_dfast).bind2line('d')
 
 
 class _StochasticInt(StochasticFast):
@@ -56,15 +55,15 @@ class _StochasticInt(StochasticFast):
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow,]
-        if self.p.matype != MATypes.Simple:
-            plabels += [self.params.matype.__name__,]
-        return ','.join(map(str, plabels))
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
 
 class Stochastic(_StochasticInt):
     def __init__(self):
-        LinesBinder(self, line=0, line1=1)
-        self.p.matype(self, period=self.p.period_dslow, line=1).bind2lines('d')
+        super(Stochastic, self).__init__()
+        self.lines.k = self.lines.d
+        self.p.matype(self.lines.k, period=self.p.period_dslow).bind2lines('d')
 
 
 class StochasticSlow(Stochastic):
@@ -76,4 +75,5 @@ class StochasticFull(_StochasticInt):
     plotlines = dict(dd=dict(ls=':'))
 
     def __init__(self):
-        self.p.matype(self, period=self.p.period_dslow, line=1).bind2lines('dd')
+        super(StochasticFull, self).__init__()
+        self.p.matype(self.lines.d, period=self.p.period_dslow).bind2lines('dd')

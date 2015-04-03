@@ -38,14 +38,14 @@ class _OperationsPnLObserver(LineObserver):
 
     def next(self):
         for order in self._owner._orderspending:
-            if order.data != self.data or not order.executed.size:
+            if order.data is not self.data or not order.executed.size:
                 continue
 
             for exbit in order.executed.exbits:
                 self.operation.update(exbit.closed, exbit.price, exbit.closedvalue, exbit.closedcomm)
                 if self.operation.isclosed:
                     # operation closed, record the pnl
-                    self.lines.pnl = self.operation.pnl
+                    self.lines.pnl[0] = self.operation.pnl
                     self.operations.append(self.operation)
 
                     # Open the next operation

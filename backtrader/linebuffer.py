@@ -35,74 +35,25 @@ import array
 import collections
 import datetime
 import itertools
+import operator
+
+import six
+
+from .lineroot import LineRoot, LineSingle, LineMultiple
+from . import metabase
 
 
 NAN = float('NaN')
 
 
-class LineBuffer(object):
-    ''' Line buffer abstract implementation
-
-    Attributes:
-        bindings (list): holds bindings to other lines
-            ie: upon getting a value written it will be copied to that other line
-
-        idx (int): actual index where data is store read when *0* is passed
-            extension (int): extra room at the end of the buffer to allow lookahead operations
-
-    .. note:: Notes
-
-        The implementation uses an *index 0* approach as follows:
-            - 0 is always the insertion point. If idx is 5, any reference to 0 using for example
-                __getitem__ (or the [] operator) will be done on position 5 of the buffer
-
-            - This allows to remain Pythonic when addressing array positions, because
-              *index -1* returns the "last" value before the current one. Because
-              the current one is *index 0*, a reference to -1 will return what's in position 4.
-
-        And so on with -2, -3.
-    '''
-
-    DefaultTypeCode = 'd'
-
-    def __new__(cls, *args, **kwargs):
-        ''' Upon instance creation selects the appropriate subclass to return
-
-        Upon instantiation and using *typecode* the right subclass is chosen
-        for the passed 'typecode'
-
-        Because the returned object is a subclass, __init__ has to be explicitly
-        invoked (the standard Python instance creation mechanism has been
-        circumvented)
-
-        Keyword Args:
-            typecode (str): type of data hold at each point of the line
-                'd' for double - the array will be an array.array
-                'dq' meant for datetime objects  - the array will be a collections.deque
-                'ls' meant for datetime objects  - the array will be a list
-        '''
-        typecode = kwargs.get('typecode', cls.DefaultTypeCode)
-        owner = kwargs['owner'] # has to be there
-
-        if typecode == 'dq':
-            newcls = LineBufferDeque
-        elif typecode == 'ls':
-            newcls = LineBufferList
-        else:
-            newcls = LineBufferArray
-
-        return super(LineBuffer, newcls).__new__(newcls, *args, **kwargs)
-
-
-    def __init__(self, owner, typecode='d'):
+class LineBuffer(LineSingle):
+    def __init__(self, typecode='d'):
         '''
         Keyword Args:
             typecode (str): type of data hold at each point of the line
                 'd' for double - the array will be an array.array
-                'dq' meant for datetime objects  - the array will be a collections.deque
                 'ls' meant for datetime objects  - the array will be a list
         '''
-        self.owner = owner
         self.typecode = typecode
         self.bindings = list()
         self.reset()
@@ -115,9 +66,10 @@ class LineBuffer(object):
         self.extension = 0
 
     def create_array(self):
-        ''' Actual internal buffer creation. Must be implemented by subclasses
-        '''
-        raise NotImplementedError
+        if self.typecode == 'ls':
+            self.array = list()
+        else:
+            self.array = array.array(str(self.typecode))
 
     def __len__(self):
         return self.idx + 1
@@ -240,6 +192,8 @@ class LineBuffer(object):
             binding (LineBuffer): another line that must be set when this line becomes a value
         '''
         self.bindings.append(binding)
+        # record in the binding when the period is starting (never sooner than self)
+        binding.updateminperiod(self._minperiod)
 
     def plot(self, idx=0, size=None):
         ''' Returns a slice of the array relative to the real zero of the buffer
@@ -262,45 +216,127 @@ class LineBuffer(object):
         for binding in self.bindings:
             binding.array[0:blen] = larray[0:blen]
 
+    def bind2lines(self, binding=0):
+        if isinstance(binding, six.string_types):
+            line = getattr(self._owner.lines, binding)
+        else:
+            line = self._owner.lines[binding]
 
-class LineBufferArray(LineBuffer):
-    ''' Line buffer concrete implementation with array.array
-    '''
-    def create_array(self):
-        ''' Instantiates the internal array to array.array
-        '''
-        # str needed for Python 2/3 bytes/unicode compatibility
-        self.array = array.array(str(self.typecode))
+        self.addbinding(line)
+
+        return self
+
+    bind2line = bind2lines
+
+    def __call__(self, ago):
+        return LineDelay(self, ago)
+
+    def _operationown(self, operation):
+        return LineOwnOperation(self, operation)
+
+    def _operation(self, other, operation, r=False):
+        if isinstance(other, LineRoot):
+            if not isinstance(other, LineSingle):
+                # This forces calling the LineSeries operators
+                return NotImplemented
+        return LinesOperation(self, other, operation, r)
 
 
-class LineBufferList(LineBuffer):
-    ''' Line buffer concrete implementation with list
-    '''
-    def create_array(self):
-        ''' Instantiates the internal array to list
-        '''
-        self.array = list()
+class MetaLineActions(LineBuffer.__class__):
+    def dopreinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
+
+        # Do not produce anything until the operation lines produce something
+        _obj._minperiod = max([x._minperiod for x in args if isinstance(x, LineSingle)])
+
+        return _obj, args, kwargs
+
+    def dopostinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaLineActions, cls).dopostinit(_obj, *args, **kwargs)
+
+        # register with _owner to be kicked later
+        _obj._owner.addindicator(_obj)
+
+        return _obj, args, kwargs
 
 
-class LineBufferDeque(LineBuffer):
-    ''' Line buffer concrete implementation with collections.deque
+class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
+    _ltype = LineBuffer.IndType
 
-    Some work is needed with get and getzero to return slices, because
-    collections.deque has no direct support
-    '''
-    def create_array(self):
-        ''' Instantiates the internal array to list
-        '''
-        self.array = collections.deque()
+    def _next(self):
+        clock_len = len(self._owner)
+        if clock_len > len(self):
+            self.forward()
 
-    def get(self, ago=0, size=1):
-        ''' Specialized implementation using itertools.islice. No behavior changes
-        '''
-        # Need to return a list because the return value may be reused several times
-        return list(itertools.islice(self.array, self.idx - ago - size + 1, self.idx - ago + 1))
+        if clock_len > self._minperiod:
+            self.next()
+        elif clock_len == self._minperiod:
+            self.nextstart() # only called for the 1st value
+        else:
+            self.prenext()
 
-    def getzero(self, idx=0, size=1):
-        ''' Specialized implementation using itertools.islice. No behavior changes
-        '''
-        # Need to return a list because the return value may be reused several times
-        return list(itertools.islice(self.array, idx, idx + size))
+
+class LineAssign(LineActions):
+    def __init__(self, a, b):
+        super(LineAssign, self).__init__()
+
+        self.a = a
+        self.b = b
+
+        if not isinstance(b, LineRoot):
+            self.next = self.next_value_op
+
+    def next(self):
+        self.a[0] = self.b[0]
+
+    def next_value_op(self):
+        self.a[0] = self.b
+
+
+class LineDelay(LineActions):
+    def __init__(self, a, ago):
+        super(LineDelay, self).__init__()
+
+        self.a = a
+        self.ago = ago
+
+        # ago is 0 based and the minimum defined period is 1
+        self.addminperiod(ago + 1)
+
+    def next(self):
+        self[0] = self.a[self.ago]
+
+
+class LinesOperation(LineActions):
+    def __init__(self, a, b, operation, r=False):
+        super(LinesOperation, self).__init__()
+
+        self.operation = operation
+        self.a = a # always a linebuffer
+        self.b = b
+
+        if not isinstance(b, LineBuffer):
+            self.next = self._next_val_op if not r else self._next_val_op_r
+
+        if r:
+            self.a, self.b = b, a
+
+    def next(self):
+        self[0] = self.operation(self.a[0], self.b[0])
+
+    def _next_val_op(self):
+        self[0] = self.operation(self.a[0], self.b)
+
+    def _next_val_op_r(self):
+        self[0] = self.operation(self.a, self.b[0])
+
+
+class LineOwnOperation(LineActions):
+    def __init__(self, a, operation, r=False):
+        super(LineOwnOperation, self).__init__()
+
+        self.operation = operation
+        self.a = a
+
+    def next(self):
+        self[0] = self.operation(self.a[0])

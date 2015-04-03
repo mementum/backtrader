@@ -20,24 +20,22 @@
 ################################################################################
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math
-
 from .. import Indicator
 from .ma import MATypes
-from .lineutils import SquareRoot, Squared, SumAv
-from .linesutils import LinesDifference, LinesSummation
 
 
 class StdDev(Indicator):
     lines = ('stddev',)
-
-    params = (('period', 20), ('line',0), ('factor', 1.0),)
+    params = (('period', 20),)
 
     def __init__(self):
-        sumavsq = SumAv(Squared(self.data, line=self.p.line), period=self.p.period)
-        data1 = self.data if len(self.datas) == 1 else self.data1
-        sqsumav = Squared(SumAv(data1, period=self.p.period, line=self.p.line))
-        SquareRoot(LinesDifference(sumavsq, sqsumav), factor=self.p.factor).bindlines('stddev')
+        # mean could already be passed as a parameter to avoid recalculation
+        # dmean = self.data1 if len(self.datas) > 1 else MaTypes.Simple(self.data, period=self.p.period)
+        # sqmean = pow(dmean, 2)
+
+        meansq = MATypes.Simple(pow(self.data, 2), period=self.p.period)
+        sqmean = pow(MATypes.Simple(self.data, period=self.p.period), 2)
+        pow(meansq - sqmean, 0.5).bind2line('stddev')
 
 
 class StandardDeviation(StdDev):
@@ -46,8 +44,7 @@ class StandardDeviation(StdDev):
 
 class BollingerBands(Indicator):
     lines = ('mid', 'top', 'bot',)
-
-    params = (('period', 20), ('stddev', 2.0), ('line', 0), ('matype', MATypes.Simple),)
+    params = (('period', 20), ('devfactor', 2.0), ('matype', MATypes.Simple),)
 
     plotinfo = dict(subplot=False)
     plotlines = dict(
@@ -57,13 +54,12 @@ class BollingerBands(Indicator):
     )
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.p.stddev]
-        return ','.join(map(str, plabels))
+        plabels = [self.p.period, self.p.devfactor,]
+        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        return plabels
 
     def __init__(self):
-        ma = self.p.matype(self.data, line=self.p.line, period=self.p.period)
-        ma.bind2lines('mid')
-
-        stddev = StdDev(self.data, line=self.p.line, period=self.p.period, factor=self.p.stddev)
-        LinesSummation(ma, stddev).bind2lines('top')
-        LinesDifference(ma, stddev).bind2lines('bot')
+        ma = self.p.matype(self.data, period=self.p.period).bind2lines('mid')
+        stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
+        (ma + stddev).bind2line('top')
+        (ma - stddev).bind2line('bot')

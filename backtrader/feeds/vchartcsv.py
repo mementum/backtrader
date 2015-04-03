@@ -42,13 +42,13 @@ class VChartCSVData(feed.CSVDataFeedBase):
         hh, mmss = divmod(int(tmtxt), 10000)
         mm, ss = divmod(mmss, 100)
 
-        self.lines.datetime = datetime.datetime(y, m, d, hh, mm, ss)
-        self.lines.open = float(linetokens[next(i)])
-        self.lines.high = float(linetokens[next(i)])
-        self.lines.low = float(linetokens[next(i)])
-        self.lines.close = float(linetokens[next(i)])
-        self.lines.volume = float(linetokens[next(i)])
-        self.lines.openinterest = float(linetokens[next(i)])
+        self.lines.datetime[0] = datetime.datetime(y, m, d, hh, mm, ss)
+        self.lines.open[0] = float(linetokens[next(i)])
+        self.lines.high[0] = float(linetokens[next(i)])
+        self.lines.low[0] = float(linetokens[next(i)])
+        self.lines.close[0] = float(linetokens[next(i)])
+        self.lines.volume[0] = float(linetokens[next(i)])
+        self.lines.openinterest[0] = float(linetokens[next(i)])
 
         return True
 
