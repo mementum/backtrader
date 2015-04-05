@@ -41,14 +41,14 @@ class MACD(Indicator):
     def __init__(self):
         me1 = self.p.matype(self.data, period=self.p.period_me1)
         me2 = self.p.matype(self.data, period=self.p.period_me2)
-        macd = (me1 - me2).bind2line('macd')
-        signal = self.p.matype(macd, period=self.p.period_signal).bind2line('signal')
+        self.lines.macd = me1 - me2
+        self.lines.signal = self.p.matype(self.lines.macd, period=self.p.period_signal)
 
 
 class MACDHistogram(MACD):
     lines = ('histo',)
-    plotlines = dict(histo=dict(_method='bar', alpha=0.33))
+    plotlines = dict(histo=dict(_method='bar', alpha=0.33, width=0.44))
 
     def __init__(self):
         super(MACDHistogram, self).__init__()
-        (self.lines.macd - self.lines.signal).bind2line('histo')
+        self.lines.histo = self.lines.macd - self.lines.signal

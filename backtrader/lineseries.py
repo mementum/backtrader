@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
@@ -51,7 +50,16 @@ class LineAlias(object):
 
     def __set__(self, obj, value):
         # obj.lines[self.line][0] = value
-        LineAssign(obj.lines[self.line], value)
+        if False:
+            if isinstance(value, LineMultiple):
+                LineAssign(obj.lines[self.line], value[0])
+            else:
+                LineAssign(obj.lines[self.line], value)
+        else:
+            if isinstance(value, LineMultiple):
+                value[0].addbinding(obj.lines[self.line])
+            else:
+                value.addbinding(obj.lines[self.line])
 
 
 class Lines(object):

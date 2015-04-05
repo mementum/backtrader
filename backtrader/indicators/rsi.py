@@ -30,14 +30,14 @@ class UpDays(Indicator):
     lines = ('up',)
 
     def __init__(self):
-        Max(self.data - self.data(1), 0.0).bind2lines()
+        self.lines.up = Max(self.data - self.data(1), 0.0)
 
 
 class DownDays(Indicator):
     lines = ('down',)
 
     def __init__(self):
-        Max(self.data(1) - self.data, 0.0).bind2lines()
+        self.lines.down = Max(self.data(1) - self.data, 0.0)
 
 
 class RSI(Indicator):
@@ -59,8 +59,4 @@ class RSI(Indicator):
         maup = self.p.matype(updays, period=self.p.period)
         madown = self.p.matype(downdays, period=self.p.period)
         rs = maup / madown
-        rsi = 100.0 - 100.0 / (1.0 + rs)
-        rsi.bind2line('rsi')
-
-
-__all__ = ['RSI',]
+        self.lines.rsi = 100.0 - 100.0 / (1.0 + rs)

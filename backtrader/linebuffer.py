@@ -38,6 +38,8 @@ import itertools
 import operator
 
 import six
+from six.moves import xrange, map, zip
+
 
 from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
@@ -275,16 +277,30 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
         else:
             self.prenext()
 
+    def _once(self):
+        self.forward(size=self._owner.buflen())
+        self.home()
+
+        self.preonce(0, self._minperiod - 1)
+        self.oncestart(self._minperiod - 1, self._minperiod)
+        self.once(self._minperiod, self.buflen())
+
+        self.oncebinding()
+
 
 class LineAssign(LineActions):
     def __init__(self, a, b):
         super(LineAssign, self).__init__()
 
-        self.a = a
+        self.a = a # always a line
         self.b = b
 
         if not isinstance(b, LineRoot):
             self.next = self.next_value_op
+            self.once = self.once_value_op
+        else:
+            # let line a know when values will be 1st produced
+            a.updateminperiod(b._minperiod)
 
     def next(self):
         self.a[0] = self.b[0]
@@ -292,11 +308,24 @@ class LineAssign(LineActions):
     def next_value_op(self):
         self.a[0] = self.b
 
+    def once(self, start, end):
+        dst = self.a.array
+        src = self.b.array
+
+        for i in xrange(start, end):
+            dst[i] = src[i]
+
+    def once_value_op(self, start, end):
+        dst = self.a.array
+        src = self.b
+
+        for i in xrange(start, end):
+            dst[i] = b
+
 
 class LineDelay(LineActions):
     def __init__(self, a, ago):
         super(LineDelay, self).__init__()
-
         self.a = a
         self.ago = ago
 
@@ -305,6 +334,14 @@ class LineDelay(LineActions):
 
     def next(self):
         self[0] = self.a[self.ago]
+
+    def once(self, start, end):
+        dst = self.array
+        src = self.a.array
+        ago = self.ago
+
+        for i in xrange(start, end):
+            dst[i] = src[i - ago]
 
 
 class LinesOperation(LineActions):
@@ -317,6 +354,7 @@ class LinesOperation(LineActions):
 
         if not isinstance(b, LineBuffer):
             self.next = self._next_val_op if not r else self._next_val_op_r
+            self.once = self._once_val_op if not r else self._once_val_op_r
 
         if r:
             self.a, self.b = b, a
@@ -330,6 +368,38 @@ class LinesOperation(LineActions):
     def _next_val_op_r(self):
         self[0] = self.operation(self.a, self.b[0])
 
+    def once(self, start, end):
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        op = self.operation
+
+        if True:
+            for i in xrange(start, end):
+                dst[i] = op(srca[i], srcb[i])
+        else:
+            operated = map(self.operation, self.a.array[start:end], self.b.array[start:end])
+            self.array[start:end] = array.array(str(self.typecode), operated)
+
+
+    def _once_val_op(self, start, end):
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b
+        op = self.operation
+
+        for i in xrange(start, end):
+            dst[i] = op(srca[i], srcb)
+
+    def _once_val_op_r(self, start, end):
+        dst = self.array
+        srca = self.a
+        srcb = self.b.array
+        op = self.operation
+
+        for i in xrange(start, end):
+            dst[i] = op(srca, srcb[i])
+
 
 class LineOwnOperation(LineActions):
     def __init__(self, a, operation, r=False):
@@ -340,3 +410,15 @@ class LineOwnOperation(LineActions):
 
     def next(self):
         self[0] = self.operation(self.a[0])
+
+    def once(self, start, end):
+        dst = self.array
+        srca = self.a.array
+        op = self.operation
+
+        if True:
+            for i in xrange(start, end):
+                dst[i] = op(srca[i])
+        else:
+            operated = map(self.operation, self.a.array[start:end])
+            self.array[start:end] = array.array(str(self.typecode), operated)

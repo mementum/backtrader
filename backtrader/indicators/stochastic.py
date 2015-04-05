@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .. import Indicator
@@ -26,7 +25,7 @@ from .ma import MATypes
 from .lineoperations import Highest, Lowest
 
 
-class StochasticFast(Indicator):
+class _StochasticBase(Indicator):
     lines = ('k', 'd',)
     params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
               ('overbought', 80.0), ('oversold', 20.0),)
@@ -45,12 +44,18 @@ class StochasticFast(Indicator):
         lowestlow = Lowest(self.data[self.PriceLow], period=self.p.period)
         knum = self.data[self.PriceClose] - lowestlow
         kden = highesthigh - lowestlow
-        kperc = 100.0 * (knum / kden)
-        kperc.bind2line('k')
-        self.p.matype(kperc, period=self.p.period_dfast).bind2line('d')
+        self.kperc = 100.0 * (knum / kden)
+        self.dperc = self.p.matype(self.kperc, period=self.p.period_dfast)
 
 
-class _StochasticInt(StochasticFast):
+class StochasticFast(_StochasticBase):
+    def __init__(self):
+        super(StochasticFast, self).__init__()
+        self.lines.k = self.kperc
+        self.lines.d = self.dperc
+
+
+class Stochastic(_StochasticBase):
     params = (('period_dslow', 3),)
 
     def _plotlabel(self):
@@ -58,22 +63,20 @@ class _StochasticInt(StochasticFast):
         plabels += [self.p.matype,] * self.p.notdefault('matype')
         return plabels
 
-
-class Stochastic(_StochasticInt):
     def __init__(self):
         super(Stochastic, self).__init__()
-        self.lines.k = self.lines.d
-        self.p.matype(self.lines.k, period=self.p.period_dslow).bind2lines('d')
+        self.lines.k = self.dperc
+        self.lines.d = self.p.matype(self.lines.k, period=self.p.period_dslow)
 
 
 class StochasticSlow(Stochastic):
     pass
 
 
-class StochasticFull(_StochasticInt):
+class StochasticAll(StochasticSlow):
     lines = ('dd',)
     plotlines = dict(dd=dict(ls=':'))
 
     def __init__(self):
-        super(StochasticFull, self).__init__()
-        self.p.matype(self.lines.d, period=self.p.period_dslow).bind2lines('dd')
+        super(StochasticAll, self).__init__()
+        self.lines.dd = self.p.matype(self.lines.d, period=self.p.period_dslow)
