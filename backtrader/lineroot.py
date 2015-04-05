@@ -65,6 +65,15 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     def next(self):
         pass
 
+    def preonce(self, start, end):
+        pass
+
+    def oncestart(self, start, end):
+        self.once(start, end)
+
+    def ocne(self, start, end):
+        pass
+
     def _roperation(self, other, operation):
         return self._operation(other, operation, r=True)
 

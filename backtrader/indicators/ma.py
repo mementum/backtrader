@@ -18,11 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import math
 import operator
+
+from six.moves import xrange
 
 from .. import Indicator
 
@@ -47,8 +48,8 @@ class MovingAverageSimple(MovingAverageBase):
         dst = self.line.array
         period = self.p.period
 
-        for i in xrange(start + 1, end + 1):
-            dst[i] = math.fsum(src[i - period:i]) / period
+        for i in xrange(start, end):
+            dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
 
 
 class MovingAverageSmoothing(MovingAverageSimple):

@@ -33,8 +33,7 @@ class TR(Indicator):
         high = self.data[self.PriceHigh]
         low = self.data[self.PriceLow]
         close1 = self.data[self.PriceClose](1)
-
-        Max(high - low, abs(high - close1), abs(close1 - low)).bind2line()
+        self.lines.tr = Max(high - low, abs(high - close1), abs(close1 - low))
 
 
 class TrueRange(TR):
@@ -51,7 +50,7 @@ class ATR(Indicator):
         return plabels
 
     def __init__(self):
-        self.p.matype(TR(self.data), period=self.p.period).bind2line()
+        self.lines.atr = self.p.matype(TR(self.data), period=self.p.period)
 
 
 class AverageTrueRange(ATR):

@@ -35,7 +35,7 @@ class StdDev(Indicator):
 
         meansq = MATypes.Simple(pow(self.data, 2), period=self.p.period)
         sqmean = pow(MATypes.Simple(self.data, period=self.p.period), 2)
-        pow(meansq - sqmean, 0.5).bind2line('stddev')
+        self.lines.stddev = pow(meansq - sqmean, 0.5)
 
 
 class StandardDeviation(StdDev):
@@ -59,7 +59,7 @@ class BollingerBands(Indicator):
         return plabels
 
     def __init__(self):
-        ma = self.p.matype(self.data, period=self.p.period).bind2lines('mid')
+        self.lines.mid = ma = self.p.matype(self.data, period=self.p.period)
         stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
-        (ma + stddev).bind2line('top')
-        (ma - stddev).bind2line('bot')
+        self.lines.top = ma + stddev
+        self.lines.bot = ma - stddev

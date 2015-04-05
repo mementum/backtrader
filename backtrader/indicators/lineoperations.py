@@ -24,6 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import math
 import operator
 
+from six.moves import xrange
+
 from .. import Indicator
 
 
@@ -74,13 +76,13 @@ class OperationN(Indicator):
         self.line[0] = self.func(self.data_0.get(size=self.p.period))
 
     def once(self, start, end):
-        darray = self.data_0.array
-        larray = self.line.array
+        dst = self.line.array
+        src = self.data_0.array
         period = self.p.period
         func = self.func
 
         for i in xrange(start, end):
-            larray[i] = func(darray[i - period + 1: i + 1])
+            dst[i] = func(src[i - period + 1: i + 1])
 
 
 class MaxN(OperationN):
@@ -109,13 +111,31 @@ class Operation1(Indicator):
         if args:
             self.args = list(args)
             self.next = self.next_args
+            self.once = self.once_args
+
+    def next(self):
+        self.line[0] = self.func(map(self.getitem0, self.dlines))
+
+    def once(self, start, end):
+        dst = self.line.array
+        func = self.func
+        darrays = [dline.array for dline in self.dlines]
+
+        for i in xrange(start, end):
+            dst[i] = func([darray[i] for darray in darrays])
 
     def next_args(self):
         func = self.func
         self.line[0] = func(func(map(self.getitem0, self.dlines), self.args))
 
-    def next(self):
-        self.line[0] = self.func(map(self.getitem0, self.dlines))
+    def once_args(self, start, end):
+        dst = self.line.array
+        func = self.func
+        darrays = [dline.array for dline in self.dlines]
+        args = self.args
+
+        for i in xrange(start, end):
+            dst[i] = func(func([darray[i] for darray in darrays], args))
 
 
 class Max(Operation1):
