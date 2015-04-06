@@ -32,7 +32,7 @@ from .. import feed
 from .. import linebuffer
 
 
-class YahooFinanceCSVData(feed.CSVDataFeedBase):
+class YahooFinanceCSVData(feed.CSVDataBase):
     params = (('adjclose', True), ('reversed', False),)
 
     def start(self):
@@ -126,7 +126,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         super(YahooFinanceData, self).start()
 
 
-class YahooFinance(feed.DataFeedBase):
+class YahooFinance(feed.DataBase):
     DataCls = YahooFinanceData
 
     params = DataCls.params._gettuple()
