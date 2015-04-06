@@ -23,11 +23,23 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .lineseries import LineSeries
 
 
-class DataSeries(LineSeries):
-    Close, Low, High, Open, Volume, OpenInterest, DateTime = range(7)
+class TimeFrame(object):
+    Minutes, Days, Weeks, Months, Years = range(5)
+    names = ['Minutes', 'Days', 'Weeks', 'Months', 'Years']
 
-    # To simply branch away from indicators/systems/strategies/studies
-    pass
+    @classmethod
+    def getname(cls, index, tframe):
+        if tframe == 1:
+            return cls.names[index][:-1]
+        return cls.names[index]
+
+
+class DataSeries(LineSeries):
+    _name = ''
+    _compression = 1
+    _timeframe = TimeFrame.Days
+
+    Close, Low, High, Open, Volume, OpenInterest, DateTime = range(7)
 
 
 class OHLC(DataSeries):
