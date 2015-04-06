@@ -21,29 +21,48 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import datetime
+import os.path
 
 import six
 
 from . import dataseries
 from . import metabase
+from . import TimeFrame
 
 
-class MetaDataFeedBase(dataseries.OHLCDateTime.__class__):
+class MetaDataBase(dataseries.OHLCDateTime.__class__):
     def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaDataFeedBase, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = super(MetaDataBase, cls).dopreinit(_obj, *args, **kwargs)
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
 
         return _obj, args, kwargs
 
+    def dopostinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
-class DataFeedBase(six.with_metaclass(MetaDataFeedBase, dataseries.OHLCDateTime)):
+        _obj._name = _obj.p.name
+        _obj._compression = _obj.p.compression
+        _obj._timeframe = _obj.p.timeframe
+        _obj._daterange = [None, None]
+        if _obj.p.fromdate > datetime.datetime.min:
+            _obj._daterange[0] = _obj.p.fromdate
+        if _obj.p.todate < datetime.datetime.max:
+            _obj._daterange[1] = _obj.p.todate
+
+        return _obj, args, kwargs
+
+
+class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     _feed = None
 
     params = (('dataname', None),
               ('fromdate', datetime.datetime.min),
-              ('todate', datetime.datetime.max),)
+              ('todate', datetime.datetime.max),
+              ('name', ''),
+              ('compression', 1),
+              ('timeframe', TimeFrame.Days),)
 
     def getfeed(self):
         return self._feed
@@ -85,8 +104,9 @@ class DataFeedBase(six.with_metaclass(MetaDataFeedBase, dataseries.OHLCDateTime)
     def _load(self):
         return False
 
+
 class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
-    params = () + DataFeedBase.params._gettuple()
+    params = () + DataBase.params._gettuple()
 
     def __init__(self):
         self.datas = list()
@@ -115,7 +135,17 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
         return self.DataCls(data=dataname, **kwargs)
 
 
-class CSVDataFeedBase(DataFeedBase):
+class MetaCSVDataBase(DataBase.__class__):
+    def dopostinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
+
+        if not _obj._name:
+            _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
+
+        return _obj, args, kwargs
+
+
+class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
     params = (('headers', True), ('separator', ','),)
 
     def start(self):
@@ -148,7 +178,7 @@ class CSVDataFeedBase(DataFeedBase):
 
 
 class CSVFeedBase(FeedBase):
-    params = (('basepath', ''),) + CSVDataFeedBase.params._gettuple()
+    params = (('basepath', ''),) + CSVDataBase.params._gettuple()
 
     def _getdata(self, dataname, **kwargs):
         return self.DataCls(dataname=self.params.basepath + dataname, **self.params._getkwargs())
