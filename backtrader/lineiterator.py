@@ -95,7 +95,12 @@ class MetaLineIterator(LineSeries.__class__):
         if _obj._owner is not None:
             _obj._owner.addindicator(_obj)
 
+        if _obj._ltype == _obj.IndType and _obj.fullsize() == 1:
+            # For single line indicators ... return only the 1st line
+            return _obj.line, args, kwargs
+
         return _obj, args, kwargs
+
 
 
 class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
