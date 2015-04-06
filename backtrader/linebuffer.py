@@ -27,21 +27,15 @@ with appends, forwarding, rewinding, resetting and other
 
 .. moduleauthor:: Daniel Rodriguez
 
-
 '''
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import array
-import collections
-import datetime
-import itertools
-import operator
 
 import six
-from six.moves import xrange, map, zip
+from six.moves import xrange
 
-
-from .lineroot import LineRoot, LineSingle, LineMultiple
+from .lineroot import LineRoot, LineSingle
 from . import metabase
 
 
@@ -49,6 +43,24 @@ NAN = float('NaN')
 
 
 class LineBuffer(LineSingle):
+    '''
+    LineBuffer defines an interface to an "array.array" (or list) in which
+    index 0 points to the item which is active for input and output.
+
+    Positive indices fetch values from the past (left hand side)
+    Negative indices fetch values from the future (if the array has been extended on the right hand side)
+
+    With this behavior no index has to be passed around to entities which have
+    to work with the current value produced by other entities: the value is always reachable at "0".
+
+    Likewise storing the current value produced by "self" is done at 0.
+
+    Additional operations to move the pointer (home, forward, extend, rewind, advance getzero) are provided
+
+    The class can also hold "bindings" to other LineBuffers. When a value is set in this class
+    it will also be set in the binding.
+    '''
+
     def __init__(self, typecode='d'):
         '''
         Keyword Args:
@@ -213,12 +225,18 @@ class LineBuffer(LineSingle):
         return self.getzero(idx, size or len(self))
 
     def oncebinding(self):
+        '''
+        Executes the bindings when running in "once" mode
+        '''
         larray = self.array
         blen = self.buflen()
         for binding in self.bindings:
             binding.array[0:blen] = larray[0:blen]
 
     def bind2lines(self, binding=0):
+        '''
+        Stores a binding to another line. "binding" can be an index or a name
+        '''
         if isinstance(binding, six.string_types):
             line = getattr(self._owner.lines, binding)
         else:
@@ -231,25 +249,36 @@ class LineBuffer(LineSingle):
     bind2line = bind2lines
 
     def __call__(self, ago):
+        '''
+        Return a delayed version of self by "ago" periods
+        '''
         return LineDelay(self, ago)
 
-    def _operationown(self, operation):
-        return LineOwnOperation(self, operation)
+    def _makeoperation(self, other, operation, r=False, _ownerskip=None):
+        return LinesOperation(self, other, operation, r=r, _ownerskip=_ownerskip)
 
-    def _operation(self, other, operation, r=False):
-        if isinstance(other, LineRoot):
-            if not isinstance(other, LineSingle):
-                # This forces calling the LineSeries operators
-                return NotImplemented
-        return LinesOperation(self, other, operation, r)
+    def _makeoperationown(self, operation, _ownerskip=None):
+        return LineOwnOperation(self, operation, _ownerskip=None)
 
 
 class MetaLineActions(LineBuffer.__class__):
+    '''
+    Metaclass for Lineactions
+
+    Scans the instance before init for LineBuffer (or parentclass LineSingle) instances
+    to calculate the minperiod for this instance
+
+    postinit it registers the instance to the owner (remember that owner has been found
+    in the base Metaclass for LineRoot)
+    '''
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
 
         # Do not produce anything until the operation lines produce something
-        _obj._minperiod = max([x._minperiod for x in args if isinstance(x, LineSingle)])
+        _minperiod = max([x._minperiod for x in args if isinstance(x, LineSingle)])
+
+        # update own minperiod if needed
+        _obj.updateminperiod(_minperiod)
 
         return _obj, args, kwargs
 
@@ -263,6 +292,15 @@ class MetaLineActions(LineBuffer.__class__):
 
 
 class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
+    '''
+    Base class derived from LineBuffer intented to defined the minimum interface
+    to make it compatible with a LineIterator by providing operational _next and _once
+    interfaces.
+
+    The metaclass does the dirty job of calculating minperiods and registering
+
+    '''
+
     _ltype = LineBuffer.IndType
 
     def _next(self):
@@ -288,54 +326,26 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
         self.oncebinding()
 
 
-class LineAssign(LineActions):
-    def __init__(self, a, b):
-        super(LineAssign, self).__init__()
-
-        self.a = a # always a line
-        self.b = b
-
-        if not isinstance(b, LineRoot):
-            self.next = self.next_value_op
-            self.once = self.once_value_op
-        else:
-            # let line a know when values will be 1st produced
-            a.updateminperiod(b._minperiod)
-
-    def next(self):
-        self.a[0] = self.b[0]
-
-    def next_value_op(self):
-        self.a[0] = self.b
-
-    def once(self, start, end):
-        dst = self.a.array
-        src = self.b.array
-
-        for i in xrange(start, end):
-            dst[i] = src[i]
-
-    def once_value_op(self, start, end):
-        dst = self.a.array
-        src = self.b
-
-        for i in xrange(start, end):
-            dst[i] = b
-
-
 class LineDelay(LineActions):
+    '''
+    Takes a LineBuffer (or derived) object and stores the value from "ago" periods
+    effectively delaying the delivery of data
+    '''
     def __init__(self, a, ago):
         super(LineDelay, self).__init__()
         self.a = a
         self.ago = ago
 
-        # ago is 0 based and the minimum defined period is 1
+        # Need to add the delay to the period. "ago" is 0 based and therefore
+        # we need to pass and extra 1 which is the minimum defined period for any
+        # data (which will be substracted inside addminperiod)
         self.addminperiod(ago + 1)
 
     def next(self):
         self[0] = self.a[self.ago]
 
     def once(self, start, end):
+        # cache python dictionary lookups
         dst = self.array
         src = self.a.array
         ago = self.ago
@@ -345,6 +355,24 @@ class LineDelay(LineActions):
 
 
 class LinesOperation(LineActions):
+    '''
+    Holds an operation that operates on a two operands. Example: mul
+
+    It will "next"/traverse the array applying the operation on the two operands and
+    storing the result in self.
+
+    To optimize the operations and avoid conditional checks the right next/once is
+    chosen using the operation direction (normal or reversed) and the nature of the
+    operands (LineBuffer vs non-LineBuffer)
+
+    In the "once" operations "map" could be used as in:
+
+        operated = map(self.operation, srca[start:end], srcb[start:end])
+        self.array[start:end] = array.array(str(self.typecode), operated)
+
+    No real execution time benefits were appreciated and therefore the loops have been kept
+    in place for clarity (although the maps are not really unclear here)
+    '''
     def __init__(self, a, b, operation, r=False):
         super(LinesOperation, self).__init__()
 
@@ -369,20 +397,17 @@ class LinesOperation(LineActions):
         self[0] = self.operation(self.a, self.b[0])
 
     def once(self, start, end):
+        # cache python dictionary lookups
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
         op = self.operation
 
-        if True:
-            for i in xrange(start, end):
-                dst[i] = op(srca[i], srcb[i])
-        else:
-            operated = map(self.operation, self.a.array[start:end], self.b.array[start:end])
-            self.array[start:end] = array.array(str(self.typecode), operated)
-
+        for i in xrange(start, end):
+            dst[i] = op(srca[i], srcb[i])
 
     def _once_val_op(self, start, end):
+        # cache python dictionary lookups
         dst = self.array
         srca = self.a.array
         srcb = self.b
@@ -392,6 +417,7 @@ class LinesOperation(LineActions):
             dst[i] = op(srca[i], srcb)
 
     def _once_val_op_r(self, start, end):
+        # cache python dictionary lookups
         dst = self.array
         srca = self.a
         srcb = self.b.array
@@ -402,7 +428,12 @@ class LinesOperation(LineActions):
 
 
 class LineOwnOperation(LineActions):
-    def __init__(self, a, operation, r=False):
+    '''
+    Holds an operation that operates on a single operand. Example: abs
+
+    It will "next"/traverse the array applying the operation and storing the result in self
+    '''
+    def __init__(self, a, operation):
         super(LineOwnOperation, self).__init__()
 
         self.operation = operation
@@ -412,13 +443,10 @@ class LineOwnOperation(LineActions):
         self[0] = self.operation(self.a[0])
 
     def once(self, start, end):
+        # cache python dictionary lookups
         dst = self.array
         srca = self.a.array
         op = self.operation
 
-        if True:
-            for i in xrange(start, end):
-                dst[i] = op(srca[i])
-        else:
-            operated = map(self.operation, self.a.array[start:end])
-            self.array[start:end] = array.array(str(self.typecode), operated)
+        for i in xrange(start, end):
+            dst[i] = op(srca[i])
