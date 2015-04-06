@@ -32,6 +32,7 @@ except ImportError:
     matploblib = None
 
 from .metabase import MetaParams
+from . import TimeFrame
 
 
 class PlotScheme(object):
@@ -268,6 +269,31 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             closes = data.close.plot()
             opens = data.open.plot()
+
+            if hasattr(data, '_name') and data._name:
+                datalabel = data._name
+                datalabel += ' - %d %s' % (data._compression, TimeFrame.getname(data._timeframe, data._compression))
+
+                fromdate = data._daterange[0]
+                todate = data._daterange[1]
+                if fromdate is not None or todate is not None:
+                    datalabel += ' ('
+                    fmtstr = '%Y-%m-%d'
+                    if data._timeframe == TimeFrame.Minutes:
+                        fmtstr += ' %H%M'
+
+                    if fromdate is not None:
+                        datalabel += fromdate.strftime(fmtstr)
+
+                    datalabel += ' - '
+
+                    if todate is not None:
+                        datalabel += todate.strftime(fmtstr)
+
+                    datalabel += ')'
+
+                ax.text(0.005, 0.97, datalabel, va='top', transform=ax.transAxes,
+                        alpha=self.params.scheme.subtxttrans, fontsize=self.params.scheme.subtxtsize)
 
             if self.params.scheme.style.startswith('line'):
                 ax.plot(rdt, closes, aa=True, label='_nolegend_')
