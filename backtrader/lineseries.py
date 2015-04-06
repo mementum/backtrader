@@ -18,6 +18,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+'''
+
+.. module:: lineroot
+
+Defines LineSeries and Descriptors inside of it for classes that hold multiple
+lines at once.
+
+.. moduleauthor:: Daniel Rodriguez
+
+'''
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
@@ -25,7 +35,7 @@ import operator
 
 import six
 
-from .linebuffer import LineBuffer, LinesOperation, LineDelay, LineAssign, NAN
+from .linebuffer import LineBuffer, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple
 from .metabase import AutoInfoClass
 from . import metabase
@@ -49,20 +59,27 @@ class LineAlias(object):
         return obj.lines[self.line]
 
     def __set__(self, obj, value):
-        # obj.lines[self.line][0] = value
-        if False:
-            if isinstance(value, LineMultiple):
-                LineAssign(obj.lines[self.line], value[0])
-            else:
-                LineAssign(obj.lines[self.line], value)
-        else:
-            if isinstance(value, LineMultiple):
-                value[0].addbinding(obj.lines[self.line])
-            else:
-                value.addbinding(obj.lines[self.line])
+        '''
+        A line cannot be "set" once it has been created. But the values
+        inside the line can be "set". This is achieved by adding a binding
+        to the line inside "value"
+        '''
+        if isinstance(value, LineMultiple):
+            value = value[0]
+
+        value.addbinding(obj.lines[self.line])
 
 
 class Lines(object):
+    '''
+    Defines an "array" of lines which also has most of the interface of
+    a LineBuffer class (forward, rewind, advance...).
+
+    This interface operations are passed to the lines held by self
+
+    The class can autosubclass itself (_derive) to hold new lines keeping them
+    in the defined order.
+    '''
     _getlinesbase = classmethod(lambda cls: ())
     _getlines = classmethod(lambda cls: ())
     _getlinesextra = classmethod(lambda cls: 0)
@@ -105,6 +122,9 @@ class Lines(object):
 
     @classmethod
     def _getlinealias(cls, i):
+        '''
+        Return the alias for a line given the index
+        '''
         lines = cls._getlines()
         if i >= len(lines):
             return ''
@@ -114,6 +134,9 @@ class Lines(object):
         return linealias
 
     def __init__(self, initlines=None):
+        '''
+        Create the lines recording during "_derive" or else use the provided "initlines"
+        '''
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
@@ -131,6 +154,9 @@ class Lines(object):
                 self.lines.append(initlines[i])
 
     def __len__(self):
+        '''
+        Proxy line operation
+        '''
         return len(self.lines[0])
 
     def size(self):
@@ -143,44 +169,98 @@ class Lines(object):
         return self._getlinesextra()
 
     def __getitem__(self, line):
+        '''
+        Proxy line operation
+        '''
         return self.lines[line]
 
     def get(self, ago=0, size=1, line=0):
+        '''
+        Proxy line operation
+        '''
         return self.lines[line].get(ago, size=size)
 
     def __setitem__(self, line, value):
+        '''
+        Proxy line operation
+        '''
         self.lines[line][0] = value
 
     def forward(self, value=NAN, size=1):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.forward(value, size=size)
 
     def rewind(self, size=1):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.rewind(size)
 
     def extend(self, value=NAN, size=0):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.extend(value, size)
 
     def reset(self):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.reset()
 
     def home(self):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.home()
 
     def advance(self):
+        '''
+        Proxy line operation
+        '''
         for line in self.lines:
             line.advance()
 
     def buflen(self, line=0):
+        '''
+        Proxy line operation
+        '''
         return self.lines[line].buflen()
 
 
 class MetaLineSeries(LineMultiple.__class__):
+    '''
+    Dirty job manager for a LineSeries
+
+      - During __new__ (class creation), it reads "lines", "plotinfo", "plotlines"
+        class variable definitions and turns them into Classes of type Lines or
+        AutoClassInfo (plotinfo/plotlines)
+
+      - During "new" (instance creation) the lines/plotinfo/plotlines classes are
+        substituted in the instance with instances of the aforementioned classes
+        and aliases are added for the "lines" held in the "lines" instance
+
+        Additionally and for remaining kwargs, these are matched against args in
+        plotinfo and if existent are set there and removed from kwargs
+
+        Remember that this Metaclass has a MetaParams (from metabase) as root class
+        and therefore "params" defined for the class have been removed from kwargs
+        at an earlier state
+    '''
+
     def __new__(meta, name, bases, dct):
+        '''
+        Intercept class creation, identifiy lines/plotinfo/plotlines class attributes and
+        create corresponding classes for them which take over the class attributes
+        '''
+
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
         extralines = dct.pop('extralines', 0)
@@ -218,6 +298,11 @@ class MetaLineSeries(LineMultiple.__class__):
         return cls
 
     def donew(cls, *args, **kwargs):
+        '''
+        Intercept instance creation, take over lines/plotinfo/plotlines class attributes by
+        creating corresponding instance variables and add aliases for "lines" and the "lines" held
+        within it
+        '''
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         plotinfo = cls.plotinfo()
 
@@ -238,9 +323,10 @@ class MetaLineSeries(LineMultiple.__class__):
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         _obj.plotlines = cls.plotlines()
 
-        # add aliases for lines
+        # add aliases for lines and for the lines class itself
+        _obj.l = _obj.lines
         if _obj.lines.fullsize():
-            setattr(_obj, 'line', _obj.lines[0])
+            _obj.line = _obj.lines[0]
 
         for l, line in enumerate(_obj.lines):
             setattr(_obj, 'line_%d' % l, line)
@@ -289,39 +375,6 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
 
     def __call__(self, ago, line=0):
         return LineDelay(self.lines[line], ago, _ownerskip=self)
-
-    def _operation(self, other, operation, r=False):
-        if isinstance(other, LineMultiple):
-            # FIXME: ideally return a LineSeries object at least as long as the
-            # smallest size of both operands
-            return LinesOperation(self.lines[0], other[0], operation, r, _ownerskip=self)
-        elif isinstance(other, LineSingle):
-            return LinesOperation(self.lines[0], other, operation, r, _ownerskip=self)
-
-        # assume other is a standard type
-        return LinesOperation(self.lines[0], other, operation, r, _ownerskip=self)
-
-    def __lt__(self, other):
-        return self[0][0] < other
-
-    def __gt__(self, other):
-        return self[0][0] > other
-
-    def __le__(self, other):
-        return self[0][0] <= other
-
-    def __ge__(self, other):
-        return self[0][0] >= other
-
-    def __eq__(self, other):
-        if isinstance(other, LineSeries):
-            return other is LineSeries
-        return self[0][0] == other
-
-    def __ne__(self, other):
-        if isinstance(other, LineSeries):
-            return other is not LineSeries
-        return self[0][0] != other
 
 
 class LineSeriesStub(LineSeries):
