@@ -337,8 +337,6 @@ class MetaLineSeries(LineMultiple.__class__):
 
 
 class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
-    _name = ''
-
     def __getattr__(self, name):
         # to refer to line by name directly if the attribute was not found in this object
         # if we set an attribute in this object it will be found before we end up here
