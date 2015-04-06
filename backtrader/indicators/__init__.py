@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 # The modules below should/must define __all__ with the Indicator objects
