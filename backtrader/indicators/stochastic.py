@@ -30,7 +30,7 @@ class _StochasticBase(Indicator):
     params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
               ('overbought', 80.0), ('oversold', 20.0),)
 
-    plotlines = dict(d=dict(ls='-.'))
+    plotlines = dict(d=dict(ls='--'))
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast,]
