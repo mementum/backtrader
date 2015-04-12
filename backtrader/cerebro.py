@@ -47,6 +47,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             data._name = name
         self.datas.append(data)
         feed = data.getfeed()
+        # FIXME: the "in self.feeds" does not stand the rich comparison operator overloading
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
