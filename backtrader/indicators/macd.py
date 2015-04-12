@@ -44,10 +44,10 @@ class MACD(Indicator):
         self.lines.signal = self.p.matype(self.lines.macd, period=self.p.period_signal)
 
 
-class MACDHistogram(MACD):
+class MACDHisto(MACD):
     lines = ('histo',)
-    plotlines = dict(histo=dict(_method='bar', alpha=0.33, width=0.44))
+    plotlines = dict(histo=dict(_method='bar', alpha=0.66, width=0.66))
 
     def __init__(self):
-        super(MACDHistogram, self).__init__()
+        super(MACDHisto, self).__init__()
         self.lines.histo = self.lines.macd - self.lines.signal
