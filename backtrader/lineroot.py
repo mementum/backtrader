@@ -139,7 +139,7 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         '''
         raise NotImplementedError
 
-    def _operation(self, other, operation, r=False):
+    def _operation(self, other, operation, r=False, intify=False):
         '''
         To be defined by subclasses to implement an operation on "self" and "other"
         with "operation"
@@ -148,11 +148,11 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         '''
         raise NotImplementedError
 
-    def _roperation(self, other, operation):
+    def _roperation(self, other, operation, intify=False):
         '''
         Relies on self._operation to and passes "r" True to define a reverse operation
         '''
-        return self._operation(other, operation, r=True)
+        return self._operation(other, operation, r=True, intify=intify)
 
     def __add__(self, other):
         return self._operation(other, operator.__add__)
@@ -229,7 +229,7 @@ class LineMultiple(LineRoot):
         '''
         return self.lines[0]._makeoperationown(operation, _ownerskip=self)
 
-    def _operation(self, other, operation, r=False):
+    def _operation(self, other, operation, r=False, intify=False):
         '''
         Operation for two operands. Examines other and decides if other or items of it
         will be part of the operation
@@ -253,7 +253,7 @@ class LineMultiple(LineRoot):
         Rich Comparison operators. Scans other and returns either an operation with other
         directly or a subitem from other
         '''
-        if instance(other, LineRoot):
+        if isinstance(other, LineRoot):
             # either operation(LineBuffer, LineBuffer) or operation(LineBuffer, float)
             # both are defined by LineBuffer
             return operation(self.lines[0], other[0])
@@ -278,7 +278,7 @@ class LineSingle(LineRoot):
         '''
         return self._makeoperationown(operation)
 
-    def _operation(self, other, operation, r=False):
+    def _operation(self, other, operation, r=False, intify=False):
         '''
         Two operands' operation. Scanning of other happens to understand if other must
         be directly an operand or rather a subitem thereof
