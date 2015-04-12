@@ -20,14 +20,19 @@
 ################################################################################
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import collections
+import math
+
 import six
+from six.moves import xrange
 
 try:
     import matplotlib
     from matplotlib import pyplot
     import matplotlib.ticker
-    from matplotlib.finance import volume_overlay, plot_day_summary2_ohlc, candlestick2_ohlc
+    from matplotlib.finance import volume_overlay, volume_overlay2, plot_day_summary2_ohlc, candlestick2_ohlc
     import matplotlib.font_manager as font_manager
+    import numpy as np
 except ImportError:
     matploblib = None
 
@@ -37,8 +42,8 @@ from . import TimeFrame
 
 class PlotScheme(object):
     volume = True
-    voloverlay = False
-    volover_top = 2.5
+    voloverlay = True
+    volover_top = 3.0
     volover_bot =0.85
     rowsmajor = 5
     rowsminor = 1
@@ -55,40 +60,31 @@ class PlotScheme(object):
 
     volup = 'g'
     voldown = 'r'
-    voltrans = 0.5
+    voltrans = 0.2
 
     subtxttrans = 0.66
     subtxtsize = 9
 
     legendtrans = 0.25
     legendind = True
-    legendindloc = 'center left'
-    skipmainsinglelabels = True
+    legendindloc = 'upper left'
 
-    hlinescolor = 'black'
+    hlinescolor = '0.66' # shade of gray
     hlinesstyle = '--'
     hlineswidth = 1.0
 
-    lcolor0 = 'red'
-    lcolor1 = 'blue'
-    lcolor2 = 'green'
-    lcolor3 = 'brown'
-    lcolor4 = 'cyan'
-    lcolor5 = 'magenta'
-    lcolor6 = 'yellow'
-    lcolor7 = 'black'
+    lcolors = ['black', 'tomato', 'blue', 'green', 'brown', 'magenta', 'cyan', 'gold',]
 
-    lcolors = [lcolor0, lcolor1, lcolor2, lcolor3, lcolor4, lcolor5, lcolor6, lcolor7]
 
-    buymarker = '^'
-    buylabel = 'Buy'
-    buycolor = 'g'
-    sellmarker = 'v'
-    selllabel = 'Sell'
-    sellcolor = 'r'
-    buymarkersize = sellmarkersize = 8.0
-
-    plotcashvalue = True
+class PInfo(object):
+    def __init__(self):
+        self.nrows = 0
+        self.row = 0
+        self.x = None
+        self.xlen = 0
+        self.sharex = None
+        self.daxis = collections.OrderedDict()
+        self.plotstatus = dict()
 
 
 class Plot(six.with_metaclass(MetaParams, object)):
@@ -100,180 +96,243 @@ class Plot(six.with_metaclass(MetaParams, object)):
             raise ImportError('Please install matplotlib in order to enable plotting')
 
         for pname, pvalue in kwargs.items():
-            setattr(self.params.scheme, pname, pvalue)
-
-
-    def plotind(self, axis, daxis, rdt, datas, indplots, indsubplots, nrows, rows, rowspans):
-        props = font_manager.FontProperties(size=self.params.scheme.subtxtsize)
-        sharex = axis[0]
-
-        for ind in indplots:
-            if ind.plotinfo.subplot:
-                ax = pyplot.subplot2grid((nrows, 1), (next(rows), 0), rowspan=next(rowspans), sharex=sharex)
-                axis.append(ax)
-                daxis[ind] = ax
-            else: # plotted over data source (which may be data or indicator)
-                if ind._clock in daxis:
-                    ax = daxis[ind._clock]
-                elif hasattr(ind._clock, 'owner'):
-                    # It's a LineBuffer and hence the owner is needed
-                    ax = daxis[ind._clock.owner]
-
-            indlabel = ind.plotlabel()
-            lastcolor = self.params.scheme.lcolors[0] # to avoid a user error if first line defines _samecolor
-            for lineidx in range(ind.size()):
-                line = ind.lines[lineidx]
-                linealias = ind.lines._getlinealias(lineidx)
-                lineplotinfo = getattr(ind.plotlines, linealias)
-
-                if ind.plotinfo.subplot:
-                    # plotting on own subplot
-                    if lineplotinfo._get('_plotskip', False):
-                        # CHECK: Should we not add a "continue"
-                        label = '_nolegend'
-                    elif ind.size() == 1:
-                        if self.params.scheme.skipmainsinglelabels:
-                            label = '_nolegend'
-                        elif not ind.plotinfo._get('singlelineslabels', False):
-                            label = '_nolegend'
-                        else:
-                            label = linealias
-                    else:
-                        label = linealias
-                else: # plotting on something else's plot
-                    if not ind.plotinfo._get('linelabels', False):
-                        label = '_nolegend' if lineidx else indlabel
-                    else:
-                        label = linealias
-
-                    # plotting on someone else's ... indicator label to be shown
-
-                plotkwargs = dict()
-                if ind.plotinfo.subplot:
-                    coloridx = lineidx % len(self.params.scheme.lcolors)
-                    plotkwargs['color'] = self.params.scheme.lcolors[coloridx]
-
-                if lineplotinfo._get('_samecolor', False):
-                    plotkwargs['color'] = lastcolor
-
-                plotkwargs.update(dict(aa=True, label=label))
-                plotkwargs.update(**lineplotinfo._getkwargs(skip_=True))
-
-                pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
-                plottedline = pltmethod(rdt, line.plot(), **plotkwargs)
-                try:
-                    lastcolor = plottedline[0].get_color()
-                except AttributeError:
-                    # missing get_color() for example in bar plots for histograms
-                    pass
-
-            if ind.plotinfo.subplot:
-                ax.text(0.005, 0.97, indlabel, va='top', transform=ax.transAxes,
-                        alpha=self.params.scheme.subtxttrans, fontsize=self.params.scheme.subtxtsize)
-
-        # Go over the indicator subplots to put the legend in place
-        # if done before ... indicators over indicators (ex: movavg on rsi) will not show
-        # up in the legend, because such indicator is seen later in the previous loop
-        for ind in indsubplots:
-            ax = daxis[ind]
-
-            # Let's do the ticks here in case they are automatic and an indicator on indicator
-            # adds a bit to the automatic y scaling
-            yticks = ind.plotinfo._get('yticks', None)
-            if yticks is not None:
-                ax.set_yticks(yticks)
-            else:
-                ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='upper'))
-
-            # This can be done also in the previous loop ... but since we do the ticks here
-            hlines = ind.plotinfo._get('hlines', [])
-            for hline in hlines:
-                ax.axhline(hline,
-                           color=self.params.scheme.hlinescolor,
-                           ls=self.params.scheme.hlinesstyle,
-                           lw=self.params.scheme.hlineswidth)
-
-            if self.params.scheme.legendind and ind.plotinfo._get('legend', True):
-                handles, labels = ax.get_legend_handles_labels()
-                # Ensure that we have something to show
-                if labels:
-                    # Legend must be done here to ensure legend includes lines from ind on ind
-                    legend = ax.legend(loc=self.params.scheme.legendindloc,
-                                       shadow=False, fancybox=True, prop=props)
-                    if legend:
-                        legend.get_frame().set_alpha(self.params.scheme.legendtrans)
+            setattr(self.p.scheme, pname, pvalue)
 
     def plot(self, strategy):
         if not strategy.datas:
             return
 
+        sch = self.p.scheme
+
+        # These lists/dictionaries hold the subplots that go above each data
+        self.dplotstop = list()
+        self.dplotsup = collections.defaultdict(list)
+        self.dplotsdown = collections.defaultdict(list)
+        self.dplotson = collections.defaultdict(list)
+
+        # Sort observers in the different lists/dictionaries
+        for x in strategy.getobservers():
+            if not x.plotinfo.plot or x.plotinfo.plotskip:
+                continue
+
+            if x.plotinfo.subplot:
+                self.dplotstop.append(x)
+            else:
+                key = getattr(x._clock, 'owner', x._clock)
+                self.dplotson[key].append(x)
+
+        # Sort indicators in the different lists/dictionaries
+        for x in strategy.getindicators():
+            if not x.plotinfo.plot or x.plotinfo.plotskip:
+                continue
+
+            key = getattr(x._clock, 'owner', x._clock)
+            if x.plotinfo.subplot:
+                # support LineSeriesStub which features an "owner" to point to the data
+                if x.plotinfo.plotabove:
+                    self.dplotsup[key].append(x)
+                else:
+                    self.dplotsdown[key].append(x)
+            else:
+                self.dplotson[key].append(x)
+
+        # Calculate the total number of rows
+        rowsmajor = sch.rowsmajor
+        rowsminor = sch.rowsminor
+        nrows = 0
+
+        # Datas and volumes
+        nrows += len(strategy.datas) * rowsmajor
+        if sch.volume and not sch.voloverlay:
+            nrows += len(strategy.datas) * rowsminor
+
+        # top indicators/observers
+        nrows += len(self.dplotstop) * rowsminor
+
+        # indicators above datas
+        nrows += sum(len(v) for v in self.dplotsup.values())
+        nrows += sum(len(v) for v in self.dplotsdown.values())
+
+        pinfo = PInfo()
+        pinfo.nrows = nrows
+        pinfo.xreal = strategy._clock.datetime.plot()
+        pinfo.xlen = len(pinfo.xreal)
+        pinfo.x = list(xrange(pinfo.xlen))
+
         fig = pyplot.figure(0)
+
+        # Do the plotting
+        # Things that go always at the top (observers)
+        for ptop in self.dplotstop:
+            self.plotind(pinfo, ptop, self.dplotson[ptop])
+
+        # Create the rest on a per data basis
+        for data in strategy.datas:
+            for ind in self.dplotsup[data]:
+                self.plotind(pinfo, ind, self.dplotson[ind])
+
+            self.plotdata(pinfo, data, self.dplotson[data])
+
+            for ind in self.dplotsdown[data]:
+                self.plotind(pinfo, ind, self.dplotson[ind])
+
+        # Date formatting for the x axis - only the last one needs it
+        lastax = pinfo.daxis.values()[-1]
+        lastax.xaxis.set_major_formatter(MyDateFormatter(pinfo.xreal))
+        lastax.xaxis.set_minor_formatter(MyDateFormatter2(pinfo.xreal))
+
+        # Put the subplots as indicated by hspace (0 is touching each other)
+        fig.subplots_adjust(hspace=sch.plotdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
+        fig.autofmt_xdate(bottom=0.05, rotation=15)
+
+        # Things must be tight along the x axis (to fill both ends)
+        pyplot.autoscale(axis='x', tight=True)
+        pyplot.autoscale(tight=True)
+
+    def newaxis(self, pinfo, obj, rowspan):
+        sch = self.p.scheme
+
+        ax = pyplot.subplot2grid((pinfo.nrows, 1),(pinfo.row, 0), rowspan=rowspan, sharex=pinfo.sharex)
+
+        # update the sharex information if not available
+        if pinfo.sharex is None:
+            pinfo.sharex = ax
+
+        # update the row index with the taken rows
+        pinfo.row += rowspan
+
+        # save the mapping indicator - axis and return
+        pinfo.daxis[obj] = ax
+
+        # Activate grid in all axes if requested
+        ax.yaxis.tick_right()
+        ax.grid(sch.grid)
+
+        # Save a default plotstatus for ax (lzorder, tzorder, coloridx)
+        pinfo.plotstatus[ax] = (0, 0, 0)
+
+        return ax
+
+    def plotind(self, pinfo, ind, subinds=None, masterax=None):
         props = font_manager.FontProperties(size=self.params.scheme.subtxtsize)
+        sch = self.p.scheme
 
-        rowspans = list()
+        # check subind
+        subinds = subinds or []
 
-        obplots = [ob for ob in strategy.getobservers() if ob.plotinfo.plot and not ob.plotinfo.plotskip]
-        obsubplots = [ob for ob in obplots if ob.plotinfo.subplot]
-        obsize = len(obsubplots)
-        rowspans += [self.params.scheme.rowsminor] * obsize
+        # Get an axis for this plot
+        ax = masterax or self.newaxis(pinfo, ind, rowspan=sch.rowsminor)
 
-        datasize = len(strategy.datas)
-        rowspans += [self.params.scheme.rowsmajor]
-        rowspans += [self.params.scheme.rowsminor] * (datasize - 1)
+        # preset some values
+        lzorder, tzorder, coloridx = pinfo.plotstatus[ax]
 
-        volsize = datasize * (not self.params.scheme.voloverlay)
-        rowspans += [self.params.scheme.rowsminor] * volsize
+        indlabel = ind.plotlabel()
 
-        datasize += volsize
+        for lineidx in range(ind.size()):
+            line = ind.lines[lineidx]
+            linealias = ind.lines._getlinealias(lineidx)
+            lineplotinfo = getattr(ind.plotlines, linealias)
 
-        indplots = [ind for ind in strategy.getindicators() if ind.plotinfo.plot and not ind.plotinfo.plotskip]
-        indsubplots = [ind for ind in indplots if ind.plotinfo.subplot]
-        indsize = len(indsubplots)
-        rowspans += [self.params.scheme.rowsminor] * len(indsubplots)
+            if lineplotinfo._get('_plotskip', False):
+                continue
 
-        nrows = sum(rowspans)
-        rows = [0] + [sum(rowspans[:i+1]) for i in range(len(rowspans) - 1)]
+            # Legend label only when plotting 1st line
+            if masterax:
+                label = indlabel * (lineidx == 0) or '_nolegend'
+            else:
+                label = linealias
 
-        roworder = [0, obsize, datasize, indsize]
-        roworder = [sum(roworder[:i+1]) for i in range(len(roworder))]
-        roworder = iter(roworder)
+            # plot data
+            lplot = line.plot()
 
-        r1, r2 = next(roworder), next(roworder)
-        rowsob = iter(rows[r1:r2])
-        rowspansob = iter(rowspans[r1:r2])
+            if not math.isnan(lplot[-1]):
+                label += ' %.2f' % lplot[-1]
 
-        r1, r2 = r2, next(roworder)
-        rowsdata = iter(rows[r1:r2])
-        rowspansdata = iter(rowspans[r1:r2])
+            plotkwargs = dict()
 
-        r1, r2 = r2, next(roworder)
-        rowsind = iter(rows[r1:r2])
-        rowspansind = iter(rowspans[r1:r2])
+            if not lineplotinfo._get('_samecolor', False):
+                coloridx = (coloridx + 1) % len(sch.lcolors)
 
-        # Keep a reference of the created ax to add plots (like moving average) to existing data
-        # NOTE: a single "OrderedDict" can also do the trick
-        axis = list()
-        daxis = dict()
+            plotkwargs['color'] = sch.lcolors[coloridx]
+
+            plotkwargs.update(dict(aa=True, label=label))
+            plotkwargs.update(**lineplotinfo._getkwargs(skip_=True))
+            if lzorder:
+                plotkwargs['zorder'] = lzorder * 0.995
+
+            pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
+            plottedline = pltmethod(pinfo.x, lplot, **plotkwargs)
+            try:
+                plottedline = plottedline[0]
+            except:
+                # Possibly a container of artists (when plotting bars)
+                pass
+            lzorder = plottedline.get_zorder()
+
+            if not math.isnan(lplot[-1]):
+                # if line has produced values ... plot a tag for the last value
+                tagkwargs = dict()
+                if tzorder:
+                    tagkwargs['zorder'] = tzorder * 0.995
+                tzorder = drawtag(ax, pinfo.xlen, lplot[-1], edgecolor=sch.lcolors[coloridx],
+                                  fontsize=sch.subtxtsize, **tagkwargs)
+
+        pinfo.plotstatus[ax] = (lzorder, tzorder, coloridx)
+
+        # plot subindicators that were created on self
+        for subind in subinds:
+            self.plotind(pinfo, subind, subinds=self.dplotson[subind], masterax=ax)
+
+        if not masterax:
+            # Set specific or generic ticks
+            yticks = ind.plotinfo._get('yticks', None)
+            if yticks is not None:
+                ax.set_yticks(yticks)
+            else:
+                ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, prune='both'))
+
+            # Set specific hlines if asked to
+            hlines = ind.plotinfo._get('hlines', [])
+            lzorder, _, _ = pinfo.plotstatus[ax]
+            for hline in hlines:
+                lzorder *= 0.995
+                ax.axhline(hline, color=sch.hlinescolor, ls=sch.hlinesstyle, lw=sch.hlineswidth, zorder=lzorder,
+                )
+
+            pinfo.plotstatus[ax] = (lzorder, tzorder, coloridx)
+
+            if sch.legendind and ind.plotinfo._get('legend', True):
+                handles, labels = ax.get_legend_handles_labels()
+                # Ensure that we have something to show
+                if labels:
+                    # Legend must be done here to ensure legend includes lines from ind on ind
+                    legend = ax.legend(loc=sch.legendindloc, numpoints=1,
+                                       frameon=False, shadow=False, fancybox=False, fontsize=sch.subtxtsize)
+
+                    legend.set_title(indlabel, prop=props)
+                    if legend:
+                        # legend.get_frame().set_alpha(sch.legendtrans)
+                        # hack if title is set, because the _legend_box (a VPacker) has "center" as default
+                        legend._legend_box.align='left'
+
+
+    def plotdata(self, pinfo, data, indicators):
+        sch = self.p.scheme
+        props = font_manager.FontProperties(size=sch.subtxtsize)
 
         # if "dates" are passed, matploblib adds non-existing dates (ie weekends) creating gaps
         # passing only the index number and combined with a formatter, only those are needed
-        dt = strategy._clock.datetime.plot()
-        rdt = range(len(strategy._clock.datetime))
+        ax = self.newaxis(pinfo, data, rowspan=sch.rowsmajor)
 
-        sharex = None
-        for data in strategy.datas:
-            ax = pyplot.subplot2grid((nrows, 1), (next(rowsdata), 0), rowspan=next(rowspansdata), sharex=sharex)
-            sharex = sharex or ax # put just the first one in
-            axis.append(ax)
-            daxis[data] = ax
+        closes = data.close.plot()
+        opens = data.open.plot()
 
-            closes = data.close.plot()
-            opens = data.open.plot()
+        datalabel = ''
+        if hasattr(data, '_name') and data._name:
+            datalabel += data._name
+            datalabel += ' (%d %s)' % (data._compression, TimeFrame.getname(data._timeframe, data._compression))
 
-            if hasattr(data, '_name') and data._name:
-                datalabel = data._name
-                datalabel += ' - %d %s' % (data._compression, TimeFrame.getname(data._timeframe, data._compression))
-
+            if False:
                 fromdate = data._daterange[0]
                 todate = data._daterange[1]
                 if fromdate is not None or todate is not None:
@@ -292,104 +351,129 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
                     datalabel += ')'
 
-                ax.text(0.005, 0.97, datalabel, va='top', transform=ax.transAxes,
-                        alpha=self.params.scheme.subtxttrans, fontsize=self.params.scheme.subtxtsize)
+        if sch.style.startswith('line'):
+            datalabel += ' C: %.2f' % closes[-1]
+            plottedline, = ax.plot(pinfo.x, closes, aa=True, label=datalabel, color=sch.lcolors[0])
 
-            if self.params.scheme.style.startswith('line'):
-                ax.plot(rdt, closes, aa=True, label='_nolegend_')
-            else:
-                highs = data.high.plot()
-                lows = data.low.plot()
-                if self.params.scheme.style.startswith('candle'):
-                    candlestick2_ohlc(ax, opens, highs, lows, closes, width=1.0,
-                                      colorup=self.params.scheme.barup,
-                                      colordown=self.params.scheme.bardown,
-                                      alpha=self.params.scheme.bartrans)
-                elif self.params.scheme.style.startswith('bar') or True:
-                    # final default option -- should be "else"
-                    plot_day_summary2_ohlc(ax, opens, highs, lows, closes, ticksize=4,
-                                           colorup=self.params.scheme.barup,
-                                           colordown=self.params.scheme.bardown)
+        else:
+            highs = data.high.plot()
+            lows = data.low.plot()
 
-            ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
+            datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % (opens[-1], highs[-1], lows[-1], closes[-1])
 
-            if self.params.scheme.volume:
-                volumes = data.volume.plot()
-                # Do only plot if a volume actually exists
-                # This could be done in advance to actually tighten the chart if some data has no volume
-                if max(volumes):
-                    if self.params.scheme.voloverlay:
-                        # Push the data upwards
-                        bot, top = axdata.get_ylim()
-                        ax.set_ylim(bot * self.params.scheme.volover_bot, top)
+            if sch.style.startswith('candle'):
+                coll = candlestick2_ohlc(ax, opens, highs, lows, closes, width=1.0,
+                                       colorup=sch.barup,
+                                       colordown=sch.bardown,
+                                       alpha=sch.bartrans)
+            elif sch.style.startswith('bar') or True:
+                # final default option -- should be "else"
+                 coll = plot_day_summary2_ohlc(ax, opens, highs, lows, closes, ticksize=4,
+                                               colorup=sch.barup,
+                                               colordown=sch.bardown)
 
-                        # Clone the data ax
-                        axvol = ax.twinx()
-                    else:
-                        # Create independent subplot
-                        axvol = pyplot.subplot2grid((nrows, 1), (next(rowsdata), 0),
-                                                    rowspan=next(rowspansdata), sharex=sharex)
-                        axis.append(axvol)
+        # Code to place a label at the right hand side withthe last value
+        datazorder = drawtag(ax, pinfo.xlen, closes[-1], edgecolor=sch.lcolors[0], fontsize=sch.subtxtsize)
 
-                    # Plot the volume (no matter if as overlay or standalone)
-                    volalpha = 1.0 if not self.params.scheme.voloverlay else self.params.scheme.voltrans
+        ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='both'))
+
+        if sch.volume:
+            volumes = data.volume.plot()
+            # Do only plot if a volume actually exists
+            # This could be done in advance to actually tighten the chart if some data has no volume
+            maxvol = max(volumes)
+            if maxvol:
+                if self.params.scheme.voloverlay:
+                    axvol = ax.twinx()
+                else:
+                    # Create independent subplot
+                    axvol = self.newaxis(pinfo, data.volume, rowspan=sch.rowsmajor)
+
+                axvol.yaxis.set_major_formatter(MyVolFormatter(maxvol))
+
+                # Plot the volume (no matter if as overlay or standalone)
+                volalpha = 1.0 if not sch.voloverlay else sch.voltrans
+                if True:
                     bc = volume_overlay(axvol, opens, closes, volumes,
-                                        colorup=self.params.scheme.volup,
-                                        colordown=self.params.scheme.voldown,
+                                        colorup=sch.volup,
+                                        colordown=sch.voldown,
                                         alpha=volalpha, width=1)
+                else:
+                    bc = volume_overlay2(axvol, closes, volumes,
+                                         colorup=sch.volup,
+                                         colordown=sch.voldown,
+                                         alpha=volalpha, width=1)
 
-                    if self.params.scheme.voloverlay:
-                        # Keep it at the bottom
-                        bot, top = axvol.get_ylim()
-                        axvol.set_ylim(bot, top * self.params.scheme.volover_top)
-                        axvol.set_yticks([])
-                    else:
-                        # Cut the top of the y axis ticks
-                        axvol.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='upper'))
+                if sch.voloverlay:
+                    # Keep it at the bottom
+                    axvol.yaxis.tick_left()
+                    # put the data to the other side possible bug in matplotlib, because twin should not affect
+                    # master
+                    ax.yaxis.tick_right()
+                    # limit the volume overlay plot to the bottom by increasing the vertical scale
+                    # several times over the max
+                    bot, top = axvol.get_ylim()
+                    axvol.set_ylim(bot, top * sch.volover_top)
+                    # Alternative is to calculate "ticks" based on max volume and set them
+                    nbins = 10
+                    prune = None
+                else:
+                    nbins = 6
+                    prune = 'both'
+                    # Cut the top of the y axis ticks
+                axvol.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=nbins, prune=prune))
 
-            # Make room for the labels at the top
-            bot, top = ax.get_ylim()
-            ax.set_ylim(bot, top * 1.01)
 
-        # Plot the indicators
-        self.plotind(axis, daxis, rdt, strategy.datas, indplots, indsubplots, nrows, rowsind, rowspansind)
+        # Setting ylim to the value set by "data" ensures that indicators plotted on the data
+        # will not modify the scale of the y axis
+        ax.set_ylim(ax.get_ylim())
 
-        # Plot the observers
-        self.plotind(axis, daxis, rdt, strategy.datas, obplots, obsubplots, nrows, rowsob, rowspansob)
+        # Manual status update with default values after plotting the data 2.0 for lines, 3.0 for text
+        # and current color is 1
+        pinfo.plotstatus[ax] = (2.0, 3.0, 1)
+
+        for ind in indicators:
+            self.plotind(pinfo, ind, subinds=self.dplotson[ind], masterax=ax)
 
         # NOTE: Plot Indicators/Observers before setting the legend of the "datas"
         # because some indicators will insert labes into the data legends
 
         # Data legends
-        for data in strategy.datas:
-            ax = daxis[data]
-            legend = ax.legend(
-                loc='upper center', shadow=False, fancybox=False, prop=props, numpoints=1, ncol=10)
-            if legend:
-                legend.get_frame().set_alpha(self.params.scheme.legendtrans)
-
-        # Activate grid in all axes if requested
-        for ax in axis:
-            ax.yaxis.tick_right()
-            ax.grid(self.params.scheme.grid)
-
-        # Date formatting for the x axis - only the last one needs it
-        axis[-1].xaxis.set_major_formatter(MyFormatter(dt))
-        axis[-1].xaxis.set_minor_formatter(MyFormatter2(dt))
-
-        # Put the subplots as indicated by hspace (0 is touching each other)
-        fig.subplots_adjust(hspace=self.params.scheme.plotdist, top=0.98, left=0.05, bottom=0.00, right=0.95)
-        fig.autofmt_xdate(bottom=0.05, rotation=15)
-
-        # Things must be tight along the x axis (to fill both ends)
-        # pyplot.autoscale(axis='x', tight=True)
-        pyplot.autoscale(tight=True)
+        legend = ax.legend(
+            loc='upper left', frameon=False, shadow=False, fancybox=False, prop=props, numpoints=1, ncol=1)
+        if legend:
+            # legend.get_frame().set_alpha(sch.legendtrans)
+            # hack if title is set, because the _legend_box (a VPacker) has "center" as default
+            legend._legend_box.align='left'
 
     def show(self):
         pyplot.show()
 
 
-class MyFormatter(matplotlib.ticker.Formatter):
+class MyVolFormatter(matplotlib.ticker.Formatter):
+    Suffixes = ['', 'K', 'M', 'G', 'T', 'P']
+
+    def __init__(self, volmax):
+        self.volmax = volmax
+        magnitude = 0
+        self.divisor = 1.0
+        while abs(volmax / self.divisor) >= 1000:
+            magnitude += 1
+            self.divisor *= 1000.0
+
+        self.suffix = self.Suffixes[magnitude]
+
+    def __call__(self, y, pos=0):
+        '''Return the label for time x at position pos'''
+
+        if y > self.volmax * 1.20:
+            return ''
+
+        y = int(y / self.divisor)
+        return '%d%s' % (y, self.suffix)
+
+
+class MyDateFormatter(matplotlib.ticker.Formatter):
     def __init__(self, dates, fmt='%Y-%m-%d'):
         self.dates = dates
         self.lendates = len(dates)
@@ -404,7 +488,7 @@ class MyFormatter(matplotlib.ticker.Formatter):
         return self.dates[ind].strftime(self.fmt)
 
 
-class MyFormatter2(matplotlib.ticker.Formatter):
+class MyDateFormatter2(matplotlib.ticker.Formatter):
     def __init__(self, dates, fmt='%b-%d'):
         self.dates = dates
         self.lendates = len(dates)
@@ -417,3 +501,56 @@ class MyFormatter2(matplotlib.ticker.Formatter):
             return ''
 
         return self.dates[ind].strftime(self.fmt)
+
+def drawtag(ax, x, y, edgecolor, fontsize,  alpha=0.9, **kwargs):
+    txt = ax.text(x, y,
+                  '%.2f' % y,
+                  va='center',
+                  ha='left',
+                  fontsize=fontsize,
+                  bbox=dict(boxstyle=custom_box_style,
+                            facecolor='white',
+                            edgecolor=edgecolor,
+                            alpha=alpha),
+                  **kwargs)
+    return txt.get_zorder()
+
+
+def custom_box_style(x0, y0, width, height, mutation_size, mutation_aspect=1):
+    """
+    Given the location and size of the box, return the path of
+    the box around it.
+
+     - *x0*, *y0*, *width*, *height* : location and size of the box
+     - *mutation_size* : a reference scale for the mutation.
+     - *aspect_ratio* : aspect-ration for the mutation.
+    """
+
+    # note that we are ignoring mutation_aspect. This is okay in general.
+
+    # padding
+    from matplotlib.path import Path
+
+    mypad = 0.2
+    pad = mutation_size * mypad
+
+    # width and height with padding added.
+    width, height = width + 2.*pad, height + 2.*pad,
+
+    # boundary of the padded box
+    x0, y0 = x0-pad, y0-pad,
+    x1, y1 = x0+width, y0 + height
+
+    cp = [(x0, y0),
+          (x1, y0), (x1, y1), (x0, y1),
+          (x0-pad, (y0+y1)/2.), (x0, y0),
+          (x0, y0)]
+
+    com = [Path.MOVETO,
+           Path.LINETO, Path.LINETO, Path.LINETO,
+           Path.LINETO, Path.LINETO,
+           Path.CLOSEPOLY]
+
+    path = Path(cp, com)
+
+    return path
