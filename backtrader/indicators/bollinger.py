@@ -48,7 +48,7 @@ class BollingerBands(Indicator):
 
     plotinfo = dict(subplot=False)
     plotlines = dict(
-        mid=dict(ls='-.'),
+        mid=dict(ls='--'),
         top=dict(_samecolor=True),
         bot=dict(_samecolor=True),
     )
