@@ -39,41 +39,99 @@ except ImportError:
 from .metabase import MetaParams
 from . import TimeFrame
 
+tableau20 = [
+    'steelblue', # 0
+    'lightsteelblue', # 1
+    'darkorange', # 2
+    'peachpuff', # 3
+    'green', # 4
+    'lightgreen', # 5
+    'crimson', # 6
+    'lightcoral', # 7
+    'mediumpurple', # 8
+    'thistle', # 9
+    'saddlebrown', # 10
+    'rosybrown', # 11
+    'orchid', # 12
+    'lightpink', # 13
+    'gray', # 14
+    'lightgray', # 15
+    'olive', # 16
+    'palegoldenrod', # 17
+    'mediumturquoise', # 18
+    'paleturquoise', # 19
+]
+
+tableau10 = [
+    'blue', # 'steelblue', # 0
+    'darkorange', # 2
+    'green', # 4
+    'crimson', # 6
+    'mediumpurple', # 8
+    'saddlebrown', # 10
+    'orchid', # 12
+    'gray', # 14
+    'olive', # 16
+    'mediumturquoise', # 18
+]
+
+tableau10_light = [
+    'lightsteelblue', # 1
+    'peachpuff', # 3
+    'lightgreen', # 5
+    'lightcoral', # 7
+    'thistle', # 9
+    'rosybrown', # 11
+    'lightpink', # 13
+    'lightgray', # 15
+    'palegoldenrod', # 17
+    'paleturquoise', # 19
+]
+
+tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
+
 
 class PlotScheme(object):
-    volume = True
-    voloverlay = True
-    volover_top = 3.0
-    volover_bot =0.85
-    rowsmajor = 5
-    rowsminor = 1
+    def __init__(self):
+        self.rowsmajor = 5
+        self.rowsminor = 1
 
-    plotdist = 0.0
+        self.plotdist = 0.0
 
-    grid = True
+        self.grid = True
 
-    style = 'line'
-    loc = 'blue'
-    barup = 'k'
-    bardown = 'r'
-    bartrans = 1.0
+        self.style = 'line'
+        self.loc = 'black'
+        self.barup = 'white'
+        self.bardown = 'red'
+        self.bartrans = 1.0
 
-    volup = 'g'
-    voldown = 'r'
-    voltrans = 0.2
+        self.volume = True
+        self.voloverlay = True
+        self.volover_top = 3.0
+        self.volover_bot =0.85
 
-    subtxttrans = 0.66
-    subtxtsize = 9
+        self.volup = '#aaaaaa' # 0.66 of grade
+        self.voldown = '#cc6073' # (204, 96, 115)
+        self.voltrans = 0.50
 
-    legendtrans = 0.25
-    legendind = True
-    legendindloc = 'upper left'
+        self.subtxttrans = 0.66
+        self.subtxtsize = 9
 
-    hlinescolor = '0.66' # shade of gray
-    hlinesstyle = '--'
-    hlineswidth = 1.0
+        self.legendtrans = 0.25
+        self.legendind = True
+        self.legendindloc = 'upper left'
 
-    lcolors = ['black', 'tomato', 'blue', 'green', 'brown', 'magenta', 'cyan', 'gold',]
+        self.hlinescolor = '0.66' # shade of gray
+        self.hlinesstyle = '--'
+        self.hlineswidth = 1.0
+
+        # self.lcolors = ['black', 'tomato', 'blue', 'green', 'brown', 'magenta', 'cyan', 'gold',]
+        self.lcolors = tableau10
+
+    def color(self, idx):
+        colidx = tab10_index[idx % len(tab10_index)]
+        return self.lcolors[colidx]
 
 
 class PInfo(object):
@@ -123,6 +181,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Sort indicators in the different lists/dictionaries
         for x in strategy.getindicators():
+            if not hasattr(x, 'plotinfo'):
+                # object with no plotting support - so far LineSingle derived classes
+                continue
+
             if not x.plotinfo.plot or x.plotinfo.plotskip:
                 continue
 
@@ -209,7 +271,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         ax.grid(sch.grid)
 
         # Save a default plotstatus for ax (lzorder, tzorder, coloridx)
-        pinfo.plotstatus[ax] = (0, 0, 0)
+        pinfo.plotstatus[ax] = (0, 0, -1)
 
         return ax
 
@@ -237,7 +299,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 continue
 
             # Legend label only when plotting 1st line
-            if masterax:
+            if masterax and not ind.plotinfo.plotlabels:
                 label = indlabel * (lineidx == 0) or '_nolegend'
             else:
                 label = linealias
@@ -249,14 +311,16 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 label += ' %.2f' % lplot[-1]
 
             plotkwargs = dict()
+            linekwargs = lineplotinfo._getkwargs(skip_=True)
 
-            if not lineplotinfo._get('_samecolor', False):
-                coloridx = (coloridx + 1) % len(sch.lcolors)
-
-            plotkwargs['color'] = sch.lcolors[coloridx]
+            if linekwargs.get('color', None) is None:
+                if not lineplotinfo._get('_samecolor', False):
+                    coloridx += 1
+                plotkwargs['color'] = sch.color(coloridx)
 
             plotkwargs.update(dict(aa=True, label=label))
-            plotkwargs.update(**lineplotinfo._getkwargs(skip_=True))
+            plotkwargs.update(**linekwargs)
+
             if lzorder:
                 plotkwargs['zorder'] = lzorder * 0.995
 
@@ -274,7 +338,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 tagkwargs = dict()
                 if tzorder:
                     tagkwargs['zorder'] = tzorder * 0.995
-                tzorder = drawtag(ax, pinfo.xlen, lplot[-1], edgecolor=sch.lcolors[coloridx],
+                tzorder = drawtag(ax, pinfo.xlen, lplot[-1], edgecolor=sch.color(coloridx),
                                   fontsize=sch.subtxtsize, **tagkwargs)
 
         pinfo.plotstatus[ax] = (lzorder, tzorder, coloridx)
@@ -315,7 +379,6 @@ class Plot(six.with_metaclass(MetaParams, object)):
                         # hack if title is set, because the _legend_box (a VPacker) has "center" as default
                         legend._legend_box.align='left'
 
-
     def plotdata(self, pinfo, data, indicators):
         sch = self.p.scheme
         props = font_manager.FontProperties(size=sch.subtxtsize)
@@ -328,8 +391,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
         opens = data.open.plot()
 
         datalabel = ''
+        label = ''
         if hasattr(data, '_name') and data._name:
             datalabel += data._name
+            label += data._name
             datalabel += ' (%d %s)' % (data._compression, TimeFrame.getname(data._timeframe, data._compression))
 
             if False:
@@ -352,28 +417,27 @@ class Plot(six.with_metaclass(MetaParams, object)):
                     datalabel += ')'
 
         if sch.style.startswith('line'):
-            datalabel += ' C: %.2f' % closes[-1]
-            plottedline, = ax.plot(pinfo.x, closes, aa=True, label=datalabel, color=sch.lcolors[0])
-
+            label = 'LineOnClose %.2f' % closes[-1]
+            plottedline, = ax.plot(pinfo.x, closes, aa=True, label=label, color=sch.loc)
         else:
             highs = data.high.plot()
             lows = data.low.plot()
 
-            datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % (opens[-1], highs[-1], lows[-1], closes[-1])
-
             if sch.style.startswith('candle'):
+                datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % (opens[-1], highs[-1], lows[-1], closes[-1])
                 coll = candlestick2_ohlc(ax, opens, highs, lows, closes, width=1.0,
                                        colorup=sch.barup,
                                        colordown=sch.bardown,
                                        alpha=sch.bartrans)
             elif sch.style.startswith('bar') or True:
+                datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % (opens[-1], highs[-1], lows[-1], closes[-1])
                 # final default option -- should be "else"
-                 coll = plot_day_summary2_ohlc(ax, opens, highs, lows, closes, ticksize=4,
-                                               colorup=sch.barup,
-                                               colordown=sch.bardown)
+                coll = plot_day_summary2_ohlc(ax, opens, highs, lows, closes, ticksize=4,
+                                              colorup=sch.barup,
+                                              colordown=sch.bardown)
 
         # Code to place a label at the right hand side withthe last value
-        datazorder = drawtag(ax, pinfo.xlen, closes[-1], edgecolor=sch.lcolors[0], fontsize=sch.subtxtsize)
+        datazorder = drawtag(ax, pinfo.xlen, closes[-1], edgecolor=sch.loc, fontsize=sch.subtxtsize)
 
         ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(prune='both'))
 
@@ -404,6 +468,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                                          colordown=sch.voldown,
                                          alpha=volalpha, width=1)
 
+                bc.set_label('hola')
                 if sch.voloverlay:
                     # Keep it at the bottom
                     axvol.yaxis.tick_left()
@@ -430,7 +495,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Manual status update with default values after plotting the data 2.0 for lines, 3.0 for text
         # and current color is 1
-        pinfo.plotstatus[ax] = (2.0, 3.0, 1)
+        pinfo.plotstatus[ax] = (2.0, 3.0, -1)
 
         for ind in indicators:
             self.plotind(pinfo, ind, subinds=self.dplotson[ind], masterax=ax)
@@ -438,12 +503,12 @@ class Plot(six.with_metaclass(MetaParams, object)):
         # NOTE: Plot Indicators/Observers before setting the legend of the "datas"
         # because some indicators will insert labes into the data legends
 
-        # Data legends
         legend = ax.legend(
             loc='upper left', frameon=False, shadow=False, fancybox=False, prop=props, numpoints=1, ncol=1)
         if legend:
             # legend.get_frame().set_alpha(sch.legendtrans)
             # hack if title is set, because the _legend_box (a VPacker) has "center" as default
+            legend.set_title(datalabel, prop=props)
             legend._legend_box.align='left'
 
     def show(self):
@@ -514,7 +579,6 @@ def drawtag(ax, x, y, edgecolor, fontsize,  alpha=0.9, **kwargs):
                             alpha=alpha),
                   **kwargs)
     return txt.get_zorder()
-
 
 def custom_box_style(x0, y0, width, height, mutation_size, mutation_aspect=1):
     """
