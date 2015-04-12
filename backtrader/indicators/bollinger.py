@@ -63,3 +63,6 @@ class BollingerBands(Indicator):
         stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
         self.lines.top = ma + stddev
         self.lines.bot = ma - stddev
+
+class BBands(BollingerBands):
+    pass
