@@ -28,7 +28,7 @@ from ..observer import LineObserver, ObserverPot
 class _BuySellObserver(LineObserver):
     lines = ('buy', 'sell',)
 
-    plotinfo = dict(subplot=False, plotlabels=True)
+    plotinfo = dict(subplot=False, plotlinelabels=True)
     plotlines = dict(
         buy=dict(marker='^', markersize=8.0, color='green', fillstyle='none'),
         sell=dict(marker='v', markersize=8.0, color='red', fillstyle='none')
