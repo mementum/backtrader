@@ -28,10 +28,11 @@ class TimeFrame(object):
     names = ['Minutes', 'Days', 'Weeks', 'Months', 'Years']
 
     @classmethod
-    def getname(cls, index, tframe):
-        if tframe == 1:
-            return cls.names[index][:-1]
-        return cls.names[index]
+    def getname(cls, tframe, compression):
+        if compression == 1:
+            # return singular if compression is 1
+            return cls.names[tframe][:-1]
+        return cls.names[tframe]
 
 
 class DataSeries(LineSeries):
