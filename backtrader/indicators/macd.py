@@ -46,7 +46,7 @@ class MACD(Indicator):
 
 class MACDHisto(MACD):
     lines = ('histo',)
-    plotlines = dict(histo=dict(_method='bar', alpha=0.50, width=0.66))
+    plotlines = dict(histo=dict(_method='bar', alpha=0.50, width=1.0))
 
     def __init__(self):
         super(MACDHisto, self).__init__()
