@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
+###############################################################################
 '''
 
 .. module:: linebuffer
@@ -28,7 +28,8 @@ with appends, forwarding, rewinding, resetting and other
 .. moduleauthor:: Daniel Rodriguez
 
 '''
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import array
 
@@ -37,6 +38,7 @@ from six.moves import xrange
 
 from .lineroot import LineRoot, LineSingle
 from . import metabase
+from .utils import num2date
 
 
 NAN = float('NaN')
@@ -48,16 +50,20 @@ class LineBuffer(LineSingle):
     index 0 points to the item which is active for input and output.
 
     Positive indices fetch values from the past (left hand side)
-    Negative indices fetch values from the future (if the array has been extended on the right hand side)
+    Negative indices fetch values from the future (if the array has been
+    extended on the right hand side)
 
     With this behavior no index has to be passed around to entities which have
-    to work with the current value produced by other entities: the value is always reachable at "0".
+    to work with the current value produced by other entities: the value is
+    always reachable at "0".
 
     Likewise storing the current value produced by "self" is done at 0.
 
-    Additional operations to move the pointer (home, forward, extend, rewind, advance getzero) are provided
+    Additional operations to move the pointer (home, forward, extend, rewind,
+    advance getzero) are provided
 
-    The class can also hold "bindings" to other LineBuffers. When a value is set in this class
+    The class can also hold "bindings" to other LineBuffers. When a value
+    is set in this class
     it will also be set in the binding.
     '''
 
@@ -80,10 +86,7 @@ class LineBuffer(LineSingle):
         self.extension = 0
 
     def create_array(self):
-        if self.typecode == 'ls':
-            self.array = list()
-        else:
-            self.array = array.array(str(self.typecode))
+        self.array = array.array(str(self.typecode))
 
     def __len__(self):
         return self.idx + 1
@@ -91,8 +94,9 @@ class LineBuffer(LineSingle):
     def buflen(self):
         ''' Real data that can be currently held in the internal buffer
 
-        The internal buffer can be longer than the actual stored data to allow for "lookahead"
-        operations. The real amount of data that is held/can be held in the buffer
+        The internal buffer can be longer than the actual stored data to
+        allow for "lookahead" operations. The real amount of data that is
+        held/can be held in the buffer
         is returned
         '''
         return len(self.array) - self.extension
@@ -104,11 +108,12 @@ class LineBuffer(LineSingle):
         ''' Returns a slice of the array relative to *ago*
 
         Keyword Args:
-            ago (int): Point of the array to which size will be added to return the slice
-            size(int): size of the slice to return, can be positive or negative
+            ago (int): Point of the array to which size will be added
+            to return the slice size(int): size of the slice to return,
+            can be positive or negative
 
-        If size is positive *ago* will mark the end of the iterable and vice versa if size
-        is negative
+        If size is positive *ago* will mark the end of the iterable and vice
+        versa if size is negative
 
         Returns:
             A slice of the underlying buffer
@@ -131,7 +136,8 @@ class LineBuffer(LineSingle):
         ''' Sets a value at position "ago" and executes any associated bindings
 
         Keyword Args:
-            ago (int): Point of the array to which size will be added to return the slice
+            ago (int): Point of the array to which size will be added to return
+            the slice
             value (variable): value to be set
         '''
         self.array[self.idx - ago] = value
@@ -143,7 +149,8 @@ class LineBuffer(LineSingle):
 
         Keyword Args:
             value (variable): value to be set
-            ago (int): Point of the array to which size will be added to return the slice
+            ago (int): Point of the array to which size will be added to return
+            the slice
         '''
         self.array[self.idx - ago] = value
         for binding in self.bindings:
@@ -152,7 +159,8 @@ class LineBuffer(LineSingle):
     def home(self):
         ''' Rewinds the logical index to the beginning
 
-        The underlying buffer remains untouched and the actual len can be found out with buflen
+        The underlying buffer remains untouched and the actual len can be found
+        out with buflen
         '''
         self.idx = -1
 
@@ -171,7 +179,9 @@ class LineBuffer(LineSingle):
         ''' Moves the logical index backwards and reduces the buffer as much as needed
 
         Keyword Args:
-            size (int): How many extra positions to rewind and reduce the buffer
+            size (int): How many extra positions to rewind and reduce the
+            buffer
+
         '''
         self.idx -= size
         for i in range(size):
@@ -192,8 +202,8 @@ class LineBuffer(LineSingle):
             value (variable): value to be set in new positins
             size (int): How many extra positions to enlarge the buffer
 
-        The purpose is to allow for lookahead operations or to be able to set values
-        in the buffer "future"
+        The purpose is to allow for lookahead operations or to be able to
+        set values in the buffer "future"
         '''
         self.extension += size
         for i in range(size):
@@ -203,10 +213,12 @@ class LineBuffer(LineSingle):
         ''' Adds another line binding
 
         Keyword Args:
-            binding (LineBuffer): another line that must be set when this line becomes a value
+            binding (LineBuffer): another line that must be set when this line
+            becomes a value
         '''
         self.bindings.append(binding)
-        # record in the binding when the period is starting (never sooner than self)
+        # record in the binding when the period is starting (never sooner
+        # than self)
         binding.updateminperiod(self._minperiod)
 
     def plot(self, idx=0, size=None):
@@ -216,8 +228,9 @@ class LineBuffer(LineSingle):
             idx (int): Where to start relative to the real start of the buffer
             size(int): size of the slice to return
 
-        This is a variant of getzero which unless told otherwise returns the entire buffer, which
-        is usually the idea behind plottint (all must plotted)
+        This is a variant of getzero which unless told otherwise returns the
+        entire buffer, which is usually the idea behind plottint (all must
+        plotted)
 
         Returns:
             A slice of the underlying buffer
@@ -248,34 +261,48 @@ class LineBuffer(LineSingle):
 
     bind2line = bind2lines
 
-    def __call__(self, ago):
+    def __call__(self, ago=0):
         '''
         Return a delayed version of self by "ago" periods
         '''
         return LineDelay(self, ago)
 
     def _makeoperation(self, other, operation, r=False, _ownerskip=None):
-        return LinesOperation(self, other, operation, r=r, _ownerskip=_ownerskip)
+        return LinesOperation(self, other, operation, r=r,
+                              _ownerskip=_ownerskip)
 
     def _makeoperationown(self, operation, _ownerskip=None):
         return LineOwnOperation(self, operation, _ownerskip=None)
+
+    def datetime(self, ago=0):
+        return num2date(self.array[self.idx - ago])
+
+    def date(self, ago=0):
+        return self.datetime(ago).date()
+
+    def time(self, ago=0):
+        return self.datetime(ago).time()
 
 
 class MetaLineActions(LineBuffer.__class__):
     '''
     Metaclass for Lineactions
 
-    Scans the instance before init for LineBuffer (or parentclass LineSingle) instances
-    to calculate the minperiod for this instance
+    Scans the instance before init for LineBuffer (or parentclass LineSingle)
+    instances to calculate the minperiod for this instance
 
-    postinit it registers the instance to the owner (remember that owner has been found
-    in the base Metaclass for LineRoot)
+    postinit it registers the instance to the owner (remember that owner has
+    been found in the base Metaclass for LineRoot)
     '''
     def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaLineActions, cls).dopreinit(_obj,
+                                                  *args,
+                                                  **kwargs)
 
         # Do not produce anything until the operation lines produce something
-        _minperiod = max([x._minperiod for x in args if isinstance(x, LineSingle)])
+        _minperiod = \
+            max([x._minperiod for x in args if isinstance(x, LineSingle)])
 
         # update own minperiod if needed
         _obj.updateminperiod(_minperiod)
@@ -283,7 +310,8 @@ class MetaLineActions(LineBuffer.__class__):
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaLineActions, cls).dopostinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaLineActions, cls).dopostinit(_obj, *args, **kwargs)
 
         # register with _owner to be kicked later
         _obj._owner.addindicator(_obj)
@@ -293,12 +321,11 @@ class MetaLineActions(LineBuffer.__class__):
 
 class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
     '''
-    Base class derived from LineBuffer intented to defined the minimum interface
-    to make it compatible with a LineIterator by providing operational _next and _once
-    interfaces.
+    Base class derived from LineBuffer intented to defined the
+    minimum interface to make it compatible with a LineIterator by
+    providing operational _next and _once interfaces.
 
     The metaclass does the dirty job of calculating minperiods and registering
-
     '''
 
     _ltype = LineBuffer.IndType
@@ -311,7 +338,8 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
         if clock_len > self._minperiod:
             self.next()
         elif clock_len == self._minperiod:
-            self.nextstart() # only called for the 1st value
+            # only called for the 1st value
+            self.nextstart()
         else:
             self.prenext()
 
@@ -328,8 +356,8 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
 
 class LineDelay(LineActions):
     '''
-    Takes a LineBuffer (or derived) object and stores the value from "ago" periods
-    effectively delaying the delivery of data
+    Takes a LineBuffer (or derived) object and stores the value from
+    "ago" periods effectively delaying the delivery of data
     '''
     def __init__(self, a, ago):
         super(LineDelay, self).__init__()
@@ -337,8 +365,8 @@ class LineDelay(LineActions):
         self.ago = ago
 
         # Need to add the delay to the period. "ago" is 0 based and therefore
-        # we need to pass and extra 1 which is the minimum defined period for any
-        # data (which will be substracted inside addminperiod)
+        # we need to pass and extra 1 which is the minimum defined period for
+        # any data (which will be substracted inside addminperiod)
         self.addminperiod(ago + 1)
 
     def next(self):
@@ -358,20 +386,21 @@ class LinesOperation(LineActions):
     '''
     Holds an operation that operates on a two operands. Example: mul
 
-    It will "next"/traverse the array applying the operation on the two operands and
-    storing the result in self.
+    It will "next"/traverse the array applying the operation on the
+    two operands and storing the result in self.
 
-    To optimize the operations and avoid conditional checks the right next/once is
-    chosen using the operation direction (normal or reversed) and the nature of the
-    operands (LineBuffer vs non-LineBuffer)
+    To optimize the operations and avoid conditional checks the right
+    next/once is chosen using the operation direction (normal or reversed)
+    and the nature of the operands (LineBuffer vs non-LineBuffer)
 
     In the "once" operations "map" could be used as in:
 
         operated = map(self.operation, srca[start:end], srcb[start:end])
         self.array[start:end] = array.array(str(self.typecode), operated)
 
-    No real execution time benefits were appreciated and therefore the loops have been kept
-    in place for clarity (although the maps are not really unclear here)
+    No real execution time benefits were appreciated and therefore the loops
+    have been kept in place for clarity (although the maps are not really
+    unclear here)
     '''
     def __init__(self, a, b, operation, r=False):
         super(LinesOperation, self).__init__()
@@ -431,7 +460,8 @@ class LineOwnOperation(LineActions):
     '''
     Holds an operation that operates on a single operand. Example: abs
 
-    It will "next"/traverse the array applying the operation and storing the result in self
+    It will "next"/traverse the array applying the operation and storing
+    the result in self
     '''
     def __init__(self, a, operation):
         super(LineOwnOperation, self).__init__()
