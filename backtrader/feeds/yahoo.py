@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import collections
 import datetime
@@ -30,6 +31,7 @@ from six.moves import urllib
 from .. import dataseries
 from .. import feed
 from .. import linebuffer
+from ..utils import date2num
 
 
 class YahooFinanceCSVData(feed.CSVDataBase):
@@ -41,7 +43,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         if self.params.reversed:
             return
 
-        # Yahoo sends the data in reverse order and the file is still unreversed
+        # Yahoo sends data in reverse order and the file is still unreversed
         dq = collections.deque()
         for line in self.f:
             dq.appendleft(line)
@@ -57,7 +59,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
 
-        self.lines.datetime[0] = datetime.datetime(y, m, d)
+        self.lines.datetime[0] = date2num(datetime.datetime(y, m, d))
         self.lines.open[0] = float(linetokens[next(i)])
         self.lines.high[0] = float(linetokens[next(i)])
         self.lines.low[0] = float(linetokens[next(i)])
@@ -82,7 +84,8 @@ class YahooFinanceCSV(feed.CSVFeedBase):
 
 
 class YahooFinanceData(YahooFinanceCSVData):
-    params = (('baseurl', 'http://ichart.yahoo.com/table.csv?'), ('period', 'd'), ('buffered', True),)
+    params = (('baseurl', 'http://ichart.yahoo.com/table.csv?'),
+              ('period', 'd'), ('buffered', True),)
 
     def start(self):
         self.error = None
@@ -90,9 +93,11 @@ class YahooFinanceData(YahooFinanceCSVData):
         url = self.params.baseurl
         url += 's=%s' % self.params.ticker
         fromdate = self.params.fromdate
-        url += '&a=%d&b=%d&c=%d' % ((fromdate.month - 1), fromdate.day, fromdate.year)
+        url += '&a=%d&b=%d&c=%d' % \
+               ((fromdate.month - 1), fromdate.day, fromdate.year)
         todate = self.params.todate
-        url += '&d=%d&e=%d&f=%d' % ((todate.month - 1), todate.day, todate.year)
+        url += '&d=%d&e=%d&f=%d' % \
+               ((todate.month - 1), todate.day, todate.year)
         url += '&g=%s' % self.params.period
         url += '&ignore=.csv'
 
@@ -105,7 +110,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         if datafile.headers['Content-Type'] != 'text/csv':
             self.error = 'Wrong content type: %s' % datafile.headers
-            return # HTML returned? wrong url?
+            return  # HTML returned? wrong url?
 
         data = datafile.read()
         # Strip the BOM if present
@@ -122,7 +127,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         self.params.data = f
 
-        # We have prepared a "path" file and can now let the CSV Parser take over
+        # Prepared a "path" file -  CSV Parser can take over
         super(YahooFinanceData, self).start()
 
 

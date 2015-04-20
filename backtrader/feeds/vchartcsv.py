@@ -18,7 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import datetime
 import itertools
@@ -26,13 +27,14 @@ import itertools
 from .. import dataseries
 from .. import feed
 from .. import linebuffer
+from ..utils import date2num
 
 
 class VChartCSVData(feed.CSVDataBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
-        next(i) # skip ticker name
-        next(i) # skip daily/intraday indication (intraday has simply a "null" time)
+        next(i)  # skip ticker name
+        next(i)  # skip day/intraday indication (intra has simply "null" time)
 
         dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
@@ -40,8 +42,9 @@ class VChartCSVData(feed.CSVDataBase):
         tmtxt = linetokens[next(i)]
         hh, mmss = divmod(int(tmtxt), 10000)
         mm, ss = divmod(mmss, 100)
+        dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
 
-        self.lines.datetime[0] = datetime.datetime(y, m, d, hh, mm, ss)
+        self.lines.datetime[0] = dtnum
         self.lines.open[0] = float(linetokens[next(i)])
         self.lines.high[0] = float(linetokens[next(i)])
         self.lines.low[0] = float(linetokens[next(i)])
