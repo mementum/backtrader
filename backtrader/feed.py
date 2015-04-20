@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import datetime
 import os.path
@@ -28,11 +29,13 @@ import six
 from . import dataseries
 from . import metabase
 from . import TimeFrame
+from .utils import date2num
 
 
 class MetaDataBase(dataseries.OHLCDateTime.__class__):
     def dopreinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaDataBase, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaDataBase, cls).dopreinit(_obj, *args, **kwargs)
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
@@ -40,7 +43,8 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaDataBase, cls).dopostinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
         _obj._name = _obj.p.name
         _obj._compression = _obj.p.compression
@@ -50,6 +54,9 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
             _obj._daterange[0] = _obj.p.fromdate
         if _obj.p.todate < datetime.datetime.max:
             _obj._daterange[1] = _obj.p.todate
+
+        _obj.fromdate = date2num(_obj.p.fromdate)
+        _obj.todate = date2num(_obj.p.todate)
 
         return _obj, args, kwargs
 
@@ -90,11 +97,11 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     def load(self):
         while self._load():
             dt = self.lines.datetime[0]
-            if dt < self.params.fromdate:
-                self.rewind() # discard loaded bar
+            if dt < self.fromdate:
+                self.rewind()  # discard loaded bar
                 continue
-            if dt > self.params.todate:
-                self.rewind() # discard loaded bar
+            if dt > self.todate:
+                self.rewind()  # discard loaded bar
                 break
 
             return True
@@ -120,8 +127,8 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
             data.stop()
 
     def getdata(self, dataname, name=None, **kwargs):
-        for pname, pvalue in self.params._getitems():
-            kwargs.setdefault(pname, getattr(self.params, pname))
+        for pname, pvalue in self.p._getitems():
+            kwargs.setdefault(pname, getattr(self.p, pname))
 
         data = self._getdata(dataname, **kwargs)
         data._name = name
@@ -129,15 +136,16 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
         return data
 
     def _getdata(self, dataname, **kwargs):
-        for pname, pvalue in self.params._getitems():
-            kwargs.setdefault(pname, getattr(self.params, pname))
+        for pname, pvalue in self.p._getitems():
+            kwargs.setdefault(pname, getattr(self.p, pname))
 
         return self.DataCls(data=dataname, **kwargs)
 
 
 class MetaCSVDataBase(DataBase.__class__):
     def dopostinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
         if not _obj._name:
             _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
@@ -149,14 +157,14 @@ class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
     params = (('headers', True), ('separator', ','),)
 
     def start(self):
-        if hasattr(self.params.dataname, 'readline'):
-            self.f = self.params.dataname
+        if hasattr(self.p.dataname, 'readline'):
+            self.f = self.p.dataname
         else:
             # Let an exception propagate to let the caller know
-            self.f = open(self.params.dataname, 'rb')
+            self.f = open(self.p.dataname, 'rb')
 
-        if self.params.headers:
-            self.f.readline() # skip the headers
+        if self.p.headers:
+            self.f.readline()  # skip the headers
 
     def stop(self):
         if self.f is not None:
@@ -173,12 +181,15 @@ class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
         if not line:
             return False
 
-        self.forward() # advance data pointer
-        return self._loadline(line.rstrip(six.b('\r\n')).split(six.b(self.params.separator)))
+        self.forward()  # advance data pointer
+        line = line.rstrip(six.b('\r\n'))
+        linetokens = line.split(six.b(self.p.separator))
+        return self._loadline(linetokens)
 
 
 class CSVFeedBase(FeedBase):
     params = (('basepath', ''),) + CSVDataBase.params._gettuple()
 
     def _getdata(self, dataname, **kwargs):
-        return self.DataCls(dataname=self.params.basepath + dataname, **self.params._getkwargs())
+        return self.DataCls(dataname=self.p.basepath + dataname,
+                            **self.p._getkwargs())
