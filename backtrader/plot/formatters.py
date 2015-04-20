@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,11 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-
+import matplotlib.dates as mdates
 import matplotlib.ticker as mplticker
+
+from ..utils import num2date
 
 
 class MyVolFormatter(mplticker.Formatter):
@@ -59,7 +62,7 @@ class MyDateFormatter(mplticker.Formatter):
         if ind >= self.lendates or ind < 0:
             return ''
 
-        return self.dates[ind].strftime(self.fmt)
+        return num2date(self.dates[ind]).strftime(self.fmt)
 
 
 class MyDateFormatter2(mplticker.Formatter):
@@ -75,3 +78,58 @@ class MyDateFormatter2(mplticker.Formatter):
             return ''
 
         return self.dates[ind].strftime(self.fmt)
+
+
+def patch_locator(locator, xdates):
+    def _patched_datalim_to_dt(self):
+        dmin, dmax = self.axis.get_data_interval()
+
+        # proxy access to xdates
+        dmin, dmax = xdates[int(dmin)], xdates[int(dmax)]
+
+        a, b = num2date(dmin, self.tz), num2date(dmax, self.tz)
+        return a, b
+
+    def _patched_viewlim_to_dt(self):
+        vmin, vmax = self.axis.get_view_interval()
+
+        # proxy access to xdates
+        vmin, vmax = xdates[int(dmin)], xdates[int(dmax)]
+
+        return num2date(vmin, self.tz), num2date(vmax, self.tz)
+
+    # patch the instance with a bound method
+    bound_datalim = _patched_datalim_to_dt.__get__(locator, locator.__class__)
+    locator.datalim_to_dt = bound_datalim
+
+    # patch the instance with a bound method
+    bound_viewlim = _patched_datalim_to_dt.__get__(locator, locator.__class__)
+    locator.viewlim_to_dt = bound_viewlim
+
+
+def patch_formatter(formatter, xdates):
+    def newcall(self, x, pos=0):
+        if x == 0:
+            raise ValueError('DateFormatter found a value of x=0, which is '
+                             'an illegal date.  This usually occurs because '
+                             'you have not informed the axis that it is '
+                             'plotting dates, e.g., with ax.xaxis_date()')
+        x = xdates[int(x)]
+        dt = num2date(x, self.tz)
+        return self.strftime(dt, self.fmt)
+
+    bound_call = newcall.__get__(formatter, formatter.__class__)
+    formatter.__call__ = bound_call
+
+
+def getlocator(xdates, numticks=5, tz=None):
+    span = xdates[-1] - xdates[0]
+
+    locator, formatter = mdates.date_ticker_factory(
+        span=span,
+        tz=tz,
+        numticks=numticks)
+
+    patch_locator(locator, xdates)
+    patch_formatter(formatter, xdates)
+    return locator, formatter
