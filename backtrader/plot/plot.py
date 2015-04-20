@@ -27,6 +27,7 @@ import math
 import six
 from six.moves import xrange
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
 import matplotlib.font_manager as mfontmgr
@@ -36,7 +37,8 @@ from .. import MetaParams
 from .. import TimeFrame
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
-from .formatters import MyVolFormatter, MyDateFormatter, MyDateFormatter2
+from .formatters import (MyVolFormatter, MyDateFormatter, MyDateFormatter2,
+                         getlocator)
 from .scheme import PlotScheme
 from .utils import tag_box_style
 
@@ -106,8 +108,13 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Date formatting for the x axis - only the last one needs it
         lastax = self.pinf.daxis.values()[-1]
-        lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-        lastax.xaxis.set_minor_formatter(MyDateFormatter2(self.pinf.xreal))
+        if True:
+            lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
+            # lastax.xaxis.set_minor_formatter(MyDateFormatter2(self.pinf.xreal))
+        elif False:
+            locator, formatter = getlocator(self.pinf.xreal)
+            lastax.xaxis.set_major_locator(locator)
+            lastax.xaxis.set_major_formatter(formatter)
 
         # Put the subplots as indicated by hspace (0 is touching each other)
         fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
@@ -115,7 +122,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         fig.autofmt_xdate(bottom=0.05, rotation=15)
 
         # Things must be tight along the x axis (to fill both ends)
-        mpyplot.autoscale(axis='x', tight=True)
+        # mpyplot.autoscale(axis='x', tight=True)
         mpyplot.autoscale(tight=True)
 
     def calcrows(self, strategy):
@@ -294,13 +301,9 @@ class Plot(six.with_metaclass(MetaParams, object)):
                      (opens[-1], highs[-1], lows[-1], closes[-1])
 
         if self.pinf.sch.style.startswith('line'):
-            if False:
-                plottedline, = ax.plot(self.pinf.x, closes, aa=True,
-                                       label=datalabel, color=self.pinf.sch.loc)
-            else:
-                plottedline, = plot_lineonclose(
-                    ax, self.pinf.x, closes,
-                    color=self.pinf.sch.loc, label=datalabel)
+            plottedline, = plot_lineonclose(
+                ax, self.pinf.x, closes,
+                color=self.pinf.sch.loc, label=datalabel)
         else:
             if self.pinf.sch.style.startswith('candle'):
                 plot_candlestick(
