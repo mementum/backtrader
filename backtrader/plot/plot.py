@@ -37,8 +37,7 @@ from .. import MetaParams
 from .. import TimeFrame
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
-from .formatters import (MyVolFormatter, MyDateFormatter, MyDateFormatter2,
-                         getlocator)
+from .formatters import (MyVolFormatter, MyDateFormatter)
 from .scheme import PlotScheme
 from .utils import tag_box_style
 
@@ -110,9 +109,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
         lastax = self.pinf.daxis.values()[-1]
         if True:
             lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-            # lastax.xaxis.set_minor_formatter(MyDateFormatter2(self.pinf.xreal))
         elif False:
-            locator, formatter = getlocator(self.pinf.xreal)
+            # locator, formatter = getlocator(self.pinf.xreal)
             lastax.xaxis.set_major_locator(locator)
             lastax.xaxis.set_major_formatter(formatter)
 

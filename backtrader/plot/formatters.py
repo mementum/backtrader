@@ -65,21 +65,6 @@ class MyDateFormatter(mplticker.Formatter):
         return num2date(self.dates[ind]).strftime(self.fmt)
 
 
-class MyDateFormatter2(mplticker.Formatter):
-    def __init__(self, dates, fmt='%b-%d'):
-        self.dates = dates
-        self.lendates = len(dates)
-        self.fmt = fmt
-
-    def __call__(self, x, pos=0):
-        '''Return the label for time x at position pos'''
-        ind = int(round(x))
-        if ind >= self.lendates or ind < 0:
-            return ''
-
-        return self.dates[ind].strftime(self.fmt)
-
-
 def patch_locator(locator, xdates):
     def _patched_datalim_to_dt(self):
         dmin, dmax = self.axis.get_data_interval()
