@@ -95,8 +95,8 @@ class PlotScheme(object):
         self.volscaling = 0.33
         self.volpushup = 0.05
 
-        self.volup = '#aaaaaa' # 0.66 of gray
-        self.voldown = '#cc6073' # (204, 96, 115)
+        self.volup = '#aaaaaa'  # 0.66 of gray
+        self.voldown = '#cc6073'  # (204, 96, 115)
         self.voltrans = 0.50
 
         self.subtxttrans = 0.66
@@ -106,11 +106,10 @@ class PlotScheme(object):
         self.legendind = True
         self.legendindloc = 'upper left'
 
-        self.hlinescolor = '0.66' # shade of gray
+        self.hlinescolor = '0.66'  # shade of gray
         self.hlinesstyle = '--'
         self.hlineswidth = 1.0
 
-        # self.lcolors = ['black', 'tomato', 'blue', 'green', 'brown', 'magenta', 'cyan', 'gold',]
         self.lcolors = tableau10
 
     def color(self, idx):
