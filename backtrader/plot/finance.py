@@ -269,7 +269,7 @@ class VolumePlotHandler(object):
         if overlay:
             axbot, axtop = ax.get_ylim()
             if overpushup:
-                # push up the existing data by changing the bottom limit
+                # push up overlaid axis by lowering the bottom limit
                 axbot *= (1.0 - overpushup)
                 ax.set_ylim(axbot, axtop)
 
@@ -543,8 +543,8 @@ class LineOnClosePlotHandler(object):
         ax.add_line(self.loc)
 
         # Update the axis
-        ax.update_datalim(((0, min(closes)), (len(closes), max(closes))))
-        ax.autoscale_view()
+        ax.update_datalim(((x[0], min(closes)), (x[-1], max(closes))))
+        ax.autoscale_view(scalex=True, scaley=True)
 
         # Add self as legend handler for this object
         mlegend.Legend.update_default_handler_map({self.loc: self})
@@ -586,7 +586,6 @@ class LineOnClosePlotHandler(object):
             alpha=self.alpha,
             **kwargs)
 
-        # return barcol, tickcol
         return loc,
 
 

@@ -105,9 +105,11 @@ class Plot(six.with_metaclass(MetaParams, object)):
             for ind in self.dplotsdown[data]:
                 self.plotind(ind, self.dplotsover[ind])
 
-        # Date formatting for the x axis - only the last one needs it
         lastax = self.pinf.daxis.values()[-1]
+        # Date formatting for the x axis - only the last one needs it
         if True:
+            locator = mticker.AutoLocator()
+            lastax.xaxis.set_major_locator(locator)
             lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
         elif False:
             # locator, formatter = getlocator(self.pinf.xreal)
@@ -116,12 +118,21 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Put the subplots as indicated by hspace (0 is touching each other)
         fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
-                            top=0.98, left=0.05, bottom=0.00, right=0.95)
-        fig.autofmt_xdate(bottom=0.05, rotation=15)
+                            top=0.98, left=0.05, bottom=0.05, right=0.95)
+
+        # Applying fig.autofmt_xdate if the data axis is the last one
+        # breaks the presentation of the date labels. why?
+        # Applying the manual rotation with setp cures the problem
+        # but the labels from all axis but the last have to be hidden
+        # fig.autofmt_xdate(bottom=0.25, rotation=15)
+
+        for ax in self.pinf.daxis.values():
+            mpyplot.setp(ax.get_xticklabels(), visible=False)
+        mpyplot.setp(lastax.get_xticklabels(), visible=True, rotation=15)
+        # mpyplot.setp(mpyplot.xticks()[1], rotation=15)
 
         # Things must be tight along the x axis (to fill both ends)
-        # mpyplot.autoscale(axis='x', tight=True)
-        mpyplot.autoscale(tight=True)
+        mpyplot.autoscale(axis='x', tight=True)
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
@@ -351,21 +362,33 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             nbins = 6
             prune = 'both'
+            maxvol = volylim = max(volumes)
             if self.pinf.sch.voloverlay:
                 axvol = axvol.twinx()
                 # store for a potential plot over it
-                self.pinf.daxis[data.volume] = axvol
-                axvol.set_ylim(0, max(volumes) / self.pinf.sch.volscaling)
-                axvol.yaxis.tick_left()
-                # bug in mpl? the axvol....tick_left moves also ax to the left
-                ax.yaxis.tick_right()
-                # readjust bins and pruning
+                # self.pinf.daxis[data.volume] = axvol
+
                 nbins = int(nbins / self.pinf.sch.volscaling)
                 prune = None
 
+                axvol.yaxis.tick_left()
+                # twinx pushes original yaxis to the left - correct it
+                ax.yaxis.tick_right()
+
+                volylim /= self.pinf.sch.volscaling
+                # axvol.set_ylim(0, volylim, auto=True)
+                # mpyplot.autoscale is called with axis='x' we need
+                # not updating the datalimits even. But if axis='both'
+                # autoscale is tightening ylim = ydatalim and given
+                # not data is plotted to the axis, we'd need to manually
+                # update the data limit with the 3 following lines
+                vlimits = (0.0, self.pinf.xlen), (0.0, volylim)
+                axvol.update_datalim(vlimits)
+                axvol.autoscale_view()  # not needed
+
             locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
             axvol.yaxis.set_major_locator(locator)
-            axvol.yaxis.set_major_formatter(MyVolFormatter(max(volumes)))
+            axvol.yaxis.set_major_formatter(MyVolFormatter(maxvol))
 
         for ind in indicators:
             self.plotind(ind, subinds=self.dplotsover[ind], masterax=ax)
@@ -375,9 +398,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
             # put data and volume legend entries in the 1st positions
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
-            vidx = labels.index(vollabel)
-            labels.insert(0, labels.pop(vidx))
-            handles.insert(0, handles.pop(vidx))
+            if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+                vidx = labels.index(vollabel)
+                labels.insert(0, labels.pop(vidx))
+                handles.insert(0, handles.pop(vidx))
 
             didx = labels.index(datalabel)
             labels.insert(0, labels.pop(didx))
