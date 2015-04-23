@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import math
 import operator
@@ -41,7 +42,8 @@ class MovingAverageSimple(MovingAverageBase):
     plotinfo = dict(plotname='SMA')
 
     def next(self):
-        self.line[0] = math.fsum(self.data_0.get(size=self.p.period)) / self.p.period
+        self.line[0] = \
+            math.fsum(self.data_0.get(size=self.p.period)) / self.p.period
 
     def once(self, start, end):
         src = self.data_0.array
@@ -62,7 +64,8 @@ class MovingAverageSmoothing(MovingAverageSimple):
         self.prev = self.line[0]
 
     def next(self):
-        self.line[0] = self.prev = self.prev * self.smfactor1 + self.data_0[0] * self.smfactor
+        self.line[0] = self.prev = \
+            self.prev * self.smfactor1 + self.data_0[0] * self.smfactor
 
     def oncestart(self, start, end):
         super(MovingAverageSmoothing, self).once(start, end)
@@ -103,8 +106,9 @@ class MovingAverageWeighted(MovingAverageBase):
         self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
         self.weights = [float(x) for x in range(1, self.p.period + 1)]
         if False:
-            # Alternative - but consumes period - 1 extra lines and the associated
-            # memory (and doubles execution time. This would get rid of "next" and "once"
+            # Alternative - but consumes period - 1 extra lines
+            # and the associated memory (and doubles execution time.
+            # This would get rid of "next" and "once"
             from .lineoperations import Sum
             datas = [self.data(i) for i in range(self.p.period)]
             ma = self.coef * Sum(*map(operator.mul, self.weights, datas))
@@ -112,7 +116,8 @@ class MovingAverageWeighted(MovingAverageBase):
 
     def next(self):
         data = self.data_0.get(size=self.p.period)
-        self.line[0] = self.coef * math.fsum(map(operator.mul, data, self.weights))
+        self.line[0] = self.coef *\
+            math.fsum(map(operator.mul, data, self.weights))
 
     def once(self, start, end):
         darray = self.data_0.array

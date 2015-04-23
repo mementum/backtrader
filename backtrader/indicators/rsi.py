@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import Indicator
 from .ma import MATypes
@@ -41,17 +42,21 @@ class DownDays(Indicator):
 
 class RSI(Indicator):
     lines = ('rsi',)
-    params = (('period', 14), ('matype', MATypes.Smoothed), ('overbought', 70.0), ('oversold', 30.0),)
+    params = (('period', 14),
+              ('matype', MATypes.Smoothed),
+              ('overbought', 70.0),
+              ('oversold', 30.0))
 
     def _plotlabel(self):
-        plabels = [self.p.period,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     plotinfo = dict(plotname='RSI')
 
     def __init__(self):
-        self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold]
+        self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
+        self.plotinfo.plotyticks = self.plotinfo.plothlines
 
         updays = UpDays(self.data)
         downdays = DownDays(self.data)

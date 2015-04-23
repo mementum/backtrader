@@ -406,7 +406,7 @@ class LinesOperation(LineActions):
         super(LinesOperation, self).__init__()
 
         self.operation = operation
-        self.a = a # always a linebuffer
+        self.a = a  # always a linebuffer
         self.b = b
 
         if not isinstance(b, LineBuffer):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. indicator import Indicator
 from .ma import MATypes
@@ -29,7 +30,7 @@ class MACD(Indicator):
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
               ('matype', MATypes.Exponential),)
 
-    plotinfo = dict(hlines=[0.0])
+    plotinfo = dict(plothlines=[0.0])
     plotlines = dict(signal=dict(ls='--'))
 
     def _plotlabel(self):
@@ -41,7 +42,8 @@ class MACD(Indicator):
         me1 = self.p.matype(self.data, period=self.p.period_me1)
         me2 = self.p.matype(self.data, period=self.p.period_me2)
         self.lines.macd = me1 - me2
-        self.lines.signal = self.p.matype(self.lines.macd, period=self.p.period_signal)
+        self.lines.signal = self.p.matype(self.lines.macd,
+                                          period=self.p.period_signal)
 
 
 class MACDHisto(MACD):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import collections
 from collections import OrderedDict
@@ -104,7 +105,8 @@ class AutoInfoClass(object):
         # update the info of this class (base) with that from the other bases
         baseinfo.update(obasesinfo)
 
-        # The info of the new class is a copy of the full base info plus and update from parameter
+        # The info of the new class is a copy of the full base info
+        # plus and update from parameter
         clsinfo = baseinfo.copy()
         clsinfo.update(info)
 
@@ -115,14 +117,22 @@ class AutoInfoClass(object):
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
-        setattr(newcls, '_getpairsbase', classmethod(lambda cls: basesinfo.copy()))
-        setattr(newcls, '_getpairs', classmethod(lambda cls: clsinfo.copy()))
-        setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
+        setattr(newcls,
+                '_getpairsbase',
+                classmethod(lambda cls: basesinfo.copy()))
+        setattr(newcls,
+                '_getpairs',
+                classmethod(lambda cls: clsinfo.copy()))
+        setattr(newcls,
+                '_getrecurse',
+                classmethod(lambda cls: recurse))
 
         for infoname, infoval in info2add.items():
             if recurse:
                 recursecls = getattr(newcls, infoname, AutoInfoClass)
-                infoval = recursecls._derive(name + '_' + infoname, infoval, [])
+                infoval = recursecls._derive(name + '_' + infoname,
+                                             infoval,
+                                             [])
 
             setattr(newcls, infoname, infoval)
 
@@ -158,7 +168,9 @@ class AutoInfoClass(object):
         return tuple(cls._getpairs().items())
 
     def _getkwargs(self, skip_=False):
-        l = [(x, getattr(self, x)) for x in self._getkeys() if not skip_ or not x.startswith('_')]
+        l = [
+            (x, getattr(self, x))
+            for x in self._getkeys() if not skip_ or not x.startswith('_')]
         return collections.OrderedDict(l)
 
     def _getvalues(self):
@@ -177,7 +189,8 @@ class AutoInfoClass(object):
 
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance (and hence "repetition")
+        # Remove params from class definition to avod inheritance
+        # (and hence "repetition")
         newparams = dct.pop('params', ())
 
         # Create the new class - this pulls predefined "params"
@@ -203,7 +216,7 @@ class MetaParams(MetaBase):
         # Create the object and set the params in place
         _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
         _obj.params = params
-        _obj.p = params # shorter alias
+        _obj.p = params  # shorter alias
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs

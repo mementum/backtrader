@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from six.moves import xrange
 
@@ -47,22 +47,29 @@ class TestStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
         dt = dt or self.data.datetime[0]
+        dt = bt.num2date(dt)
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # self.data = self.datas[0]
         # self.dataclose = self.data.close
-        self.sma = btind.MovingAverageSimple(self.data, period=self.params.maperiod, plot=True)
+        self.sma = btind.MovingAverageSimple(self.data,
+                                             period=self.params.maperiod,
+                                             plot=True)
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.params.expiredays)
+        # btind.ATR(self.data)
         if False:
             btind.ATR(self.data)
             btind.MACDHistogram(self.data)
             btind.Stochastic(self.data)
             btind.RSI(self.data)
-            btind.MovingAverageExponential(self.data, period=int(0.8 * self.params.maperiod))
-            btind.MovingAverageSmoothed(self.data, period=int(1.2 * self.params.maperiod))
-            btind.MovingAverageWeighted(self.data, period=int(1.5 * self.params.maperiod))
+            btind.MovingAverageExponential(
+                self.data, period=int(0.8 * self.params.maperiod))
+            btind.MovingAverageSmoothed(
+                self.data, period=int(1.2 * self.params.maperiod))
+            btind.MovingAverageWeighted(
+                self.data, period=int(1.5 * self.params.maperiod))
             btind.BollingerBands(self.data)
 
         self.sizer = bt.SizerFix(stake=self.params.stake)
@@ -72,16 +79,18 @@ class TestStrategy(bt.Strategy):
 
     def notify(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
-            return # Await further notifications
+            return  # Await further notifications
 
         if order.status == order.Completed:
             if isinstance(order, bt.BuyOrder):
-                self.log('BUY , %.2f' % order.executed.price, order.executed.dt)
-            else: # elif isinstance(order, SellOrder):
-                self.log('SELL , %.2f' % order.executed.price, order.executed.dt)
+                self.log('BUY , %.2f' % order.executed.price,
+                         order.executed.dt)
+            else:  # elif isinstance(order, SellOrder):
+                self.log('SELL , %.2f' % order.executed.price,
+                         order.executed.dt)
         elif order.status in [order.Expired, order.Canceled, order.Margin]:
             self.log('%s ,' % order.Status[order.status])
-            pass # Do nothing for expired orders
+            pass  # Do nothing for expired orders
 
         # Allow new orders
         self.orderid = None
@@ -90,20 +99,24 @@ class TestStrategy(bt.Strategy):
         if self.params.printdata:
             self.log(
                 'Open, High, Low, Close, %.2f, %.2f, %.2f, %.2f, Sma, %f' %
-                (self.data.open[0], self.data.high[0], self.data.low[0], self.data.close[0], self.sma[0])
+                (self.data.open[0], self.data.high[0],
+                 self.data.low[0], self.data.close[0],
+                 self.sma[0])
             )
 
         if self.orderid:
-            return # if an order is active, no new orders are allowed
+            return  # if an order is active, no new orders are allowed
 
         if not self.position.size:
             if self.data.close > self.sma:
-                valid = self.data.datetime[0] + self.expiry
+                valid = self.data.datetime.datetime() + self.expiry
                 price = self.data.close[0]
                 if self.params.exectype == bt.Order.Limit:
                     price *= self.params.atlimitperc
                 self.log('BUY CREATE , %.2f' % price)
-                self.orderid = self.buy(exectype=self.params.exectype, price=price, valid=valid)
+                self.orderid = self.buy(exectype=self.params.exectype,
+                                        price=price,
+                                        valid=valid)
 
         elif self.data.close < self.sma:
             self.log('SELL CREATE , %.2f' % self.data.close[0])
@@ -117,7 +130,7 @@ class TestStrategy(bt.Strategy):
 
 cerebro = bt.Cerebro(runonce=False)
 
-# The datas are in a subdirectory of the samples. Need to find where the script is
+# Datas are in a subdirectory of samples. Need to find where the script is
 # because it could have been called from anywhere
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
 datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')

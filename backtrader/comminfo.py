@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 
 import six
 
@@ -30,7 +32,7 @@ class CommissionInfo(six.with_metaclass(MetaParams)):
     params = (('commission', 0.0), ('mult', 1.0), ('margin', None),)
 
     def __getattr__(self, name):
-        # dig into self.params if not found as attribute, mostly for external access
+        # dig into self.params if not attribute, mostly for external access
         return getattr(self.params, name)
 
     def __setattribute__(self, name, value):

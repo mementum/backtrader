@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import six
 
@@ -33,7 +34,8 @@ class MetaLineObserver(LineObserverBase.__class__):
         # will be taken from the datas - slice or object reference ...
         _obj.datas = _obj._owner.datas
 
-        _obj, args, kwargs = super(MetaLineObserver, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaLineObserver, cls).dopreinit(_obj, *args, **kwargs)
 
         return _obj, args, kwargs
 
@@ -52,7 +54,8 @@ class ObserverPot(LineObserver):
     def __init__(self, *args, **kwargs):
         self.pot = dict()
         for didx, data in enumerate(self.datas):
-            self.pot[data] = self._ObserverCls(didx, *args, plot=self.plotinfo.plot, **kwargs)
+            self.pot[data] = self._ObserverCls(
+                didx, *args, plot=self.plotinfo.plot, **kwargs)
 
     def __getitem__(self, key):
         return self.pot[key]

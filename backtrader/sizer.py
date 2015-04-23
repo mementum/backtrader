@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import six
 
@@ -31,7 +32,8 @@ class SizerBase(six.with_metaclass(MetaParams, object)):
 
     def getsizing(self, data, broker=None):
         broker = broker or self.params.broker
-        return self._getsizing(broker.getcommissioninfo(data), broker.getcash())
+        return self._getsizing(broker.getcommissioninfo(data),
+                               broker.getcash())
 
     def _getsizing(self, comminfo, cash):
         raise NotImplementedError

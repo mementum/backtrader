@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import six
 
@@ -111,16 +112,23 @@ class Order(six.with_metaclass(MetaParams, object)):
     Market, Close, Limit, Stop, StopLimit = range(5)
     Buy, Sell, Stop, StopLimit = range(4)
 
-    Submitted, Accepted, Partial, Completed, Canceled, Expired, Margin = range(7)
-    Status =['Submitted', 'Accepted', 'Partial', 'Completed', 'Canceled', 'Expired', 'Margin']
+    Submitted, Accepted, Partial, Completed, \
+        Canceled, Expired, Margin = range(7)
+
+    Status = [
+        'Submitted', 'Accepted', 'Partial',
+        'Completed', 'Canceled', 'Expired', 'Margin'
+    ]
 
     params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None), ('pricelimit', None),
-        ('exectype', None), ('valid', None), ('triggered', True),
+        ('owner', None), ('data', None), ('size', None), ('price', None),
+        ('pricelimit', None), ('exectype', None), ('valid', None),
+        ('triggered', True),
     )
 
     def __getattr__(self, name):
-        # dig into self.params if not found as attribute, mostly for external access
+        # dig into self.params if not found as attribute
+        # mostly for external access
         return getattr(self.params, name)
 
     def __setattribute__(self, name, value):
@@ -136,7 +144,9 @@ class Order(six.with_metaclass(MetaParams, object)):
         self.status = Order.Submitted
         if not self.isbuy():
             self.params.size = -self.params.size
-        self.created = OrderData(dt=self.data.datetime[0], size=self.params.size, price=self.params.price)
+        self.created = OrderData(dt=self.data.datetime[0],
+                                 size=self.params.size,
+                                 price=self.params.price)
         self.executed = OrderData(remsize=self.params.size)
         self.position = 0
 
@@ -169,11 +179,14 @@ class Order(six.with_metaclass(MetaParams, object)):
                           opened, openedvalue, openedcomm,
                           psize, pprice)
         self.executed.margin = margin
-        self.status = Order.Partial if self.executed.remsize else Order.Completed
+        if self.executed.remsize:
+            self.status = Order.Partial
+        else:
+            self.status = Order.Completed
 
     def expire(self):
         if self.params.exectype == Order.Market:
-            return False # will be executed yes or yes
+            return False  # will be executed yes or yes
 
         if self.valid and self.data.datetime[0] > self.valid:
             self.status = Order.Expired

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import LineObserver, ObserverPot
 from ..datapos import Operation
@@ -41,7 +42,10 @@ class _OperationsPnLObserver(LineObserver):
                 continue
 
             for exbit in order.executed.exbits:
-                self.operation.update(exbit.closed, exbit.price, exbit.closedvalue, exbit.closedcomm)
+                self.operation.update(exbit.closed,
+                                      exbit.price,
+                                      exbit.closedvalue,
+                                      exbit.closedcomm)
                 if self.operation.isclosed:
                     # operation closed, record the pnl
                     self.lines.pnl[0] = self.operation.pnl
@@ -51,7 +55,10 @@ class _OperationsPnLObserver(LineObserver):
                     self.operation = Operation()
 
                 # Updated
-                self.operation.update(exbit.opened, exbit.price, exbit.openedvalue, exbit.openedcomm)
+                self.operation.update(exbit.opened,
+                                      exbit.price,
+                                      exbit.openedvalue,
+                                      exbit.openedcomm)
 
 
 class OperationsPnLObserver(ObserverPot):

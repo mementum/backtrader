@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,9 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
+###############################################################################
 # Python 2/3 compatibility imports
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import Indicator
 from .ma import MATypes
@@ -29,23 +30,24 @@ class DPO(Indicator):
     # Named output lines
     lines = ('dpo',)
 
-    # Accepted parameters (and defaults) - MovAvg also parameter to allow experimentation
-    params = (('period', 20), ('matype', MATypes.Simple),)
+    # Accepted parameters (and defaults) -
+    # MovAvg also parameter to allow experimentation
+    params = (('period', 20), ('matype', MATypes.Simple))
 
     # Emphasize central 0.0 line in plot
-    plotinfo = dict(hlines=[0.0,],)
+    plotinfo = dict(plothlines=[0.0])
 
     # Indicator information after the name (in brackets)
     def _plotlabel(self):
-        plabels = [self.p.period,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     def __init__(self):
         # Create the Moving Average
         ma = self.p.matype(self.data, period=self.p.period)
 
-        # Calculate the value (look back period/2 + 1 in MA) and bind to 'dpo' line
+        # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
         self.lines.dpo = self.data - ma(self.p.period // 2 + 1)
 
 

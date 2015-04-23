@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import Indicator
 from .ma import MATypes
@@ -36,7 +37,7 @@ class TR(Indicator):
 
 
 class TrueRange(TR):
-    pass # alias
+    pass  # alias
 
 
 class ATR(Indicator):
@@ -44,8 +45,8 @@ class ATR(Indicator):
     params = (('period', 14), ('matype', MATypes.Simple))
 
     def _plotlabel(self):
-        plabels = [self.p.period,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     def __init__(self):
@@ -53,4 +54,4 @@ class ATR(Indicator):
 
 
 class AverageTrueRange(ATR):
-    pass # alias
+    pass  # alias

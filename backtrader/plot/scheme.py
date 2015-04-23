@@ -76,6 +76,9 @@ tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
 
 class PlotScheme(object):
     def __init__(self):
+        self.ytight = False
+        self.tickrotation = 15
+
         self.rowsmajor = 5
         self.rowsminor = 1
 
@@ -91,9 +94,9 @@ class PlotScheme(object):
         self.bartrans = 1.0
 
         self.volume = True
-        self.voloverlay = True
+        self.voloverlay = False
         self.volscaling = 0.33
-        self.volpushup = 0.05
+        self.volpushup = 0.00
 
         self.volup = '#aaaaaa'  # 0.66 of gray
         self.voldown = '#cc6073'  # (204, 96, 115)

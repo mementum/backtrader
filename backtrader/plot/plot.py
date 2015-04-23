@@ -28,10 +28,10 @@ import six
 from six.moves import xrange
 
 import matplotlib.dates as mdates
+import matplotlib.font_manager as mfontmgr
+import matplotlib.legend as mlegend
 import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
-import matplotlib.font_manager as mfontmgr
-import matplotlib.finance as mfinance
 
 from .. import MetaParams
 from .. import TimeFrame
@@ -125,14 +125,15 @@ class Plot(six.with_metaclass(MetaParams, object)):
         # Applying the manual rotation with setp cures the problem
         # but the labels from all axis but the last have to be hidden
         # fig.autofmt_xdate(bottom=0.25, rotation=15)
-
         for ax in self.pinf.daxis.values():
             mpyplot.setp(ax.get_xticklabels(), visible=False)
-        mpyplot.setp(lastax.get_xticklabels(), visible=True, rotation=15)
-        # mpyplot.setp(mpyplot.xticks()[1], rotation=15)
+        mpyplot.setp(lastax.get_xticklabels(),
+                     visible=True,
+                     rotation=self.pinf.sch.tickrotation)
 
         # Things must be tight along the x axis (to fill both ends)
-        mpyplot.autoscale(axis='x', tight=True)
+        axtight = 'x' if not self.pinf.sch.ytight else 'both'
+        mpyplot.autoscale(axis=axtight, tight=True)
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
@@ -173,7 +174,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Activate grid in all axes if requested
         ax.yaxis.tick_right()
-        ax.grid(self.pinf.sch.grid)
+        ax.grid(self.pinf.sch.grid, which='both')
 
         return ax
 
@@ -269,13 +270,67 @@ class Plot(six.with_metaclass(MetaParams, object)):
                     # which has a default "center" set
                     legend._legend_box.align = 'left'
 
-    def plotdata(self, data, indicators):
-        ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
+    def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
+        if self.pinf.sch.voloverlay:
+            rowspan = self.pinf.sch.rowsmajor
+        else:
+            rowspan = self.pinf.sch.rowsminor
 
-        closes = data.close.plot()
+        ax = self.newaxis(data.volume, rowspan=rowspan)
+
+        if self.pinf.sch.voloverlay:
+            volalpha = self.pinf.sch.voltrans
+        else:
+            volalpha = 1.0
+
+        # Plot the volume (no matter if as overlay or standalone)
+        vollabel = label
+        volplot, = plot_volume(ax, opens, closes, volumes,
+                               colorup=self.pinf.sch.volup,
+                               colordown=self.pinf.sch.voldown,
+                               alpha=volalpha, label=vollabel)
+
+        nbins = 6
+        prune = 'both'
+        maxvol = volylim = max(volumes)
+        if self.pinf.sch.voloverlay:
+            # store for a potential plot over it
+            nbins = int(nbins / self.pinf.sch.volscaling)
+            prune = None
+
+            volylim /= self.pinf.sch.volscaling
+            ax.set_ylim(0, volylim, auto=True)
+        else:
+            # plot a legend
+            handles, labels = ax.get_legend_handles_labels()
+            if handles:
+                # Legend done here to ensure it includes all plots
+                legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                                   numpoints=1, frameon=False,
+                                   shadow=False, fancybox=False,
+                                   prop=self.pinf.prop)
+
+        locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
+        ax.yaxis.set_major_locator(locator)
+        ax.yaxis.set_major_formatter(MyVolFormatter(maxvol))
+
+        return volplot
+
+    def plotdata(self, data, indicators):
         opens = data.open.plot()
         highs = data.high.plot()
         lows = data.low.plot()
+        closes = data.close.plot()
+        volumes = data.volume.plot()
+
+        vollabel = 'Volume'
+        if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+            volplot = self.plotvolume(
+                data, opens, highs, lows, closes, volumes, vollabel)
+            axvol = self.pinf.daxis[data.volume]
+            ax = axvol.twinx()
+        else:
+            ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
 
         datalabel = ''
         dataname = ''
@@ -334,61 +389,20 @@ class Plot(six.with_metaclass(MetaParams, object)):
                      facecolor='white', edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
+        # make sure "over" indicators do not change our scale
         ax.set_ylim(ax.get_ylim())
 
         if self.pinf.sch.volume:
-            # volume plot data
-            volumes = data.volume.plot()
-
-            # Get the plotting axis
-            if self.pinf.sch.voloverlay:
-                axvol = ax
-                volalpha = self.pinf.sch.voltrans
+            if not self.pinf.sch.voloverlay:
+                self.plotvolume(
+                    data, opens, highs, lows, closes, volumes, vollabel)
             else:
-                axvol = self.newaxis(data.volume,
-                                     rowspan=self.pinf.sch.rowsminor)
-                volalpha = 1.0
-
-            # Plot the volume (no matter if as overlay or standalone)
-            vollabel = 'Volume'
-            bc, = plot_volume(axvol, opens, closes, volumes,
-                              colorup=self.pinf.sch.volup,
-                              colordown=self.pinf.sch.voldown,
-                              overlay=self.pinf.sch.voloverlay,
-                              overscaling=self.pinf.sch.volscaling,
-                              overpushup=self.pinf.sch.volpushup,
-                              alpha=volalpha,
-                              label=vollabel)
-
-            nbins = 6
-            prune = 'both'
-            maxvol = volylim = max(volumes)
-            if self.pinf.sch.voloverlay:
-                axvol = axvol.twinx()
-                # store for a potential plot over it
-                # self.pinf.daxis[data.volume] = axvol
-
-                nbins = int(nbins / self.pinf.sch.volscaling)
-                prune = None
-
-                axvol.yaxis.tick_left()
-                # twinx pushes original yaxis to the left - correct it
-                ax.yaxis.tick_right()
-
-                volylim /= self.pinf.sch.volscaling
-                # axvol.set_ylim(0, volylim, auto=True)
-                # mpyplot.autoscale is called with axis='x' we need
-                # not updating the datalimits even. But if axis='both'
-                # autoscale is tightening ylim = ydatalim and given
-                # not data is plotted to the axis, we'd need to manually
-                # update the data limit with the 3 following lines
-                vlimits = (0.0, self.pinf.xlen), (0.0, volylim)
-                axvol.update_datalim(vlimits)
-                axvol.autoscale_view()  # not needed
-
-            locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
-            axvol.yaxis.set_major_locator(locator)
-            axvol.yaxis.set_major_formatter(MyVolFormatter(maxvol))
+                # Prepare overlay scaling/pushup or manage own axis
+                if self.pinf.sch.volpushup:
+                    # push up overlaid axis by lowering the bottom limit
+                    axbot, axtop = ax.get_ylim()
+                    axbot *= (1.0 - self.pinf.sch.volpushup)
+                    ax.set_ylim(axbot, axtop)
 
         for ind in indicators:
             self.plotind(ind, subinds=self.dplotsover[ind], masterax=ax)
@@ -399,9 +413,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
             if self.pinf.sch.volume and self.pinf.sch.voloverlay:
-                vidx = labels.index(vollabel)
-                labels.insert(0, labels.pop(vidx))
-                handles.insert(0, handles.pop(vidx))
+                labels.insert(0, vollabel)
+                handles.insert(0, volplot)
 
             didx = labels.index(datalabel)
             labels.insert(0, labels.pop(didx))
