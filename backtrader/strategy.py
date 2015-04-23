@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import six
 
@@ -30,7 +31,8 @@ from .sizer import SizerFix
 
 class MetaStrategy(StrategyBase.__class__):
     def dopreinit(cls, _obj, env, *args, **kwargs):
-        _obj, args, kwargs = super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
         _obj.broker = env.broker
         _obj._sizer = SizerFix()
@@ -47,12 +49,13 @@ class MetaStrategy(StrategyBase.__class__):
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
-        _obj, args, kwargs = super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
+        _obj, args, kwargs = \
+            super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
         # Set the minperiod
-        minperiods = [x._minperiod for x in _obj._lineiterators[LineIterator.IndType]]
-        _obj._minperiod = max(minperiods or [_obj._minperiod,])
-
+        minperiods = \
+            [x._minperiod for x in _obj._lineiterators[LineIterator.IndType]]
+        _obj._minperiod = max(minperiods or [_obj._minperiod])
 
         if not _obj._sizer.getbroker():
             _obj._sizer.setbroker(_obj.broker)
@@ -79,7 +82,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if l > self._minperiod:
             self.next()
         elif l == self._minperiod:
-            self.nextstart() # only called for the 1st value
+            self.nextstart()  # only called for the 1st value
         else:
             self.prenext()
 
@@ -90,8 +93,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.clear()
 
     def _next(self):
-         super(Strategy, self)._next()
-         self.clear()
+        super(Strategy, self)._next()
+        self.clear()
 
     def start(self):
         pass
@@ -116,14 +119,18 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def buy(self, data=None, size=None, price=None, exectype=None, valid=None):
         data = data or self.datas[0]
         size = size or self.getsizing(data)
-        return self.broker.buy(self, data, size=size, price=price, exectype=exectype, valid=valid)
+        return self.broker.buy(
+            self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def sell(self, data=None, size=None, price=None, exectype=None, valid=None):
+    def sell(self,
+             data=None, size=None, price=None, exectype=None, valid=None):
         data = data or self.datas[0]
         size = size or self.getsizing(data)
-        return self.broker.sell(self, data, size=size, price=price, exectype=exectype, valid=valid)
+        return self.broker.sell(
+            self, data, size=size, price=price, exectype=exectype, valid=valid)
 
-    def close(self, data=None, size=None, price=None, exectype=None, valid=None):
+    def close(self,
+              data=None, size=None, price=None, exectype=None, valid=None):
         possize = self.getposition(data, broker).size
         size = abs(size or possize)
 
@@ -157,9 +164,9 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def delanalyzer(self):
         '''
-        This is a one time operation, because is meant to replace the automatically
-        generated "analyzer" by (before init) keeping a list of the observers created
-        by the analyzer.
+        This is a one time operation, because is meant to replace the
+        automatically generated "analyzer" by (before init) keeping a
+        list of the observers created by the analyzer.
 
         A user-generated analyzer can be kept in a member variable by the user.
         No need to keep it in the system any longer

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import Indicator
 from .ma import MATypes
@@ -30,7 +31,8 @@ class StdDev(Indicator):
 
     def __init__(self):
         # mean could already be passed as a parameter to avoid recalculation
-        # dmean = self.data1 if len(self.datas) > 1 else MaTypes.Simple(self.data, period=self.p.period)
+        # dmean = self.data1 if len(self.datas) > 1 else \
+        # MaTypes.Simple(self.data, period=self.p.period)
         # sqmean = pow(dmean, 2)
 
         meansq = MATypes.Simple(pow(self.data, 2), period=self.p.period)
@@ -54,8 +56,8 @@ class BollingerBands(Indicator):
     )
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.p.devfactor,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period, self.p.devfactor]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     def __init__(self):
@@ -63,6 +65,7 @@ class BollingerBands(Indicator):
         stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
         self.lines.top = ma + stddev
         self.lines.bot = ma - stddev
+
 
 class BBands(BollingerBands):
     pass

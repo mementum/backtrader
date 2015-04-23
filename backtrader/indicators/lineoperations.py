@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import math
 import operator
@@ -32,10 +33,10 @@ class ExecOnces(Indicator):
     extralines = 1
 
     def prenext(self):
-        pass # to avoid preonce be optimized away in metaclass
+        pass  # to avoid preonce be optimized away in metaclass
 
     def next(self):
-        pass # to avoid once be optimized away in metaclass
+        pass  # to avoid once be optimized away in metaclass
 
     def preonce(self, start, end):
         self.data.preonce(start, end)
@@ -87,14 +88,18 @@ class OperationN(Indicator):
 class MaxN(OperationN):
     func = max
 
+
 class Highest(MaxN):
     pass
+
 
 class MinN(OperationN):
     func = min
 
+
 class Lowest(MinN):
     pass
+
 
 class SumN(OperationN):
     func = math.fsum
@@ -140,11 +145,14 @@ class Operation1(Indicator):
 class Max(Operation1):
     func = max
 
+
 class High(Max):
     pass
 
+
 class Min(Operation1):
     func = max
+
 
 class Low(Min):
     pass

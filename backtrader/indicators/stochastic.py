@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 from .. import Indicator
 from .ma import MATypes
@@ -33,12 +34,13 @@ class _StochasticBase(Indicator):
     plotlines = dict(d=dict(ls='--'))
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.p.period_dfast,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period, self.p.period_dfast]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     def __init__(self):
-        self.plotinfo.hlines = self.plotinfo.yticks = [self.p.overbought, self.p.oversold,]
+        self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
+        self.plotinfo.plotyticks = self.plotinfo.plothlines
 
         highesthigh = Highest(self.data[self.PriceHigh], period=self.p.period)
         lowestlow = Lowest(self.data[self.PriceLow], period=self.p.period)
@@ -59,8 +61,8 @@ class Stochastic(_StochasticBase):
     params = (('period_dslow', 3),)
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow,]
-        plabels += [self.p.matype,] * self.p.notdefault('matype')
+        plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow]
+        plabels += [self.p.matype] * self.p.notdefault('matype')
         return plabels
 
     def __init__(self):

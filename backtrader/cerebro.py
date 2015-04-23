@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import six
 
@@ -47,7 +48,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             data._name = name
         self.datas.append(data)
         feed = data.getfeed()
-        # FIXME: the "in self.feeds" does not stand the rich comparison operator overloading
+        # FIXME: "in self.feeds" broken: rich comparison operator overloading
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
@@ -93,7 +94,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             strat = stratcls(self, *sargs, **skwargs)
             self.runstrats.append(strat)
 
-        for strat in self.runstrats: # loop separated for clarity
+        for strat in self.runstrats:  # loop separated for clarity
             strat.start()
 
         if self.params.preload and self.params.runonce:
@@ -130,9 +131,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for strat in self.runstrats:
             strat._once()
 
-        # The default once for strategies does nothing and therefore has not moved
-        # forward all datas/indicators/observers that were homed before calling once
-        # Hence no "need" to do it here again, because pointers are at 0
+        # The default once for strategies does nothing and therefore
+        # has not moved forward all datas/indicators/observers that
+        # were homed before calling once, Hence no "need" to do it
+        # here again, because pointers are at 0
 
         for i in range(self.datas[0].buflen()):
             for data in self.datas:

@@ -242,7 +242,6 @@ class VolumePlotHandler(object):
                  colorup='k', colordown='r',
                  edgeup=None, edgedown=None,
                  edgeshading=-5, edgeadjust=0.05,
-                 overlay=False, overscaling=0.25, overpushup=0.0,
                  width=1, alpha=1.0,
                  **kwargs):
 
@@ -265,28 +264,13 @@ class VolumePlotHandler(object):
             r, g, b = mcolors.colorConverter.to_rgb(edgedown)
             self.edgedown = r, g, b, alpha
 
-        # Prepare overlay scaling/pushup or manage own axis
-        if overlay:
-            axbot, axtop = ax.get_ylim()
-            if overpushup:
-                # push up overlaid axis by lowering the bottom limit
-                axbot *= (1.0 - overpushup)
-                ax.set_ylim(axbot, axtop)
-
-            vrange = axtop - axbot
-            vscaling = overscaling * vrange / max(volumes)
-            vbot = axbot
-        else:
-            vscaling = 1.0
-            vbot = 0
-            corners = (0, 0), (len(volumes), max(volumes))
-            ax.update_datalim(corners)
-            ax.autoscale_view()
+        corners = (0, 0), (len(closes), max(volumes))
+        ax.update_datalim(corners)
+        ax.autoscale_view()
 
         self.barcol = self.barcollection(
             xrange(len(volumes)), opens, closes, volumes,
             width=width, edgeadjust=edgeadjust,
-            vscaling=vscaling, vbot=vbot,
             **kwargs)
 
         # add to axes
@@ -316,7 +300,7 @@ class VolumePlotHandler(object):
     def barcollection(self,
                       x, opens, closes, vols,
                       width, edgeadjust=0,
-                      vscaling=1.0, vbot=0.0,
+                      vscaling=1.0, vbot=0,
                       **kwargs):
 
         # Prepare the data
@@ -353,7 +337,6 @@ def plot_volume(ax, opens, closes, volumes,
                 colorup='k', colordown='r',
                 edgeup=None, edgedown=None,
                 edgeshading=-5, edgeadjust=0.05,
-                overlay=False, overscaling=0.25, overpushup=0.0,
                 width=1, alpha=1.0,
                 **kwargs):
 
@@ -362,7 +345,6 @@ def plot_volume(ax, opens, closes, volumes,
         colorup, colordown,
         edgeup, edgedown,
         edgeshading, edgeadjust,
-        overlay, overscaling, overpushup,
         width, alpha,
         **kwargs)
 

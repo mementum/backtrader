@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
+###############################################################################
 '''
 
 .. module:: lineroot
@@ -28,7 +28,8 @@ lines at once.
 .. moduleauthor:: Daniel Rodriguez
 
 '''
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import collections
 import operator
@@ -42,14 +43,17 @@ from . import metabase
 
 
 class LineAlias(object):
-    ''' Descriptor class that store a line reference and returns that line from the owner
+    ''' Descriptor class that store a line reference and returns that line
+    from the owner
 
     Keyword Args:
-        line (int): reference to the line that will be returned fro owner's *lines* buffer
+        line (int): reference to the line that will be returned from
+        owner's *lines* buffer
 
-    As a convenience the __set__ method of the descriptor is used not set the *line* reference
-    because this is a constant along the live of the descriptor instance, but rather to
-    set the value of the *line* at the instant '0' (the current one)
+    As a convenience the __set__ method of the descriptor is used not set
+    the *line* reference because this is a constant along the live of the
+    descriptor instance, but rather to set the value of the *line* at the
+    instant '0' (the current one)
     '''
 
     def __init__(self, line):
@@ -109,10 +113,15 @@ class Lines(object):
         setattr(newcls, '_getlinesbase', classmethod(lambda cls: baselines))
         setattr(newcls, '_getlines', classmethod(lambda cls: clslines))
 
-        setattr(newcls, '_getlinesextrabase', classmethod(lambda cls: baseextralines))
-        setattr(newcls, '_getlinesextra', classmethod(lambda cls: clsextralines))
+        setattr(newcls,
+                '_getlinesextrabase',
+                classmethod(lambda cls: baseextralines))
+        setattr(newcls,
+                '_getlinesextra',
+                classmethod(lambda cls: clsextralines))
 
-        for line, linealias in enumerate(lines2add, start=len(cls._getlines())):
+        l2add = enumerate(lines2add, start=len(cls._getlines()))
+        for line, linealias in l2add:
             if not isinstance(linealias, six.string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
@@ -135,13 +144,14 @@ class Lines(object):
 
     def __init__(self, initlines=None):
         '''
-        Create the lines recording during "_derive" or else use the provided "initlines"
+        Create the lines recording during "_derive" or else use the
+        provided "initlines"
         '''
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
-            if not isinstance(linealias, six.string_types): # a tuple and not just a string
-                # typecode is additional arg
+            if not isinstance(linealias, six.string_types):
+                # a tuple and not just a string - typecode is additional arg
                 kwargs['typecode'] = linealias[1]
 
             self.lines.append(LineBuffer(**kwargs))
@@ -239,26 +249,28 @@ class MetaLineSeries(LineMultiple.__class__):
     '''
     Dirty job manager for a LineSeries
 
-      - During __new__ (class creation), it reads "lines", "plotinfo", "plotlines"
-        class variable definitions and turns them into Classes of type Lines or
-        AutoClassInfo (plotinfo/plotlines)
+      - During __new__ (class creation), it reads "lines", "plotinfo",
+        "plotlines" class variable definitions and turns them into
+        Classes of type Lines or AutoClassInfo (plotinfo/plotlines)
 
-      - During "new" (instance creation) the lines/plotinfo/plotlines classes are
-        substituted in the instance with instances of the aforementioned classes
-        and aliases are added for the "lines" held in the "lines" instance
+      - During "new" (instance creation) the lines/plotinfo/plotlines
+        classes are substituted in the instance with instances of the
+        aforementioned classes and aliases are added for the "lines" held
+        in the "lines" instance
 
-        Additionally and for remaining kwargs, these are matched against args in
-        plotinfo and if existent are set there and removed from kwargs
+        Additionally and for remaining kwargs, these are matched against
+        args in plotinfo and if existent are set there and removed from kwargs
 
-        Remember that this Metaclass has a MetaParams (from metabase) as root class
-        and therefore "params" defined for the class have been removed from kwargs
-        at an earlier state
+        Remember that this Metaclass has a MetaParams (from metabase)
+        as root class and therefore "params" defined for the class have been
+        removed from kwargs at an earlier state
     '''
 
     def __new__(meta, name, bases, dct):
         '''
-        Intercept class creation, identifiy lines/plotinfo/plotlines class attributes and
-        create corresponding classes for them which take over the class attributes
+        Intercept class creation, identifiy lines/plotinfo/plotlines class
+        attributes and create corresponding classes for them which take over
+        the class attributes
         '''
 
         # Remove the line definition (if any) from the class creation
@@ -273,35 +285,41 @@ class MetaLineSeries(LineMultiple.__class__):
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
         lines = getattr(cls, 'lines', Lines)
 
-        # Create a subclass of the lines class with our name and newlines and put it in the class
+        # Create a subclass of the lines class with our name and newlines
+        # and put it in the class
         morebaseslines = [x.lines for x in bases[1:] if hasattr(x, 'lines')]
         cls.lines = lines._derive(name, newlines, extralines, morebaseslines)
 
-        # Get a copy from base class plotinfo/plotlines (created with the class or set a default)
+        # Get a copy from base class plotinfo/plotlines (created with the
+        # class or set a default)
         plotinfo = getattr(cls, 'plotinfo', AutoInfoClass)
         plotlines = getattr(cls, 'plotlines', AutoInfoClass)
 
         # Create a plotinfo/plotlines subclass and set it in the class
-        morebasesplotinfo = [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
+        morebasesplotinfo = \
+            [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
         cls.plotinfo = plotinfo._derive(name, newplotinfo, morebasesplotinfo)
 
-        # Before doing plotline newlines have been added and no plotlineinfo is there add a default
+        # Before doing plotline newlines have been added and no plotlineinfo
+        # is there add a default
         for line in newlines:
             if not isinstance(line, six.string_types):
                 line = line[0]
             newplotlines.setdefault(line, dict())
 
-        morebasesplotlines = [x.plotlines for x in bases[1:] if hasattr(x, 'plotlines')]
-        cls.plotlines = plotlines._derive(name, newplotlines, morebasesplotlines, recurse=True)
+        morebasesplotlines = \
+            [x.plotlines for x in bases[1:] if hasattr(x, 'plotlines')]
+        cls.plotlines = plotlines._derive(
+            name, newplotlines, morebasesplotlines, recurse=True)
 
         # return the class
         return cls
 
     def donew(cls, *args, **kwargs):
         '''
-        Intercept instance creation, take over lines/plotinfo/plotlines class attributes by
-        creating corresponding instance variables and add aliases for "lines" and the "lines" held
-        within it
+        Intercept instance creation, take over lines/plotinfo/plotlines
+        class attributes by creating corresponding instance variables and add
+        aliases for "lines" and the "lines" held within it
         '''
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         plotinfo = cls.plotinfo()
@@ -338,8 +356,9 @@ class MetaLineSeries(LineMultiple.__class__):
 
 class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
     def __getattr__(self, name):
-        # to refer to line by name directly if the attribute was not found in this object
-        # if we set an attribute in this object it will be found before we end up here
+        # to refer to line by name directly if the attribute was not found
+        # in this object if we set an attribute in this object it will be
+        # found before we end up here
         return getattr(self.lines, name)
 
     def __len__(self):
@@ -354,7 +373,8 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
     def __init__(self, *args, **kwargs):
         # if any args, kwargs make it up to here, something is broken
         # defining a __init__ guarantees the existence of im_func to findbases
-        # in lineiterator later, because object.__init__ has no im_func (object has slots)
+        # in lineiterator later, because object.__init__ has no im_func
+        # (object has slots)
         pass
 
     def plotlabel(self):
@@ -364,7 +384,8 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
             for i, sublabel in enumerate(sublabels):
                 # if isinstance(sublabel, LineSeries): ## DOESN'T WORK ???
                 if hasattr(sublabel, 'plotinfo'):
-                    sublabels[i] = sublabel.plotinfo.plotname or sublabel.__class__.__name__
+                    sublabels[i] = sublabel.plotinfo.plotname or \
+                        sublabel.__class__.__name__
             label += ' (%s)' % ', '.join(map(str, sublabels))
         return label
 
@@ -379,7 +400,7 @@ class LineSeriesStub(LineSeries):
     extralines = 1
 
     def __init__(self, line):
-        self.lines = self.__class__.lines(initlines=[line,])
+        self.lines = self.__class__.lines(initlines=[line])
         # give a change to find the line owner (for plotting at least)
         self.owner = line._owner
         self._minperiod = line._minperiod
