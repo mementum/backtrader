@@ -70,7 +70,7 @@ def patch_locator(locator, xdates):
         dmin, dmax = self.axis.get_data_interval()
 
         # proxy access to xdates
-        dmin, dmax = xdates[int(dmin)], xdates[int(dmax)]
+        dmin, dmax = xdates[int(dmin)], xdates[min(int(dmax), len(xdates) - 1)]
 
         a, b = num2date(dmin, self.tz), num2date(dmax, self.tz)
         return a, b
@@ -79,26 +79,27 @@ def patch_locator(locator, xdates):
         vmin, vmax = self.axis.get_view_interval()
 
         # proxy access to xdates
-        vmin, vmax = xdates[int(dmin)], xdates[int(dmax)]
-
-        return num2date(vmin, self.tz), num2date(vmax, self.tz)
+        vmin, vmax = xdates[int(vmin)], xdates[min(int(vmax), len(xdates) - 1)]
+        a, b = num2date(vmin, self.tz), num2date(vmax, self.tz)
+        return a, b
 
     # patch the instance with a bound method
     bound_datalim = _patched_datalim_to_dt.__get__(locator, locator.__class__)
     locator.datalim_to_dt = bound_datalim
 
     # patch the instance with a bound method
-    bound_viewlim = _patched_datalim_to_dt.__get__(locator, locator.__class__)
+    bound_viewlim = _patched_viewlim_to_dt.__get__(locator, locator.__class__)
     locator.viewlim_to_dt = bound_viewlim
 
 
 def patch_formatter(formatter, xdates):
     def newcall(self, x, pos=0):
-        if x == 0:
+        if False and x < 0:
             raise ValueError('DateFormatter found a value of x=0, which is '
                              'an illegal date.  This usually occurs because '
                              'you have not informed the axis that it is '
                              'plotting dates, e.g., with ax.xaxis_date()')
+
         x = xdates[int(x)]
         dt = num2date(x, self.tz)
         return self.strftime(dt, self.fmt)
