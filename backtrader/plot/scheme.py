@@ -94,7 +94,7 @@ class PlotScheme(object):
         self.bartrans = 1.0
 
         self.volume = True
-        self.voloverlay = False
+        self.voloverlay = True
         self.volscaling = 0.33
         self.volpushup = 0.00
 
