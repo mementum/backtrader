@@ -37,7 +37,7 @@ from .. import MetaParams
 from .. import TimeFrame
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
-from .formatters import (MyVolFormatter, MyDateFormatter)
+from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
 from .scheme import PlotScheme
 from .utils import tag_box_style
 
@@ -110,11 +110,16 @@ class Plot(six.with_metaclass(MetaParams, object)):
         if True:
             locator = mticker.AutoLocator()
             lastax.xaxis.set_major_locator(locator)
-            lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-        elif False:
-            # locator, formatter = getlocator(self.pinf.xreal)
-            lastax.xaxis.set_major_locator(locator)
+            #lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
+            formatter = mdates.IndexDateFormatter(self.pinf.xreal, fmt='%Y-%m-%d')
             lastax.xaxis.set_major_formatter(formatter)
+            # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
+        elif False:
+            locator, formatter = getlocator(self.pinf.xreal)
+            # locator = mticker.AutoLocator()
+            # locator = mticker.MaxNLocator(nbins=4, prune='both')
+            lastax.xaxis.set_major_formatter(formatter)
+            lastax.xaxis.set_major_locator(locator)
 
         # Put the subplots as indicated by hspace (0 is touching each other)
         fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
@@ -124,12 +129,14 @@ class Plot(six.with_metaclass(MetaParams, object)):
         # breaks the presentation of the date labels. why?
         # Applying the manual rotation with setp cures the problem
         # but the labels from all axis but the last have to be hidden
-        # fig.autofmt_xdate(bottom=0.25, rotation=15)
-        for ax in self.pinf.daxis.values():
-            mpyplot.setp(ax.get_xticklabels(), visible=False)
-        mpyplot.setp(lastax.get_xticklabels(),
-                     visible=True,
-                     rotation=self.pinf.sch.tickrotation)
+        if False:
+            fig.autofmt_xdate(bottom=0.25, rotation=15)
+        elif True:
+            for ax in self.pinf.daxis.values():
+                mpyplot.setp(ax.get_xticklabels(), visible=False)
+            mpyplot.setp(lastax.get_xticklabels(),
+                         visible=True,
+                         rotation=self.pinf.sch.tickrotation)
 
         # Things must be tight along the x axis (to fill both ends)
         axtight = 'x' if not self.pinf.sch.ytight else 'both'
