@@ -526,7 +526,7 @@ class LineOnClosePlotHandler(object):
 
         # Update the axis
         ax.update_datalim(((x[0], min(closes)), (x[-1], max(closes))))
-        ax.autoscale_view(scalex=True, scaley=True)
+        ax.autoscale_view()
 
         # Add self as legend handler for this object
         mlegend.Legend.update_default_handler_map({self.loc: self})
