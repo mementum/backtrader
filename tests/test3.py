@@ -43,6 +43,7 @@ class TestStrategy(bt.Strategy):
         ('atlimitperc', 1.0),
         ('expiredays', 10),
         ('printdata', True),
+        ('printops', True),
     )
 
     def log(self, txt, dt=None):
@@ -54,10 +55,10 @@ class TestStrategy(bt.Strategy):
         # self.data = self.datas[0]
         # self.dataclose = self.data.close
         self.sma = btind.MovingAverageSimple(self.data,
-                                             period=self.params.maperiod,
+                                             period=self.p.maperiod,
                                              plot=True)
         self.orderid = None
-        self.expiry = datetime.timedelta(days=self.params.expiredays)
+        self.expiry = datetime.timedelta(days=self.p.expiredays)
         # btind.ATR(self.data)
         if False:
             btind.ATR(self.data)
@@ -65,17 +66,14 @@ class TestStrategy(bt.Strategy):
             btind.Stochastic(self.data)
             btind.RSI(self.data)
             btind.MovingAverageExponential(
-                self.data, period=int(0.8 * self.params.maperiod))
+                self.data, period=int(0.8 * self.p.maperiod))
             btind.MovingAverageSmoothed(
-                self.data, period=int(1.2 * self.params.maperiod))
+                self.data, period=int(1.2 * self.p.maperiod))
             btind.MovingAverageWeighted(
-                self.data, period=int(1.5 * self.params.maperiod))
+                self.data, period=int(1.5 * self.p.maperiod))
             btind.BollingerBands(self.data)
 
-        self.sizer = bt.SizerFix(stake=self.params.stake)
-
-    def start(self):
-        self.tstart = time.clock()
+        self.sizer = bt.SizerFix(stake=self.p.stake)
 
     def notify(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -83,20 +81,23 @@ class TestStrategy(bt.Strategy):
 
         if order.status == order.Completed:
             if isinstance(order, bt.BuyOrder):
-                self.log('BUY , %.2f' % order.executed.price,
-                         order.executed.dt)
+                if self.p.printops:
+                    self.log('BUY , %.2f' % order.executed.price,
+                             order.executed.dt)
             else:  # elif isinstance(order, SellOrder):
-                self.log('SELL , %.2f' % order.executed.price,
-                         order.executed.dt)
+                if self.p.printops:
+                    self.log('SELL , %.2f' % order.executed.price,
+                             order.executed.dt)
         elif order.status in [order.Expired, order.Canceled, order.Margin]:
-            self.log('%s ,' % order.Status[order.status])
+            if self.p.printops:
+                self.log('%s ,' % order.Status[order.status])
             pass  # Do nothing for expired orders
 
         # Allow new orders
         self.orderid = None
 
     def next(self):
-        if self.params.printdata:
+        if self.p.printdata:
             self.log(
                 'Open, High, Low, Close, %.2f, %.2f, %.2f, %.2f, Sma, %f' %
                 (self.data.open[0], self.data.high[0],
@@ -111,21 +112,30 @@ class TestStrategy(bt.Strategy):
             if self.data.close > self.sma:
                 valid = self.data.datetime.datetime() + self.expiry
                 price = self.data.close[0]
-                if self.params.exectype == bt.Order.Limit:
-                    price *= self.params.atlimitperc
-                self.log('BUY CREATE , %.2f' % price)
-                self.orderid = self.buy(exectype=self.params.exectype,
+                if self.p.exectype == bt.Order.Limit:
+                    price *= self.p.atlimitperc
+                if self.p.printops:
+                    self.log('BUY CREATE , %.2f' % price)
+                self.orderid = self.buy(exectype=self.p.exectype,
                                         price=price,
                                         valid=valid)
 
         elif self.data.close < self.sma:
-            self.log('SELL CREATE , %.2f' % self.data.close[0])
+            if self.p.printops:
+                self.log('SELL CREATE , %.2f' % self.data.close[0])
             self.orderid = self.sell(exectype=bt.Order.Market)
+
+    def start(self):
+        print('-------------------------')
+        print('Starting portfolio value: %.2f' % self.broker.getvalue())
+        self.tstart = time.clock()
 
     def stop(self):
         tused = time.clock() - self.tstart
         print('Time used:', str(tused))
+        print('MA Period:', self.p.maperiod)
         print('Final portfolio value: %.2f' % self.broker.getvalue())
+        print('-------------------------')
 
 
 cerebro = bt.Cerebro(runonce=False)
@@ -145,13 +155,14 @@ data = bt.feeds.YahooFinanceCSVData(
 cerebro.adddata(data)
 
 cerebro.broker.setcash(1000.0)
-cerebro.addstrategy(TestStrategy,
-                    printdata=True,
-                    maperiod=15,
-                    exectype=bt.Order.Market,
-                    atlimitperc=0.80,
-                    expiredays=7,
-                    analyzer=True)
+strats = cerebro.optstrategy(
+    TestStrategy,
+    printdata=False,
+    printops=False,
+    maperiod=xrange(15, 26),
+    exectype=bt.Order.Market,
+    atlimitperc=0.80,
+    expiredays=7)
 
 cerebro.run()
-cerebro.plot()
+# cerebro.plot()
