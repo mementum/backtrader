@@ -21,6 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
+import itertools
+
 import six
 
 from .broker import BrokerBack
@@ -42,6 +45,19 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.strats = list()
         self._broker = BrokerBack()
 
+    @staticmethod
+    def iterize(iterable):
+        niterable = list()
+        for elem in iterable:
+            if isinstance(elem, six.string_types):
+                elem = (elem,)
+            elif not isinstance(elem, collections.Iterable):
+                elem = (elem,)
+
+            niterable.append(elem)
+
+        return niterable
+
     def adddata(self, data, name=None):
         if name is not None:
             data._name = name
@@ -51,8 +67,25 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
+    def optstrategy(self, strategy, *args, **kwargs):
+        args = self.iterize(args)
+        optargs = itertools.product(*args)
+
+        optkeys = list(kwargs.keys())  # py2/3
+
+        vals = self.iterize(kwargs.values())
+        optvals = itertools.product(*vals)
+
+        okwargs1 = six.moves.map(
+            six.moves.zip, itertools.repeat(optkeys), optvals)
+
+        optkwargs = six.moves.map(dict, okwargs1)
+
+        it = itertools.product([strategy], optargs, optkwargs)
+        self.strats.append(it)
+
     def addstrategy(self, strategy, *args, **kwargs):
-        self.strats.append((strategy, args, kwargs))
+        self.strats.append([(strategy, args, kwargs)])
 
     def setbroker(self, broker):
         self._broker = broker
@@ -74,43 +107,48 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         plotter.show()
 
     def run(self):
-        self.runstrats = list()
-
         if not self.datas:
             return
 
-        self._broker.start()
+        iterstrats = itertools.product(*self.strats)
+        for iterstrat in iterstrats:
+            self._broker.start()
 
-        for feed in self.feeds:
-            feed.start()
+            for feed in self.feeds:
+                feed.start()
 
-        for data in self.datas:
-            data.extend(size=self.params.lookahead)
-            data.start()
-            if self.params.preload:
-                data.preload()
+            for data in self.datas:
+                data.reset()
+                data.extend(size=self.params.lookahead)
+                data.start()
+                if self.params.preload:
+                    data.preload()
 
-        for stratcls, sargs, skwargs in self.strats:
-            sargs = self.datas + list(sargs)
-            strat = stratcls(self, *sargs, **skwargs)
-            self.runstrats.append(strat)
+            self.runstrats = list()
+            for stratcls, sargs, skwargs in iterstrat:
+                sargs = self.datas + list(sargs)
+                strat = stratcls(self, *sargs, **skwargs)
+                self.runstrats.append(strat)
 
-        for strat in self.runstrats:  # loop separated for clarity
-            strat.start()
+            # loop separated for clarity
+            for strat in self.runstrats:
+                strat.start()
 
-        if self.params.preload and self.params.runonce:
-            self._runonce()
-        else:
-            self._runnext()
+            if self.params.preload and self.params.runonce:
+                self._runonce()
+            else:
+                self._runnext()
 
-        for strat in self.runstrats:
-            strat.stop()
+            for strat in self.runstrats:
+                strat.stop()
 
-        for data in self.datas:
-            data.stop()
+            for data in self.datas:
+                data.stop()
 
-        for feed in self.feeds:
-            feed.stop()
+            for feed in self.feeds:
+                feed.stop()
+
+        return self.runstrats
 
     def _brokernotify(self):
         self._broker.next()
