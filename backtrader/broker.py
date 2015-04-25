@@ -39,10 +39,10 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.comminfo = dict()
 
     def getcash(self):
-        return self.params.cash
+        return self.p.cash
 
     def setcash(self, cash):
-        self.startingcash = self.params.cash = cash
+        self.startingcash = self.p.cash = cash
 
     def getcommissioninfo(self, data):
         if data._name in self.comminfo:
@@ -60,9 +60,9 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     def start(self):
         if None not in self.comminfo.keys():
-            self.comminfo = dict({None: self.params.commission})
+            self.comminfo = dict({None: self.p.commission})
 
-        self.startingcash = self.params.cash
+        self.startingcash = self.cash = self.p.cash
 
         self.orders = list()  # will only be appending
         self.pending = collections.deque()  # popleft and append(right)
@@ -91,7 +91,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             position = self.positions[data]
             pos_value += comminfo.getvalue(position, data.close[0])
 
-        return self.params.cash + pos_value
+        return self.cash + pos_value
 
     def getposition(self, data):
         return self.positions[data]
@@ -133,29 +133,29 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         if closed:
             # Adjust to returned value for closed items & acquired opened items
             closedvalue = comminfo.getoperationcost(abclosed, price)
-            self.params.cash += closedvalue
+            self.cash += closedvalue
             # Calculate and substract commission
             closedcomm = comminfo.getcomm_pricesize(abclosed, price)
-            self.params.cash -= closedcomm
+            self.cash -= closedcomm
             # Re-adjust cash according to future-like movements
             # Restore cash which was already taken at the start of the day
-            self.params.cash -= comminfo.cashadjust(abclosed,
-                                                    price,
-                                                    order.data.close[0])
+            self.cash -= comminfo.cashadjust(abclosed,
+                                             price,
+                                             order.data.close[0])
         else:
             closedvalue = closedcomm = 0.0
 
         if opened:
             openedvalue = comminfo.getoperationcost(abopened, price)
-            self.params.cash -= openedvalue
+            self.cash -= openedvalue
 
             openedcomm = comminfo.getcomm_pricesize(abopened, price)
-            self.params.cash -= openedcomm
+            self.p.cash -= openedcomm
 
             # Remove cash for the new opened contracts
-            self.params.cash += comminfo.cashadjust(abopened,
-                                                    price,
-                                                    order.data.close[0])
+            self.cash += comminfo.cashadjust(abopened,
+                                             price,
+                                             order.data.close[0])
         else:
             openedvalue = openedcomm = 0.0
 
@@ -175,9 +175,9 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             # futures change cash in the broker in every bar
             # to ensure margin requirements are met
             comminfo = self.getcommissioninfo(data)
-            self.params.cash += comminfo.cashadjust(pos.size,
-                                                    data.close[1],
-                                                    data.close[0])
+            self.cash += comminfo.cashadjust(pos.size,
+                                             data.close[1],
+                                             data.close[0])
 
         # Iterate once over all elements of the pending queue
         for i in range(len(self.pending)):
