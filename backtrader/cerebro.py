@@ -40,7 +40,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.feeds = list()
         self.datas = list()
         self.strats = list()
-        self.runstrats = list()
         self._broker = BrokerBack()
 
     def adddata(self, data, name=None):
@@ -75,6 +74,8 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         plotter.show()
 
     def run(self):
+        self.runstrats = list()
+
         if not self.datas:
             return
 
