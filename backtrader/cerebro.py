@@ -63,7 +63,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             data._name = name
         self.datas.append(data)
         feed = data.getfeed()
-        # FIXME: "in self.feeds" broken: rich comparison operator overloading
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
@@ -110,8 +109,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         if not self.datas:
             return
 
-        iterstrats = itertools.product(*self.strats)
-        for iterstrat in iterstrats:
+        for iterstrat in itertools.product(*self.strats):
+            self.runstrats = list()
+
             self._broker.start()
 
             for feed in self.feeds:
@@ -124,7 +124,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
                 if self.params.preload:
                     data.preload()
 
-            self.runstrats = list()
             for stratcls, sargs, skwargs in iterstrat:
                 sargs = self.datas + list(sargs)
                 strat = stratcls(self, *sargs, **skwargs)
