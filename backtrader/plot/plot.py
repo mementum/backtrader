@@ -246,6 +246,16 @@ class Plot(six.with_metaclass(MetaParams, object)):
             self.plotind(subind, subinds=self.dplotsover[subind], masterax=ax)
 
         if not masterax:
+            if self.pinf.sch.yadjust:
+                # give the yaxis some extra height to move indicator
+                # extreme values a bit to the middle
+                ybot, ytop = ax.get_ylim()
+                height = ytop - ybot
+                extra_height = (height * self.pinf.sch.yadjust) / 2
+                ytop += extra_height
+                ybot -= extra_height
+                ax.set_ylim(ybot, ytop)
+
             # Set specific or generic ticks
             yticks = ind.plotinfo._get('plotyticks', None)
             if yticks is not None:
