@@ -60,8 +60,8 @@ class MetaStrategy(StrategyBase.__class__):
         if not _obj._sizer.getbroker():
             _obj._sizer.setbroker(_obj.broker)
 
-        # change the compare modus from operation to standard
-        _obj._setcompare()
+        # change operators to stage 2
+        _obj._stage2()
 
         return _obj, args, kwargs
 

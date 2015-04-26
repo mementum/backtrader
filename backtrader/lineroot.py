@@ -73,7 +73,7 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     IndType, StratType, ObsType = range(3)
 
-    def _setcompare(self):
+    def _stage2(self):
         # change to real comparison function
         self._comparison = self._comparison_stage2
 
@@ -229,10 +229,10 @@ class LineMultiple(LineRoot):
     '''
     Base class for LineXXX instances that hold more than one line
     '''
-    def _setcompare(self):
-        super(LineMultiple, self)._setcompare()
+    def _stage2(self):
+        super(LineMultiple, self)._stage2()
         for line in self.lines:
-            line._setcompare()
+            line._stage2()
 
     def addminperiod(self, minperiod):
         '''
