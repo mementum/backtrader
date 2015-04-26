@@ -155,14 +155,24 @@ data = bt.feeds.YahooFinanceCSVData(
 cerebro.adddata(data)
 
 cerebro.broker.setcash(1000.0)
-strats = cerebro.optstrategy(
-    TestStrategy,
-    printdata=False,
-    printops=False,
-    maperiod=xrange(15, 26),
-    exectype=bt.Order.Market,
-    atlimitperc=0.80,
-    expiredays=7)
+if False:
+    strats = cerebro.optstrategy(
+        TestStrategy,
+        printdata=False,
+        printops=False,
+        maperiod=xrange(15, 26),
+        exectype=bt.Order.Market,
+        atlimitperc=0.80,
+        expiredays=7)
+else:
+    strats = cerebro.addstrategy(
+        TestStrategy,
+        printdata=False,
+        printops=False,
+        maperiod=15,
+        exectype=bt.Order.Market,
+        atlimitperc=0.80,
+        expiredays=7)
 
 cerebro.run()
 # cerebro.plot()
