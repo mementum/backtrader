@@ -125,15 +125,15 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
                     plotabove=False,
                     plotlinelabels=False)
 
-    def _setcompare(self, status):
-        self._compareop = status
+    def _setcompare(self):
+        super(LineIterator, self)._setcompare()
 
         for data in self.datas:
-            data._setcompare(status)
+            data._setcompare()
 
         for lineiterators in self._lineiterators.values():
             for lineiterator in lineiterators:
-                lineiterator._setcompare(status)
+                lineiterator._setcompare()
 
     def getindicators(self):
         return self._lineiterators[LineIterator.IndType]

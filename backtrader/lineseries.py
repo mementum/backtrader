@@ -330,9 +330,6 @@ class MetaLineSeries(LineMultiple.__class__):
         # Create the object and set the params in place
         _obj, args, kwargs = super(MetaLineSeries, cls).donew(*args, **kwargs)
 
-        # Set the compare operation flag
-        _obj._compareop = True
-
         # set the plotinfo member in the class
         _obj.plotinfo = plotinfo
 
@@ -397,9 +394,6 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
 
     def __call__(self, ago, line=0):
         return LineDelay(self.lines[line], ago, _ownerskip=self)
-
-    def _setcompare(self, status):
-        self._compareop = status
 
 
 class LineSeriesStub(LineSeries):
