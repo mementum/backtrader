@@ -73,6 +73,10 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     IndType, StratType, ObsType = range(3)
 
+    def _setcompare(self):
+        # change to real comparison function
+        self._comparison = self._comparison_stage2
+
     def setminperiod(self, minperiod):
         '''
         Direct minperiod manipulation. It could be used for example
@@ -225,6 +229,11 @@ class LineMultiple(LineRoot):
     '''
     Base class for LineXXX instances that hold more than one line
     '''
+    def _setcompare(self):
+        super(LineMultiple, self)._setcompare()
+        for line in self.lines:
+            line._setcompare()
+
     def addminperiod(self, minperiod):
         '''
         The passed minperiod is fed to the lins
@@ -267,7 +276,9 @@ class LineMultiple(LineRoot):
                                             r,
                                             _ownerskip=self)
 
-    def _comparison(self, other, operation):
+    _comparison = _operation
+
+    def _comparison_stage2(self, other, operation):
         '''
         Rich Comparison operators. Scans other and returns either an operation
         with other directly or a subitem from other
@@ -313,7 +324,9 @@ class LineSingle(LineRoot):
 
         return self._makeoperation(other, operation, r)
 
-    def _comparison(self, other, operation):
+    _comparison = _operation
+
+    def _comparison_stage2(self, other, operation):
         '''
         Rich Comparison operators. Scans other and returns either an
         operation with other directly or a subitem from other
