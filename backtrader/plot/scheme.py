@@ -78,6 +78,7 @@ class PlotScheme(object):
     def __init__(self):
         self.ytight = False
         self.yadjust = 0.10
+        self.zdown = True
         self.tickrotation = 15
 
         self.rowsmajor = 5
