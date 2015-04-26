@@ -75,7 +75,9 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     def _stage2(self):
         # change to real comparison function
-        self._comparison = self._comparison_stage2
+        self._operation = self._operation_stage2
+        self._comparison = self._operation_stage2
+        self._operationown = self._operationown_stage2
 
     def setminperiod(self, minperiod):
         '''
@@ -248,6 +250,9 @@ class LineMultiple(LineRoot):
         '''
         return self.lines[0]._makeoperationown(operation, _ownerskip=self)
 
+    def _operationown_stage2(self, operation):
+        return operation(self[0][0])
+
     def _operation(self, other, operation, r=False, intify=False):
         '''
         Operation for two operands. Examines other and decides if other or
@@ -278,7 +283,7 @@ class LineMultiple(LineRoot):
 
     _comparison = _operation
 
-    def _comparison_stage2(self, other, operation):
+    def _operation_stage2(self, other, operation):
         '''
         Rich Comparison operators. Scans other and returns either an operation
         with other directly or a subitem from other
@@ -308,6 +313,9 @@ class LineSingle(LineRoot):
         '''
         return self._makeoperationown(operation)
 
+    def _operationown_stage2(self, operation):
+        return operation(self[0])
+
     def _operation(self, other, operation, r=False, intify=False):
         '''
         Two operands' operation. Scanning of other happens to understand
@@ -326,7 +334,7 @@ class LineSingle(LineRoot):
 
     _comparison = _operation
 
-    def _comparison_stage2(self, other, operation):
+    def _operation_stage2(self, other, operation):
         '''
         Rich Comparison operators. Scans other and returns either an
         operation with other directly or a subitem from other
