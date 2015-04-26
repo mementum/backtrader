@@ -51,6 +51,7 @@ class PInfo(object):
         self.xlen = 0
         self.sharex = None
         self.daxis = collections.OrderedDict()
+        self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
 
     def nextcolor(self, ax):
@@ -59,6 +60,15 @@ class PInfo(object):
 
     def color(self, ax):
         return self.sch.color(self.coloridx[ax])
+
+    def zordernext(self, ax):
+        z = self.zorder[ax]
+        if self.sch.zdown:
+            return z * 0.9999
+        return z * 1.0001
+
+    def zordercur(self, ax):
+        return self.zorder[ax]
 
 
 class Plot(six.with_metaclass(MetaParams, object)):
@@ -76,6 +86,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
                                 facecolor=facecolor,
                                 edgecolor=edgecolor,
                                 alpha=alpha),
+                      # 3.0 is the minimum default for text
+                      zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
     def plot(self, strategy):
@@ -227,6 +239,9 @@ class Plot(six.with_metaclass(MetaParams, object)):
             plotkwargs.update(dict(aa=True, label=label))
             plotkwargs.update(**linekwargs)
 
+            if ax in self.pinf.zorder:
+                plotkwargs['zorder'] = self.pinf.zordernext(ax)
+
             pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
             plottedline = pltmethod(self.pinf.x, lplot, **plotkwargs)
             try:
@@ -234,6 +249,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
             except:
                 # Possibly a container of artists (when plotting bars)
                 pass
+
+            self.pinf.zorder[ax] = plottedline.get_zorder()
 
             if not math.isnan(lplot[-1]):
                 # line has valid values, plot a tag for the last value
@@ -382,12 +399,12 @@ class Plot(six.with_metaclass(MetaParams, object)):
                      (opens[-1], highs[-1], lows[-1], closes[-1])
 
         if self.pinf.sch.style.startswith('line'):
-            plottedline, = plot_lineonclose(
+            plotted = plot_lineonclose(
                 ax, self.pinf.x, closes,
                 color=self.pinf.sch.loc, label=datalabel)
         else:
             if self.pinf.sch.style.startswith('candle'):
-                plot_candlestick(
+                plotted = plot_candlestick(
                     ax, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
@@ -395,11 +412,13 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             elif self.pinf.sch.style.startswith('bar') or True:
                 # final default option -- should be "else"
-                plot_ohlc(
+                plotted = plot_ohlc(
                     ax, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel)
+
+        self.pinf.zorder[ax] = plotted[0].get_zorder()
 
         # Code to place a label at the right hand side with the last value
         self.drawtag(ax, self.pinf.xlen, closes[-1],
