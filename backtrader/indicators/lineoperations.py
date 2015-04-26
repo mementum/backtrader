@@ -66,7 +66,6 @@ class LinesBinder(Indicator):
 
 
 class OperationN(Indicator):
-    extralines = 1
     params = (('period', 1),)
 
     def __init__(self):
@@ -86,28 +85,31 @@ class OperationN(Indicator):
 
 
 class MaxN(OperationN):
+    lines = ('maxn',)
     func = max
 
 
-class Highest(MaxN):
-    pass
+class Highest(OperationN):
+    lines = ('highest',)
+    func = max
 
 
 class MinN(OperationN):
+    lines = ('minn',)
     func = min
 
 
-class Lowest(MinN):
-    pass
+class Lowest(OperationN):
+    lines = ('lowest',)
+    func = min
 
 
 class SumN(OperationN):
+    lines = ('sumn',)
     func = math.fsum
 
 
 class Operation1(Indicator):
-    extralines = 1
-
     def __init__(self, *args):
         self.dlines = [x.lines[0] for x in self.datas]
         self.getitem0 = operator.itemgetter(0)
@@ -143,20 +145,25 @@ class Operation1(Indicator):
 
 
 class Max(Operation1):
+    lines = ('max',)
     func = max
 
 
-class High(Max):
-    pass
+class High(Operation1):
+    lines = ('high',)
+    func = max
 
 
 class Min(Operation1):
-    func = max
+    lines = ('min',)
+    func = min
 
 
-class Low(Min):
-    pass
+class Low(Operation1):
+    lines = ('low',)
+    func = min
 
 
 class Sum(Operation1):
+    lines = ('sum',)
     func = math.fsum
