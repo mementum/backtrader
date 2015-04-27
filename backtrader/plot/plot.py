@@ -54,6 +54,8 @@ class PInfo(object):
         self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
 
+        self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
+
     def nextcolor(self, ax):
         self.coloridx[ax] += 1
         return self.coloridx[ax]
@@ -95,7 +97,6 @@ class Plot(six.with_metaclass(MetaParams, object)):
             return
 
         self.pinf = PInfo(self.p.scheme)
-        self.pinf.prop = mfontmgr.FontProperties(size=self.pinf.sch.subtxtsize)
         self.sortdataindicators(strategy)
         self.calcrows(strategy)
 
@@ -122,8 +123,9 @@ class Plot(six.with_metaclass(MetaParams, object)):
         if True:
             locator = mticker.AutoLocator()
             lastax.xaxis.set_major_locator(locator)
-            #lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-            formatter = mdates.IndexDateFormatter(self.pinf.xreal, fmt='%Y-%m-%d')
+            # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
+            formatter = mdates.IndexDateFormatter(self.pinf.xreal,
+                                                  fmt='%Y-%m-%d')
             lastax.xaxis.set_major_formatter(formatter)
             # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
         elif False:
@@ -146,13 +148,15 @@ class Plot(six.with_metaclass(MetaParams, object)):
         elif True:
             for ax in self.pinf.daxis.values():
                 mpyplot.setp(ax.get_xticklabels(), visible=False)
+                # ax.autoscale_view(tight=True)
             mpyplot.setp(lastax.get_xticklabels(),
                          visible=True,
                          rotation=self.pinf.sch.tickrotation)
 
         # Things must be tight along the x axis (to fill both ends)
         axtight = 'x' if not self.pinf.sch.ytight else 'both'
-        mpyplot.autoscale(axis=axtight, tight=True)
+        mpyplot.autoscale(enable=True, axis=axtight, tight=True)
+        # mpyplot.autoscale_view()
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
@@ -263,15 +267,11 @@ class Plot(six.with_metaclass(MetaParams, object)):
             self.plotind(subind, subinds=self.dplotsover[subind], masterax=ax)
 
         if not masterax:
-            if self.pinf.sch.yadjust:
-                # give the yaxis some extra height to move indicator
-                # extreme values a bit to the middle
-                ybot, ytop = ax.get_ylim()
-                height = ytop - ybot
-                extra_height = (height * self.pinf.sch.yadjust) / 2
-                ytop += extra_height
-                ybot -= extra_height
-                ax.set_ylim(ybot, ytop)
+            # adjust margin if requested ... general of particular
+            ymargin = ind.plotinfo._get('plotymargin', 0.0)
+            ymargin = max(ymargin, self.pinf.sch.yadjust)
+            if ymargin:
+                ax.margins(y=ymargin)
 
             # Set specific or generic ticks
             yticks = ind.plotinfo._get('plotyticks', None)

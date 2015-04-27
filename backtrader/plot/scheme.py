@@ -77,7 +77,7 @@ tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
 class PlotScheme(object):
     def __init__(self):
         self.ytight = False
-        self.yadjust = 0.10
+        self.yadjust = 0.0
         self.zdown = True
         self.tickrotation = 15
 
