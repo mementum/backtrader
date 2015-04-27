@@ -120,20 +120,15 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         lastax = self.pinf.daxis.values()[-1]
         # Date formatting for the x axis - only the last one needs it
-        if True:
+        if False:
             locator = mticker.AutoLocator()
             lastax.xaxis.set_major_locator(locator)
             # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
             formatter = mdates.IndexDateFormatter(self.pinf.xreal,
                                                   fmt='%Y-%m-%d')
             lastax.xaxis.set_major_formatter(formatter)
-            # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-        elif False:
-            locator, formatter = getlocator(self.pinf.xreal)
-            # locator = mticker.AutoLocator()
-            # locator = mticker.MaxNLocator(nbins=4, prune='both')
-            lastax.xaxis.set_major_formatter(formatter)
-            lastax.xaxis.set_major_locator(locator)
+        else:
+            self.setlocators(strategy.data[0])
 
         # Put the subplots as indicated by hspace (0 is touching each other)
         fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
@@ -144,19 +139,62 @@ class Plot(six.with_metaclass(MetaParams, object)):
         # Applying the manual rotation with setp cures the problem
         # but the labels from all axis but the last have to be hidden
         if False:
-            fig.autofmt_xdate(bottom=0.25, rotation=15)
+            fig.autofmt_xdate(bottom=0.25, rotation=0)
         elif True:
             for ax in self.pinf.daxis.values():
                 mpyplot.setp(ax.get_xticklabels(), visible=False)
                 # ax.autoscale_view(tight=True)
             mpyplot.setp(lastax.get_xticklabels(),
                          visible=True,
-                         rotation=self.pinf.sch.tickrotation)
+                         # rotation=self.pinf.sch.tickrotation)
+                         rotation=0)
 
         # Things must be tight along the x axis (to fill both ends)
         axtight = 'x' if not self.pinf.sch.ytight else 'both'
         mpyplot.autoscale(enable=True, axis=axtight, tight=True)
-        # mpyplot.autoscale_view()
+
+    def setlocators(self, data):
+        ax = self.pinf.daxis.values()[-1]
+
+        comp = getattr(data, '_compression', 1)
+        tframe = getattr(data, '_timeframe', TimeFrame.Days)
+
+        if tframe == TimeFrame.Years:
+            fmtmajor = '%Y'
+            fmtminor = '%Y'
+            fmtdata = '%Y'
+        elif tframe == TimeFrame.Months:
+            fmtmajor = '%Y'
+            fmtminor = '%b'
+            fmtdata = '%b'
+        elif tframe == TimeFrame.Weeks:
+            fmtmajor = '%b'
+            fmtminor = '%d'
+            fmtdata = '%d'
+        elif tframe == TimeFrame.Days:
+            fmtmajor = '%b'
+            fmtminor = '%d'
+            fmtdata = '%Y-%m-%d'
+        elif tframe == TimeFrame.Minutes:
+            fmtmajor = '%d %b'
+            fmtminor = '%H%M'
+            fmtdata = '%Y-%m-%d %H%M'
+
+        fordata = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtdata)
+        for dax in self.pinf.daxis.values():
+            dax.fmt_xdata = fordata
+
+        locmajor = mticker.AutoLocator()
+        locminor = mticker.AutoMinorLocator()
+
+        ax.xaxis.set_minor_locator(locminor)
+        ax.xaxis.set_major_locator(locmajor)
+
+        formajor = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtmajor)
+        forminor = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtminor)
+
+        ax.xaxis.set_minor_formatter(forminor)
+        ax.xaxis.set_major_formatter(formajor)
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
@@ -363,6 +401,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 data, opens, highs, lows, closes, volumes, vollabel)
             axvol = self.pinf.daxis[data.volume]
             ax = axvol.twinx()
+            self.pinf.daxis[data] = ax
         else:
             ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
 
