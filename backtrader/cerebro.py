@@ -95,13 +95,13 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, **kwargs):
+    def plot(self, plotter=None, numfigs=1, **kwargs):
         if not plotter:
             from . import plot
             plotter = plot.Plot(**kwargs)
 
         for strat in self.runstrats:
-            plotter.plot(strat)
+            plotter.plot(strat, numfigs=numfigs)
 
         plotter.show()
 

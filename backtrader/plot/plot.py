@@ -50,11 +50,22 @@ class PInfo(object):
         self.x = None
         self.xlen = 0
         self.sharex = None
+        self.figs = list()
         self.daxis = collections.OrderedDict()
+        self.ldaxis = list()
         self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
+
+    def newfig(self, numfig):
+        fig = mpyplot.figure(numfig)
+        self.figs.append(fig)
+        self.daxis = collections.OrderedDict()
+        self.ldaxis.append(self.daxis)
+        self.row = 0
+        self.sharex = None
+        return fig
 
     def nextcolor(self, ax):
         self.coloridx[ax] += 1
@@ -92,7 +103,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy):
+    def plot(self, strategy, numfigs=1):
         if not strategy.datas:
             return
 
@@ -100,58 +111,77 @@ class Plot(six.with_metaclass(MetaParams, object)):
         self.sortdataindicators(strategy)
         self.calcrows(strategy)
 
-        # prepare a figure
-        fig = mpyplot.figure(0)
+        slen = len(strategy)
+        d, m = divmod(slen, numfigs)
+        pranges = list()
+        for i in xrange(numfigs):
+            if i == (numfigs - 1):
+                plotrange = [d * i, d + m]
+            else:
+                plotrange = [d * i, d]
 
-        # Do the plotting
-        # Things that go always at the top (observers)
-        for ptop in self.dplotstop:
-            self.plotind(ptop, self.dplotsover[ptop])
+            pranges.append(plotrange)
 
-        # Create the rest on a per data basis
-        for data in strategy.datas:
-            for ind in self.dplotsup[data]:
-                self.plotind(ind, self.dplotsover[ind])
+        for numfig in xrange(numfigs):
+            # prepare a figure
+            fig = self.pinf.newfig(numfig)
 
-            self.plotdata(data, self.dplotsover[data])
+            self.pinf.pstart, self.pinf.psize = pranges[numfig]
 
-            for ind in self.dplotsdown[data]:
-                self.plotind(ind, self.dplotsover[ind])
+            self.pinf.xreal = strategy._clock.datetime.plot(
+                self.pinf.pstart, self.pinf.psize)
+            self.pinf.xlen = len(self.pinf.xreal)
+            self.pinf.x = list(xrange(self.pinf.xlen))
 
-        lastax = self.pinf.daxis.values()[-1]
-        # Date formatting for the x axis - only the last one needs it
-        if False:
-            locator = mticker.AutoLocator()
-            lastax.xaxis.set_major_locator(locator)
-            # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-            formatter = mdates.IndexDateFormatter(self.pinf.xreal,
-                                                  fmt='%Y-%m-%d')
-            lastax.xaxis.set_major_formatter(formatter)
-        else:
-            self.setlocators(strategy.data[0])
+            # Do the plotting
+            # Things that go always at the top (observers)
+            for ptop in self.dplotstop:
+                self.plotind(ptop, self.dplotsover[ptop])
 
-        # Put the subplots as indicated by hspace (0 is touching each other)
-        fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
-                            top=0.98, left=0.05, bottom=0.05, right=0.95)
+            # Create the rest on a per data basis
+            for data in strategy.datas:
+                for ind in self.dplotsup[data]:
+                    self.plotind(ind, self.dplotsover[ind])
 
-        # Applying fig.autofmt_xdate if the data axis is the last one
-        # breaks the presentation of the date labels. why?
-        # Applying the manual rotation with setp cures the problem
-        # but the labels from all axis but the last have to be hidden
-        if False:
-            fig.autofmt_xdate(bottom=0.25, rotation=0)
-        elif True:
-            for ax in self.pinf.daxis.values():
-                mpyplot.setp(ax.get_xticklabels(), visible=False)
-                # ax.autoscale_view(tight=True)
-            mpyplot.setp(lastax.get_xticklabels(),
-                         visible=True,
-                         # rotation=self.pinf.sch.tickrotation)
-                         rotation=0)
+                self.plotdata(data, self.dplotsover[data])
 
-        # Things must be tight along the x axis (to fill both ends)
-        axtight = 'x' if not self.pinf.sch.ytight else 'both'
-        mpyplot.autoscale(enable=True, axis=axtight, tight=True)
+                for ind in self.dplotsdown[data]:
+                    self.plotind(ind, self.dplotsover[ind])
+
+            lastax = self.pinf.daxis.values()[-1]
+            # Date formatting for the x axis - only the last one needs it
+            if False:
+                locator = mticker.AutoLocator()
+                lastax.xaxis.set_major_locator(locator)
+                # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
+                formatter = mdates.IndexDateFormatter(self.pinf.xreal,
+                                                      fmt='%Y-%m-%d')
+                lastax.xaxis.set_major_formatter(formatter)
+            else:
+                self.setlocators(strategy.data[0])
+
+            # Put the subplots as indicated by hspace
+            fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
+                                top=0.98, left=0.05, bottom=0.05, right=0.95)
+
+            # Applying fig.autofmt_xdate if the data axis is the last one
+            # breaks the presentation of the date labels. why?
+            # Applying the manual rotation with setp cures the problem
+            # but the labels from all axis but the last have to be hidden
+            if False:
+                fig.autofmt_xdate(bottom=0.25, rotation=0)
+            elif True:
+                for ax in self.pinf.daxis.values():
+                    mpyplot.setp(ax.get_xticklabels(), visible=False)
+                    # ax.autoscale_view(tight=True)
+                mpyplot.setp(lastax.get_xticklabels(),
+                             visible=True,
+                             # rotation=self.pinf.sch.tickrotation)
+                             rotation=0)
+
+            # Things must be tight along the x axis (to fill both ends)
+            axtight = 'x' if not self.pinf.sch.ytight else 'both'
+            mpyplot.autoscale(enable=True, axis=axtight, tight=True)
 
     def setlocators(self, data):
         ax = self.pinf.daxis.values()[-1]
@@ -215,9 +245,6 @@ class Plot(six.with_metaclass(MetaParams, object)):
         nrows += sum(len(v) for v in self.dplotsdown.values())
 
         self.pinf.nrows = nrows
-        self.pinf.xreal = strategy._clock.datetime.plot()
-        self.pinf.xlen = len(self.pinf.xreal)
-        self.pinf.x = list(xrange(self.pinf.xlen))
 
     def newaxis(self, obj, rowspan):
         ax = mpyplot.subplot2grid((self.pinf.nrows, 1), (self.pinf.row, 0),
@@ -265,7 +292,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 label = linealias
 
             # plot data
-            lplot = line.plot()
+            lplot = line.plot(self.pinf.pstart, self.pinf.psize)
 
             if not math.isnan(lplot[-1]):
                 label += ' %.2f' % lplot[-1]
@@ -389,11 +416,11 @@ class Plot(six.with_metaclass(MetaParams, object)):
         return volplot
 
     def plotdata(self, data, indicators):
-        opens = data.open.plot()
-        highs = data.high.plot()
-        lows = data.low.plot()
-        closes = data.close.plot()
-        volumes = data.volume.plot()
+        opens = data.open.plot(self.pinf.pstart, self.pinf.psize)
+        highs = data.high.plot(self.pinf.pstart, self.pinf.psize)
+        lows = data.low.plot(self.pinf.pstart, self.pinf.psize)
+        closes = data.close.plot(self.pinf.pstart, self.pinf.psize)
+        volumes = data.volume.plot(self.pinf.pstart, self.pinf.psize)
 
         vollabel = 'Volume'
         if self.pinf.sch.volume and self.pinf.sch.voloverlay:
