@@ -207,8 +207,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
             fmtdata = '%Y-%m-%d'
         elif tframe == TimeFrame.Minutes:
             fmtmajor = '%d %b'
-            fmtminor = '%H%M'
-            fmtdata = '%Y-%m-%d %H%M'
+            fmtminor = '%H:%M'
+            fmtdata = '%Y-%m-%d %H:%M'
 
         fordata = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtdata)
         for dax in self.pinf.daxis.values():
