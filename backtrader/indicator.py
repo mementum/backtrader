@@ -65,9 +65,6 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
             for data in self.datas:
                 data.advance()
 
-            if self._clockindicator:
-                self._clock.advance()
-
             for indicator in self._lineiterators[LineIterator.IndType]:
                 indicator.advance()
 
@@ -82,9 +79,6 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
         for i in xrange(start, end):
             for data in self.datas:
                 data.advance()
-
-            if self._clockindicator:
-                self._clock.advance()
 
             for indicator in self._lineiterators[LineIterator.IndType]:
                 indicator.advance()
