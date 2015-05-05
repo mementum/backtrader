@@ -158,7 +158,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                                                       fmt='%Y-%m-%d')
                 lastax.xaxis.set_major_formatter(formatter)
             else:
-                self.setlocators(strategy.data[0])
+                self.setlocators(strategy.data)
 
             # Put the subplots as indicated by hspace
             fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
