@@ -226,6 +226,11 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     def __ne__(self, other):
         return self._comparison(other, operator.__ne__)
 
+    def __nonzero__(self):
+        return self._operationown(bool)
+
+    __bool__ = __nonzero__
+
 
 class LineMultiple(LineRoot):
     '''
