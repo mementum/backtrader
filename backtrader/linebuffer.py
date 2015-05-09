@@ -319,6 +319,18 @@ class MetaLineActions(LineBuffer.__class__):
         return _obj, args, kwargs
 
 
+class PseudoArray(object):
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+
+    def __getitem__(self, key):
+        return self.wrapped
+
+    @property
+    def array(self):
+        return self
+
+
 class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
     '''
     Base class derived from LineBuffer intented to defined the
@@ -329,6 +341,16 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
     '''
 
     _ltype = LineBuffer.IndType
+
+    @staticmethod
+    def arrayize(obj):
+        if isinstance(obj, LineRoot):
+            if not isinstance(obj, LineSingle):
+                obj = obj[0]  # get 1st line from multiline
+        else:
+            obj = PseudoArray(obj)
+
+        return obj
 
     def _next(self):
         clock_len = len(self._owner)
@@ -480,3 +502,65 @@ class LineOwnOperation(LineActions):
 
         for i in xrange(start, end):
             dst[i] = op(srca[i])
+
+
+class Logic(LineActions):
+    def __init__(self, a, b):
+        super(Logic, self).__init__()
+
+        self.a = self.arrayize(a)
+        self.b = self.arrayize(b)
+
+
+class If(Logic):
+    def __init__(self, cond, a, b):
+        super(If, self).__init__(a, b)
+
+        self.cond = self.arrayize(cond)
+
+    def next(self):
+        self[0] = self.a[0] if self.cond[0] else self.b[0]
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        cond = self.cond.array
+
+        for i in xrange(start, end):
+            dst[i] = srca[i] if cond[i] else srcb[i]
+
+
+class And(Logic):
+    def __init__(self, a, b):
+        super(And, self).__init__(a, b)
+
+    def next(self):
+        self[0] = self.a[0] and self.b[0]
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+
+        for i in xrange(start, end):
+            dst[i] = srca[i] and srcb[i]
+
+
+class Or(Logic):
+    def __init__(self, a, b):
+        super(Or, self).__init__(a, b)
+
+    def next(self):
+        self[0] = self.a[0] or self.b[0]
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+
+        for i in xrange(start, end):
+            dst[i] = srca[i] or srcb[i]
