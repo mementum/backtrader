@@ -39,7 +39,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.comminfo = dict()
 
     def getcash(self):
-        return self.p.cash
+        return self.cash
 
     def setcash(self, cash):
         self.startingcash = self.p.cash = cash
@@ -150,7 +150,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             self.cash -= openedvalue
 
             openedcomm = comminfo.getcomm_pricesize(abopened, price)
-            self.p.cash -= openedcomm
+            self.cash -= openedcomm
 
             # Remove cash for the new opened contracts
             self.cash += comminfo.cashadjust(abopened,
