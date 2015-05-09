@@ -176,7 +176,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             # to ensure margin requirements are met
             comminfo = self.getcommissioninfo(data)
             self.cash += comminfo.cashadjust(pos.size,
-                                             data.close[1],
+                                             data.close[-1],
                                              data.close[0])
 
         # Iterate once over all elements of the pending queue
@@ -191,7 +191,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             phigh = order.data.high[0]
             popen = order.data.open[0]
             pclose = order.data.close[0]
-            pclose1 = order.data.close[1]
+            pclose1 = order.data.close[-1]
             pcreated = order.created.price
             plimit = order.created.pricelimit
 
@@ -219,12 +219,12 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self.pending.append(order)
 
     def _try_exec_close(self, order, pclose):
-        if order.data.datetime.time(0) != order.data.datetime.time(1):
+        if order.data.datetime.time(0) != order.data.datetime.time(-1):
             # intraday: time changes in between bars
-            self._execute(order, order.data.datetime[1], price=pclose)
-        elif order.data.datetime.date(0) != order.data.datetime.date(1):
+            self._execute(order, order.data.datetime[-1], price=pclose)
+        elif order.data.datetime.date(0) != order.data.datetime.date(-1):
             # daily: time is equal, date changes
-            self._execute(order, order.data.datetime[1], price=p)
+            self._execute(order, order.data.datetime[-1], price=p)
 
     def _try_exec_limit(self, order, popen, plimit):
         if isinstance(order, BuyOrder):

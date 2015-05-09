@@ -30,14 +30,14 @@ class UpDays(Indicator):
     lines = ('up',)
 
     def __init__(self):
-        self.lines.up = Max(self.data - self.data(1), 0.0)
+        self.lines.up = Max(self.data - self.data(-1), 0.0)
 
 
 class DownDays(Indicator):
     lines = ('down',)
 
     def __init__(self):
-        self.lines.down = Max(self.data(1) - self.data, 0.0)
+        self.lines.down = Max(self.data(-1) - self.data, 0.0)
 
 
 class RSI(Indicator):

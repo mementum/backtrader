@@ -48,7 +48,7 @@ class DPO(Indicator):
         ma = self.p.matype(self.data, period=self.p.period)
 
         # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
-        self.lines.dpo = self.data - ma(self.p.period // 2 + 1)
+        self.lines.dpo = self.data - ma(-self.p.period // 2 + 1)
 
 
 # Alias for DPO

@@ -102,7 +102,7 @@ class LineBuffer(LineSingle):
         return len(self.array) - self.extension
 
     def __getitem__(self, ago):
-        return self.array[self.idx - ago]
+        return self.array[self.idx + ago]
 
     def get(self, ago=0, size=1):
         ''' Returns a slice of the array relative to *ago*
@@ -118,7 +118,7 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         '''
-        return self.array[self.idx - ago - size + 1:self.idx - ago + 1]
+        return self.array[self.idx + ago - size + 1:self.idx + ago + 1]
 
     def getzero(self, idx=0, size=1):
         ''' Returns a slice of the array relative to the real zero of the buffer
@@ -140,7 +140,7 @@ class LineBuffer(LineSingle):
             the slice
             value (variable): value to be set
         '''
-        self.array[self.idx - ago] = value
+        self.array[self.idx + ago] = value
         for binding in self.bindings:
             binding[ago] = value
 
@@ -152,7 +152,7 @@ class LineBuffer(LineSingle):
             ago (int): Point of the array to which size will be added to return
             the slice
         '''
-        self.array[self.idx - ago] = value
+        self.array[self.idx + ago] = value
         for binding in self.bindings:
             binding[ago] = value
 
@@ -275,7 +275,7 @@ class LineBuffer(LineSingle):
         return LineOwnOperation(self, operation, _ownerskip=None)
 
     def datetime(self, ago=0):
-        return num2date(self.array[self.idx - ago])
+        return num2date(self.array[self.idx + ago])
 
     def date(self, ago=0):
         return self.datetime(ago).date()
@@ -296,9 +296,7 @@ class MetaLineActions(LineBuffer.__class__):
     '''
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
-            super(MetaLineActions, cls).dopreinit(_obj,
-                                                  *args,
-                                                  **kwargs)
+            super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
 
         # Do not produce anything until the operation lines produce something
         _minperiod = \
@@ -389,7 +387,7 @@ class LineDelay(LineActions):
         # Need to add the delay to the period. "ago" is 0 based and therefore
         # we need to pass and extra 1 which is the minimum defined period for
         # any data (which will be substracted inside addminperiod)
-        self.addminperiod(ago + 1)
+        self.addminperiod(abs(ago) + 1)
 
     def next(self):
         self[0] = self.a[self.ago]
@@ -401,7 +399,7 @@ class LineDelay(LineActions):
         ago = self.ago
 
         for i in xrange(start, end):
-            dst[i] = src[i - ago]
+            dst[i] = src[i + ago]
 
 
 class LinesOperation(LineActions):
