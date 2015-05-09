@@ -176,8 +176,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                     # ax.autoscale_view(tight=True)
                 mpyplot.setp(lastax.get_xticklabels(),
                              visible=True,
-                             # rotation=self.pinf.sch.tickrotation)
-                             rotation=0)
+                             rotation=self.pinf.sch.tickrotation)
 
             # Things must be tight along the x axis (to fill both ends)
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
