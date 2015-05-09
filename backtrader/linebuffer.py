@@ -38,7 +38,7 @@ from six.moves import xrange
 
 from .lineroot import LineRoot, LineSingle
 from . import metabase
-from .utils import num2date
+from .utils import num2date, cmp
 
 
 NAN = float('NaN')
@@ -564,3 +564,20 @@ class Or(Logic):
 
         for i in xrange(start, end):
             dst[i] = srca[i] or srcb[i]
+
+
+class Cmp(Logic):
+    def __init__(self, a, b):
+        super(Cmp, self).__init__(a, b)
+
+    def next(self):
+        self[0] = cmp(self.a[0], self.b[0])
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+
+        for i in xrange(start, end):
+            dst[i] = cmp(srca[i], srcb[i])
