@@ -51,30 +51,6 @@ class TestStrategy(bt.Strategy):
         dt = bt.num2date(dt)
         print('%s, %s' % (dt.isoformat(), txt))
 
-    def __init__(self):
-        # self.data = self.datas[0]
-        # self.dataclose = self.data.close
-        self.sma = btind.MovingAverageSimple(self.data,
-                                             period=self.p.maperiod,
-                                             plot=True)
-        self.orderid = None
-        self.expiry = datetime.timedelta(days=self.p.expiredays)
-        # btind.ATR(self.data)
-        if False:
-            btind.ATR(self.data)
-            btind.MACDHistogram(self.data)
-            btind.Stochastic(self.data)
-            btind.RSI(self.data)
-            btind.MovingAverageExponential(
-                self.data, period=int(0.8 * self.p.maperiod))
-            btind.MovingAverageSmoothed(
-                self.data, period=int(1.2 * self.p.maperiod))
-            btind.MovingAverageWeighted(
-                self.data, period=int(1.5 * self.p.maperiod))
-            btind.BollingerBands(self.data)
-
-        self.sizer = bt.SizerFix(stake=self.p.stake)
-
     def notify(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
             return  # Await further notifications
@@ -96,6 +72,30 @@ class TestStrategy(bt.Strategy):
         # Allow new orders
         self.orderid = None
 
+    def __init__(self):
+        self.sma = btind.MovingAverageSimple(self.data,
+                                             period=self.p.maperiod,
+                                             plot=True)
+        self.close_sma = bt.Cmp(self.data.close, self.sma)
+
+        self.orderid = None
+        self.expiry = datetime.timedelta(days=self.p.expiredays)
+        # btind.ATR(self.data)
+        if False:
+            btind.ATR(self.data)
+            btind.MACDHistogram(self.data)
+            btind.Stochastic(self.data)
+            btind.RSI(self.data)
+            btind.MovingAverageExponential(
+                self.data, period=int(0.8 * self.p.maperiod))
+            btind.MovingAverageSmoothed(
+                self.data, period=int(1.2 * self.p.maperiod))
+            btind.MovingAverageWeighted(
+                self.data, period=int(1.5 * self.p.maperiod))
+            btind.BollingerBands(self.data)
+
+        self.sizer = bt.SizerFix(stake=self.p.stake)
+
     def next(self):
         if self.p.printdata:
             self.log(
@@ -109,7 +109,7 @@ class TestStrategy(bt.Strategy):
             return  # if an order is active, no new orders are allowed
 
         if not self.position.size:
-            if self.data.close > self.sma:
+            if self.close_sma > 0:
                 valid = self.data.datetime.datetime() + self.expiry
                 price = self.data.close[0]
                 if self.p.exectype == bt.Order.Limit:
@@ -120,7 +120,7 @@ class TestStrategy(bt.Strategy):
                                         price=price,
                                         valid=valid)
 
-        elif self.data.close < self.sma:
+        elif self.close_sma < 0:
             if self.p.printops:
                 self.log('SELL CREATE , %.2f' % self.data.close[0])
             self.orderid = self.sell(exectype=bt.Order.Market)
