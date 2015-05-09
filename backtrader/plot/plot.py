@@ -339,6 +339,9 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             # Set specific or generic ticks
             yticks = ind.plotinfo._get('plotyticks', None)
+            if yticks is None:
+                yticks = ind.plotinfo._get('plotyhlines', None)
+
             if yticks is not None:
                 ax.set_yticks(yticks)
             else:
@@ -346,7 +349,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 ax.yaxis.set_major_locator(locator)
 
             # Set specific hlines if asked to
-            for hline in ind.plotinfo._get('plothlines', []):
+            hlines = ind.plotinfo._get('plothlines', [])
+            if not hlines:
+                hlines = ind.plotinfo._get('plotyhlines', [])
+            for hline in hlines:
                 ax.axhline(hline, color=self.pinf.sch.hlinescolor,
                            ls=self.pinf.sch.hlinesstyle,
                            lw=self.pinf.sch.hlineswidth)
