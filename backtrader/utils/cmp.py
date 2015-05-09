@@ -21,5 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .date import *
-from .cmp import *
+import six
+
+if six.PY3:
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
+else:
+    cmp = cmp
