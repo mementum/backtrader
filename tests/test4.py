@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
-
-from __future__ import absolute_import, division, print_function, unicode_literals
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import testbase
 
@@ -39,40 +39,23 @@ class TestStrategy(bt.Strategy):
         self.ohlc = self.datas[0]
         self.close = self.ohlc.close
 
-        if True:
-            btindicators.MovingAverageSimple(self.datas[0], period=30)
-            btindicators.MovingAverageSimple(self.datas[0], period=50)
-            self.ind = btindicators.StochasticSlow(self.datas[0])
-            btindicators.MACDHistogram(self.datas[0])
-            # self.ind = btindicators.RSI(self.datas[0])
-            atr = btindicators.AverageTrueRange(self.datas[0])
-            btindicators.MovingAverageSimple(atr, period=10)
-            rsi = btindicators.RSI(self.datas[0])
-            btindicators.MovingAverageSimple(rsi, period=10)
-            btindicators.MovingAverageExponential(self.datas[0], period=30)
-            btindicators.MovingAverageWeighted(self.datas[0], period=30)
-            btindicators.StochasticFast(self.datas[0])
-            pass
-        else:
-            self.stocslow = btindicators.StochasticSlow(self.datas[0])
-            self.macd2 = btindicators.MACDHisto2(self.datas[0])
-            btindicators.AverageTrueRange(self.datas[0])
-            btindicators.MACDHisto(self.datas[0])
-            btindicators.MACD(self.datas[0])
-            btindicators.MACDHistogram(self.datas[0])
-            btindicators.MovingAverageSimple(self.datas[0], period=30)
-            btindicators.MovingAverageSimple(self.ind1, period=10)
-            btindicators.MovingAverageExponential(self.datas[0], period=30)
-            btindicators.MovingAverageWeighted(self.datas[0], period=30)
-            btindicators.RSI(self.datas[0])
-            btindicators.RSI(self.datas[0], matype=btindicators.MATypes.Exponential)
-            btindicators.StochasticFast(self.datas[0])
-            btindicators.StochasticFull(self.datas[0])
-            btindicators.StochasticSlow(self.datas[0])
+        btindicators.SimpleMovingAverage(self.datas[0], period=30)
+        btindicators.SimpleMovingAverage(self.datas[0], period=50)
+        self.ind = btindicators.StochasticSlow(self.datas[0])
+        btindicators.MACDHisto(self.datas[0])
+        # self.ind = btindicators.RSI(self.datas[0])
+        atr = btindicators.AverageTrueRange(self.datas[0])
+        btindicators.SimpleMovingAverage(atr, period=10)
+        rsi = btindicators.RSI(self.datas[0])
+        btindicators.SimpleMovingAverage(rsi, period=10)
+        btindicators.ExponentialMovingAverage(self.datas[0], period=30)
+        btindicators.WeightedMovingAverage(self.datas[0], period=30)
+        btindicators.StochasticFast(self.datas[0])
 
         print('--------------------------------------------------')
-        for indicator in self._indicators:
-            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
+        for indicator in self._lineiterators[self.IndType]:
+            print('%s period %d' %
+                  (indicator.__class__.__name__, indicator._minperiod))
 
     def start(self):
         self.tcstart = time.clock()
@@ -85,30 +68,37 @@ class TestStrategy(bt.Strategy):
         print('--------------------------------------------------')
         print('Time used', tused)
 
-        for indicator in self._indicators:
+        for indicator in self._lineiterators[self.IndType]:
             print('--------------------------------------------------')
-            print('%s period %d' % (indicator.__class__.__name__, indicator._minperiod))
+            print('%s period %d' %
+                  (indicator.__class__.__name__, indicator._minperiod))
             basetxt = '%5d: %s - Close %.2f - Indicator' \
-                      % (len(self.ohlc), self.ohlc.datetime[0].isoformat(), self.close[0])
+                      % (len(self.ohlc),
+                         self.ohlc.datetime.date(0).isoformat(),
+                         self.close[0])
 
             for i in range(indicator.size()):
                 basetxt += ' %.2f' % (indicator.lines[i][0],)
 
             print(basetxt)
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     cerebro = bt.Cerebro(preload=True)
 
-    # The datas are in a subdirectory of the samples. Need to find where the script is
+    # Datas are in a subdirectory of samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
+    datapath = os.path.join(
+        modpath,
+        '../samples/datas/yahoo/oracle-1995-2014.csv')
 
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
-        fromdate=datetime.datetime(2000, 1, 1), # Do not pass values before this date
-        todate=datetime.datetime(2000, 12, 31), # Do not pass values after this date
+        # Do not pass values before this date
+        fromdate=datetime.datetime(2000, 1, 1),
+        # Do not pass values after this date
+        todate=datetime.datetime(2000, 12, 31),
         reversed=True)
 
     cerebro.adddata(data)
