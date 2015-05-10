@@ -22,28 +22,29 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. indicator import Indicator
-from .ma import MATypes
+from .ma import MovAv
 
 
 class MACD(Indicator):
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
-              ('matype', MATypes.Exponential),)
+              ('movav', MovAv.Exponential),)
 
     plotinfo = dict(plothlines=[0.0])
     plotlines = dict(signal=dict(ls='--'))
 
     def _plotlabel(self):
         plabels = super(MACD, self)._plotlabel()
-        plabels.remove(self.p.matype) if self.p.isdefault('matype') else None
+        if self.p.isdefault('movav'):
+            plabels.remove(self.p.movav)
         return plabels
 
     def __init__(self):
-        me1 = self.p.matype(self.data, period=self.p.period_me1)
-        me2 = self.p.matype(self.data, period=self.p.period_me2)
+        me1 = self.p.movav(self.data, period=self.p.period_me1)
+        me2 = self.p.movav(self.data, period=self.p.period_me2)
         self.lines.macd = me1 - me2
-        self.lines.signal = self.p.matype(self.lines.macd,
-                                          period=self.p.period_signal)
+        self.lines.signal = self.p.movav(self.lines.macd,
+                                         period=self.p.period_signal)
 
 
 class MACDHisto(MACD):

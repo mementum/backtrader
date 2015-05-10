@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import Indicator
-from .ma import MATypes
+from .ma import MovAv
 
 
 class StdDev(Indicator):
@@ -32,11 +32,11 @@ class StdDev(Indicator):
     def __init__(self):
         # mean could already be passed as a parameter to avoid recalculation
         # dmean = self.data1 if len(self.datas) > 1 else \
-        # MaTypes.Simple(self.data, period=self.p.period)
+        # MovAv.Simple(self.data, period=self.p.period)
         # sqmean = pow(dmean, 2)
 
-        meansq = MATypes.Simple(pow(self.data, 2), period=self.p.period)
-        sqmean = pow(MATypes.Simple(self.data, period=self.p.period), 2)
+        meansq = MovAv.Simple(pow(self.data, 2), period=self.p.period)
+        sqmean = pow(MovAv.Simple(self.data, period=self.p.period), 2)
         self.lines.stddev = pow(meansq - sqmean, 0.5)
 
 
@@ -46,7 +46,7 @@ class StandardDeviation(StdDev):
 
 class BollingerBands(Indicator):
     lines = ('mid', 'top', 'bot',)
-    params = (('period', 20), ('devfactor', 2.0), ('matype', MATypes.Simple),)
+    params = (('period', 20), ('devfactor', 2.0), ('movav', MovAv.Simple),)
 
     plotinfo = dict(subplot=False)
     plotlines = dict(
@@ -57,11 +57,11 @@ class BollingerBands(Indicator):
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.devfactor]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
-        self.lines.mid = ma = self.p.matype(self.data, period=self.p.period)
+        self.lines.mid = ma = self.p.movav(self.data, period=self.p.period)
         stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
         self.lines.top = ma + stddev
         self.lines.bot = ma - stddev

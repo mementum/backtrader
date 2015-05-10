@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import Indicator
-from .ma import MATypes
+from .ma import MovAv
 from .lineoperations import Max
 
 
@@ -42,15 +42,15 @@ class TrueRange(TR):
 
 class ATR(Indicator):
     lines = ('atr',)
-    params = (('period', 14), ('matype', MATypes.Simple))
+    params = (('period', 14), ('movav', MovAv.Simple))
 
     def _plotlabel(self):
         plabels = [self.p.period]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
-        self.lines.atr = self.p.matype(TR(self.data), period=self.p.period)
+        self.lines.atr = self.p.movav(TR(self.data), period=self.p.period)
 
 
 class AverageTrueRange(ATR):

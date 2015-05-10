@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import Indicator
-from .ma import MATypes
+from .ma import MovAv
 from .lineoperations import Max
 
 
@@ -43,13 +43,13 @@ class DownDays(Indicator):
 class RSI(Indicator):
     lines = ('rsi',)
     params = (('period', 14),
-              ('matype', MATypes.Smoothed),
+              ('movav', MovAv.Smoothed),
               ('overbought', 70.0),
               ('oversold', 30.0))
 
     def _plotlabel(self):
         plabels = [self.p.period]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     plotinfo = dict(plotname='RSI')
@@ -60,7 +60,7 @@ class RSI(Indicator):
 
         updays = UpDays(self.data)
         downdays = DownDays(self.data)
-        maup = self.p.matype(updays, period=self.p.period)
-        madown = self.p.matype(downdays, period=self.p.period)
+        maup = self.p.movav(updays, period=self.p.period)
+        madown = self.p.movav(downdays, period=self.p.period)
         rs = maup / madown
         self.lines.rsi = 100.0 - 100.0 / (1.0 + rs)

@@ -22,20 +22,20 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import Indicator
-from .ma import MATypes
+from .ma import MovAv
 from .lineoperations import Highest, Lowest
 
 
 class _StochasticBase(Indicator):
     lines = ('k', 'd',)
-    params = (('period', 14), ('period_dfast', 3), ('matype', MATypes.Simple),
+    params = (('period', 14), ('period_dfast', 3), ('movav', MovAv.Simple),
               ('overbought', 80.0), ('oversold', 20.0),)
 
     plotlines = dict(d=dict(ls='--'))
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
@@ -47,7 +47,7 @@ class _StochasticBase(Indicator):
         knum = self.data[self.PriceClose] - lowestlow
         kden = highesthigh - lowestlow
         self.kperc = 100.0 * (knum / kden)
-        self.dperc = self.p.matype(self.kperc, period=self.p.period_dfast)
+        self.dperc = self.p.movav(self.kperc, period=self.p.period_dfast)
 
 
 class StochasticFast(_StochasticBase):
@@ -62,13 +62,13 @@ class Stochastic(_StochasticBase):
 
     def _plotlabel(self):
         plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
         super(Stochastic, self).__init__()
         self.lines.k = self.dperc
-        self.lines.d = self.p.matype(self.lines.k, period=self.p.period_dslow)
+        self.lines.d = self.p.movav(self.lines.k, period=self.p.period_dslow)
 
 
 class StochasticSlow(Stochastic):
@@ -81,4 +81,4 @@ class StochasticAll(StochasticSlow):
 
     def __init__(self):
         super(StochasticAll, self).__init__()
-        self.lines.dd = self.p.matype(self.lines.d, period=self.p.period_dslow)
+        self.lines.dd = self.p.movav(self.lines.d, period=self.p.period_dslow)
