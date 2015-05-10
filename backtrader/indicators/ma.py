@@ -29,7 +29,7 @@ from six.moves import xrange
 from .. import Indicator
 
 
-class MovingAverageBase(Indicator):
+class BaseMovingAverage(Indicator):
     lines = ('ma',)
     params = (('period', 30),)
     plotinfo = dict(subplot=False)
@@ -38,7 +38,7 @@ class MovingAverageBase(Indicator):
         self.addminperiod(self.p.period)
 
 
-class MovingAverageSimple(MovingAverageBase):
+class SimpleMovingAverage(BaseMovingAverage):
     plotinfo = dict(plotname='SMA')
 
     def next(self):
@@ -54,13 +54,17 @@ class MovingAverageSimple(MovingAverageBase):
             dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
 
 
-class MovingAverageSmoothing(MovingAverageSimple):
+class SMA(SimpleMovingAverage):
+    pass
+
+
+class SmoothingMovingAverage(SimpleMovingAverage):
     def __init__(self):
-        super(MovingAverageSmoothing, self).__init__()
+        super(SmoothingMovingAverage, self).__init__()
         self.smoothingfactor()
 
     def nextstart(self):
-        super(MovingAverageSmoothing, self).next()
+        super(SmoothingMovingAverage, self).next()
         self.prev = self.line[0]
 
     def next(self):
@@ -68,7 +72,7 @@ class MovingAverageSmoothing(MovingAverageSimple):
             self.prev * self.smfactor1 + self.data_0[0] * self.smfactor
 
     def oncestart(self, start, end):
-        super(MovingAverageSmoothing, self).once(start, end)
+        super(SmoothingMovingAverage, self).once(start, end)
 
     def once(self, start, end):
         darray = self.data_0.array
@@ -82,7 +86,7 @@ class MovingAverageSmoothing(MovingAverageSimple):
             larray[i] = prev = prev * smfactor1 + darray[i] * smfactor
 
 
-class MovingAverageExponential(MovingAverageSmoothing):
+class ExponentialMovingAverage(SmoothingMovingAverage):
     plotinfo = dict(plotname='EMA')
 
     def smoothingfactor(self):
@@ -90,7 +94,11 @@ class MovingAverageExponential(MovingAverageSmoothing):
         self.smfactor1 = 1.0 - self.smfactor
 
 
-class MovingAverageSmoothed(MovingAverageSmoothing):
+class EMA(ExponentialMovingAverage):
+    pass
+
+
+class SmoothedMovingAverage(SmoothingMovingAverage):
     plotinfo = dict(plotname='SMMA')
 
     def smoothingfactor(self):
@@ -98,11 +106,15 @@ class MovingAverageSmoothed(MovingAverageSmoothing):
         self.smfactor1 = 1.0 - self.smfactor
 
 
-class MovingAverageWeighted(MovingAverageBase):
+class SMMA(SmoothedMovingAverage):
+    pass
+
+
+class WeightedMovingAverage(BaseMovingAverage):
     plotinfo = dict(plotname='WMA')
 
     def __init__(self):
-        super(MovingAverageWeighted, self).__init__()
+        super(WeightedMovingAverage, self).__init__()
         self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
         self.weights = [float(x) for x in range(1, self.p.period + 1)]
         if False:
@@ -131,8 +143,17 @@ class MovingAverageWeighted(MovingAverageBase):
             larray[i] = coef * math.fsum(map(operator.mul, data, weights))
 
 
-class MATypes(object):
-    Simple = MovingAverageSimple
-    Exponential = MovingAverageExponential
-    Smoothed = MovingAverageSmoothed
-    Weighted = MovingAverageWeighted
+class WMA(WeightedMovingAverage):
+    pass
+
+
+class MovAv(object):
+    Simple = SimpleMovingAverage
+    Exponential = ExponentialMovingAverage
+    Smoothed = SmoothedMovingAverage
+    Weighted = WeightedMovingAverage
+
+    SMA = SMA
+    EMA = EMA
+    SMMA = SMMA
+    WMA = WMA

@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import Indicator
-from .ma import MATypes
+from .ma import MovAv
 
 
 class DPO(Indicator):
@@ -32,7 +32,7 @@ class DPO(Indicator):
 
     # Accepted parameters (and defaults) -
     # MovAvg also parameter to allow experimentation
-    params = (('period', 20), ('matype', MATypes.Simple))
+    params = (('period', 20), ('movav', MovAv.Simple))
 
     # Emphasize central 0.0 line in plot
     plotinfo = dict(plothlines=[0.0])
@@ -40,12 +40,12 @@ class DPO(Indicator):
     # Indicator information after the name (in brackets)
     def _plotlabel(self):
         plabels = [self.p.period]
-        plabels += [self.p.matype] * self.p.notdefault('matype')
+        plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
         # Create the Moving Average
-        ma = self.p.matype(self.data, period=self.p.period)
+        ma = self.p.movav(self.data, period=self.p.period)
 
         # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
         self.lines.dpo = self.data - ma(-self.p.period // 2 + 1)
