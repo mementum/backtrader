@@ -117,14 +117,6 @@ class WeightedMovingAverage(BaseMovingAverage):
         super(WeightedMovingAverage, self).__init__()
         self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
         self.weights = [float(x) for x in range(1, self.p.period + 1)]
-        if False:
-            # Alternative - but consumes period - 1 extra lines
-            # and the associated memory (and doubles execution time.
-            # This would get rid of "next" and "once"
-            from .lineoperations import Sum
-            datas = [self.data(i) for i in range(self.p.period)]
-            ma = self.coef * Sum(*map(operator.mul, self.weights, datas))
-            ma.bind2line()
 
     def next(self):
         data = self.data_0.get(size=self.p.period)
