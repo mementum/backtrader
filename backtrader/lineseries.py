@@ -69,7 +69,7 @@ class LineAlias(object):
         to the line inside "value"
         '''
         if isinstance(value, LineMultiple):
-            value = value[0]
+            value = value.lines[0]
 
         value.addbinding(obj.lines[self.line])
 
@@ -364,11 +364,11 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
     def __len__(self):
         return len(self.lines)
 
-    def __getitem__(self, line):
-        return self.lines[line]
+    def __getitem__(self, key):
+        return self.lines[0][key]
 
-    def __setitem__(self, line, value):
-        self.lines[line][0] = value
+    def __setitem__(self, key, value):
+        self.lines[0][key] = value
 
     def __init__(self, *args, **kwargs):
         # if any args, kwargs make it up to here, something is broken
