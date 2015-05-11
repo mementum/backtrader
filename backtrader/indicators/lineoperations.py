@@ -55,11 +55,11 @@ class LinesBinder(Indicator):
     extralines = 1
 
     def next(self):
-        self.data_0[0] = self.data1_0[0]
+        self.data[0] = self.data1[0]
 
     def once(self, start, end):
-        dst = self.data_0.array
-        src = self.data1_0.array
+        dst = self.data.lines[0].array
+        src = self.data1.lines[0].array
 
         for i in xrange(start, end):
             dst[i] = src[i]

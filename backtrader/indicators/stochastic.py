@@ -42,9 +42,11 @@ class _StochasticBase(Indicator):
         self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
         self.plotinfo.plotyticks = self.plotinfo.plothlines
 
-        highesthigh = Highest(self.data[self.PriceHigh], period=self.p.period)
-        lowestlow = Lowest(self.data[self.PriceLow], period=self.p.period)
-        knum = self.data[self.PriceClose] - lowestlow
+        highesthigh = Highest(
+            self.data.lines[self.PriceHigh], period=self.p.period)
+        lowestlow = Lowest(
+            self.data.lines[self.PriceLow], period=self.p.period)
+        knum = self.data.lines[self.PriceClose] - lowestlow
         kden = highesthigh - lowestlow
         self.kperc = 100.0 * (knum / kden)
         self.dperc = self.p.movav(self.kperc, period=self.p.period_dfast)

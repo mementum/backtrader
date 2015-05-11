@@ -30,9 +30,9 @@ class TR(Indicator):
     lines = ('tr',)
 
     def __init__(self):
-        high = self.data[self.PriceHigh]
-        low = self.data[self.PriceLow]
-        close1 = self.data[self.PriceClose](-1)
+        high = self.data.lines[self.PriceHigh]
+        low = self.data.lines[self.PriceLow]
+        close1 = self.data.lines[self.PriceClose](-1)
         self.lines.tr = Max(high - low, abs(high - close1), abs(close1 - low))
 
 
