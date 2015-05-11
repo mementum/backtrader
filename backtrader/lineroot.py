@@ -76,7 +76,6 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     def _stage2(self):
         # change to real comparison function
         self._operation = self._operation_stage2
-        self._comparison = self._operation_stage2
         self._operationown = self._operationown_stage2
 
     def setminperiod(self, minperiod):
@@ -172,8 +171,6 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
         return self._makeoperation(other, operation, r, self)
 
-    _comparison = _operation
-
     def _operation_stage2(self, other, operation):
         '''
         Rich Comparison operators. Scans other and returns either an
@@ -221,27 +218,23 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     def __abs__(self):
         return self._operationown(operator.__abs__)
 
-    # Comparison operators
-    def _comparison(self, other, operation):
-        raise NotImplementedError
-
     def __lt__(self, other):
-        return self._comparison(other, operator.__lt__)
+        return self._operation(other, operator.__lt__)
 
     def __gt__(self, other):
-        return self._comparison(other, operator.__gt__)
+        return self._operation(other, operator.__gt__)
 
     def __le__(self, other):
-        return self._comparison(other, operator.__le__)
+        return self._operation(other, operator.__le__)
 
     def __ge__(self, other):
-        return self._comparison(other, operator.__ge__)
+        return self._operation(other, operator.__ge__)
 
     def __eq__(self, other):
-        return self._comparison(other, operator.__eq__)
+        return self._operation(other, operator.__eq__)
 
     def __ne__(self, other):
-        return self._comparison(other, operator.__ne__)
+        return self._operation(other, operator.__ne__)
 
     def __nonzero__(self):
         return self._operationown(bool)
