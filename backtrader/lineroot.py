@@ -151,18 +151,9 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     def _operationown(self, operation):
         '''
-        To be defined by subclasses to implement an operation on "self"
+        Operation with single operand which is "self"
         '''
-        raise NotImplementedError
-
-    def _operation(self, other, operation, r=False, intify=False):
-        '''
-        To be defined by subclasses to implement an operation on "self"
-        and "other" with "operation"
-
-        If "r" is True is a reverse operation
-        '''
-        raise NotImplementedError
+        return self._makeoperationown(operation, _ownerskip=self)
 
     def _roperation(self, other, operation, intify=False):
         '''
@@ -170,6 +161,32 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         reverse operation
         '''
         return self._operation(other, operation, r=True, intify=intify)
+
+    def _operation(self, other, operation, r=False, intify=False):
+        '''
+        Two operands' operation. Scanning of other happens to understand
+        if other must be directly an operand or rather a subitem thereof
+        '''
+        if isinstance(other, LineMultiple):
+            other = other.lines[0]
+
+        return self._makeoperation(other, operation, r, self)
+
+    _comparison = _operation
+
+    def _operation_stage2(self, other, operation):
+        '''
+        Rich Comparison operators. Scans other and returns either an
+        operation with other directly or a subitem from other
+        '''
+        if isinstance(other, LineRoot):
+            other = other[0]
+
+        # operation(float, other) ... expecting other to be a float
+        return operation(self[0], other)
+
+    def _operationown_stage2(self, operation):
+        return operation(self[0])
 
     def __add__(self, other):
         return self._operation(other, operator.__add__)
@@ -249,57 +266,11 @@ class LineMultiple(LineRoot):
         for line in self.lines:
             line.addminperiod(minperiod)
 
-    def _operationown(self, operation):
-        '''
-        Operation with single operand which is "self"
-        '''
-        return self.lines[0]._makeoperationown(operation, _ownerskip=self)
+    def _makeoperation(self, other, operation, r=False, _ownerskip=None):
+        return self.lines[0]._makeoperation(other, operation, r, _ownerskip)
 
-    def _operationown_stage2(self, operation):
-        return operation(self[0][0])
-
-    def _operation(self, other, operation, r=False, intify=False):
-        '''
-        Operation for two operands. Examines other and decides if other or
-        items of it will be part of the operation
-
-        "self" will be skipped as potential owner for the resulting
-        operation, because the owner is also a LineMultiple instance,
-        but's for sure not the one taking part in the comparison
-        '''
-        if isinstance(other, LineMultiple):
-            # FIXME: ideally return a LineSeries object at least as long as the
-            # smallest size of both operands
-            return self.lines[0]._makeoperation(other.lines[0],
-                                                operation,
-                                                r,
-                                                _ownerskip=self)
-        elif isinstance(other, LineSingle):
-            return self.lines[0]._makeoperation(other,
-                                                operation,
-                                                r,
-                                                _ownerskip=self)
-
-        # assume other is a standard type
-        return self.lines[0]._makeoperation(other,
-                                            operation,
-                                            r,
-                                            _ownerskip=self)
-
-    _comparison = _operation
-
-    def _operation_stage2(self, other, operation):
-        '''
-        Rich Comparison operators. Scans other and returns either an operation
-        with other directly or a subitem from other
-        '''
-        if isinstance(other, LineRoot):
-            # either operation(LineBuffer, LineBuffer) or
-            # operation(LineBuffer, float) both are defined by LineBuffer
-            return operation(self.lines[0], other[0])
-
-        # operation(float, other) ... expecting other to be a float
-        return operation(self.lines[0][0], other)
+    def _makeoperationown(self, operation, _ownerskip=None):
+        return self.lines[0]._makeoperationown(operation, _ownerskip)
 
 
 class LineSingle(LineRoot):
@@ -311,50 +282,3 @@ class LineSingle(LineRoot):
         Add the minperiod (substracting the overlapping 1 minimum period)
         '''
         self._minperiod += minperiod - 1
-
-    def _operationown(self, operation):
-        '''
-        Operation with single operand which is "self"
-        '''
-        return self._makeoperationown(operation)
-
-    def _operationown_stage2(self, operation):
-        return operation(self[0])
-
-    def _operation(self, other, operation, r=False, intify=False):
-        '''
-        Two operands' operation. Scanning of other happens to understand
-        if other must be directly an operand or rather a subitem thereof
-        '''
-        if False:
-            if isinstance(other, LineRoot):
-                if not isinstance(other, LineSingle):
-                    # This forces calling other's reverse operation
-                    return NotImplemented
-
-        if isinstance(other, LineMultiple):
-            return self._makeoperation(other.lines[0], operation, r)
-
-        return self._makeoperation(other, operation, r)
-
-    _comparison = _operation
-
-    def _operation_stage2(self, other, operation):
-        '''
-        Rich Comparison operators. Scans other and returns either an
-        operation with other directly or a subitem from other
-        '''
-        if isinstance(other, LineMultiple):
-            # operation(float, float)
-            return operation(self[0], other[0][0])
-        elif isinstance(other, LineSingle):
-            # operation(float, float)
-            return operation(self[0], other[0])
-
-        # operation(float, other) ... expecting other to be a float
-
-        # if LineMultiple is not caught above then
-        # if other is LineMultiple then operation(float, LineMultiple), which
-        # triggers the reverse operation(float, float) in LineMultiple
-        # maybe too many indirections
-        return operation(self[0], other)
