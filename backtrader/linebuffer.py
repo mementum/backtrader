@@ -344,7 +344,7 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
     def arrayize(obj):
         if isinstance(obj, LineRoot):
             if not isinstance(obj, LineSingle):
-                obj = obj[0]  # get 1st line from multiline
+                obj = obj.lines[0]  # get 1st line from multiline
         else:
             obj = PseudoArray(obj)
 
