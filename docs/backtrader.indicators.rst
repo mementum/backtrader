@@ -44,15 +44,6 @@ backtrader.indicators.stochastic module
     :undoc-members:
     :show-inheritance:
 
-backtrader.indicators.utils module
-----------------------------------
-
-.. automodule:: backtrader.indicators.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Module contents
 ---------------
 
