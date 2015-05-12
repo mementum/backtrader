@@ -1,0 +1,2 @@
+matplotlib>=1.4.2
+sphinxcontrib-napoleon
