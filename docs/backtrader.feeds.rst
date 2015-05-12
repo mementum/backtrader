@@ -4,10 +4,10 @@ backtrader.feeds package
 Submodules
 ----------
 
-backtrader.feeds.mycsv module
+backtrader.feeds.vchartcsv module
 -----------------------------
 
-.. automodule:: backtrader.feeds.mycsv
+.. automodule:: backtrader.feeds.vchartcsv
     :members:
     :undoc-members:
     :show-inheritance:

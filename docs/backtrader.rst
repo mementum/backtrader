@@ -37,14 +37,6 @@ backtrader.comminfo module
     :undoc-members:
     :show-inheritance:
 
-backtrader.constants module
----------------------------
-
-.. automodule:: backtrader.constants
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 backtrader.dataseries module
 ----------------------------
 
@@ -98,14 +90,6 @@ backtrader.metabase module
 --------------------------
 
 .. automodule:: backtrader.metabase
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-backtrader.operations module
-----------------------------
-
-.. automodule:: backtrader.operations
     :members:
     :undoc-members:
     :show-inheritance:
