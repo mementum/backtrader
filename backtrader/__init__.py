@@ -35,3 +35,8 @@ from .broker import *
 from .cerebro import *
 
 from .utils import num2date, date2num
+
+from . import feeds
+from . import indicators
+from . import strategies
+from . import observers
