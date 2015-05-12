@@ -36,7 +36,20 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
     params = (('cash', 10000.0), ('commission', CommissionInfo()),)
 
     def __init__(self):
+        self.init()
+
+    def init(self):
         self.comminfo = dict()
+        if None not in self.comminfo.keys():
+            self.comminfo = dict({None: self.p.commission})
+
+        self.startingcash = self.cash = self.p.cash
+
+        self.orders = list()  # will only be appending
+        self.pending = collections.deque()  # popleft and append(right)
+
+        self.positions = collections.defaultdict(Position)
+        self.notifs = collections.deque()
 
     def getcash(self):
         return self.cash
@@ -59,16 +72,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.comminfo[name] = comminfo
 
     def start(self):
-        if None not in self.comminfo.keys():
-            self.comminfo = dict({None: self.p.commission})
-
-        self.startingcash = self.cash = self.p.cash
-
-        self.orders = list()  # will only be appending
-        self.pending = collections.deque()  # popleft and append(right)
-
-        self.positions = collections.defaultdict(Position)
-        self.notifs = collections.deque()
+        self.init()
 
     def stop(self):
         pass
