@@ -73,7 +73,7 @@ class TestStrategy(bt.Strategy):
         self.orderid = None
 
     def __init__(self):
-        self.sma = btind.MovingAverageSimple(self.data,
+        self.sma = btind.SimpleMovingAverage(self.data,
                                              period=self.p.maperiod,
                                              plot=True)
         self.close_sma = bt.Cmp(self.data.close, self.sma)
@@ -86,11 +86,11 @@ class TestStrategy(bt.Strategy):
             btind.MACDHistogram(self.data)
             btind.Stochastic(self.data)
             btind.RSI(self.data)
-            btind.MovingAverageExponential(
+            btind.ExponentialMovingAverage(
                 self.data, period=int(0.8 * self.p.maperiod))
-            btind.MovingAverageSmoothed(
+            btind.SmoothedMovingAverage(
                 self.data, period=int(1.2 * self.p.maperiod))
-            btind.MovingAverageWeighted(
+            btind.WeightedMovingAverage(
                 self.data, period=int(1.5 * self.p.maperiod))
             btind.BollingerBands(self.data)
 
@@ -175,4 +175,4 @@ else:
         expiredays=7)
 
 cerebro.run()
-# cerebro.plot()
+cerebro.plot()
