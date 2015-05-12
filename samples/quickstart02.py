@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
-################################################################################
+###############################################################################
 #
 # Copyright (C) 2015 Daniel Rodriguez
 #
@@ -17,15 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-################################################################################
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import backtrader as bt
 
-cerebro = bt.Cerebro()
+if __name__ == '__main__':
+    cerebro = bt.Cerebro()
+    cerebro.broker.setcash(100000.0)
 
-cerebro.broker.setcash(100000.0)
+    print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
-print 'Starting Portfolio Value: %.2f' % cerebro.broker.getvalue()
+    cerebro.run()
 
-cerebro.run()
-
-print 'Final Portfolio Value: %.2f' % cerebro.broker.getvalue()
+    print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())

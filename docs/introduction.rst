@@ -1,32 +1,56 @@
 Introduction
 ============
 
-Backtrader is a pseudo-event driven backtesting platform for trading strategies. "Pseudo"-Event drive means your objects will be called but the actual timing for this called is not controlled by traditional events, but rather by a set of recursive loops.
+Backtrader is Python based backtesting platform for developing home cooked indicators and trading strategies.
 
-This design would in theory allow to connecto to a live trading and/or data feed platform without compromising speed. At the moment this is just a possibility which is not foreseen.
+The platform can operate as a tick-based platform. In this mode for each bar all
+objects will be called to recalculate (many times the "ticks" will be complete
+bars) It can also operate in batch mode processing each all bars at once.
 
-The platform has been designed to avoid external dependencies as much as possible. As such the only things that are currently needed are:
+The tick-based approach would allow to connect to a real-time data feed. The
+batch mode is much faster but operates on a existing set of bars, which is
+appropriate for backtesting.
 
-  * Python 2.7 (development was finished when running 2.7.9, but most of it was done with Python 2.7.5)
-  * matplotlib if you want to plot charts of your strategies and associated datas (1.4.2 has been tested)
+User defined objects (ex: indicators) can only provide the tick-based methods
+and they will still operate in batch mode (by looping n times over the
+tick-based method)
+
+The platform has been designed to avoid external dependencies as much as
+possible. As such the only things that are currently needed are:
+
+  * Python 2.7 (development was finished when running 2.7.9, but most of it was
+    done with Python 2.7.5)
+
+Optionally:
+
+  * matplotlib if you want to plot charts of your strategies and associated
+    datas (1.4.2 has been tested)
 
     matplotlib will obviously pull in its own dependencies
 
-The basic building blocks in the platform that you'll become acquainted with are:
+The basic building blocks in the platform that you'll become acquainted with
+are:
 
   * Data Feeds
   * Indicators
   * Strategies
-  * Broker
+  * Brokers
   * Commissions
   * Position Sizers
   * Analyzers
   * Plotters
   * Cerebro (the main looping engine)
 
-Don't panic!!! One of the targets of this platform is to make most of the inner working of the objects, relationships and interactions transparent to the platform user. For example: a broker with a preset commission scheme (no commission) is included along a fixed size Position sizer, a basic Analyzer and *sensible* defaults for plotting.
+Don't panic!!! One of the targets of this platform is to make most of the inner
+working of the objects, relationships and interactions transparent to the
+platform user. For example: a broker with a preset commission scheme (no
+commission) is included along a fixed size Position sizer, a basic Analyzer and
+*sensible* defaults for plotting.
 
-Some operations are obviously the responsibility of the user, because the platform cannot know or decide if the user wishes to base the logic of a strategy on Moving Average or an Average True Range indicator (or maybe both will be used or one will use the other)
+Some operations are obviously the responsibility of the user, because the
+platform cannot know or decide if the user wishes to base the logic of a
+strategy on Moving Average or an Average True Range indicator (or maybe both
+will be used or one will use the other)
 
 The basics:
 
