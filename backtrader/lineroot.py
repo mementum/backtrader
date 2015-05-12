@@ -73,6 +73,10 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     IndType, StratType, ObsType = range(3)
 
+    def _stage1(self):
+        self._operation = self._operation_stage1
+        self._operationown = self._operationown_stage1
+
     def _stage2(self):
         # change to real comparison function
         self._operation = self._operation_stage2
@@ -148,11 +152,13 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     def _makeoperationown(self, operation, _ownerskip=None):
         raise NotImplementedError
 
-    def _operationown(self, operation):
+    def _operationown_stage1(self, operation):
         '''
         Operation with single operand which is "self"
         '''
         return self._makeoperationown(operation, _ownerskip=self)
+
+    _operationown = _operationown_stage1
 
     def _roperation(self, other, operation, intify=False):
         '''
@@ -161,7 +167,7 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         '''
         return self._operation(other, operation, r=True, intify=intify)
 
-    def _operation(self, other, operation, r=False, intify=False):
+    def _operation_stage1(self, other, operation, r=False, intify=False):
         '''
         Two operands' operation. Scanning of other happens to understand
         if other must be directly an operand or rather a subitem thereof
@@ -170,6 +176,8 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
             other = other.lines[0]
 
         return self._makeoperation(other, operation, r, self)
+
+    _operation = _operation_stage1
 
     def _operation_stage2(self, other, operation):
         '''
@@ -246,6 +254,15 @@ class LineMultiple(LineRoot):
     '''
     Base class for LineXXX instances that hold more than one line
     '''
+    def reset(self):
+        self._stage1()
+        self.lines.reset()
+
+    def _stage1(self):
+        super(LineMultiple, self)._stage1()
+        for line in self.lines:
+            line._stage1()
+
     def _stage2(self):
         super(LineMultiple, self)._stage2()
         for line in self.lines:
