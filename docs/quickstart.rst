@@ -546,6 +546,7 @@ show the execution size.
 Having multiplied the stake by 10, the obvious has happened: the profit and loss
 has been multiplied by 10. Instead of *16.98*, the surplus is now *169.80*
 
+
 Adding an indicator
 -------------------
 
@@ -710,7 +711,7 @@ The entire set of additions to the __init__ method of the Strategy::
    with the strategy and will influence the minimum period for *next* and will
    be part of the plotting.
 
-  In the exmple only *RSI* is added to a temporary variable *rsi* with the only
+  In the example only *RSI* is added to a temporary variable *rsi* with the only
   intention to create a MovingAverageSmoothed on it.
 
 The example now:
@@ -754,11 +755,88 @@ The chart:
 
 .. image:: ../samples/images/quickstart10.png
 
-Concluding
+
+Let's Optimize
+--------------
+
+Many trading books say each market and each traded stock (or commodity or ..)
+have different rythms. That there is no such thing as a one size fits all.
+
+Before the plotting sample, when the strategy started using an indicator the
+period default value was 15 bars. It's a strategy parameter and this can be used
+in an optimization to change the value of the parameter and see which one better
+fits the market.
+
+.. note::
+   There is plenty of literature about Optimization and associated pros and
+   cons. But the advice will always point in the same direction: do not
+   overoptimize. If a trading idea is not sound, optimizing may end producing a
+   positive result which is only valid for the backtested dataset.
+
+The sample is modified to optimize the period of the Simple Moving Average. For
+the sake of clarity any output with regards to Buy/Sell orders has been removed
+
+The example now:
+
+.. literalinclude:: ../samples/quickstart11.py
+   :language: python
+   :lines: 21-
+
+Instead of calling *addstrategy* to add a stratey class to Cerebro, the call is
+made to *optstrategy*. And instead of passing a value a range of values is
+passed.
+
+One of the "Strategy" hooks is added, the *stop* method, which will be called
+when the data has been exhausted and backtesting is over. It's used to print the
+final net value of the portfolio in the broker (it was done in Cerebro
+previously)
+
+The system will execute the strategy for each value of the range. The following
+will be output::
+
+  2000-12-29, (MA Period 10) Ending Value 880.30
+  2000-12-29, (MA Period 11) Ending Value 880.00
+  2000-12-29, (MA Period 12) Ending Value 830.30
+  2000-12-29, (MA Period 13) Ending Value 893.90
+  2000-12-29, (MA Period 14) Ending Value 896.90
+  2000-12-29, (MA Period 15) Ending Value 973.90
+  2000-12-29, (MA Period 16) Ending Value 959.40
+  2000-12-29, (MA Period 17) Ending Value 949.80
+  2000-12-29, (MA Period 18) Ending Value 1011.90
+  2000-12-29, (MA Period 19) Ending Value 1041.90
+  2000-12-29, (MA Period 20) Ending Value 1078.00
+  2000-12-29, (MA Period 21) Ending Value 1058.80
+  2000-12-29, (MA Period 22) Ending Value 1061.50
+  2000-12-29, (MA Period 23) Ending Value 1023.00
+  2000-12-29, (MA Period 24) Ending Value 1020.10
+  2000-12-29, (MA Period 25) Ending Value 1013.30
+  2000-12-29, (MA Period 26) Ending Value 998.30
+  2000-12-29, (MA Period 27) Ending Value 982.20
+  2000-12-29, (MA Period 28) Ending Value 975.70
+  2000-12-29, (MA Period 29) Ending Value 983.30
+  2000-12-29, (MA Period 30) Ending Value 979.80
+
+Results:
+
+  * For periods below 18 the strategy (comissionless) loses money.
+  * For periods between 18 and 26 (both included) the strategy makes money.
+  * Above 26 money is lost agagin.
+
+And the winning period for this strategy and the given data set is:
+
+  * 20 bars, which wins 78.00 units over 1000 $/€ (a 7.8%)
+
+.. note::
+   The extra indicators from the plotting example have been removed and the
+   start of operations is only influenced by the Simple Moving Average which is
+   being optimized. Hence the slightly different results for period 15
+
+
+Conclusion
 ----------
 
 The incremental samples have shown how to go from a barebones script to a fully
-working trading system which even plots the results.
+working trading system which even plots the results and can be optimized.
 
 A lot more can be done to try to improve the chances of winning:
 
