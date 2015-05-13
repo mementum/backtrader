@@ -140,7 +140,7 @@ class TestStrategy(bt.Strategy):
 
 
 def runtest(optimize=False):
-    cerebro = bt.Cerebro(runonce=False)
+    cerebro = bt.Cerebro(runonce=True)
 
     # Datas are in a subdirectory of samples. Need to find where the script is
     # because it could have been called from anywhere
