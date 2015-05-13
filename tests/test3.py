@@ -44,12 +44,14 @@ class TestStrategy(bt.Strategy):
         ('expiredays', 10),
         ('printdata', True),
         ('printops', True),
+        ('optimize', False),
     )
 
     def log(self, txt, dt=None):
-        dt = dt or self.data.datetime[0]
-        dt = bt.num2date(dt)
-        print('%s, %s' % (dt.isoformat(), txt))
+        if not self.p.optimize:
+            dt = dt or self.data.datetime[0]
+            dt = bt.num2date(dt)
+            print('%s, %s' % (dt.isoformat(), txt))
 
     def notify(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -80,19 +82,18 @@ class TestStrategy(bt.Strategy):
 
         self.orderid = None
         self.expiry = datetime.timedelta(days=self.p.expiredays)
-        # btind.ATR(self.data)
-        if False:
-            btind.ATR(self.data)
-            btind.MACDHistogram(self.data)
-            btind.Stochastic(self.data)
-            btind.RSI(self.data)
-            btind.ExponentialMovingAverage(
-                self.data, period=int(0.8 * self.p.maperiod))
-            btind.SmoothedMovingAverage(
-                self.data, period=int(1.2 * self.p.maperiod))
-            btind.WeightedMovingAverage(
-                self.data, period=int(1.5 * self.p.maperiod))
-            btind.BollingerBands(self.data)
+
+        btind.ATR(self.data)
+        btind.MACDHisto(self.data)
+        btind.Stochastic(self.data)
+        btind.RSI(self.data)
+        btind.ExponentialMovingAverage(self.data,
+                                       period=int(0.8 * self.p.maperiod))
+        btind.SmoothedMovingAverage(self.data,
+                                    period=int(1.2 * self.p.maperiod))
+        btind.WeightedMovingAverage(self.data,
+                                    period=int(1.5 * self.p.maperiod))
+        btind.BollingerBands(self.data)
 
         self.sizer = bt.SizerFix(stake=self.p.stake)
 
@@ -138,41 +139,52 @@ class TestStrategy(bt.Strategy):
         print('-------------------------')
 
 
-cerebro = bt.Cerebro(runonce=False)
+def runtest(optimize=False):
+    cerebro = bt.Cerebro(runonce=False)
 
-# Datas are in a subdirectory of samples. Need to find where the script is
-# because it could have been called from anywhere
-modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
-data = bt.feeds.YahooFinanceCSVData(
-    dataname=datapath,
-    reversed=True,
-    fromdate=datetime.datetime(2014, 1, 1),
-    # fromdate=datetime.datetime(2000, 1, 1),
-    # todate=datetime.datetime(2000, 12, 31)
-)
+    # Datas are in a subdirectory of samples. Need to find where the script is
+    # because it could have been called from anywhere
+    modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+    datapath = os.path.join(
+        modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
+    data = bt.feeds.YahooFinanceCSVData(
+        dataname=datapath,
+        reversed=True,
+        fromdate=datetime.datetime(2014, 1, 1),
+        ti=datetime.datetime(2014, 12, 31),
+    )
 
-cerebro.adddata(data)
+    cerebro.adddata(data)
 
-cerebro.broker.setcash(1000.0)
-if False:
-    strats = cerebro.optstrategy(
-        TestStrategy,
-        printdata=False,
-        printops=False,
-        maperiod=xrange(15, 26),
-        exectype=bt.Order.Market,
-        atlimitperc=0.80,
-        expiredays=7)
-else:
-    strats = cerebro.addstrategy(
-        TestStrategy,
-        printdata=False,
-        printops=False,
-        maperiod=15,
-        exectype=bt.Order.Market,
-        atlimitperc=0.80,
-        expiredays=7)
+    cerebro.broker.setcash(1000.0)
 
-cerebro.run()
-cerebro.plot()
+    if optimize:
+        cerebro.optstrategy(
+            TestStrategy,
+            printdata=False,
+            printops=False,
+            maperiod=xrange(15, 26),
+            exectype=bt.Order.Market,
+            atlimitperc=0.80,
+            expiredays=7,
+            optimize=optimize)
+
+    else:
+        cerebro.addstrategy(
+            TestStrategy,
+            printdata=False,
+            printops=False,
+            maperiod=15,
+            exectype=bt.Order.Market,
+            atlimitperc=0.80,
+            expiredays=7,
+            optimize=optimize)
+
+    cerebro.run()
+
+    if not optimize:
+        cerebro.plot()
+
+
+if __name__ == '__main__':
+    runtest()
