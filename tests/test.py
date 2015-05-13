@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from six.moves import xrange
+
 import testbase
 
 import datetime
@@ -30,67 +32,74 @@ import sys
 
 import backtrader as bt
 import backtrader.feeds as btfeeds
-import backtrader.indicators as btindicators
+import backtrader.indicators as btind
+
+
+class OverUnderMA(bt.Indicator):
+    lines = ('overunder',)
+    params = (('period', 20), ('movav', btind.MovAv.Simple))
+    plotinfo = dict(plotymargin=0.15,
+                    plothlines=[1.0, -1.0],
+                    plotyticks=[1.0, -1.0])
+
+    def __init__(self):
+        ma = self.p.movav(self.data, period=self.p.period)
+        self.lines.overunder = bt.Cmp(self.data.close, ma)
 
 
 class TestStrategy(bt.Strategy):
+    params = (
+        ('maperiod', 15),
+        ('movav', btind.MovAv.Simple),
+        ('printdata', True),
+    )
+
+    def log(self, txt, dt=None):
+        if not self.p.optimize:
+            dt = dt or self.data.datetime[0]
+            dt = bt.num2date(dt)
+            print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        self.ohlc = self.datas[0]
-        self.close = self.ohlc.close
-
-        btindicators.SimpleMovingAverage(self.datas[0], period=30)
-        btindicators.AverageTrueRange(self.datas[0])
-        btindicators.MACD(self.datas[0])
-        btindicators.MACDHisto(self.datas[0])
-        btindicators.SimpleMovingAverage(self.datas[0], period=30)
-        # btindicators.MovingAverageSimple(self.ind1, period=10)
-        btindicators.ExponentialMovingAverage(self.datas[0], period=30)
-        btindicators.WeightedMovingAverage(self.datas[0], period=30)
-        btindicators.RSI(self.datas[0])
-        btindicators.RSI(self.datas[0],
-                         movav=btindicators.MovAv.Exponential)
-        btindicators.StochasticFast(self.datas[0])
-        btindicators.StochasticSlow(self.datas[0])
-
-        print('--------------------------------------------------')
-        for indicator in self._lineiterators[self.IndType]:
-            print('%s period %d' %
-                  (indicator.__class__.__name__, indicator._minperiod))
-
-    def start(self):
-        self.tcstart = time.clock()
+        self.p.movav(self.data, period=self.p.maperiod)
+        OverUnderMA(self.data, period=self.p.maperiod, movav=self.p.movav)
 
     def next(self):
-        pass
+        if self.p.printdata:
+            self.log(
+                'Open, High, Low, Close, %.2f, %.2f, %.2f, %.2f, Sma, %f' %
+                (self.data.open[0], self.data.high[0],
+                 self.data.low[0], self.data.close[0],
+                 self.sma[0])
+            )
 
-    def stop(self):
-        tused = time.clock() - self.tcstart
-        print('--------------------------------------------------')
-        print('Time used', tused)
 
-        for indicator in self._lineiterators[self.IndType]:
-            print('--------------------------------------------------')
-            print('%s period %d' %
-                  (indicator.__class__.__name__, indicator._minperiod))
-            basetxt = '%5d: %s - Close %.2f - Indicator' \
-                      % (len(self.ohlc),
-                         self.ohlc.datetime.date(0).isoformat(),
-                         self.close[0])
+def runtest():
+    cerebro = bt.Cerebro(runonce=True)
 
-            for i in range(indicator.size()):
-                basetxt += ' %.2f' % (indicator.lines[i][0],)
+    # Datas are in a subdirectory of samples. Need to find where the script is
+    # because it could have been called from anywhere
+    modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+    datapath = os.path.join(
+        modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
+    data = bt.feeds.YahooFinanceCSVData(
+        dataname=datapath,
+        reversed=True,
+        fromdate=datetime.datetime(2014, 1, 1),
+        ti=datetime.datetime(2014, 12, 31),
+    )
 
-            print(basetxt)
+    cerebro.adddata(data)
 
-cerebro = bt.Cerebro(preload=True, runonce=True)
+    cerebro.addstrategy(
+        TestStrategy,
+        printdata=False,
+        maperiod=15,
+        movav=btind.MovAv.Simple)
 
-# Datas are in a subdirectory of the samples. Need to find where the script is
-# because it could have been called from anywhere
-modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-datapath = os.path.join(modpath, '../samples/datas/yahoo/oracle-1995-2014.csv')
-data = bt.feeds.YahooFinanceCSVData(dataname=datapath, reversed=True)
+    cerebro.run()
+    cerebro.plot()
 
-cerebro.adddata(data)
-cerebro.addstrategy(TestStrategy)
-cerebro.run()
+
+if __name__ == '__main__':
+    runtest()
