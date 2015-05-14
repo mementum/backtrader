@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from .. import Indicator
 from .ma import MovAv
-from .lineoperations import Max
+from .. import Max
 
 
 class UpDays(Indicator):
