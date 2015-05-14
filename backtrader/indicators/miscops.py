@@ -22,47 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import math
-import operator
 
 from six.moves import xrange
 
 from .. import Indicator
-
-
-class ExecOnces(Indicator):
-    extralines = 1
-
-    def prenext(self):
-        pass  # to avoid preonce be optimized away in metaclass
-
-    def next(self):
-        pass  # to avoid once be optimized away in metaclass
-
-    def preonce(self, start, end):
-        self.data.preonce(start, end)
-        self.data.preonce = self.data.once_empty
-
-    def oncestart(self, start, end):
-        self.data.oncestart(start, end)
-        self.data.oncestart = self.data.once_empty
-
-    def once(self, start, end):
-        self.data.once = self.data.once_empty
-
-
-# See Stochastic for example of how to bind lines by assigning
-class LinesBinder(Indicator):
-    extralines = 1
-
-    def next(self):
-        self.data[0] = self.data1[0]
-
-    def once(self, start, end):
-        dst = self.data.lines[0].array
-        src = self.data1.lines[0].array
-
-        for i in xrange(start, end):
-            dst[i] = src[i]
 
 
 class OperationN(Indicator):
@@ -106,64 +69,4 @@ class Lowest(OperationN):
 
 class SumN(OperationN):
     lines = ('sumn',)
-    func = math.fsum
-
-
-class Operation1(Indicator):
-    def __init__(self, *args):
-        self.dlines = [x.lines[0] for x in self.datas]
-        self.getitem0 = operator.itemgetter(0)
-
-        if args:
-            self.args = list(args)
-            self.next = self.next_args
-            self.once = self.once_args
-
-    def next(self):
-        self.line[0] = self.func(map(self.getitem0, self.dlines))
-
-    def once(self, start, end):
-        dst = self.line.array
-        func = self.func
-        darrays = [dline.array for dline in self.dlines]
-
-        for i in xrange(start, end):
-            dst[i] = func([darray[i] for darray in darrays])
-
-    def next_args(self):
-        func = self.func
-        self.line[0] = func(func(map(self.getitem0, self.dlines), self.args))
-
-    def once_args(self, start, end):
-        dst = self.line.array
-        func = self.func
-        darrays = [dline.array for dline in self.dlines]
-        args = self.args
-
-        for i in xrange(start, end):
-            dst[i] = func(func([darray[i] for darray in darrays], args))
-
-
-class Max(Operation1):
-    lines = ('max',)
-    func = max
-
-
-class High(Operation1):
-    lines = ('high',)
-    func = max
-
-
-class Min(Operation1):
-    lines = ('min',)
-    func = min
-
-
-class Low(Operation1):
-    lines = ('low',)
-    func = min
-
-
-class Sum(Operation1):
-    lines = ('sum',)
     func = math.fsum
