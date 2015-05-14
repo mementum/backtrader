@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+###############################################################################
+#
+# Copyright (C) 2015 Daniel Rodriguez
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import functools
+
+from six.moves import xrange
+
+from .linebuffer import LineActions
+from .utils import cmp
+
+
+class Logic(LineActions):
+    def __init__(self, *args):
+        super(Logic, self).__init__()
+        self.args = [self.arrayize(arg) for arg in args]
+
+
+class Cmp(Logic):
+    def __init__(self, a, b):
+        super(Cmp, self).__init__(a, b)
+        self.a = self.args[0]
+        self.b = self.args[1]
+
+    def next(self):
+        self[0] = cmp(self.a[0], self.b[0])
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+
+        for i in xrange(start, end):
+            dst[i] = cmp(srca[i], srcb[i])
+
+
+class If(Logic):
+    def __init__(self, cond, a, b):
+        super(If, self).__init__(a, b)
+        self.a = self.args[0]
+        self.b = self.args[1]
+        self.cond = self.arrayize(cond)
+
+    def next(self):
+        self[0] = self.a[0] if self.cond[0] else self.b[0]
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        cond = self.cond.array
+
+        for i in xrange(start, end):
+            dst[i] = srca[i] if cond[i] else srcb[i]
+
+
+class MultiLogic(Logic):
+    def next(self):
+        self[0] = self.flogic([arg[0] for arg in self.args])
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        arrays = [arg.array for arg in self.args]
+        flogic = self.flogic
+
+        for i in xrange(start, end):
+            dst[i] = flogic([arr[i] for arr in arrays])
+
+
+class MultiLogicReduce(MultiLogic):
+    def __init__(self, *args):
+        super(MultiLogicReduce, self).__init__(*args)
+        self.flogic = functools.partial(functools.reduce, self.flogic)
+
+
+class And(MultiLogicReduce):
+    flogic = staticmethod(lambda x, y: x and y)
+
+
+class Or(MultiLogicReduce):
+    flogic = staticmethod(lambda x, y: x or y)
+
+
+class Max(MultiLogic):
+    flogic = max
+
+
+class Min(MultiLogic):
+    flogic = min
+
+
+class Sum(MultiLogic):
+    flogic = sum
