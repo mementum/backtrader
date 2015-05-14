@@ -38,7 +38,7 @@ from six.moves import xrange
 
 from .lineroot import LineRoot, LineSingle
 from . import metabase
-from .utils import num2date, cmp
+from .utils import num2date
 
 
 NAN = float('NaN')
@@ -500,82 +500,3 @@ class LineOwnOperation(LineActions):
 
         for i in xrange(start, end):
             dst[i] = op(srca[i])
-
-
-class Logic(LineActions):
-    def __init__(self, a, b):
-        super(Logic, self).__init__()
-
-        self.a = self.arrayize(a)
-        self.b = self.arrayize(b)
-
-
-class If(Logic):
-    def __init__(self, cond, a, b):
-        super(If, self).__init__(a, b)
-
-        self.cond = self.arrayize(cond)
-
-    def next(self):
-        self[0] = self.a[0] if self.cond[0] else self.b[0]
-
-    def once(self, start, end):
-        # cache python dictionary lookups
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-        cond = self.cond.array
-
-        for i in xrange(start, end):
-            dst[i] = srca[i] if cond[i] else srcb[i]
-
-
-class And(Logic):
-    def __init__(self, a, b):
-        super(And, self).__init__(a, b)
-
-    def next(self):
-        self[0] = self.a[0] and self.b[0]
-
-    def once(self, start, end):
-        # cache python dictionary lookups
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-
-        for i in xrange(start, end):
-            dst[i] = srca[i] and srcb[i]
-
-
-class Or(Logic):
-    def __init__(self, a, b):
-        super(Or, self).__init__(a, b)
-
-    def next(self):
-        self[0] = self.a[0] or self.b[0]
-
-    def once(self, start, end):
-        # cache python dictionary lookups
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-
-        for i in xrange(start, end):
-            dst[i] = srca[i] or srcb[i]
-
-
-class Cmp(Logic):
-    def __init__(self, a, b):
-        super(Cmp, self).__init__(a, b)
-
-    def next(self):
-        self[0] = cmp(self.a[0], self.b[0])
-
-    def once(self, start, end):
-        # cache python dictionary lookups
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-
-        for i in xrange(start, end):
-            dst[i] = cmp(srca[i], srcb[i])
