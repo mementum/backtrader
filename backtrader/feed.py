@@ -50,6 +50,7 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
         _obj._daterange = [None, None]
+
         if _obj.p.fromdate > datetime.datetime.min:
             _obj._daterange[0] = _obj.p.fromdate
         if _obj.p.todate < datetime.datetime.max:
@@ -98,10 +99,10 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
         while self._load():
             dt = self.lines.datetime[0]
             if dt < self.fromdate:
-                self.rewind()  # discard loaded bar
+                self.backwards()  # discard loaded bar
                 continue
             if dt > self.todate:
-                self.rewind()  # discard loaded bar
+                self.backwards()  # discard loaded bar
                 break
 
             return True
