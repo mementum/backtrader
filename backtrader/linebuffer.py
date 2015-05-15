@@ -175,7 +175,7 @@ class LineBuffer(LineSingle):
         for i in range(size):
             self.array.append(value)
 
-    def rewind(self, size=1):
+    def backwards(self, size=1):
         ''' Moves the logical index backwards and reduces the buffer as much as needed
 
         Keyword Args:
@@ -186,6 +186,9 @@ class LineBuffer(LineSingle):
         self.idx -= size
         for i in range(size):
             self.array.pop()
+
+    def rewind(self, size=1):
+        self.idx -= size
 
     def advance(self, size=1):
         ''' Advances the logical index without touching the underlying buffer

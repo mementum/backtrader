@@ -203,6 +203,13 @@ class Lines(object):
         for line in self.lines:
             line.forward(value, size=size)
 
+    def backwards(self, size=1):
+        '''
+        Proxy line operation
+        '''
+        for line in self.lines:
+            line.backwards(size)
+
     def rewind(self, size=1):
         '''
         Proxy line operation
