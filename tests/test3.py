@@ -151,7 +151,7 @@ def runtest(optimize=False, runonce=True):
         dataname=datapath,
         reversed=True,
         fromdate=datetime.datetime(2014, 1, 1),
-        ti=datetime.datetime(2014, 12, 31),
+        todate=datetime.datetime(2014, 12, 31),
     )
 
     cerebro.adddata(data)
