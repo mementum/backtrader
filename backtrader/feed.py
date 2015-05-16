@@ -49,15 +49,27 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
         _obj._name = _obj.p.name
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
-        _obj._daterange = [None, None]
 
-        if _obj.p.fromdate > datetime.datetime.min:
-            _obj._daterange[0] = _obj.p.fromdate
-        if _obj.p.todate < datetime.datetime.max:
-            _obj._daterange[1] = _obj.p.todate
+        if _obj.p.sessionend is None:
+            _obj.p.sessionend = datetime.time(23, 59, 59)
+
+        if isinstance(_obj.p.fromdate, datetime.date):
+            # push it to the end of the day, or else intraday
+            # values before the end of the day would be gone
+            _obj.p.fromdate = datetime.datetime.combine(
+                _obj.p.fromdate, _obj.p.sessionend)
+
+        if isinstance(_obj.p.todate, datetime.date):
+            # push it to the end of the day, or else intraday
+            # values before the end of the day would be gone
+            _obj.p.todate = datetime.datetime.combine(
+                _obj.p.todate, _obj.p.sessionend)
 
         _obj.fromdate = date2num(_obj.p.fromdate)
         _obj.todate = date2num(_obj.p.todate)
+
+        # hold datamaster points corresponding to own
+        _obj.mlen = list()
 
         return _obj, args, kwargs
 
@@ -70,7 +82,8 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
               ('todate', datetime.datetime.max),
               ('name', ''),
               ('compression', 1),
-              ('timeframe', TimeFrame.Days),)
+              ('timeframe', TimeFrame.Days),
+              ('sessionend', None))
 
     def getfeed(self):
         return self._feed
@@ -81,13 +94,30 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     def stop(self):
         pass
 
-    def next(self):
+    def next(self, datamaster=None):
         if len(self) == self.buflen():
             # not preloaded - request next bar
-            return self.load()
+            ret = self.load()
+            if not ret:
+                return ret
 
-        # already preloaded - advance to next bar
-        self.advance()
+            if not datamaster:
+                return ret
+
+        else:
+            self.advance()
+
+        # a bar is "loaded" or was preloaded - index has been moved to it
+        if datamaster:
+            dt = datamaster.lines.datetime[0]
+            # there is a time reference to check against
+            if self.lines.datetime[0] > datamaster.lines.datetime[0]:
+                # can't deliver new bar, too early, go back
+                self.rewind()
+            else:
+                self.mlen.append(len(datamaster))
+
+        # tell the world there is a bar (either the new or the previous
         return True
 
     def preload(self):

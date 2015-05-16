@@ -156,9 +156,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             order.owner._addnotification(order)
 
     def _runnext(self):
-        while self.datas[0].next():
+        data0 = self.datas[0]
+        while data0.next():
             for data in self.datas[1:]:
-                data.next()
+                data.next(datamaster=data0)
 
             self._brokernotify()
 
