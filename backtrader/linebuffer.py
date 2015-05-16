@@ -240,6 +240,9 @@ class LineBuffer(LineSingle):
         '''
         return self.getzero(idx, size or len(self))
 
+    def plotrange(self, start, end):
+        return self.array[start:end]
+
     def oncebinding(self):
         '''
         Executes the bindings when running in "once" mode
