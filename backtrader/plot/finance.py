@@ -40,7 +40,7 @@ class CandlestickPlotHandler(object):
     legend_closes = [0.80, 0.00, 1.00]
 
     def __init__(self,
-                 ax, opens, highs, lows, closes,
+                 ax, x, opens, highs, lows, closes,
                  colorup='k', colordown='r',
                  edgeup=None, edgedown=None,
                  tickup=None, tickdown=None,
@@ -82,8 +82,7 @@ class CandlestickPlotHandler(object):
             self.tickdown = self.edgedown
 
         self.barcol, self.tickcol = self.barcollection(
-            xrange(len(opens)),
-            opens, highs, lows, closes,
+            x, opens, highs, lows, closes,
             width, tickwidth, edgeadjust,
             label=label,
             **kwargs)
@@ -206,7 +205,7 @@ class CandlestickPlotHandler(object):
 
 
 def plot_candlestick(ax,
-                     opens, highs, lows, closes,
+                     x, opens, highs, lows, closes,
                      colorup='k', colordown='r',
                      edgeup=None, edgedown=None,
                      tickup=None, tickdown=None,
@@ -217,7 +216,7 @@ def plot_candlestick(ax,
                      **kwargs):
 
     chandler = CandlestickPlotHandler(
-        ax, opens, highs, lows, closes,
+        ax, x, opens, highs, lows, closes,
         colorup, colordown,
         edgeup, edgedown,
         tickup, tickdown,
@@ -238,7 +237,7 @@ class VolumePlotHandler(object):
     legend_closes = [1, 0, 1]
 
     def __init__(self,
-                 ax, opens, closes, volumes,
+                 ax, x, opens, closes, volumes,
                  colorup='k', colordown='r',
                  edgeup=None, edgedown=None,
                  edgeshading=-5, edgeadjust=0.05,
@@ -269,7 +268,7 @@ class VolumePlotHandler(object):
         ax.autoscale_view()
 
         self.barcol = self.barcollection(
-            xrange(len(volumes)), opens, closes, volumes,
+            x, opens, closes, volumes,
             width=width, edgeadjust=edgeadjust,
             **kwargs)
 
@@ -333,15 +332,16 @@ class VolumePlotHandler(object):
         return barcol
 
 
-def plot_volume(ax, opens, closes, volumes,
-                colorup='k', colordown='r',
-                edgeup=None, edgedown=None,
-                edgeshading=-5, edgeadjust=0.05,
-                width=1, alpha=1.0,
-                **kwargs):
+def plot_volume(
+        ax, x, opens, closes, volumes,
+        colorup='k', colordown='r',
+        edgeup=None, edgedown=None,
+        edgeshading=-5, edgeadjust=0.05,
+        width=1, alpha=1.0,
+        **kwargs):
 
     vhandler = VolumePlotHandler(
-        ax, opens, closes, volumes,
+        ax, x, opens, closes, volumes,
         colorup, colordown,
         edgeup, edgedown,
         edgeshading, edgeadjust,
@@ -358,7 +358,7 @@ class OHLCPlotHandler(object):
     legend_closes = [0.80, 0.20, 0.90]
 
     def __init__(self,
-                 ax, opens, highs, lows, closes,
+                 ax, x, opens, highs, lows, closes,
                  colorup='k', colordown='r',
                  width=1, tickwidth=0.5,
                  alpha=1.0,
@@ -372,8 +372,7 @@ class OHLCPlotHandler(object):
         self.colordown = r, g, b, alpha
 
         bcol, ocol, ccol = self.barcollection(
-            xrange(len(opens)),
-            opens, highs, lows, closes,
+            x, opens, highs, lows, closes,
             width=width, tickwidth=tickwidth,
             label=label,
             **kwargs)
@@ -485,7 +484,7 @@ class OHLCPlotHandler(object):
         return barcol, opencol, closecol
 
 
-def plot_ohlc(ax, opens, highs, lows, closes,
+def plot_ohlc(ax, x, opens, highs, lows, closes,
               colorup='k', colordown='r',
               width=1.5, tickwidth=0.5,
               alpha=1.0,
@@ -493,7 +492,7 @@ def plot_ohlc(ax, opens, highs, lows, closes,
               **kwargs):
 
     handler = OHLCPlotHandler(
-        ax, opens, highs, lows, closes,
+        ax, x, opens, highs, lows, closes,
         colorup, colordown,
         width, tickwidth,
         alpha,

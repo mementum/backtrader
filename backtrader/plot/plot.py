@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import bisect
 import collections
 import math
 
@@ -47,6 +48,7 @@ class PInfo(object):
         self.sch = sch
         self.nrows = 0
         self.row = 0
+        self.clock = None
         self.x = None
         self.xlen = 0
         self.sharex = None
@@ -115,19 +117,22 @@ class Plot(six.with_metaclass(MetaParams, object)):
         d, m = divmod(slen, numfigs)
         pranges = list()
         for i in xrange(numfigs):
+            a = d * i
             if i == (numfigs - 1):
-                plotrange = [d * i, d + m]
-            else:
-                plotrange = [d * i, d]
+                d += m  # add remainder to last stint
+            b = a + d
 
-            pranges.append(plotrange)
+            pranges.append([a, b, d])
 
         for numfig in xrange(numfigs):
             # prepare a figure
             fig = self.pinf.newfig(numfig)
 
-            self.pinf.pstart, self.pinf.psize = pranges[numfig]
+            self.pinf.pstart, self.pinf.pend, self.pinf.psize = pranges[numfig]
+            self.pinf.xstart = self.pinf.pstart
+            self.pinf.xend = self.pinf.pend
 
+            self.pinf.clock = strategy._clock
             self.pinf.xreal = strategy._clock.datetime.plot(
                 self.pinf.pstart, self.pinf.psize)
             self.pinf.xlen = len(self.pinf.xreal)
@@ -158,7 +163,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                                                       fmt='%Y-%m-%d')
                 lastax.xaxis.set_major_formatter(formatter)
             else:
-                self.setlocators(strategy.data)
+                self.setlocators(strategy._clock)
 
             # Put the subplots as indicated by hspace
             fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
@@ -291,7 +296,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 label = linealias
 
             # plot data
-            lplot = line.plot(self.pinf.pstart, self.pinf.psize)
+            lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
 
             if not math.isnan(lplot[-1]):
                 label += ' %.2f' % lplot[-1]
@@ -322,7 +327,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             if not math.isnan(lplot[-1]):
                 # line has valid values, plot a tag for the last value
-                self.drawtag(ax, self.pinf.xlen, lplot[-1],
+                self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
                              facecolor='white',
                              edgecolor=self.pinf.color(ax))
 
@@ -389,7 +394,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         # Plot the volume (no matter if as overlay or standalone)
         vollabel = label
-        volplot, = plot_volume(ax, opens, closes, volumes,
+        volplot, = plot_volume(ax, self.pinf.x, opens, closes, volumes,
                                colorup=self.pinf.sch.volup,
                                colordown=self.pinf.sch.voldown,
                                alpha=volalpha, label=vollabel)
@@ -420,12 +425,33 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         return volplot
 
+    def setxdata(self, data):
+        # only if this data has a master, do something
+        if data.mlen:
+            # this data has a master, get the real length of this data
+            self.pinf.xlen = len(data.mlen)
+            # find the starting point with regards to master start: pstart
+            self.pinf.xstart = bisect.bisect_left(
+                data.mlen, self.pinf.pstart)
+
+            # find the ending point with regards to master start: pend
+            self.pinf.xend = bisect.bisect_right(
+                data.mlen, self.pinf.pend)
+
+            # extract the Xs from the subdata
+            self.pinf.x = data.mlen[self.pinf.xstart:self.pinf.xend]
+            # rebase the Xs to the start of the main data point
+            self.pinf.x = [x - self.pinf.pstart for x in self.pinf.x]
+
     def plotdata(self, data, indicators):
-        opens = data.open.plot(self.pinf.pstart, self.pinf.psize)
-        highs = data.high.plot(self.pinf.pstart, self.pinf.psize)
-        lows = data.low.plot(self.pinf.pstart, self.pinf.psize)
-        closes = data.close.plot(self.pinf.pstart, self.pinf.psize)
-        volumes = data.volume.plot(self.pinf.pstart, self.pinf.psize)
+        # set the x axis data (if needed)
+        self.setxdata(data)
+
+        opens = data.open.plotrange(self.pinf.xstart, self.pinf.xend)
+        highs = data.high.plotrange(self.pinf.xstart, self.pinf.xend)
+        lows = data.low.plotrange(self.pinf.xstart, self.pinf.xend)
+        closes = data.close.plotrange(self.pinf.xstart, self.pinf.xend)
+        volumes = data.volume.plotrange(self.pinf.xstart, self.pinf.xend)
 
         vollabel = 'Volume'
         if self.pinf.sch.volume and self.pinf.sch.voloverlay:
@@ -447,25 +473,6 @@ class Plot(six.with_metaclass(MetaParams, object)):
             tfname = TimeFrame.getname(data._timeframe, data._compression)
             datalabel += ' (%d %s)' % (data._compression, tfname)
 
-            if False:
-                fromdate = data._daterange[0]
-                todate = data._daterange[1]
-                if fromdate is not None or todate is not None:
-                    datatitle += ' ('
-                    fmtstr = '%Y-%m-%d'
-                    if data._timeframe == TimeFrame.Minutes:
-                        fmtstr += ' %H%M'
-
-                    if fromdate is not None:
-                        datatitle += fromdate.strftime(fmtstr)
-
-                    datatitle += ' - '
-
-                    if todate is not None:
-                        datatitle += todate.strftime(fmtstr)
-
-                    datatitle += ')'
-
         datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
                      (opens[-1], highs[-1], lows[-1], closes[-1])
 
@@ -476,7 +483,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         else:
             if self.pinf.sch.style.startswith('candle'):
                 plotted = plot_candlestick(
-                    ax, opens, highs, lows, closes,
+                    ax, self.pinf.x, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel)
@@ -484,7 +491,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
             elif self.pinf.sch.style.startswith('bar') or True:
                 # final default option -- should be "else"
                 plotted = plot_ohlc(
-                    ax, opens, highs, lows, closes,
+                    ax, self.pinf.x, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel)
@@ -492,7 +499,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         self.pinf.zorder[ax] = plotted[0].get_zorder()
 
         # Code to place a label at the right hand side with the last value
-        self.drawtag(ax, self.pinf.xlen, closes[-1],
+        self.drawtag(ax, len(self.pinf.xreal), closes[-1],
                      facecolor='white', edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
