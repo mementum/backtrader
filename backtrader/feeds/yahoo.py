@@ -59,7 +59,13 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
 
-        self.lines.datetime[0] = date2num(datetime.datetime(y, m, d))
+        # get the time from the sessionend parameter
+        hh = self.p.sessionend.hour
+        mm = self.p.sessionend.minute
+        ss = self.p.sessionend.second
+        dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
+
+        self.lines.datetime[0] = dtnum
         self.lines.open[0] = float(linetokens[next(i)])
         self.lines.high[0] = float(linetokens[next(i)])
         self.lines.low[0] = float(linetokens[next(i)])

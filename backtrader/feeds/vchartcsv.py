@@ -34,14 +34,22 @@ class VChartCSVData(feed.CSVDataBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
         next(i)  # skip ticker name
-        next(i)  # skip day/intraday indication (intra has simply "null" time)
+        intra = linetokens[next(i)] != 'D'  # day/intraday indication
 
         dttxt = linetokens[next(i)]
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
 
         tmtxt = linetokens[next(i)]
-        hh, mmss = divmod(int(tmtxt), 10000)
-        mm, ss = divmod(mmss, 100)
+        if intra:
+            hh, mmss = divmod(int(tmtxt), 10000)
+            mm, ss = divmod(mmss, 100)
+            tm = datetime.time(hh, mm, ss)
+        else:
+            # put it at the end of the session parameter
+            hh = self.p.sessionend.hour
+            mm = self.p.sessionend.minute
+            ss = self.p.sessionend.second
+
         dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
 
         self.lines.datetime[0] = dtnum
