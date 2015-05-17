@@ -94,6 +94,17 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     def stop(self):
         pass
 
+    def advance(self, datamaster=None):
+        # Need intercepting this call to support datas with
+        # different lengths (timeframes)
+        self.lines.advance()
+
+        if datamaster:
+            if self.lines.datetime[0] > datamaster.lines.datetime[0]:
+                self.lines.rewind()
+            else:
+                self.mlen.append(len(datamaster))
+
     def next(self, datamaster=None):
         if len(self) == self.buflen():
             # not preloaded - request next bar
@@ -109,7 +120,6 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
 
         # a bar is "loaded" or was preloaded - index has been moved to it
         if datamaster:
-            dt = datamaster.lines.datetime[0]
             # there is a time reference to check against
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
                 # can't deliver new bar, too early, go back

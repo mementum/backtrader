@@ -56,6 +56,12 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
     _autoinit = True
     _ltype = LineIterator.IndType
 
+    def advance(self):
+        # Need intercepting this call to support datas with
+        # different lengths (timeframes)
+        if len(self) < len(self._clock):
+            self.lines.advance()
+
     def preonce_empty(self, start, end):
         return
 

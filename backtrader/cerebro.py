@@ -25,6 +25,7 @@ import collections
 import itertools
 
 import six
+from six.moves import xrange
 
 from .broker import BrokerBack
 from .metabase import MetaParams
@@ -174,10 +175,12 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         # has not moved forward all datas/indicators/observers that
         # were homed before calling once, Hence no "need" to do it
         # here again, because pointers are at 0
-
-        for i in range(self.datas[0].buflen()):
-            for data in self.datas:
-                data.advance()
+        data0 = self.datas[0]
+        datas = self.datas[1:]
+        for i in xrange(data0.buflen()):
+            data0.advance()
+            for data in datas:
+                data.advance(data0)
 
             self._brokernotify()
 
