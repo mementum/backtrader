@@ -34,6 +34,7 @@ from .comminfo import *
 from .broker import *
 from .cerebro import *
 from .functions import *
+from .resampler import *
 
 from .utils import num2date, date2num
 
