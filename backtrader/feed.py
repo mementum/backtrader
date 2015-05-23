@@ -110,9 +110,11 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
             # not preloaded - request next bar
             ret = self.load()
             if not ret:
+                # if load cannot produce more bars - forward the result
                 return ret
 
             if not datamaster:
+                # bar is there and no master ... return load's result
                 return ret
 
         else:
@@ -133,16 +135,26 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     def preload(self):
         while self.load():
             pass
+
         self.home()
 
     def load(self):
-        while self._load():
+        while True:
+            # move data pointer forward for new bar
+            self.forward()
+            if not self._load():
+                # no bar - undo data pointer
+                self.backwards()
+                break
+
             dt = self.lines.datetime[0]
             if dt < self.fromdate:
-                self.backwards()  # discard loaded bar
+                # discard loaded bar and carry on
+                self.backwards()
                 continue
             if dt > self.todate:
-                self.backwards()  # discard loaded bar
+                # discard loaded bar and break out
+                self.backwards()
                 break
 
             return True
@@ -222,7 +234,6 @@ class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
         if not line:
             return False
 
-        self.forward()  # advance data pointer
         line = line.rstrip(six.b('\r\n'))
         linetokens = line.split(six.b(self.p.separator))
         return self._loadline(linetokens)
