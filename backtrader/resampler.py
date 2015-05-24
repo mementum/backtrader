@@ -29,68 +29,14 @@ from . import feed
 from . import TimeFrame
 
 
-class DataResampler(feed.DataBase):
+class BaseResampler(feed.DataBase):
     def __init__(self, data):
         self.data = data
         self._name = getattr(data, '_name', '')
 
     def start(self):
-        super(DataResampler, self).start()
-        self._preloading = False
-        self.lastbar = 0
+        super(BaseResampler, self).start()
         self._samplecount = 0
-
-    def preload(self):
-        if len(self.data) == self.data.buflen():
-            # if data is not preloaded .... do it
-            self.data.start()
-            self.data.preload()
-            self.data.home()
-
-        self._preloading = True
-        super(DataResampler, self).preload()
-        self.data.home()
-        self._preloading = False
-
-    def _load(self):
-        # if data.buflen() > len(data):
-        if self._preloading:
-            # data is preloaded, we are preloading too, can move
-            # forward until have full bar or data source is exhausted
-            while True:
-                self.data.advance()
-                if len(self.data) > self.data.buflen():
-                    break
-
-                if self._baroverlimit():
-                    break
-
-                self._barupdate()
-
-        else:  # next is calling via load
-            distance = len(self.data) - self.lastbar
-            if distance:
-                # someone has moved the pointer ...
-                for i in xrange(-dist, 1):
-                    if self._baroverlimit(i):
-                        return self._havebar()
-
-                    self.lastbar += 1
-                    self._barupdate(i)
-
-            else:
-                # data is under control of this resampler
-                if not len(self.data):
-                    self.data.start()
-                while self.data.next():
-                    if self._baroverlimit():
-                        self.data.rewind()
-                        break
-
-                    self.lastbar += 1
-                    self._barupdate()
-
-        return self._havebar()
 
     def _havebar(self):
         return not math.isnan(self.lines.open[0])
@@ -205,3 +151,93 @@ class DataResampler(feed.DataBase):
             return True
 
         return False
+
+
+class DataResampler(BaseResampler):
+    def start(self):
+        super(DataResampler, self).start()
+        self._preloading = False
+        self.lastbar = 0
+
+    def preload(self):
+        if len(self.data) == self.data.buflen():
+            # if data is not preloaded .... do it
+            self.data.start()
+            self.data.preload()
+            self.data.home()
+
+        self._preloading = True
+        super(DataResampler, self).preload()
+        self.data.home()
+        self._preloading = False
+
+    def _load(self):
+        # if data.buflen() > len(data):
+        if self._preloading:
+            # data is preloaded, we are preloading too, can move
+            # forward until have full bar or data source is exhausted
+            while True:
+                self.data.advance()
+                if len(self.data) > self.data.buflen():
+                    break
+
+                if self._baroverlimit():
+                    break
+
+                self._barupdate()
+
+        else:  # next is calling via load
+            distance = len(self.data) - self.lastbar
+            if distance:
+                # someone has moved the pointer ...
+                for i in xrange(-dist, 1):
+                    if self._baroverlimit(i):
+                        return self._havebar()
+
+                    self.lastbar += 1
+                    self._barupdate(i)
+
+            else:
+                # data is under control of this resampler
+                if not len(self.data):
+                    self.data.start()
+
+                while self.data.next():
+                    if self._baroverlimit():
+                        self.data.rewind()
+                        break
+
+                    self.lastbar += 1
+                    self._barupdate()
+
+        return self._havebar()
+
+
+class DataReplayer(BaseResampler):
+    def start(self):
+        super(DataReplayer, self).start()
+        self._firstbar = True
+
+    def preload(self):
+        raise NotImplementedError('Replay does not support preloading')
+
+    def _load(self):
+        # data MUST BE under control of this resampler
+        if not len(self.data):
+            self.data.start()
+
+        if not self._firstbar:
+            self.backwards()  # still in same bar
+        else:
+            self._firstbar = False
+
+        if self.data.next():
+            if self._baroverlimit():
+                self.forward()
+
+            self._barupdate()
+
+        else:
+            self.forward()
+
+        return self._havebar()
