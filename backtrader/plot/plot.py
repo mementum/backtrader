@@ -392,36 +392,41 @@ class Plot(six.with_metaclass(MetaParams, object)):
         else:
             volalpha = 1.0
 
-        # Plot the volume (no matter if as overlay or standalone)
-        vollabel = label
-        volplot, = plot_volume(ax, self.pinf.x, opens, closes, volumes,
-                               colorup=self.pinf.sch.volup,
-                               colordown=self.pinf.sch.voldown,
-                               alpha=volalpha, label=vollabel)
-
-        nbins = 6
-        prune = 'both'
         maxvol = volylim = max(volumes)
-        if self.pinf.sch.voloverlay:
-            # store for a potential plot over it
-            nbins = int(nbins / self.pinf.sch.volscaling)
-            prune = None
+        if maxvol:
+            # Plot the volume (no matter if as overlay or standalone)
+            vollabel = label
+            volplot, = plot_volume(ax, self.pinf.x, opens, closes, volumes,
+                                   colorup=self.pinf.sch.volup,
+                                   colordown=self.pinf.sch.voldown,
+                                   alpha=volalpha, label=vollabel)
 
-            volylim /= self.pinf.sch.volscaling
-            ax.set_ylim(0, volylim, auto=True)
-        else:
-            # plot a legend
-            handles, labels = ax.get_legend_handles_labels()
-            if handles:
-                # Legend done here to ensure it includes all plots
-                legend = ax.legend(loc=self.pinf.sch.legendindloc,
-                                   numpoints=1, frameon=False,
-                                   shadow=False, fancybox=False,
-                                   prop=self.pinf.prop)
+            nbins = 6
+            prune = 'both'
+            if self.pinf.sch.voloverlay:
+                # store for a potential plot over it
+                nbins = int(nbins / self.pinf.sch.volscaling)
+                prune = None
 
-        locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
-        ax.yaxis.set_major_locator(locator)
-        ax.yaxis.set_major_formatter(MyVolFormatter(maxvol))
+                volylim /= self.pinf.sch.volscaling
+                ax.set_ylim(0, volylim, auto=True)
+            else:
+                # plot a legend
+                handles, labels = ax.get_legend_handles_labels()
+                if handles:
+                    # Legend done here to ensure it includes all plots
+                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                                       numpoints=1, frameon=False,
+                                       shadow=False, fancybox=False,
+                                       prop=self.pinf.prop)
+
+            locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
+            ax.yaxis.set_major_locator(locator)
+            ax.yaxis.set_major_formatter(MyVolFormatter(maxvol))
+
+        if not maxvol:
+            ax.set_yticks([])
+            return None
 
         return volplot
 
@@ -527,8 +532,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
             if self.pinf.sch.volume and self.pinf.sch.voloverlay:
-                labels.insert(0, vollabel)
-                handles.insert(0, volplot)
+                if volplot:
+                    # even if volume plot was requested, there may be no volume
+                    labels.insert(0, vollabel)
+                    handles.insert(0, volplot)
 
             didx = labels.index(datalabel)
             labels.insert(0, labels.pop(didx))
