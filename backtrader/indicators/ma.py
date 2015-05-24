@@ -65,11 +65,10 @@ class SmoothingMovingAverage(SimpleMovingAverage):
 
     def nextstart(self):
         super(SmoothingMovingAverage, self).next()
-        self.prev = self.line[0]
 
     def next(self):
-        self.line[0] = self.prev = \
-            self.prev * self.smfactor1 + self.data_0[0] * self.smfactor
+        prev = self.line[-1]
+        self.line[0] = prev * self.smfactor1 + self.data_0[0] * self.smfactor
 
     def oncestart(self, start, end):
         super(SmoothingMovingAverage, self).once(start, end)
