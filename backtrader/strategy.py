@@ -21,6 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
+import operator
+
 import six
 
 from .broker import BrokerBack
@@ -52,6 +55,20 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
+        _dminperiods = collections.defaultdict(list)
+        for lineiter in _obj._lineiterators[LineIterator.IndType]:
+            # if multiple datas are used and multiple timeframes the larger
+            # timeframe may place larger time constraints in calling next.
+            clk = getattr(lineiter, '_clock', None)
+            if clk is None:
+                continue
+            _dminperiods[clk].append(lineiter._minperiod)
+
+        _obj._minperiods = list()
+        for data in _obj.datas:
+            dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+            _obj._minperiods.append(dminperiod)
+
         # Set the minperiod
         minperiods = \
             [x._minperiod for x in _obj._lineiterators[LineIterator.IndType]]
@@ -81,10 +98,13 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.advance()
         self._notify()
 
-        l = len(self)
-        if l > self._minperiod:
+        # check the min period status connected to datas
+        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+        minperstatus = max(dlens)
+
+        if minperstatus < 0:
             self.next()
-        elif l == self._minperiod:
+        elif minperstatus == 0:
             self.nextstart()  # only called for the 1st value
         else:
             self.prenext()

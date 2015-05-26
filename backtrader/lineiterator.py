@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import operator
 
 import six
 
@@ -187,12 +188,25 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
         self._notify()
 
-        if clock_len > self._minperiod:
-            self.next()
-        elif clock_len == self._minperiod:
-            self.nextstart()  # only called for the 1st value
+        if self._ltype == LineIterator.StratType:
+            # supporting datas with different lengths
+            dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+            minperstatus = max(dlens)
+            if minperstatus < 0:
+                self.next()
+            elif minperstatus == 0:
+                self.nextstart()  # only called for the 1st value
+            else:
+                self.prenext()
         else:
-            self.prenext()
+            # assume indicators and others operate on same length datas
+            # although the above operation can be generalized
+            if clock_len > self._minperiod:
+                self.next()
+            elif clock_len == self._minperiod:
+                self.nextstart()  # only called for the 1st value
+            else:
+                self.prenext()
 
         for observer in self._lineiterators[LineIterator.ObsType]:
             observer._next()
@@ -217,6 +231,9 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
 
         self.home()
 
+        # These 3 remain empty for a strategy and therefore play no role
+        # because a strategy will always be executed on a next basis
+        # indicators are each called with its min period
         self.preonce(0, self._minperiod - 1)
         self.oncestart(self._minperiod - 1, self._minperiod)
         self.once(self._minperiod, self.buflen())
