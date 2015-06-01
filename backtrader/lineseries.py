@@ -354,6 +354,7 @@ class MetaLineSeries(LineMultiple.__class__):
             _obj.line = _obj.lines[0]
 
         for l, line in enumerate(_obj.lines):
+            setattr(_obj, 'line_%s' % l, _obj._getlinealias(l))
             setattr(_obj, 'line_%d' % l, line)
             setattr(_obj, 'line%d' % l, line)
 
