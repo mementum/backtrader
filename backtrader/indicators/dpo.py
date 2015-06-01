@@ -26,7 +26,27 @@ from .. import Indicator
 from .ma import MovAv
 
 
-class DPO(Indicator):
+class DetrendedPriceOscillator(Indicator):
+    '''
+    Defined by Joe DiNapoli in his book *"Trading with DiNapoli levels"*
+
+    It measures the price variations against a Moving Average (the trend)
+    and therefore removes the "trend" factor from the price.
+
+    The formula:
+      - movav = MovingAverage(close, period)
+      - dpo = close - movav(shifted period / 2 + 1)
+
+    See also: (No Wikipedia or similar)
+
+    Lines:
+      - dpo
+
+    Params:
+      - period (20): period for the moving average
+      - movav (Simple): moving average to apply
+    '''
+
     # Named output lines
     lines = ('dpo',)
 
@@ -52,5 +72,5 @@ class DPO(Indicator):
 
 
 # Alias for DPO
-class DetrendedPriceOscillator(DPO):
+class DPO(DetrendedPriceOscillator):
     pass
