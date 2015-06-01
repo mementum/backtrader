@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import functools
+import math
 
 from six.moves import xrange
 
@@ -112,4 +113,4 @@ class Min(MultiLogic):
 
 
 class Sum(MultiLogic):
-    flogic = sum
+    flogic = math.fsum
