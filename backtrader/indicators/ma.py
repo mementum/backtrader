@@ -148,3 +148,7 @@ class MovAv(object):
     EMA = EMA
     SMMA = SMMA
     WMA = WMA
+
+
+class MovingAverage(MovAv):
+    pass  # alias
