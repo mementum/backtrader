@@ -27,7 +27,8 @@ from .ma import MovAv
 
 
 class DetrendedPriceOscillator(Indicator):
-    '''
+    '''DetrendedPriceOscillator (alias DPO)
+
     Defined by Joe DiNapoli in his book *"Trading with DiNapoli levels"*
 
     It measures the price variations against a Moving Average (the trend)
