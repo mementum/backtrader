@@ -26,7 +26,26 @@ from .ma import MovAv
 from .. import Max
 
 
-class TR(Indicator):
+class TrueRange(Indicator):
+    '''
+    Defined by J. Welles Wilder, Jr. in 1978 in his book New Concepts in
+    Technical Trading Systems.
+
+    The formula:
+      - max(high - low, abs(high - prev close), abs(prev close - low)
+
+    See also: http://en.wikipedia.org/wiki/Average_true_range
+
+    The idea is to take the close into account to calculate the range if it
+    yields a larger range than the daily range (High - Low)
+
+    Lines:
+        - tr
+
+    Params: None
+
+    '''
+
     lines = ('tr',)
 
     def __init__(self):
@@ -36,13 +55,33 @@ class TR(Indicator):
         self.lines.tr = Max(high - low, abs(high - close1), abs(close1 - low))
 
 
-class TrueRange(TR):
+class TR(TrueRange):
     pass  # alias
 
 
-class ATR(Indicator):
+class AverageTrueRange(Indicator):
+    '''
+    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
+    Technical Trading Systems"*.
+
+    The formula:
+        - SmoothedMovingAverage(TrueRange, period)
+
+    The idea is to take the close into account to calculate the range if it
+    yields a larger range than the daily range (High - Low)
+
+    See also: http://en.wikipedia.org/wiki/Average_true_range
+
+    Lines:
+        - atr
+
+    Params:
+        - period (14): period for the moving average
+        - movav (SmoothedMovingAverage): moving average type to apply
+    '''
+
     lines = ('atr',)
-    params = (('period', 14), ('movav', MovAv.Simple))
+    params = (('period', 14), ('movav', MovAv.Smoothed))
 
     def _plotlabel(self):
         plabels = [self.p.period]
@@ -53,5 +92,5 @@ class ATR(Indicator):
         self.lines.atr = self.p.movav(TR(self.data), period=self.p.period)
 
 
-class AverageTrueRange(ATR):
+class ATR(AverageTrueRange):
     pass  # alias
