@@ -27,7 +27,7 @@ from .. import Max
 
 
 class TrueRange(Indicator):
-    '''
+    '''TrueRange (alias TR)
     Defined by J. Welles Wilder, Jr. in 1978 in his book New Concepts in
     Technical Trading Systems.
 
@@ -60,7 +60,7 @@ class TR(TrueRange):
 
 
 class AverageTrueRange(Indicator):
-    '''
+    '''AverageTrueRange (alias ATR)
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
