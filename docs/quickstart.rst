@@ -1,8 +1,6 @@
-##########
 Quickstart
 ##########
 
-******************
 Using the platform
 ******************
 
@@ -46,39 +44,25 @@ average created during initialization::
 
     self.sma = SimpleMovingAverage(.....)
 
-Accessing the current value of the Average during strategy evaluationn is done
-as follows::
+The easiest and simplest way to access the current value of this moving average::
 
     av = self.sma[0]
 
-Indicators are actually "multi-line" objects, even as if in the case of a Simple
-Moving Average there is only 1 output line. Individual lines can be accessed::
+There is no need to know how many bars/minutes/days/months have been processed,
+because "0" uniquely identifies the current instant.
 
-    line0 = self.sma.lines[0]
+Following pythonic tradition, the "last" output value is accessed using *-1*::
 
-The value of such line can be directly accessed::
+    previous_value = self.sma[-1]
 
-    av = self.sma.lines[0][0]
+Of course earlier output values can be accessed with -2, -3, ...
 
-The previously output value uses index *-1*, such as::
 
-    previous_value = self.sma[-1] (or self.sma.lines[0][-1])
-
-.. note:: The line output by *SimpleMovingAverage* also has an alias that can be
-          used for access: *avg*. With it he notation will be: *self.sma.avg[0]*
-          or *self.sma.avg[-1]* for the last output value.
-
-	  This makes sense for multi-line indicators.
-
-There are shortcuts for lines and datas within indicators which is out of the
-scope of this quickstart guide
-
-**************************
 From 0 to 100: the samples
 **************************
 
 Basic Setup
------------
+===========
 
 Let's get running.
 
@@ -113,7 +97,7 @@ is put in place.
 And 10K monetary units is a usual value with some brokers to begin with.
 
 Setting the Cash
-----------------
+================
 In the world of finance, for sure only "losers" start with 10k. Let's change the
 cash and run the example again.
 
@@ -129,7 +113,7 @@ After the execution the output is::
 Mission accomplished. Let's move to tempestuous waters.
 
 Adding a Data Feed
-------------------
+==================
 Having cash is fun, but the purpose behind all this is to let an automated
 strategy multiply the cash without moving a finger by operating on an asset
 which we see as a *Data Feed*
@@ -159,12 +143,12 @@ Aside from that, the *Data Feed* is created and added to **cerebro**.
 The output has not changed and it would be a miracle if it had.
 
 .. note:: Yahoo Online sends the CSV data in date descending order, which is not
-          the standard convention. The *reversed=True* prameter takes into
+	  the standard convention. The *reversed=True* prameter takes into
           account that the CSV data in the file has already been **reversed**
           and has the standard expected date ascending order.
 
 Our First Strategy
-------------------
+==================
 The cash is in the *broker* and the *Data Feed* is there. It seems like risky
 business is just around the corner.
 
@@ -219,7 +203,7 @@ Let's explain some of the magic:
 
 
 Adding some Logic to the Strategy
----------------------------------
+=================================
 Let's try some crazy idea we had by looking at some charts
 
   - If the price has been falling 3 sessions in a row ... BUY BUY BUY!!!
@@ -261,7 +245,7 @@ decremented. A couple of important things are clearly missing.
     status.
 
 The curious reader may ask how many shares are being bought, what asset is being
-bouth and how are orders being executed. Where possible (and in this case it is)
+bought and how are orders being executed. Where possible (and in this case it is)
 the platform fills in the gaps:
 
   - self.datas[0] (the main data aka system clock) is the target asset if no
@@ -275,7 +259,7 @@ the platform fills in the gaps:
 
 
 Do not only buy ... but SELL
-----------------------------
+============================
 
 After knowing how to enter the market (long), an "exit concept" is needed and
 also understanding whether the strategy is in the market.
@@ -352,7 +336,7 @@ Blistering Barnacles!!! The system made money ... something must be wrong
 
 
 The broker says: Show me the money!
------------------------------------
+===================================
 
 And the money is called "comission".
 
@@ -473,7 +457,7 @@ Portfolio above the initial 100000 monetary units the strategy started with.
 
 
 Customizing the Strategy: Parameters
-------------------------------------
+====================================
 
 It would a bit unpractical to hardcode some of the values in the strategy and
 have no chance to change them easily. *Parameters* come in handy to help.
@@ -548,7 +532,7 @@ has been multiplied by 10. Instead of *16.98*, the surplus is now *169.80*
 
 
 Adding an indicator
--------------------
+===================
 
 Having heard of *indicators*, the next thing anyone would add to the strategy is
 one of them. For sure they must be much better than a simple *"3 lower closes"*
@@ -642,35 +626,32 @@ In the name of the King!!! A winning system turned into a losing one ... and
 that with no commission. It may well be that **simply** adding an *indicator* is
 not the universal panacea.
 
-.. note::
+.. note:: The same logic and data with PyAlgoTrade yields a slightly different
+	  result (slightly off). Looking at the entire printout reveals that
+	  some operations are not exactly the same. Being the culprit again the
+	  usual suspect: *rounding*.
 
-   The same logic and data with PyAlgoTrade yields a slightly different result
-   (slightly off). Looking at the entire printout reveals that some operations
-   are not exactly the same. Being the culprit again the usual suspect:
-   *rounding*.
+	  PyAlgoTrade does not round the datafeed values when applying the
+	  divided "adjusted close" to the data feed values.
 
-   PyAlgoTrade does not round the datafeed values when applying the divided
-   "adjusted close" to the data feed values.
+	  The Data Feed provided by *backtrade* rounds the values down to 2
+	  decimals after applying the adjusted close. Upong printing the values
+	  everything seems the same, but it's obvious that sometimes that 5th
+	  place decimal plays a role.
 
-   The Data Feed provided by *backtrade* rounds the values down to 2 decimals
-   after applying the adjusted close. Upong printing the values everything seems
-   the same, but it's obvious that sometimes that 5th place decimal plays a
-   role.
-
-   Rounding down to 2 decimals seems more realistic, because Marke Exchanges do
-   only allow a number of decimals per asset (being that 2 decimals usually for
-   stocks)
+	  Rounding down to 2 decimals seems more realistic, because Marke
+	  Exchanges do only allow a number of decimals per asset (being that 2
+	  decimals usually for stocks)
 
 
 Visual Inspection: Plotting
----------------------------
+===========================
 
 A printout or log of the actual whereabouts of the system at each bar-instant is
 good but humans tend to be *visual* and therefore it seems right to offer a view
 of the same whereabouts as chart.
 
-.. note::
-   To plot you need to have *matplotlib* installed
+.. note:: To plot you need to have *matplotlib* installed
 
 Once again defaults for plotting are there to assist the platform user. Plotting
 is incredibly a 1 line operation::
@@ -705,14 +686,13 @@ The entire set of additions to the __init__ method of the Strategy::
   bt.indicators.SmoothedMovingAverage(rsi, period=10)
   bt.indicators.ATR(self.datas[0]).plot = False
 
-.. note::
-   Even if *indicators* are not explicitly added to a member variable of the
-   strategy (like self.sma = MovingAverageSimple...), they will autoregister
-   with the strategy and will influence the minimum period for *next* and will
-   be part of the plotting.
+.. note:: Even if *indicators* are not explicitly added to a member variable of
+	  the strategy (like self.sma = MovingAverageSimple...), they will
+	  autoregister with the strategy and will influence the minimum period
+	  for *next* and will be part of the plotting.
 
-  In the example only *RSI* is added to a temporary variable *rsi* with the only
-  intention to create a MovingAverageSmoothed on it.
+	  In the example only *RSI* is added to a temporary variable *rsi* with
+	  the only intention to create a MovingAverageSmoothed on it.
 
 The example now:
 
@@ -744,12 +724,11 @@ After the execution the output is::
 **The final result has changed even if the logic hasn't**. This is true but the
  logic has not been applied to the same number of bars.
 
-.. note::
-   As explained before, the platform will first call next when all indicators
-   are ready to produce a value. In this plotting example (very clear in the
-   chart) the MACD is the last indicator to be fully ready (all 3 lines
-   producing an output). The 1st BUY order is no longer scheduled during Jan
-   2000 but close to the end of Feb 2000.
+.. note:: As explained before, the platform will first call next when all
+	  indicators are ready to produce a value. In this plotting example
+	  (very clear in the chart) the MACD is the last indicator to be fully
+	  ready (all 3 lines producing an output). The 1st BUY order is no
+	  longer scheduled during Jan 2000 but close to the end of Feb 2000.
 
 The chart:
 
@@ -757,7 +736,7 @@ The chart:
 
 
 Let's Optimize
---------------
+==============
 
 Many trading books say each market and each traded stock (or commodity or ..)
 have different rythms. That there is no such thing as a one size fits all.
@@ -767,11 +746,11 @@ period default value was 15 bars. It's a strategy parameter and this can be used
 in an optimization to change the value of the parameter and see which one better
 fits the market.
 
-.. note::
-   There is plenty of literature about Optimization and associated pros and
-   cons. But the advice will always point in the same direction: do not
-   overoptimize. If a trading idea is not sound, optimizing may end producing a
-   positive result which is only valid for the backtested dataset.
+.. note:: There is plenty of literature about Optimization and associated pros
+	  and cons. But the advice will always point in the same direction: do
+	  not overoptimize. If a trading idea is not sound, optimizing may end
+	  producing a positive result which is only valid for the backtested
+	  dataset.
 
 The sample is modified to optimize the period of the Simple Moving Average. For
 the sake of clarity any output with regards to Buy/Sell orders has been removed
@@ -826,14 +805,14 @@ And the winning period for this strategy and the given data set is:
 
   * 20 bars, which wins 78.00 units over 1000 $/€ (a 7.8%)
 
-.. note::
-   The extra indicators from the plotting example have been removed and the
-   start of operations is only influenced by the Simple Moving Average which is
-   being optimized. Hence the slightly different results for period 15
+.. note:: The extra indicators from the plotting example have been removed and
+	  the start of operations is only influenced by the Simple Moving
+	  Average which is being optimized. Hence the slightly different results
+	  for period 15
 
 
 Conclusion
-----------
+==========
 
 The incremental samples have shown how to go from a barebones script to a fully
 working trading system which even plots the results and can be optimized.

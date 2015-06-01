@@ -1,156 +1,224 @@
-###############
-Advanced Topics
-###############
+Advanced Operation
+##################
 
+Data - Multiple Timeframes
+**************************
+
+The platform supports operating on data feeds with different timeframes
+simultaneously. In order to do so, two rules must be followed:
+
+  - The data with the smallest timeframe (and thus the larger number of bars)
+    must be the 1st one to be added to the Cerebro instance
+
+  - The datas must be properly date-time aligned for the platform to make any
+    sense out of them
+
+Beyond that, the end-user is free to apply indicators as wished on the
+shorter/larger timeframes. Of course:
+
+  - Indicators applied to larger timeframes will produce less bars
+
+The platform will also have the following into account
+
+  - The minimum period for larger timeframes
+
+Which will probably have the side effect of having to consume several orders of
+magnitude of the smaller timeframe bars before a Strategy added to Cerebro kicks
+into action.
+
+Use case:
+
+  - 1 day data bars for 1 year
+
+    Around 256 bars
+
+  - Weekly bars for the same data set
+
+    52 bars
+
+With the exception of the "smallest timeframe first" rule, there is nothing
+special to do::
+
+  cerebro = bt.Cerebro(runonce=True, preload=True)
+
+  data_daily = bt.feeds.YahooFinanceCSVData(
+      dataname=datapath,
+      fromdate=datetime.datetime(2014, 1, 1),
+      todate=datetime.datetime(2014, 12, 31),
+      compression=1,
+      timeframe=bt.TimeFrame.Days)
+
+  # SMALLEST TIMEFRAME FIRST
+  cerebro.adddata(data_daily)
+
+  data_weekly = bt.feeds.YahooFinanceCSVData(
+      dataname=datapath,
+      fromdate=datetime.datetime(2014, 1, 1),
+      todate=datetime.datetime(2014, 12, 31),
+      compression=1,
+      timeframe=bt.TimeFrame.Weeks)
+
+  cerebro.adddata(data_weekly)
+
+  ...
+
+  cerebro.run()
+
+Bear in mind:
+
+  - In the strategy ``self.data0`` (or ``self.data``) will refer to the 1st
+    added data which in this case is the daily
+
+  - ``self.data1`` will refer to the weekly data
+
+A quick Strategy snippet::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period=20)
+
+      def __init__(self):
+
+          ma_day = btind.SimpleMovingAverage(self.data0, period=self.p.period)
+	  ma_week = btind.SimpleMovingAverage(self.data1, period=self.p.period)
+
+      def next(self):
+          print('Called first after so many data0 bars:', len(self))
+
+In a single data scenario and with the default `20` for period ``next`` would be
+called after 20 iterations.
+
+But in this case with daily and weekly data ``next`` will be called after 20
+weekly bars have elapsed, which amounts in a regular case to about `90 daily`
+bars.
+
+  - The strategy kicks first in action after 90 data bars because of the weekly
+    timeframe effect
+
+
+Data - Resampling
 *****************
-Platform concepts
-*****************
 
+Data can be resampled to a larger timeframe:
 
+  - Minutes to Minutes (for example 5 to 60)
+  - Minutes to Days, Weeks, Months, Years
+  - Days to Weeks, Months, Years
+  - Weeks to Months, Years
+  - Months to Years
 
+To do it, the data feed is passed to a *DataResampler*, which is what finally
+gets added to the Cerebro instance. An non-resample example::
 
-************
-Line Concept
-************
+  cerebro = bt.Cerebro(runonce=True, preload=True)
 
-The platform is designed around the "line" concept, possibly better explained with a concrete example:
+  data = bt.feeds.YahooFinanceCSVData(
+      dataname=datapath,
+      fromdate=datetime.datetime(2014, 1, 1),
+      todate=datetime.datetime(2014, 6, 30),
+      compression=5,
+      timeframe=bt.TimeFrame.Minutes)
 
-  The series of "close" prices of a stock define a "line" conceptually and when drawn on a board and the points are joined together.
+  cerebro.adddata(data)
 
-This is for sure not a disruptive innovation (many other software) packages have done it before, it is simply what everything revolves around.
+  ...
 
-As such most of the objects that play a role in the platform have 1 or more lines.
+  cerebro.run()
 
-It is for sure best to first explain what the usual lifecycle of a line is:
+For a regular data feed like the one above the "compression" and "timeframe"
+keyword arguments are just hints (they also make nicer plotting)
 
-  - Starts with length 0 ie: len(lineobject) == 0
+The same keyword arguments for a *DataResampler* are the key to decide what to
+resample to. A resampled example::
 
-  - Grows on each iteration of the platform by 1 item (operation *forward*)
+  cerebro = bt.Cerebro(runonce=True, preload=True)
 
-  - Gets a value set at *index 0* and the value at *index 0* and previous ones (-1, -2, ...) may be read by other actors to create other values
+  data = bt.feeds.YahooFinanceCSVData(
+      dataname=datapath,
+      fromdate=datetime.datetime(2014, 1, 1),
+      todate=datetime.datetime(2014, 6, 30),
+      compression=5,
+      timeframe=bt.TimeFrame.Minutes)
 
-Sometimes a line undergoes extra operations:
+  data_resampled = bt.DataResampler(data=data,
+      timeframe=bt.TimeFrame.Days,
+      compression=2)
 
-  - home. This one resets the *index 0* of the line without touching the underlying content.
+  cerebro.adddata(data_resampled)
 
-    If a line already has a set of 500 values they remain there. This is useful to preload a series of data (closing prices for example) before doing calculations on them (indicators, strategies)
+  ...
 
-  - advance. Advances the logical *index 0* over existing data (used obviously after "home")
+  cerebro.run()
 
-  - rewind. Moves the *index 0* backwards and reduces the buffer size.
+Done! Instead of adding "data" directly to the cerebro, it is fed to a
+DataResampler.
 
-    Useful if a data is being loaded which must be discarded.
+  - The original data is in Minutes and each bar represents 5 minutes
 
- In fact a "line" is a wrapper around any kind of Python iterable modifying the access indices to have an *index 0* which is the current get/set point and keeping the pythonic notion of "last" because *-1* pulls the last set value before the current one.
+    Remember only hints
 
-In the platform most lines hold floating point (double precision) values, but lists and collections.deque can also be used to hold complex objects like Python datetime.datetime instances.
+  - The Resampler will work to deliver:
 
-******************
-LineSeries Concept
-******************
+      * Days
+      * 2 days per bar
 
-A "line" is of not much help given that real life "objects" (like the OHLC price action daily summary of a security) has more than 1 line. Hence the "LineSeries"
+Of course resampling will only output the requested timeframe if the original
+data makes sense. Passing weekly bars and requesting daily bars will not work.
 
-These objects are capable of holdinde 1 or more lines in an array manner. There are three different ways to access line values for all objects derived from LineSeries:
 
-  - object[line_index][value_index]
+Data - Replay
+*************
 
-    This recalls a matrix
+Replaying adds an extra bit to resampling:
 
-  - object.lines[line_index][value_index]
+  - The resampled bar will be output as many times as needed to the system
+    during the resampling process
 
-    This exposes the "lines" array which gives access to the lines
+The indicators and strategies will see its next operations called as
+many times as the bar is output.
 
-  - object.line_alias[value_index]
+This allows to experience how, for example, a day has happened and may play a
+role in some strategies and indicators which may make decisions based on the
+development of a daily bar (for example: status of a MACD indicator 5 minutes
+before the close of a session)
 
-    Although not yet mentioned, lines have "aliases" to access them
+It is obvious that *next* methods in indicators must store no state in between
+calls.
 
-LineSeries (and derived clases) feature the following syntax to define lines::
+.. note:: Replaying data only works in step by step mode, which means the
+	  runconce (bath operation) mode is not available.
 
-  class MyLineSeries(LineSeries):
+	  In the ``next`` method of an indicator the current number of bars of the
+	  system can be checked (with len(self)) and during replay this value
+	  may not change for a long streak of bars.
 
-      lines = ('alias1', 'alias2', 'alias3')
+	  Hence something like *self.line[0] = result_of_indicator_operation*
+	  will output a result for the same bar several times. Which is the
+	  expected thing to see the development of an indicator in real-time
+	  whilst for example a daily bar is being replayed.
 
-With that syntax 3 lines and the corresponding aliases have been created. Furthermore and when it comes down to inheritance::
+	  Obviously "preloading" has to also be set to False
 
-  class MyLineSeriesSub(MyLineSeries):
+Just like with resampling, the data has to be passed to a DataReplayer which is
+what finally gets added to cerebro::
 
-      lines = ('alias4',)
+  # Notice "runconce=False" for replaying
+  cerebro = bt.Cerebro(runonce=False, preload=False)
 
-Although it may not seem obvious at first ... MyLineSeriesSub HAS 4 lines. The 3 defined by its parent and the 4th one defined by itself.
+  data = bt.feeds.YahooFinanceCSVData(
+      dataname=datapath,
+      fromdate=datetime.datetime(2014, 1, 1),
+      todate=datetime.datetime(2014, 6, 30),
+      compression=5,
+      timeframe=bt.TimeFrame.Minutes)
 
-.. note:: Python tuples and commas
+  data_replayed = bt.DataReplayer(data=data,
+      timeframe=bt.TimeFrame.Days,
+      compression=2)
 
-   If a single line is defined, you need the sintactic comman at the end, to ensure standard Python tuple parsing does not interpret the string as an iterable itself creating lines with the following aliases: a, l, i, a, s, 4.
+  cerebro.adddata(data_replayed)
 
-All the work needed to define the lines and control the inheritance is done in the background with MetaClasses before any object is instantiated.
+  ...
 
-The above example have defined lines which hold floating point values. To define a line that can hold complex objects do the following::
+  cerebro.run()
 
-  class MyLineSeries(LineSeries):
-
-      lines = ('alias1', ('alias2', 'ls'), 'alias3')
-
-The line with *alias2* will uses a list to store values and can therefore store any complex object.
-
-
-LineSeries and Parameters
--------------------------
-Parameters definition is not strictly limited to LineSeries, but LineSeries and descendants do already feature the needed machinery to define parameters (other non LineSeries objects like a *Broker* also make use of the Params machinery)
-
-Parameters work as follows (extending the above examples)::
-
-  class MyLineSeries(LineSeries):
-      lines = ('alias1', ('alias2', 'ls'), 'alias3')
-
-      params = ((param1, default1), (param2, default2),)
-
-Just like with lines, parameters are defined with a tuple, where each element is a tuple itself containing the name and default value.
-
-Parameters are bound to "keyword arguments" (yes the **kwargs in function/method definitions). And as such the following changes the value of some of the parameters defined above::
-
-  myls = MyLineSeries(param2=27)
-
-In order to achieve this, there is no need to parse anything or even have a **kwargs in the __init__ definition. Most of the objects in the platform have an __init__ function like this::
-
-  class MyLineSeries(LineSeries):
-      lines = ('alias1', ('alias2', 'ls'), 'alias3')
-
-      params = ((param1, default1), (param2, default2),)
-
-      def __init__(self):
-          # perform some actions
-	  pass
-
-Accessing the parameters inside a MyLineSeries instance is done with the synxtax seen below::
-
-  class MyLineSeries(LineSeries):
-      lines = ('alias1', ('alias2', 'ls'), 'alias3')
-
-      params = ((param1, default1), (param2, default2),)
-
-      def __init__(self):
-          if self.params.param2 == 52:
-	      print '52'
-	  else:
-	      print 'It is not 52'
-
-Talking about inheritance again::
-
-  class MyLineSeriesSub(MyLineSeries):
-      lines = ('alias4',)
-
-      params = ((param3, default3),)
-
-      def __init__(self):
-          if self.params.param2 == 52:
-	      print '52'
-	  else:
-	      print 'It is not 52'
-
-Params just like line are inherited and therefore *MyLineSeriesSub* has:
-
-  - 4 lines (3 from parent + 1 newly defined)
-  - 3 parameters (2 from parent + 1 newly defined)
-
-MetaClasses do once again articulate all the work in the background for parameters.
+Same syntax, just a different object.
