@@ -14,8 +14,14 @@ Contents:
    introduction
    installation
    quickstart
+   concepts
+   operating
    advanced
-   backtrader
+   inddev
+   indicators
+   plotting
+   todo
+
 
 Indices and tables
 ==================

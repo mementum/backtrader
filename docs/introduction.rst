@@ -1,74 +1,49 @@
 Introduction
-============
+############
 
-Backtrader is Python based backtesting platform for developing home cooked indicators and trading strategies.
+Backtrader is Python based backtesting platform for developing home cooked
+indicators and trading strategies.
 
-The platform can operate as a tick-based platform. In this mode for each bar all
-objects will be called to recalculate (many times the "ticks" will be complete
-bars) It can also operate in batch mode processing each all bars at once.
+Features:
 
-The tick-based approach would allow to connect to a real-time data feed. The
-batch mode is much faster but operates on a existing set of bars, which is
-appropriate for backtesting.
+  - Bar by Bar (next) operation or batch mode (runonce) operation
+  - Indicators and the addition of any custom end-user developed one
+  - Strategies
+  - Data Feeds from Online Sources or CSV Files (other forms could be
+    implemented)
+  - Data Feeds with different timeframes
+  - Data Feed Resampling
+  - Data Feed Replaying
+  - A Broker implementation supporting
+    - Commision schemes for stocks and derivatives
+    - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
+  - Position Sizers for the automatic determination of the stake
+  - Optimization of Strategies
+  - Plotting
 
-User defined objects (ex: indicators) can only provide the tick-based methods
-and they will still operate in batch mode (by looping n times over the
-tick-based method)
+The development focused on two rules:
 
-The platform has been designed to avoid external dependencies as much as
-possible. As such the only things that are currently needed are:
+  1. Ease of use
+  2. Go back to rule 1
 
-  * Python 2.7 (development was finished when running 2.7.9, but most of it was
-    done with Python 2.7.5)
+Loosely based on the Karate (Kid) rules by Mr. Miyagi.
 
-Optionally:
+Some focus has been put into *speed* but without direct usage of `numpy` (for
+example) the limits without creating spaghetti code have been reached.
 
-  * matplotlib if you want to plot charts of your strategies and associated
-    datas (1.4.2 has been tested)
+The basics or running this library are outlined below.
 
-    matplotlib will obviously pull in its own dependencies
-
-The basic building blocks in the platform that you'll become acquainted with
-are:
-
-  * Data Feeds
-  * Indicators
-  * Strategies
-  * Brokers
-  * Commissions
-  * Position Sizers
-  * Analyzers
-  * Plotters
-  * Cerebro (the main looping engine)
-
-Don't panic!!! One of the targets of this platform is to make most of the inner
-working of the objects, relationships and interactions transparent to the
-platform user. For example: a broker with a preset commission scheme (no
-commission) is included along a fixed size Position sizer, a basic Analyzer and
-*sensible* defaults for plotting.
-
-Some operations are obviously the responsibility of the user, because the
-platform cannot know or decide if the user wishes to base the logic of a
-strategy on Moving Average or an Average True Range indicator (or maybe both
-will be used or one will use the other)
-
-The basics:
-
-  * Create a Strategy
+  - Create a Strategy
 
     - Decide on potential adjustable parameters
     - Create the Indicators you need in the Strategy
-    - Lay out the logic for entering/exiting the market
+    - Write down the logic for entering/exiting the market
 
-  * Load a Data Feed
+  - Create a Cerebro Engine
 
-    - Yahoo Online and CSV is supported
-    - Another CSV example format is provided
-
-  * Create a Cerebro Engine
-
-    - Inject the Strategy (with your parameters of choice)
-    - Inject the Data Feed
+    - Inject the Strategy (with the parameters of choice)
+    - Load and Inject a Data Feed
     - And ... run()
+    - Optionally ... plot()
 
 Let's hope you, the user, find the platform useful and fun to work with.
