@@ -25,26 +25,64 @@ from .. import Indicator
 from .ma import MovAv
 
 
-class StdDev(Indicator):
+class StandardDeviation(Indicator):
+    '''StandardDeviation (alias StdDev)
+
+    Calculates the standard deviation of the passed data for a given period
+
+    The formula:
+      - meansquared = SimpleMovingAverage(pow(data, 2), period)
+      - squaredmean = pow(SimpleMovingAverage(data, period), 2)
+      - stddev = pow(meansquared - squaredmean, 0.5)  # square root
+
+    See: http://en.wikipedia.org/wiki/Standard_deviation
+
+    Lines:
+        stddev
+
+    Params:
+      - period (20): period for the moving average
+      - movav (SimpleMovingAverage): moving average type to apply
+    '''
     lines = ('stddev',)
-    params = (('period', 20),)
+    params = (('period', 20), ('movav', MovAv.Simple),)
 
     def __init__(self):
         # mean could already be passed as a parameter to avoid recalculation
         # dmean = self.data1 if len(self.datas) > 1 else \
-        # MovAv.Simple(self.data, period=self.p.period)
+        # self.p.movav(self.data, period=self.p.period)
         # sqmean = pow(dmean, 2)
 
-        meansq = MovAv.Simple(pow(self.data, 2), period=self.p.period)
-        sqmean = pow(MovAv.Simple(self.data, period=self.p.period), 2)
+        meansq = self.p.movav(pow(self.data, 2), period=self.p.period)
+        sqmean = pow(self.p.movav(self.data, period=self.p.period), 2)
         self.lines.stddev = pow(meansq - sqmean, 0.5)
 
 
-class StandardDeviation(StdDev):
+class StdDev(StandardDeviation):
     pass
 
 
 class BollingerBands(Indicator):
+    '''BollingerBands (alias BBands)
+
+    Defined by John Bollinger in the 80s. It measures volatility by defining
+    upper and lower bands at distance x standard deviations
+
+    The formula:
+      - midband = SimpleMovingAverage(close, period)
+      - topband = midband + devfactor * StandardDeviation(data, period)
+      - botband = midband - devfactor * StandardDeviation(data, period)
+
+    See: http://en.wikipedia.org/wiki/Bollinger_Bands
+
+    Lines:
+        - mid, top, bot
+
+    Params:
+      - period (20): period for the moving average
+      - devfactor (2.0): distance of the bottom, top bands to the middle
+      - movav (SimpleMovingAverage): moving average type to apply
+    '''
     lines = ('mid', 'top', 'bot',)
     params = (('period', 20), ('devfactor', 2.0), ('movav', MovAv.Simple),)
 
