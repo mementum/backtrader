@@ -29,7 +29,8 @@ with codecs.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 pname = 'backtrader'
-pversion = '0.9.0'
+import backtrader
+pversion = backtrader.__version__
 gurl = 'https://github.com/mementum/' + pname
 gdurl = gurl + '/tarball/' + pversion
 
