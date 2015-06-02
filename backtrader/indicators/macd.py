@@ -26,6 +26,33 @@ from .ma import MovAv
 
 
 class MACD(Indicator):
+    '''MACD
+
+    Moving Average Convergence Divergence. Defined by Gerald Appel in the 70s.
+
+    It measures the distance of a short and a long term moving average to
+    try to identify the trend.
+
+    A second lagging moving average over the convergence-divergence should
+    provide a "signal" upon being crossed by the macd
+
+    Formula:
+      - macd = ema(data, me1_period) - ema(data, me2_period)
+      - signal = ema(macd, signal_period)
+
+    See:
+      - http://en.wikipedia.org/wiki/MACD
+
+    Lines:
+      - macd
+      - signal
+
+    Params:
+      - period_me1 (12): period for the 1st moving average
+      - period_me2 (26): period for the 2nd moving average
+      - period_signal (9): period for the signal moving average
+      - movav (Exponential): moving average type to apply
+    '''
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
               ('movav', MovAv.Exponential),)
@@ -48,6 +75,28 @@ class MACD(Indicator):
 
 
 class MACDHisto(MACD):
+    '''MACDHisto
+
+    Subclass of MACD which adds a "histogram" of the difference between the
+    macd and signal lines
+
+    Formula:
+      - histo = macd - signal
+
+    See:
+      - http://en.wikipedia.org/wiki/MACD
+
+    Lines:
+      - macd
+      - signal
+      - histo
+
+    Params:
+      - period_me1 (12): period for the 1st moving average
+      - period_me2 (26): period for the 2nd moving average
+      - period_signal (9): period for the signal moving average
+      - movav (Exponential): moving average type to apply
+    '''
     lines = ('histo',)
     plotlines = dict(histo=dict(_method='bar', alpha=0.50, width=1.0))
 
