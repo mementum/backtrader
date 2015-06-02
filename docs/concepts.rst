@@ -70,6 +70,44 @@ membervariables:
   - ``self.data`` targets ``self.datas[0]``
   - ``self.dataX`` targets ``self.datas[X]``
 
+Indicators and Operations ara DATAS
+===================================
+
+Not only `Data Feeds` are datas and can be passed around. `Indicators` and
+results of `Operations` are also datas.
+
+In the previous example the `SimpleMovingAverage` was receiving
+``self.datas[0]`` as input to operate on. An example with oeprations and extra
+indicators::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period1=20, period2=25, period3=10, period4)
+
+      def __init__(self):
+
+          sma1 = btind.SimpleMovingAverage(self.datas[0], period=self.p.period1)
+
+	  # This 2nd Moving Average operates using sma1 as "data"
+	  sma2 = btind.SimpleMovingAverage(sma1, period=self.p.period2)
+
+	  # New data created via arithmetic operation
+	  something = sma2 - sma1 + self.data.close
+
+	  # This 3rd Moving Average operates using something  as "data"
+	  sma3 = btind.SimpleMovingAverage(something, period=self.p.period3)
+
+	  # Comparison operators work too ...
+	  greater = sma3 > sma
+
+	  # Pointless Moving Average of True/False values but valid
+	  # This 4th Moving Average operates using greater  as "data"
+	  sma3 = btind.SimpleMovingAverage(greater, period=self.p.period4)
+
+      ...
+
+Basically everything gets transformed into an object which can be uses as a data
+once it has been operated upon.
+
 Parameters
 **********
 
@@ -229,6 +267,32 @@ If both return the same value, either no data has been preloaded or the
 processing of bars has consumen all preloaded bars (and unless the system is
 connected to a live feed, this will mean the end of processing)
 
+Inheritance of Lines and Params
+===============================
+
+A kind of metalanguage is in place to support declaration of `Params` and
+`Lines`. Every effort has been made to make it compatible with standard Python
+inheritance rules.
+
+Params inheritance
+------------------
+
+Inheritance should work as expected:
+
+  - Multiple inheritance is supported
+  - Params from base classes are inherited
+  - If multiple base classes define the same param the default value of the last
+    class in the inheritance list is used
+  - If the same param is redefined in a child class, the new default value takes
+    over that of the base class
+
+Lines Inheritance
+-----------------
+
+  - Multiple inheritance is supported
+  - Lines from all base classes are inherited. Being *named* lines there will
+    only be one version of a line if the same name has been used more than once
+    in base classes
 
 Indexing: 0 and -1
 ******************

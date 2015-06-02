@@ -6,7 +6,7 @@ indicators and trading strategies.
 
 Features:
 
-  - Bar by Bar (next) operation or batch mode (runonce) operation
+  - Bar by Bar (next) operation or batch mode (once) operation
   - Indicators and the addition of any custom end-user developed one
   - Strategies
   - Data Feeds from Online Sources or CSV Files (other forms could be
