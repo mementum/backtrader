@@ -29,7 +29,6 @@ from six.moves import xrange
 
 from .broker import BrokerBack
 from .metabase import MetaParams
-from . import plot
 
 
 class Cerebro(six.with_metaclass(MetaParams, object)):
