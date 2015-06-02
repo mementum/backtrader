@@ -185,7 +185,7 @@ class RSI_SMA(RSI_Cutler):
 class RSI_EMA(Indicator):
     '''RSI_EMA
 
-    Uses an ExponentialMovingAverage  as described in Wikipedia
+    Uses an ExponentialMovingAverage as described in Wikipedia
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
