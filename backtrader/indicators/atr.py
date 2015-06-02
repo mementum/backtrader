@@ -31,19 +31,20 @@ class TrueRange(Indicator):
     Defined by J. Welles Wilder, Jr. in 1978 in his book New Concepts in
     Technical Trading Systems.
 
-    The formula:
+    Formula:
       - max(high - low, abs(high - prev close), abs(prev close - low)
 
-    See also: http://en.wikipedia.org/wiki/Average_true_range
+    See:
+      - http://en.wikipedia.org/wiki/Average_true_range
 
     The idea is to take the close into account to calculate the range if it
     yields a larger range than the daily range (High - Low)
 
     Lines:
-        - tr
+      - tr
 
-    Params: None
-
+    Params:
+      (None)
     '''
 
     lines = ('tr',)
@@ -61,23 +62,25 @@ class TR(TrueRange):
 
 class AverageTrueRange(Indicator):
     '''AverageTrueRange (alias ATR)
+
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
-
-    The formula:
-        - SmoothedMovingAverage(TrueRange, period)
 
     The idea is to take the close into account to calculate the range if it
     yields a larger range than the daily range (High - Low)
 
-    See also: http://en.wikipedia.org/wiki/Average_true_range
+    Formula:
+      - SmoothedMovingAverage(TrueRange, period)
+
+    See:
+      - http://en.wikipedia.org/wiki/Average_true_range
 
     Lines:
-        - atr
+      - atr
 
     Params:
-        - period (14): period for the moving average
-        - movav (SmoothedMovingAverage): moving average type to apply
+      - period (14): period for the moving average
+      - movav (SmoothedMovingAverage): moving average type to apply
     '''
 
     lines = ('atr',)

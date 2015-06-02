@@ -39,6 +39,22 @@ class BaseMovingAverage(Indicator):
 
 
 class SimpleMovingAverage(BaseMovingAverage):
+    '''SimpleMovingAverage (alias SMA)
+
+    Non-weighted average of the last n periods
+
+    Formula:
+      - movav = Sum(data, period) / period
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+    '''
     plotinfo = dict(plotname='SMA')
 
     def next(self):
@@ -59,6 +75,33 @@ class SMA(SimpleMovingAverage):
 
 
 class SmoothingMovingAverage(SimpleMovingAverage):
+    '''SmoothingMovingAverage
+
+    Base class for Moving Averages that apply a smoothing factor to the
+    previous and incoming input to calculate the new value
+
+    It is a subclass of SimpleMovingAverage and uses the 1st value
+    produced by it as the seed for the next values
+
+    Subclasses must override the method ``smoothingfactor`` which calculates
+    two values:
+
+      - self.smfactor -> the smoothing factor applied to new input
+      - self.smfactor1 -> the smoothing factor applied to the olf value.
+        usually `1 - self.smfactor`
+
+    Formula:
+      - movav = prev * (1 - smoothfactor) + newdata * smoothfactor
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+    '''
     def __init__(self):
         super(SmoothingMovingAverage, self).__init__()
         self.smoothingfactor()
@@ -86,6 +129,27 @@ class SmoothingMovingAverage(SimpleMovingAverage):
 
 
 class ExponentialMovingAverage(SmoothingMovingAverage):
+    '''ExponentialMovingAverage (alias EMA)
+
+    A Moving Average that smoothes data exponentially over time.
+
+    It is a subclass of SmoothingMovingAverage.
+
+      - self.smfactor -> 2 / (1 + period)
+      - self.smfactor1 -> `1 - self.smfactor`
+
+    Formula:
+      - movav = prev * (1.0 - smoothfactor) + newdata * smoothfactor
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+    '''
     plotinfo = dict(plotname='EMA')
 
     def smoothingfactor(self):
@@ -98,6 +162,32 @@ class EMA(ExponentialMovingAverage):
 
 
 class SmoothedMovingAverage(SmoothingMovingAverage):
+    '''SmoothedMovingAverage (alias SMMA)
+
+    Smoothing Moving Average used by Wilder in his 1978 book `New Concepts in
+    Technical Trading`
+
+    Defined in his book originalyl as:
+
+      - new_value = (old_value * (period - 1) + new_data) / period
+
+    Can be expressed as a SmoothingMovingAverage with the following factors:
+
+      - self.smfactor -> 1.0 / period
+      - self.smfactor1 -> `1.0 - self.smfactor`
+
+    Formula:
+      - movav = prev * (1.0 - smoothfactor) + newdata * smoothfactor
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+    '''
     plotinfo = dict(plotname='SMMA')
 
     def smoothingfactor(self):
@@ -110,6 +200,25 @@ class SMMA(SmoothedMovingAverage):
 
 
 class WeightedMovingAverage(BaseMovingAverage):
+    '''WeightedMovingAverage (alias WMA)
+
+    A Moving Average which gives an arithmetic weighting to values with the
+    newest having the more weight
+
+    Formula:
+      - weights = range(1, period + 1)
+      - coef = 2 / (period * (period + 1))
+      - movav = coef * Sum(weight[i] * data[period - i] for i in range(period))
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+    '''
     plotinfo = dict(plotname='WMA')
 
     def __init__(self):
@@ -138,7 +247,28 @@ class WMA(WeightedMovingAverage):
     pass
 
 
-class MovAv(object):
+class MovingAverage(object):
+    '''MovingAverage (alias MovAv)
+
+    A placeholder to gather all Moving Average Types in a single place.
+
+    It has the following attributes:
+
+      - Simple
+      - Exponential
+      - Smoothed
+      - Weighted
+
+      - SMA
+      - EMA
+      - SMMA
+      - WMA
+
+    Instantiating a SimpleMovingAverage can be achieved as follows::
+
+      sma = MovingAverage.Simple(self.data, period)
+
+    '''
     Simple = SimpleMovingAverage
     Exponential = ExponentialMovingAverage
     Smoothed = SmoothedMovingAverage
@@ -150,5 +280,5 @@ class MovAv(object):
     WMA = WMA
 
 
-class MovingAverage(MovAv):
+class MovAv(MovingAverage):
     pass  # alias

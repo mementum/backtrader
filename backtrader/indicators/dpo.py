@@ -34,11 +34,12 @@ class DetrendedPriceOscillator(Indicator):
     It measures the price variations against a Moving Average (the trend)
     and therefore removes the "trend" factor from the price.
 
-    The formula:
+    Formula:
       - movav = MovingAverage(close, period)
       - dpo = close - movav(shifted period / 2 + 1)
 
-    See also: (No Wikipedia or similar)
+    See:
+      - (No Wikipedia or similar)
 
     Lines:
       - dpo

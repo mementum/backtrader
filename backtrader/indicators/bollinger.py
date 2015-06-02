@@ -30,15 +30,16 @@ class StandardDeviation(Indicator):
 
     Calculates the standard deviation of the passed data for a given period
 
-    The formula:
+    Formula:
       - meansquared = SimpleMovingAverage(pow(data, 2), period)
       - squaredmean = pow(SimpleMovingAverage(data, period), 2)
       - stddev = pow(meansquared - squaredmean, 0.5)  # square root
 
-    See: http://en.wikipedia.org/wiki/Standard_deviation
+    See:
+      - http://en.wikipedia.org/wiki/Standard_deviation
 
     Lines:
-        stddev
+      - stddev
 
     Params:
       - period (20): period for the moving average
@@ -68,15 +69,16 @@ class BollingerBands(Indicator):
     Defined by John Bollinger in the 80s. It measures volatility by defining
     upper and lower bands at distance x standard deviations
 
-    The formula:
+    Formula:
       - midband = SimpleMovingAverage(close, period)
       - topband = midband + devfactor * StandardDeviation(data, period)
       - botband = midband - devfactor * StandardDeviation(data, period)
 
-    See: http://en.wikipedia.org/wiki/Bollinger_Bands
+    See:
+      - http://en.wikipedia.org/wiki/Bollinger_Bands
 
     Lines:
-        - mid, top, bot
+      - mid, top, bot
 
     Params:
       - period (20): period for the moving average
