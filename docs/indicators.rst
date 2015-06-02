@@ -17,7 +17,7 @@ Averages are listed under a group.
    :glob:
    :hidden:
 
-   ind/*
+   indref/*
 
 - :ref:`averagetruerange`
 - :ref:`truerange`
@@ -33,12 +33,16 @@ Averages are listed under a group.
 
 ----
 
-- :ref:`movingaverage`
 - :ref:`simplemovingaverage`
+
 - :ref:`smoothingmovingaverage`
-- :ref:`exponentialmovingaverage`
-- :ref:`smoothedmovingaverage`
+
+  - :ref:`exponentialmovingaverage`
+  - :ref:`smoothedmovingaverage`
+
 - :ref:`weightedmovingaverage`
+
+:ref:`MovingAverage Placeholder <movingaverage>`
 
 ----
 
@@ -53,6 +57,8 @@ Averages are listed under a group.
 ----
 
 - :ref:`rsi`
+- :ref:`rsi_ema`
+- :ref:`rsi_cutler`
 - :ref:`updays`
 - :ref:`downdays`
 
