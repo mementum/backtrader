@@ -15,7 +15,7 @@ From pypi:
 
   - pip install backtrader[matplotlib]
 
-    If matplotlib is not installed and you wish to do some plotting
+    If `matplotlib` is not installed and you wish to do some plotting
 
   - Or run directly from source by placing the *backtrader* directory found in
     the sources inside your project
