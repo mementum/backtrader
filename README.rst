@@ -1,5 +1,14 @@
+
 backtrader
 ==========
+
+.. image:: https://img.shields.io/pypi/v/backtrader.svg
+   :target: https://pypi.python.org/pypi/backtrader/
+.. image:: https://img.shields.io/pypi/dm/backtrader.svg
+   :target: https://pypi.python.org/pypi/backtrader/
+.. image:: https://img.shields.io/pypi/l/backtrader.svg
+   :target: https://github.com/mementum/backtrader/blob/master/LICENSE
+
 BackTesting platform written in Python to test trading strategies.
 
 Read the full documentation at readthedocs.org:
