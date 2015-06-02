@@ -30,3 +30,36 @@ Averages are listed under a group.
 
 - :ref:`bollingerbands`
 - :ref:`standarddeviation`
+
+----
+
+- :ref:`movingaverage`
+- :ref:`simplemovingaverage`
+- :ref:`smoothingmovingaverage`
+- :ref:`exponentialmovingaverage`
+- :ref:`smoothedmovingaverage`
+- :ref:`weightedmovingaverage`
+
+----
+
+- :ref:`macd`
+- :ref:`macdhisto`
+
+----
+
+- :ref:`stochastic`
+- :ref:`stochasticfast`
+
+----
+
+- :ref:`rsi`
+- :ref:`updays`
+- :ref:`downdays`
+
+
+Utility Indicators
+==================
+
+- :ref:`highest`
+- :ref:`lowest`
+- :ref:`sumn`
