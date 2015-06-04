@@ -27,6 +27,7 @@ import operator
 from six.moves import xrange
 
 from .. import Indicator
+from .miscops import SumN
 
 
 class BaseMovingAverage(Indicator):
@@ -59,10 +60,10 @@ class SimpleMovingAverage(BaseMovingAverage):
 
     def next(self):
         self.line[0] = \
-            math.fsum(self.data_0.get(size=self.p.period)) / self.p.period
+            math.fsum(self.data.get(size=self.p.period)) / self.p.period
 
     def once(self, start, end):
-        src = self.data_0.array
+        src = self.data.array
         dst = self.line.array
         period = self.p.period
 
@@ -106,22 +107,26 @@ class SmoothingMovingAverage(SimpleMovingAverage):
         super(SmoothingMovingAverage, self).__init__()
         self.smoothingfactor()
 
+    def smoothingfactor(self):
+        raise NotImplementedError
+
     def nextstart(self):
         super(SmoothingMovingAverage, self).next()
 
     def next(self):
         prev = self.line[-1]
-        self.line[0] = prev * self.smfactor1 + self.data_0[0] * self.smfactor
+        self.line[0] = prev * self.smfactor1 + self.data[0] * self.smfactor
 
     def oncestart(self, start, end):
         super(SmoothingMovingAverage, self).once(start, end)
 
     def once(self, start, end):
-        darray = self.data_0.array
+        darray = self.data.array
         larray = self.line.array
         smfactor = self.smfactor
         smfactor1 = self.smfactor1
 
+        # Seed value from SMA calculated with the call to oncestart
         prev = larray[start - 1]
 
         for i in xrange(start, end):
@@ -227,12 +232,12 @@ class WeightedMovingAverage(BaseMovingAverage):
         self.weights = [float(x) for x in range(1, self.p.period + 1)]
 
     def next(self):
-        data = self.data_0.get(size=self.p.period)
+        data = self.data.get(size=self.p.period)
         self.line[0] = self.coef *\
             math.fsum(map(operator.mul, data, self.weights))
 
     def once(self, start, end):
-        darray = self.data_0.array
+        darray = self.data.array
         larray = self.line.array
         period = self.p.period
         coef = self.coef
@@ -244,7 +249,94 @@ class WeightedMovingAverage(BaseMovingAverage):
 
 
 class WMA(WeightedMovingAverage):
-    pass
+    pass  # alias
+
+
+class AdaptiveMovingAverage(SmoothingMovingAverage):
+    '''AdaptiveMovingAverage (alias AMA)
+
+    Defined by Perry Kaufman in his book `"Smarter Trading"`.
+
+    It is A Moving Average with a continuosly scaled smoothing factor by taking
+    into account market direction and volatility. The smoothing factor is
+    calculated from 2 ExponetialMovingAverages smoothing factors, a fast one
+    and slow one.
+
+    If the market trends the value will tend to the fast ema smoothing
+    period. If the market doesn't trend it will move towards the slow EMA
+    smoothing period.
+
+    It is a subclass of SmoothingMovingAverage, overriding once to account for
+    the live nature of the smoothing factor
+
+      - self.smfactor -> 2 / (1 + period)
+      - self.smfactor1 -> `1 - self.smfactor`
+
+    Formula:
+      - direction = close - close_period
+      - volatility = sumN(abs(close - close_n), period)
+      - effiency_ratio = abs(direction / volatility)
+      - fast = 2 / (fast_period + 1)
+      - slow = 2 / (slow_period + 1)
+
+      - smfactor = squared(efficienty_ratio * (fast - slow) + slow)
+      - smfactor1 = 1.0  - smfactor
+
+    See also:
+      - http://fxcodebase.com/wiki/index.php/Kaufman's_Adaptive_Moving_Average_(KAMA)
+      - http://www.metatrader5.com/en/terminal/help/analytics/indicators/trend_indicators/ama
+      - http://help.cqg.com/cqgic/default.htm#!Documents/adaptivemovingaverag2.htm
+
+    Lines:
+      - ma
+
+    Params:
+      - period (30): period for the moving average
+      - fast (2): fast EMA period
+      - slow (30): slow EMA period
+    '''
+
+    params = (('fast', 2), ('slow', 30))
+
+    def __init__(self):
+        super(AdaptiveMovingAverage, self).__init__()
+
+        direction = self.data - self.data(-self.p.period)
+        volatility = SumN(abs(self.data - self.data(-1)), period=self.p.period)
+
+        er = abs(direction / volatility)  # efficiency ratio
+
+        fast = 2.0 / (self.p.fast + 1.0)  # fast ema smoothing factor
+        slow = 2.0 / (self.p.slow + 1.0)  # slow ema smoothing factor
+
+        self.sc = pow(er * (fast - slow) + slow, 2)  # scalable constant
+        self.sc1 = 1.0 - self.sc
+
+    def smoothingfactor(self):
+        # Smoothingfactors are dynamic and calculated during init as lines
+        pass
+
+    def next(self):
+        # Need to override next to apply [] to sc and sc1
+        prev = self.line[-1]
+        self.line[0] = prev * self.sc1[0] + self.data[0] * self.sc[0]
+
+    def once(self, start, end):
+        # Need to override once to apply [] to sc and sc1
+        darray = self.data.array
+        larray = self.line.array
+        sc = self.sc.array
+        sc1 = self.sc1.array
+
+        # Seed value from SMA calculated with the call to oncestart
+        prev = larray[start - 1]
+
+        for i in xrange(start, end):
+            larray[i] = prev = prev * sc1[i] + darray[i] * sc[i]
+
+
+class AMA(AdaptiveMovingAverage):
+    pass  # alias
 
 
 class MovingAverage(object):
@@ -252,32 +344,34 @@ class MovingAverage(object):
 
     A placeholder to gather all Moving Average Types in a single place.
 
-    It has the following attributes:
+    It has the following attributes to access MovingAverages
 
-      - Simple
-      - Exponential
-      - Smoothed
-      - Weighted
-
-      - SMA
-      - EMA
-      - SMMA
-      - WMA
+      - Simple or SMA
+      - Exponential or EMA
+      - Smoothed or SMMA
+      - Weighted or WMA
+      - Adaptive or AMA
 
     Instantiating a SimpleMovingAverage can be achieved as follows::
 
       sma = MovingAverage.Simple(self.data, period)
+
+    Or using the shorter aliases::
+
+      ema = MovAv.EMA(self.data, period)
 
     '''
     Simple = SimpleMovingAverage
     Exponential = ExponentialMovingAverage
     Smoothed = SmoothedMovingAverage
     Weighted = WeightedMovingAverage
+    Adaptive = AdaptiveMovingAverage
 
     SMA = SMA
     EMA = EMA
     SMMA = SMMA
     WMA = WMA
+    AMA = AMA
 
 
 class MovAv(MovingAverage):
