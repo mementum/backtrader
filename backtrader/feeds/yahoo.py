@@ -26,6 +26,7 @@ import datetime
 import io
 import itertools
 
+import six
 from six.moves import urllib
 
 from .. import dataseries
@@ -35,12 +36,12 @@ from ..utils import date2num
 
 
 class YahooFinanceCSVData(feed.CSVDataBase):
-    params = (('adjclose', True), ('reversed', False),)
+    params = (('adjclose', True), ('reverse', False),)
 
     def start(self):
         super(YahooFinanceCSVData, self).start()
 
-        if self.params.reversed:
+        if not self.params.reverse:
             return
 
         # Yahoo sends data in reverse order and the file is still unreversed
@@ -48,7 +49,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         for line in self.f:
             dq.appendleft(line)
 
-        f = io.StringIO()
+        f = six.StringIO()
         f.writelines(dq)
         self.f.close()
         self.f = f
@@ -91,7 +92,7 @@ class YahooFinanceCSV(feed.CSVFeedBase):
 
 class YahooFinanceData(YahooFinanceCSVData):
     params = (('baseurl', 'http://ichart.yahoo.com/table.csv?'),
-              ('period', 'd'), ('buffered', True),)
+              ('period', 'd'), ('buffered', True), ('reverse', True))
 
     def start(self):
         self.error = None
@@ -108,7 +109,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         url += '&ignore=.csv'
 
         try:
-            datafile = urllib.urlopen(url)
+            datafile = urllib.request.urlopen(url)
         except IOError as e:
             self.error = str(e)
             # leave us empty
@@ -118,15 +119,9 @@ class YahooFinanceData(YahooFinanceCSVData):
             self.error = 'Wrong content type: %s' % datafile.headers
             return  # HTML returned? wrong url?
 
-        data = datafile.read()
-        # Strip the BOM if present
-        i = 0
-        while not data[i].isalnum():
-            i += 1
-
         if self.params.buffered:
             # buffer everything from the socket into a local buffer
-            f = io.StringIO(datafile.read())
+            f = six.StringIO(datafile.read())
             datafile.close()
         else:
             f = datafile
