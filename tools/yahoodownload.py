@@ -110,7 +110,7 @@ def parse_args():
                         help='Do not reverse the downloaded files')
 
     parser.add_argument('--timeframe', default='d',
-                        help='Timeframe to donwload (default d -> daily')
+                        help='Timeframe: d -> day, w -> week, m -> month')
 
     parser.add_argument('--fromdate', required=True,
                         help='Starting date in YYYY-MM-DD format')
