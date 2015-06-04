@@ -39,6 +39,7 @@ Averages are listed under a group.
 
   - :ref:`exponentialmovingaverage`
   - :ref:`smoothedmovingaverage`
+  - :ref:`adaptivemovingaverage`
 
 - :ref:`weightedmovingaverage`
 
