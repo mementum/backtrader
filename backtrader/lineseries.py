@@ -342,8 +342,6 @@ class MetaLineSeries(LineMultiple.__class__):
 
         # _obj.lines shadows the lines (class) definition in the class
         _obj.lines = cls.lines()
-        if _obj.lines.fullsize():
-            _obj.array = _obj.lines[0].array
 
         # _obj.plotinfo shadows the plotinfo (class) definition in the class
         _obj.plotlines = cls.plotlines()
@@ -363,6 +361,10 @@ class MetaLineSeries(LineMultiple.__class__):
 
 
 class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
+    @property
+    def array(self):
+        return self.lines[0].array
+
     def __getattr__(self, name):
         # to refer to line by name directly if the attribute was not found
         # in this object if we set an attribute in this object it will be
