@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from .. import Indicator
 from .ma import MovAv
-from .. import Max
+from .. import Max, Min
 
 
 class TrueRange(Indicator):
@@ -32,28 +32,33 @@ class TrueRange(Indicator):
     Technical Trading Systems.
 
     Formula:
-      - max(high - low, abs(high - prev close), abs(prev close - low)
+      - max(high - low, abs(high - prev_close), abs(prev_close - low)
+
+      which can be simplified to
+
+      - max(high, prev_close) - min(low, prev_close)
 
     See:
       - http://en.wikipedia.org/wiki/Average_true_range
 
-    The idea is to take the close into account to calculate the range if it
-    yields a larger range than the daily range (High - Low)
+    The idea is to take the previoous close into account to calculate the range
+    if it yields a larger range than the daily range (High - Low)
 
     Lines:
       - tr
 
     Params:
       (None)
+
     '''
 
     lines = ('tr',)
 
     def __init__(self):
-        high = self.data.lines[self.PriceHigh]
-        low = self.data.lines[self.PriceLow]
-        close1 = self.data.lines[self.PriceClose](-1)
-        self.lines.tr = Max(high - low, abs(high - close1), abs(close1 - low))
+        close1 = self.data.close(-1)
+        truehigh = Max(self.data.high, close1)
+        truelow = Min(self.data.low, close1)
+        self.lines.tr = truehigh - truelow
 
 
 class TR(TrueRange):
