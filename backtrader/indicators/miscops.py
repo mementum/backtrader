@@ -35,11 +35,11 @@ class OperationN(Indicator):
         self.addminperiod(self.p.period)
 
     def next(self):
-        self.line[0] = self.func(self.data_0.get(size=self.p.period))
+        self.line[0] = self.func(self.data.get(size=self.p.period))
 
     def once(self, start, end):
         dst = self.line.array
-        src = self.data_0.array
+        src = self.data.array
         period = self.p.period
         func = self.func
 
