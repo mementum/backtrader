@@ -100,6 +100,12 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
         self.lines.advance()
 
         if datamaster:
+            if len(self) > self.buflen():
+                # if no bar can be delivered, fill with an empty bar
+                self.rewind()
+                self.lines.forward()
+                return
+
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
                 self.lines.rewind()
             else:
