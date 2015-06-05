@@ -57,6 +57,7 @@ class YahooDownload(object):
 
         self.datafile = urllib.request.urlopen(url)
         if self.datafile.headers['Content-Type'] != 'text/csv':
+            self.datafile.close()
             raise ValueError(
                 'Wrong Content Type in headers %s' %
                 datafile.headers['Content-Type'])
