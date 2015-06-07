@@ -21,8 +21,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-__test__ = False
-
 try:
     import matplotlib
 except ImportError:
