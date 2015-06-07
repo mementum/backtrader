@@ -1,2 +1,2 @@
 six==1.9.0
-nose-exclude=0.2.0
+nose-exclude==0.2.0
