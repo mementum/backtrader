@@ -6,4 +6,4 @@ python:
 install: "pip install -r requirements.txt"
 
 # command to run tests
-script: nosetests -v -v -I "'^\\.', '^_', '^setup\\.py$', 'backtrader/plot*'"
+script: nosetests -v -v -I "'^\\.', '^_', '^setup\\.py$', 'backtrader.*plot.*'"
