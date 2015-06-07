@@ -253,7 +253,7 @@ class WMA(WeightedMovingAverage):
 
 
 class AdaptiveMovingAverage(SmoothingMovingAverage):
-    '''AdaptiveMovingAverage (alias AMA)
+    '''AdaptiveMovingAverage (alias KAMA)
 
     Defined by Perry Kaufman in his book `"Smarter Trading"`.
 
@@ -282,6 +282,8 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
       - smfactor = squared(efficienty_ratio * (fast - slow) + slow)
       - smfactor1 = 1.0  - smfactor
 
+      - The initial seed value is a SimpleMovingAverage
+
     See also:
       - http://fxcodebase.com/wiki/index.php/Kaufman's_Adaptive_Moving_Average_(KAMA)
       - http://www.metatrader5.com/en/terminal/help/analytics/indicators/trend_indicators/ama
@@ -309,8 +311,13 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
         fast = 2.0 / (self.p.fast + 1.0)  # fast ema smoothing factor
         slow = 2.0 / (self.p.slow + 1.0)  # slow ema smoothing factor
 
-        self.sc = pow(er * (fast - slow) + slow, 2)  # scalable constant
+        self.sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
         self.sc1 = 1.0 - self.sc
+
+        # No assigment to line (due to the recursive nature of smoothing) and
+        # therefore the min period has to be adjusted manually to account for
+        # the extra bar needed inside SumN - there the minperiod is 2
+        self.addminperiod(2)
 
     def smoothingfactor(self):
         # Smoothingfactors are dynamic and calculated during init as lines
@@ -335,7 +342,7 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
             larray[i] = prev = prev * sc1[i] + darray[i] * sc[i]
 
 
-class AMA(AdaptiveMovingAverage):
+class KAMA(AdaptiveMovingAverage):
     pass  # alias
 
 
@@ -371,7 +378,7 @@ class MovingAverage(object):
     EMA = EMA
     SMMA = SMMA
     WMA = WMA
-    AMA = AMA
+    KAMA = KAMA
 
 
 class MovAv(MovingAverage):
