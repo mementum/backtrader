@@ -1,0 +1,22 @@
+1.0.1.22
+
+  - Reordering and addition of sample datas
+  - Addition of samples limited to 2014
+  - Independent Yahoo Online Download Tool
+  - TrueRange formula improvement
+  - Changed LineSeries "array" access to property
+  - data_0 references changed to more generic data
+  - Added AdaptiveMovingAverage
+  - AdaptiveMovingAverage added to the docs
+  - YahooCSV "reversed" parameter changed to reverse (and inverted default to
+    False
+  - Changes to make online downloads Py3 compatible
+  - Multi-Timeframe datas which are exhausted will return empty bars
+  - Improvements in VChartCSVData for name and timeframe recognition
+  - Added own simple csv format for sample
+  - Reordering/Addition of data samples
+  - Addition of nosetest testcases covering indicators, data multi timeframe
+    and resampling
+
+1.0.0.21
+  - First tagged and documented release
