@@ -6,8 +6,8 @@ backtrader
    :target: https://pypi.python.org/pypi/backtrader/
 .. image:: https://img.shields.io/pypi/dm/backtrader.svg
    :target: https://pypi.python.org/pypi/backtrader/
-.. image:: https://img.shields.io/travis/joyent/backtrader.svg
-   :target: https://pypi.python.org/pypi/backtrader/
+.. image:: https://travis-ci.org/mementum/backtrader.png?branch=master
+   :target: https://travis-ci.org/mementum/backtrader
 .. image:: https://img.shields.io/pypi/l/backtrader.svg
    :target: https://github.com/mementum/backtrader/blob/master/LICENSE
 
