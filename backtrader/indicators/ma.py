@@ -314,11 +314,6 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
         self.sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
         self.sc1 = 1.0 - self.sc
 
-        # No assigment to line (due to the recursive nature of smoothing) and
-        # therefore the min period has to be adjusted manually to account for
-        # the extra bar needed inside SumN - there the minperiod is 2
-        self.addminperiod(2)
-
     def smoothingfactor(self):
         # Smoothingfactors are dynamic and calculated during init as lines
         pass
