@@ -21,12 +21,25 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import testbase
-
 import datetime
+import os
 import os.path
+import sys
 
-import backtrader as bt
+try:
+    import backtrader as bt
+    import backtrader.utils.flushfile
+except ImportError:
+    # append module root directory to sys.path
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    import backtrader as bt
+    import backtrader.utils.flushfile
+
+    # Should any exception happen, then the module cannot be imported
+    # let the exception propagate to signal the error
+
 
 modpath = os.path.dirname(os.path.abspath(__file__))
 dataspath = '../samples/datas/sample'
@@ -70,6 +83,7 @@ class TestStrategy(bt.Strategy):
     params = dict(main=False,
                   chkind=[],
                   chkmin=1,
+                  chknext=0,
                   chkvals=None,
                   chkargs=dict())
 
@@ -99,12 +113,14 @@ class TestStrategy(bt.Strategy):
         super(TestStrategy, self).nextstart()
 
     def next(self):
+        self.nextcalls += 1
+
         if self.p.main:
             dtstr = self.data.datetime.date(0).strftime('%Y-%m-%d')
             print('%s - %d - %f' % (dtstr, len(self), self.ind[0]))
 
     def start(self):
-        pass
+        self.nextcalls = 0
 
     def stop(self):
         l = len(self.ind)
@@ -115,6 +131,8 @@ class TestStrategy(bt.Strategy):
             print('----------------------------------------')
             print('len ind %d == %d len self' % (l, len(self)))
             print('minperiod %d' % self.chkmin)
+            print('self.p.chknext %d nextcalls %d'
+                  % (self.p.chknext, self.nextcalls))
 
             print('chkpts are', chkpts)
             for chkpt in chkpts:
@@ -135,6 +153,8 @@ class TestStrategy(bt.Strategy):
 
         else:
             assert l == len(self)
+            if self.p.chknext:
+                assert self.p.chknext == self.nextcalls
             assert mp == self.p.chkmin
             for lidx, linevals in enumerate(self.p.chkvals):
                 for i, chkpt in enumerate(chkpts):
