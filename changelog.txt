@@ -1,7 +1,6 @@
 1.0.1.22
-
   - Reordering and addition of sample datas
-  - Addition of samples limited to 2014
+  - Addition of samples limited to 2014 and 2006
   - Independent Yahoo Online Download Tool
   - TrueRange formula improvement
   - Changed LineSeries "array" access to property
@@ -17,6 +16,10 @@
   - Reordering/Addition of data samples
   - Addition of nosetest testcases covering indicators, data multi timeframe
     and resampling
+  - Travis-ci integration
+  - Extra minperiod check in LineIterator postinit hook to account for
+    indicators with calculations in __init__ not applied directly to line
+    assignments
 
 1.0.0.21
   - First tagged and documented release
