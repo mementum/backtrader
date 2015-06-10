@@ -55,6 +55,8 @@ Averages are listed under a group.
 - :ref:`stochastic`
 - :ref:`stochasticfast`
 
+- :ref:`williams`
+
 ----
 
 - :ref:`rsi`
@@ -62,6 +64,12 @@ Averages are listed under a group.
 - :ref:`rsi_cutler`
 - :ref:`updays`
 - :ref:`downdays`
+
+----
+
+- :ref:`momentum`
+- :ref:`momentumoscillator`
+- :ref:`rateofchange`
 
 
 Utility Indicators
