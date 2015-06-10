@@ -32,3 +32,5 @@ from .macd import *
 from .rsi import *
 from .stochastic import *
 from .miscops import *
+from .momentum import *
+from .williams import *
