@@ -1,3 +1,18 @@
+1.0.2.26
+  - Correction to minperiod calculation to correctly calculate and take into
+    account indicator on indicator/single lines minperiods together with
+    multi-timeframe datas
+  - Extra plotting defaults to lineiterator to simplify plotting code
+  - Added plotforce to force plotting of an indicator which relies on
+    non-plotted/plottable data/clock sources
+  - Plotting support for indicator on indicator respecting above/below order
+  - Support plotting indicators which don't have a data/indicator clock by
+    looking up the chain
+  - Add badges' alternative test and add a badge for the documentation
+  - KAMA sets plotname to override inherited one from SimpleMovingAverage
+  - Williams %R indicator and test
+  - Momentum, RateOfChange, MomentumOscillator and tests
+
 1.0.1.22
   - Reordering and addition of sample datas
   - Addition of samples limited to 2014 and 2006
