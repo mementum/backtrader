@@ -361,7 +361,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             # Set specific or generic ticks
             yticks = ind.plotinfo._get('plotyticks', [])
-            if yticks:
+            if not yticks:
                 yticks = ind.plotinfo._get('plotyhlines', [])
 
             if yticks:
