@@ -128,7 +128,12 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
                     plotname='',
                     plotskip=False,
                     plotabove=False,
-                    plotlinelabels=False)
+                    plotlinelabels=False,
+                    plotymargin=0.0,
+                    plotyhlines=[],
+                    plotyticks=[],
+                    plothlines=[],
+                    plotforce=False,)
 
     def _stage2(self):
         super(LineIterator, self)._stage2()
