@@ -141,17 +141,25 @@ class Plot(six.with_metaclass(MetaParams, object)):
             # Do the plotting
             # Things that go always at the top (observers)
             for ptop in self.dplotstop:
-                self.plotind(ptop, self.dplotsover[ptop])
+                self.plotind(ptop, subinds=self.dplotsover[ptop])
 
             # Create the rest on a per data basis
             for data in strategy.datas:
                 for ind in self.dplotsup[data]:
-                    self.plotind(ind, self.dplotsover[ind])
+                    self.plotind(
+                        ind,
+                        subinds=self.dplotsover[ind],
+                        upinds=self.dplotsup[ind],
+                        downinds=self.dplotsdown[ind])
 
                 self.plotdata(data, self.dplotsover[data])
 
                 for ind in self.dplotsdown[data]:
-                    self.plotind(ind, self.dplotsover[ind])
+                    self.plotind(
+                        ind,
+                        subinds=self.dplotsover[ind],
+                        upinds=self.dplotsup[ind],
+                        downinds=self.dplotsdown[ind])
 
             lastax = self.pinf.daxis.values()[-1]
             # Date formatting for the x axis - only the last one needs it
@@ -270,11 +278,20 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
         return ax
 
-    def plotind(self, ind, subinds=None, masterax=None):
+    def plotind(self, ind,
+                subinds=None, upinds=None, downinds=None,
+                masterax=None):
+
         sch = self.p.scheme
 
         # check subind
         subinds = subinds or []
+        upinds = upinds or []
+        downinds = downinds or []
+
+        # plot subindicators on self with independent axis above
+        for upind in upinds:
+            self.plotind(upind)
 
         # Get an axis for this plot
         ax = masterax or self.newaxis(ind, rowspan=self.pinf.sch.rowsminor)
@@ -343,11 +360,11 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 ax.margins(y=ymargin)
 
             # Set specific or generic ticks
-            yticks = ind.plotinfo._get('plotyticks', None)
-            if yticks is None:
-                yticks = ind.plotinfo._get('plotyhlines', None)
+            yticks = ind.plotinfo._get('plotyticks', [])
+            if yticks:
+                yticks = ind.plotinfo._get('plotyhlines', [])
 
-            if yticks is not None:
+            if yticks:
                 ax.set_yticks(yticks)
             else:
                 locator = mticker.MaxNLocator(nbins=4, prune='both')
@@ -378,6 +395,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
                     # hack: if title is set. legend has a Vbox for the labels
                     # which has a default "center" set
                     legend._legend_box.align = 'left'
+
+        # plot subindicators on self with independent axis below
+        for downind in downinds:
+            self.plotind(downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
         if self.pinf.sch.voloverlay:
@@ -581,9 +602,19 @@ class Plot(six.with_metaclass(MetaParams, object)):
             if not x.plotinfo.plot or x.plotinfo.plotskip:
                 continue
 
+            # support LineSeriesStub which has "owner" to point to the data
             key = getattr(x._clock, 'owner', x._clock)
+
+            if getattr(x.plotinfo, 'plotforce', False):
+                if key not in strategy.datas:
+                    datas = strategy.datas
+                    while True:
+                        if key not in strategy.datas:
+                            key = key._clock
+                        else:
+                            break
+
             if x.plotinfo.subplot:
-                # support LineSeriesStub which has "owner" to point to the data
                 if x.plotinfo.plotabove:
                     self.dplotsup[key].append(x)
                 else:
