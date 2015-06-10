@@ -55,13 +55,33 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
+        dataids = [id(data) for data in _obj.datas]
+
         _dminperiods = collections.defaultdict(list)
         for lineiter in _obj._lineiterators[LineIterator.IndType]:
             # if multiple datas are used and multiple timeframes the larger
             # timeframe may place larger time constraints in calling next.
             clk = getattr(lineiter, '_clock', None)
             if clk is None:
+                clk = getattr(lineiter._owner, '_clock', None)
+                if clk is None:
+                    continue
+
+            while True:
+                if id(clk) in dataids:
+                    break
+
+                clk2 = getattr(clk, '._clock', None)
+                if clk2 is None:
+                    clk2 = getattr(clk._owner, '._clock', None)
+
+                clk = clk2
+                if clk is None:
+                    break
+
+            if clk is None:
                 continue
+
             _dminperiods[clk].append(lineiter._minperiod)
 
         _obj._minperiods = list()
