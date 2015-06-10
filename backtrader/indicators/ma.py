@@ -299,6 +299,7 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
     '''
 
     params = (('fast', 2), ('slow', 30))
+    plotinfo = dict(plotname='KAMA')
 
     def __init__(self):
         super(AdaptiveMovingAverage, self).__init__()
