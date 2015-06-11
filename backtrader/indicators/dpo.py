@@ -39,7 +39,7 @@ class DetrendedPriceOscillator(Indicator):
       - dpo = close - movav(shifted period / 2 + 1)
 
     See:
-      - (No Wikipedia or similar)
+      - http://en.wikipedia.org/wiki/Detrended_price_oscillator
 
     Lines:
       - dpo
