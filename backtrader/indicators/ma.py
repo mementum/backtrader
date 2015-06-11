@@ -56,8 +56,6 @@ class SimpleMovingAverage(BaseMovingAverage):
     Params:
       - period (30): period for the moving average
     '''
-    plotinfo = dict(plotname='SMA')
-
     def next(self):
         self.line[0] = \
             math.fsum(self.data.get(size=self.p.period)) / self.p.period
@@ -155,8 +153,6 @@ class ExponentialMovingAverage(SmoothingMovingAverage):
     Params:
       - period (30): period for the moving average
     '''
-    plotinfo = dict(plotname='EMA')
-
     def smoothingfactor(self):
         self.smfactor = 2.0 / (1.0 + self.p.period)
         self.smfactor1 = 1.0 - self.smfactor
@@ -193,8 +189,6 @@ class SmoothedMovingAverage(SmoothingMovingAverage):
     Params:
       - period (30): period for the moving average
     '''
-    plotinfo = dict(plotname='SMMA')
-
     def smoothingfactor(self):
         self.smfactor = 1.0 / self.p.period
         self.smfactor1 = 1.0 - self.smfactor
@@ -224,8 +218,6 @@ class WeightedMovingAverage(BaseMovingAverage):
     Params:
       - period (30): period for the moving average
     '''
-    plotinfo = dict(plotname='WMA')
-
     def __init__(self):
         super(WeightedMovingAverage, self).__init__()
         self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
@@ -297,9 +289,7 @@ class AdaptiveMovingAverage(SmoothingMovingAverage):
       - fast (2): fast EMA period
       - slow (30): slow EMA period
     '''
-
     params = (('fast', 2), ('slow', 30))
-    plotinfo = dict(plotname='KAMA')
 
     def __init__(self):
         super(AdaptiveMovingAverage, self).__init__()
