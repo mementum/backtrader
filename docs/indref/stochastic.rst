@@ -9,3 +9,9 @@ Stochastic
 StochasticFast
 ==============
 .. autoclass:: backtrader.indicators.StochasticFast
+
+.. _stochasticfull:
+
+StochasticFast
+==============
+.. autoclass:: backtrader.indicators.StochasticFull

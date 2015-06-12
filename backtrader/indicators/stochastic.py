@@ -27,9 +27,9 @@ from .miscops import Highest, Lowest
 
 
 class _StochasticBase(Indicator):
-    lines = ('kperc', 'dperc',)
+    lines = ('percK', 'percD',)
     params = (('period', 14), ('period_dfast', 3), ('movav', MovAv.Simple),
-              ('overbought', 80.0), ('oversold', 20.0),)
+              ('upperband', 80.0), ('lowerband', 20.0),)
 
     plotlines = dict(d=dict(ls='--'))
 
@@ -39,14 +39,11 @@ class _StochasticBase(Indicator):
         return plabels
 
     def __init__(self):
-        self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
-        self.plotinfo.plotyticks = self.plotinfo.plothlines
+        self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
 
-        highesthigh = Highest(
-            self.data.lines[self.PriceHigh], period=self.p.period)
-        lowestlow = Lowest(
-            self.data.lines[self.PriceLow], period=self.p.period)
-        knum = self.data.lines[self.PriceClose] - lowestlow
+        highesthigh = Highest(self.data.high, period=self.p.period)
+        lowestlow = Lowest(self.data.low, period=self.p.period)
+        knum = self.data.close - lowestlow
         kden = highesthigh - lowestlow
         self.k = 100.0 * (knum / kden)
         self.d = self.p.movav(self.k, period=self.p.period_dfast)
@@ -71,26 +68,26 @@ class StochasticFast(_StochasticBase):
       - knum = data.close - ll
       - kden = hh - ll
       - k = 100 - (knum / kden)
-      - d = MovingAverage(kperc, period_dfast)
+      - d = MovingAverage(k, period_dfast)
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
 
     Lines:
-      - kperc
-      - dperc
+      - percK
+      - percD
 
     Params:
       - period (14): period for the indicator
-      - period_dfast (3): smoothing period for the dperc average
+      - period_dfast (3): smoothing period for the percD average
       - movav (Simple): moving average to apply
-      - overbought (80): indication line of overbought territory
-      - oversold (20): indication line of oversold territory
+      - upperband (80): indication line of overbought territory
+      - lowerband (20): indication line of oversold territory
     '''
     def __init__(self):
         super(StochasticFast, self).__init__()
-        self.l.kperc = self.k
-        self.l.dperc = self.d
+        self.lines.percK = self.k
+        self.lines.percD = self.d
 
 
 class Stochastic(_StochasticBase):
@@ -99,27 +96,28 @@ class Stochastic(_StochasticBase):
     The regular (or slow version) adds an additional moving average layer and
     thus:
 
-      - The dperc line of the StochasticFast becomes the kperc line
-      - dperc becomes a  moving average of period_dslow of the original dperc
+      - The percD line of the StochasticFast becomes the percK line
+      - percD becomes a  moving average of period_dslow of the original percD
 
     Formula:
-      - k = d
-      - d = MovingAverage(k, period_dslow)
+      - k = k
+      - d = d
+      - d = MovingAverage(d, period_dslow)
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
 
     Lines:
-      - kperc
-      - dperc
+      - percK
+      - percD
 
     Params:
       - period (14): period for the indicator
-      - period_dfast (3): smoothing period for the dperc average
-      - period_dslow (3): additional smoothing period for the dperc average
+      - period_dfast (3): smoothing period for the percD average
+      - period_dslow (3): additional smoothing period for the percD average
       - movav (Simple): moving average to apply
-      - overbought (80): indication line of overbought territory
-      - oversold (20): indication line of oversold territory
+      - upperband (80): indication line of overbought territory
+      - lowerband (20): indication line of oversold territory
     '''
     params = (('period_dslow', 3),)
 
@@ -130,9 +128,55 @@ class Stochastic(_StochasticBase):
 
     def __init__(self):
         super(Stochastic, self).__init__()
-        self.l.kperc = self.d
-        self.l.dperc = self.p.movav(self.l.kperc, period=self.p.period_dslow)
+        self.lines.percK = self.d
+        self.l.percD = self.p.movav(self.l.percK, period=self.p.period_dslow)
 
 
 class StochasticSlow(Stochastic):
     pass
+
+
+class StochasticFull(_StochasticBase):
+    '''StochasticFull
+
+    This version displays the 3 possible lines:
+
+      - percK
+      - percD
+      - percSlow
+
+    Formula:
+      - k = d
+      - d = MovingAverage(k, period_dslow)
+      - dslow =
+
+    See:
+      - http://en.wikipedia.org/wiki/Stochastic_oscillator
+
+    Lines:
+      - percK
+      - percD
+      - percDSlow
+
+    Params:
+      - period (14): period for the indicator
+      - period_dfast (3): smoothing period for the percD average
+      - period_dslow (3): additional smoothing period for the percD average
+      - movav (Simple): moving average to apply
+      - upperband (80): indication line of overbought territory
+      - lowerband (20): indication line of oversold territory
+    '''
+    lines = ('percDSlow',)
+    params = (('period_dslow', 3),)
+
+    def _plotlabel(self):
+        plabels = [self.p.period, self.p.period_dfast, self.p.period_dslow]
+        plabels += [self.p.movav] * self.p.notdefault('movav')
+        return plabels
+
+    def __init__(self):
+        super(StochasticFull, self).__init__()
+        self.lines.percK = self.k
+        self.lines.percD = self.d
+        self.l.percDSlow = self.p.movav(
+            self.l.percD, period=self.p.period_dslow)
