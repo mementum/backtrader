@@ -54,6 +54,7 @@ Averages are listed under a group.
 
 - :ref:`stochastic`
 - :ref:`stochasticfast`
+- :ref:`stochasticfull`
 
 - :ref:`williams`
 
@@ -78,3 +79,7 @@ Utility Indicators
 - :ref:`highest`
 - :ref:`lowest`
 - :ref:`sumn`
+
+- :ref:`crossover`
+- :ref:`crossup`
+- :ref:`crossdown`
