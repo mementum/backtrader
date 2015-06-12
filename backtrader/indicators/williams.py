@@ -25,29 +25,31 @@ from .. indicator import Indicator
 from .miscops import Highest, Lowest
 
 
-class Williams(Indicator):
-    '''Williams
+class WilliamsR(Indicator):
+    '''WilliamsR
 
     Developed by Larry Williams to show the relation of closing prices to
     the highest-lowest range of a given period.
 
+    Known as Williams %R (but % is not allowed in Python identifiers)
+
     Formula:
       - num = highest_period - close
       - den = highest_period - lowest_period
-      - perc_R = (num / den) * -100.0
+      - percR = (num / den) * -100.0
 
     See:
       - http://en.wikipedia.org/wiki/Williams_%25R
 
     Lines:
-      - perc_r
+      - percR (known as %R in indicator but % is not allowed)
 
     Params:
       - period (14): period to consider for highest and lowest values
       - upperband (-20): upper band horizontal line
       - lowerband (-80): lower band horizontal line
     '''
-    lines = ('perc_r',)
+    lines = ('percR',)
     params = (('period', 14),
               ('upperband', -20.0),
               ('lowerband', -80.0),)
@@ -60,4 +62,4 @@ class Williams(Indicator):
         l = Lowest(self.data.low, period=self.p.period)
         c = self.data.close
 
-        self.lines.perc_r = -100.0 * (h - c) / (h - l)
+        self.lines.percR = -100.0 * (h - c) / (h - l)
