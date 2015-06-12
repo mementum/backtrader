@@ -34,3 +34,4 @@ from .stochastic import *
 from .miscops import *
 from .momentum import *
 from .williams import *
+from .crossover import *
