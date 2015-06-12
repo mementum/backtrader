@@ -32,7 +32,7 @@ chkvals = [
 ]
 
 chkmin = 14
-chkind = btind.Williams
+chkind = btind.WilliamsR
 
 
 def test_run(main=False):
