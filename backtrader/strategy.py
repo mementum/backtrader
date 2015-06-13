@@ -174,7 +174,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def close(self,
               data=None, size=None, price=None, exectype=None, valid=None):
-        possize = self.getposition(data, broker).size
+        possize = self.getposition(data, self.broker).size
         size = abs(size or possize)
 
         if possize > 0:
