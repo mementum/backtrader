@@ -36,10 +36,10 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
     params = (('cash', 10000.0), ('commission', CommissionInfo()),)
 
     def __init__(self):
+        self.comminfo = dict()
         self.init()
 
     def init(self):
-        self.comminfo = dict()
         if None not in self.comminfo.keys():
             self.comminfo = dict({None: self.p.commission})
 
@@ -64,9 +64,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.comminfo[None]
 
     def setcommission(self, commission=0.0, margin=None, mult=1.0, name=None):
-        self.comminfo[name] = CommissionInfo(commission=commission,
-                                             margin=margin,
-                                             mult=mult)
+        comm = CommissionInfo(commission=commission, margin=margin, mult=mult)
+        self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
         self.comminfo[name] = comminfo
