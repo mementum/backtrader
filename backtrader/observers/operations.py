@@ -28,8 +28,11 @@ from ..datapos import Operation
 class _OperationsPnLObserver(LineObserver):
     lines = ('pnl',)
 
-    plotinfo = dict(plotname='Operation Gross Profit/Loss')
-    plotlines = dict(pnl=dict(marker='o', markersize=8.0, fillstyle='none'))
+    plotinfo = dict(
+        plotname='Operation Gross Profit/Loss',
+        plothlines=[0.0])
+    plotlines = dict(
+        pnl=dict(marker='o', color='blue', markersize=8.0, fillstyle='full'))
 
     def __init__(self, dataidx):
         self.data = self.datas[dataidx]
