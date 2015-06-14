@@ -21,18 +21,32 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+import testcommon
 
-from .atr import *
-from .bollinger import *
-from .dpo import *
-from .ma import *
-from .macd import *
-from .rsi import *
-from .stochastic import *
-from .miscops import *
-from .momentum import *
-from .williams import *
-from .crossover import *
-from .envelope import *
+import backtrader as bt
+import backtrader.indicators as btind
+
+chkdatas = 1
+chkvals = [
+    [u'4070.115719', u'3644.444667', u'3581.728712'],
+    [u'4171.868612', u'3735.555783', u'3671.271930'],
+    [u'3968.362826', u'3553.333550', u'3492.185494'],
+]
+
+chkmin = 30
+chkind = btind.EMAEnvelope
+
+
+def test_run(main=False):
+    datas = [testcommon.getdata(i) for i in range(chkdatas)]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals)
+
+
+if __name__ == '__main__':
+    test_run(main=True)
