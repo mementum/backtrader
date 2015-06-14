@@ -72,9 +72,18 @@ Averages are listed under a group.
 - :ref:`momentumoscillator`
 - :ref:`rateofchange`
 
+Envelopes
+*********
+
+- :ref:`envelope`
+- :ref:`smaenvelope`
+- :ref:`emaenvelope`
+- :ref:`smmaenvelope`
+- :ref:`wmaenvelope`
+- :ref:`kamaenvelope`
 
 Utility Indicators
-==================
+******************
 
 - :ref:`highest`
 - :ref:`lowest`
