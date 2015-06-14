@@ -1,3 +1,23 @@
+1.0.3.36
+  - Wikipedia link for DetrendedPriceOscillator
+  - Renaming of Stochastic and Williams lines to include "perc" (originally %)
+  - Removal of specific plotnames in MovingAverages
+  - Williams renamed to WilliamsR for accuracy and line renamed to percR
+  - Stochastic lines renamed to percK and percD from kperc and dperc for
+    accuracy
+  - StochasticFull added (3 lines)
+  - CrossOver, CrossUp, CrossDown indicators and documentation
+  - Correct broker usage in "close" operation
+  - Operations observer plotting style changed to "full"
+  - BuySell observer plotting style changed to full and buy color changed to
+    lime for visibility
+  - Broker correction of initial commission assigment. Introduced error when
+    adding support for optimization
+  - Added indicators: Envelope, SMAEnvelope, EMAEnvelope, SMMAEnvelope,
+    WMAEnvelope, KAMAEnvelope (tests and docs included)
+  - Corrected label plotting when a LineSeries object is passed as label
+  - Documentation and test for CommissionInfo
+
 1.0.2.26
   - Correction to minperiod calculation to correctly calculate and take into
     account indicator on indicator/single lines minperiods together with
