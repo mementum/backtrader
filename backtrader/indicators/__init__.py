@@ -30,6 +30,7 @@ from .deviation import *
 
 from .atr import *
 from .bollinger import *
+from .cci import *
 from .crossover import *
 from .dpo import *
 from .envelope import *
