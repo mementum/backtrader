@@ -25,7 +25,7 @@ import math
 
 from six.moves import xrange
 
-from .. import Indicator
+from backtrader import Indicator
 
 
 class OperationN(Indicator):

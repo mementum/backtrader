@@ -26,8 +26,8 @@ import operator
 
 from six.moves import xrange
 
-from .. import Indicator
-from .miscops import SumN
+from backtrader import Indicator
+from backtrader.indicators import SumN
 
 
 class BaseMovingAverage(Indicator):

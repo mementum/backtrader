@@ -22,8 +22,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Indicator
-from .ma import MovAv
+from backtrader import Indicator
+from backtrader.indicators import MovAv
 
 
 class DetrendedPriceOscillator(Indicator):

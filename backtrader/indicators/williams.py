@@ -21,8 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. indicator import Indicator
-from .miscops import Highest, Lowest
+from backtrader import Indicator
+from backtrader.indicators import Highest, Lowest
 
 
 class WilliamsR(Indicator):
@@ -35,7 +35,7 @@ class WilliamsR(Indicator):
 
     Formula:
       - num = highest_period - close
-      - den = highest_period - lowest_period
+      - den = highestg_period - lowest_period
       - percR = (num / den) * -100.0
 
     See:
