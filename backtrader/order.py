@@ -212,9 +212,7 @@ class StopBuyOrder(BuyOrder):
 
 
 class StopLimitBuyOrder(BuyOrder):
-    def __init__(self):
-        super(StopLimitBuyOrder, self).__init__()
-        self.params.triggered = False
+    params = (('triggered', False),)
 
 
 class SellOrder(Order):
@@ -225,7 +223,5 @@ class StopSellOrder(SellOrder):
     pass
 
 
-class StopLimitBuyOrder(SellOrder):
-    def __init__(self):
-        super(StopLimitSellOrder, self).__init__()
-        self.params.triggered = False
+class StopLimitSellOrder(SellOrder):
+    params = (('triggered', False),)
