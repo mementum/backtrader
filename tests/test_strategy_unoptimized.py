@@ -21,7 +21,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import itertools
 import time
 
 import testcommon
@@ -102,7 +101,6 @@ class TestStrategy(bt.Strategy):
             self.log('Starting portfolio value: %.2f' % self.broker.getvalue())
 
         self.tstart = time.clock()
-        self.buy_create_idx = itertools.count()
 
         self.buycreate = list()
         self.sellcreate = list()
