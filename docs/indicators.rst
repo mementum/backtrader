@@ -29,7 +29,6 @@ Averages are listed under a group.
 ----
 
 - :ref:`bollingerbands`
-- :ref:`standarddeviation`
 
 ----
 
@@ -52,6 +51,8 @@ Averages are listed under a group.
 
 ----
 
+- :ref:`cci`
+
 - :ref:`stochastic`
 - :ref:`stochasticfast`
 - :ref:`stochasticfull`
@@ -63,8 +64,6 @@ Averages are listed under a group.
 - :ref:`rsi`
 - :ref:`rsi_ema`
 - :ref:`rsi_cutler`
-- :ref:`updays`
-- :ref:`downdays`
 
 ----
 
@@ -89,6 +88,12 @@ Utility Indicators
 - :ref:`lowest`
 - :ref:`sumn`
 
+- :ref:`updays`
+- :ref:`downdays`
+
 - :ref:`crossover`
 - :ref:`crossup`
 - :ref:`crossdown`
+
+- :ref:`standarddeviation`
+- :ref:`meandeviation`
