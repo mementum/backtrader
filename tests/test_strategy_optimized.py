@@ -96,7 +96,6 @@ class TestStrategy(bt.Strategy):
         cash = '%.2f' % self.broker.getcash()
         _chkcash.append(cash)
 
-
     def next(self):
         if self.orderid:
             # if an order is active, no new orders are allowed
