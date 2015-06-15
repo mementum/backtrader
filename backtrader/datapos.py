@@ -160,8 +160,6 @@ class Operation(object):
     def __len__(self):
         return self.size
 
-    isclosed = __len__
-
     def update(self, size, price, value, commission):
         '''
         Updates the current operation. The logic does not check if the

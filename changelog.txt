@@ -1,3 +1,8 @@
+1.0.4.36
+  - Tests for strategy optimized/not optimized added
+  - Cosmetic change to "triggered" parameter initialization in StopLimitOrders
+  - Test added for "Operation"
+
 1.0.3.36
   - Wikipedia link for DetrendedPriceOscillator
   - Renaming of Stochastic and Williams lines to include "perc" (originally %)
