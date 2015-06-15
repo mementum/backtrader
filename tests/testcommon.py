@@ -65,7 +65,10 @@ def getdata(index, fromdate=FROMDATE, todate=TODATE):
     return data
 
 
-def runtest(datas, strategy, runonce=True, preload=True, plot=False, **kwargs):
+def runtest(datas, strategy,
+            runonce=True, preload=True, plot=False, optimize=False,
+            **kwargs):
+
     cerebro = bt.Cerebro(runonce=runonce, preload=preload)
 
     if isinstance(datas, bt.LineSeries):
@@ -73,7 +76,11 @@ def runtest(datas, strategy, runonce=True, preload=True, plot=False, **kwargs):
     for data in datas:
         cerebro.adddata(data)
 
-    cerebro.addstrategy(strategy, **kwargs)
+    if not optimize:
+        cerebro.addstrategy(strategy, **kwargs)
+    else:
+        cerebro.optstrategy(strategy, **kwargs)
+
     cerebro.run()
     if plot:
         cerebro.plot()
