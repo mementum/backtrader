@@ -21,25 +21,56 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Indicator
-from .ma import MovAv
-from .. import Max
-from . import SumN
+from backtrader import Indicator, Max
+from backtrader.indicators import MovAv, MeanDev
 
 
 class CommodityChannelIndex(Indicator):
+    '''CommodityChannelIndex (alias CCI)
+
+    Introduced by Donald Lambert in 1980 to measure variations of the
+    "typical price" (see below) from its mean to identify extremes and
+    reversals
+
+    Formula:
+      - tp = typical_price = (high + low + close) / 3
+      - tpmean = MovingAverage(tp, period)
+      - deviation = tp - tpmean
+      - meandev = MeanDeviation(tp)
+      - cci = deviation / (meandeviation * factor)
+
+    See:
+      - https://en.wikipedia.org/wiki/Commodity_channel_index
+
+    Lines:
+      - cci
+
+    Params:
+      - period (20): period for the indicator
+      - factor (0.015): scaling factor
+      - movav (Simple): moving average type to apply
+      - upperband (100.0): upper band to draw for visual inspection
+      - lowerband (-100.0): upper band to draw for visual inspection
+    '''
     lines = ('cci',)
 
     params = (('period', 20),
               ('factor', 0.015),
-              ('movav', MovAv.SMA))
+              ('movav', MovAv.Simple),
+              ('upperband', 100.0),
+              ('lowerband', -100.0),)
 
     def __init__(self):
+        self.plotinfo.plotyhlines = [0.0, self.p.upperband, self.p.lowerband]
+
         tp = (self.data.high + self.data.low + self.data.close) / 3.0
-        tpma = self.p.movav(tp, period=self.periodP)
+        tpmean = self.p.movav(tp, period=self.p.period)
 
-        tp_minus_ma = tp - tpma
+        dev = tp - tpmean
+        meandev = MeanDev(tp, tpmean, period=self.p.period)
 
-        meandev = SumN(abs(tp_minus_ma)) / self.p.period
+        self.lines.cci = dev / (self.p.factor * meandev)
 
-        self.lines.cci = tp_minus_ma / (self.p.factor * meandev)
+
+class CCI(CommodityChannelIndex):
+    pass  # alias
