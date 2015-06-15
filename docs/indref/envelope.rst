@@ -19,7 +19,7 @@ EMAEnvelope
 .. _smmaenvelope:
 
 SMMAEnvelope
-===========
+============
 .. autoclass:: backtrader.indicators.SMMAEnvelope
 
 .. _wmaenvelope:
@@ -31,5 +31,5 @@ WMAEnvelope
 .. _kamaenvelope:
 
 KAMAEnvelope
-===========
+============
 .. autoclass:: backtrader.indicators.KAMAEnvelope
