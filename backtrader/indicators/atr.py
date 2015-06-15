@@ -21,9 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Indicator
-from .ma import MovAv
-from .. import Max, Min
+from backtrader import Indicator, Max, Min
+from backtrader.indicators import MovAv
 
 
 class TrueRange(Indicator):

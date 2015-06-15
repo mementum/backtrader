@@ -21,46 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Indicator
-from .ma import MovAv
-
-
-class StandardDeviation(Indicator):
-    '''StandardDeviation (alias StdDev)
-
-    Calculates the standard deviation of the passed data for a given period
-
-    Formula:
-      - meansquared = SimpleMovingAverage(pow(data, 2), period)
-      - squaredmean = pow(SimpleMovingAverage(data, period), 2)
-      - stddev = pow(meansquared - squaredmean, 0.5)  # square root
-
-    See:
-      - http://en.wikipedia.org/wiki/Standard_deviation
-
-    Lines:
-      - stddev
-
-    Params:
-      - period (20): period for the moving average
-      - movav (SimpleMovingAverage): moving average type to apply
-    '''
-    lines = ('stddev',)
-    params = (('period', 20), ('movav', MovAv.Simple),)
-
-    def __init__(self):
-        # mean could already be passed as a parameter to avoid recalculation
-        # dmean = self.data1 if len(self.datas) > 1 else \
-        # self.p.movav(self.data, period=self.p.period)
-        # sqmean = pow(dmean, 2)
-
-        meansq = self.p.movav(pow(self.data, 2), period=self.p.period)
-        sqmean = pow(self.p.movav(self.data, period=self.p.period), 2)
-        self.lines.stddev = pow(meansq - sqmean, 0.5)
-
-
-class StdDev(StandardDeviation):
-    pass
+from backtrader import Indicator
+from backtrader.indicators import MovAv, StdDev
 
 
 class BollingerBands(Indicator):

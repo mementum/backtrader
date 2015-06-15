@@ -21,20 +21,25 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+from .. import Indicator
+from .ma import MovAv
+from .. import Max
+from . import SumN
 
-from .basicops import *
-from .ma import *
-from .deviation import *
 
-from .atr import *
-from .bollinger import *
-from .crossover import *
-from .dpo import *
-from .envelope import *
-from .macd import *
-from .momentum import *
-from .rsi import *
-from .stochastic import *
-from .williams import *
+class CommodityChannelIndex(Indicator):
+    lines = ('cci',)
+
+    params = (('period', 20),
+              ('factor', 0.015),
+              ('movav', MovAv.SMA))
+
+    def __init__(self):
+        tp = (self.data.high + self.data.low + self.data.close) / 3.0
+        tpma = self.p.movav(tp, period=self.periodP)
+
+        tp_minus_ma = tp - tpma
+
+        meandev = SumN(abs(tp_minus_ma)) / self.p.period
+
+        self.lines.cci = tp_minus_ma / (self.p.factor * meandev)
