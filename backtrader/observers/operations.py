@@ -49,6 +49,7 @@ class _OperationsPnLObserver(LineObserver):
                                       exbit.price,
                                       exbit.closedvalue,
                                       exbit.closedcomm)
+
                 if self.operation.isclosed:
                     # operation closed, record the pnl
                     self.lines.pnl[0] = self.operation.pnl
