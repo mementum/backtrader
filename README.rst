@@ -21,13 +21,20 @@ backtrader
 .. image:: https://readthedocs.org/projects/backtrader/badge/?version=latest
    :alt: Documentation Status
    :scale: 100%
-   :target: http://backtrader.readthedocs.org/
+   :target: https://readthedocs.org/projects/backtrader/
 
 BackTesting platform written in Python to test trading strategies.
+
+Documentation
+=============
 
 Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
+
+List of built-in Indicators:
+
+  - `backtrader indicators <http://backtrader.readthedocs.org/indicators.html>`_
 
 Installation
 ============
@@ -39,6 +46,8 @@ From pypi:
   - pip install backtrader[matplotlib]
 
     If `matplotlib` is not installed and you wish to do some plotting
+
+From source:
 
   - Or run directly from source by placing the *backtrader* directory found in
     the sources inside your project
