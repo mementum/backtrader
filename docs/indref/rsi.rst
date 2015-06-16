@@ -16,14 +16,14 @@ RSI_Cutler
 ==========
 .. autoclass:: backtrader.indicators.RSI_Cutler
 
-.. _updays:
+.. _upday:
 
-UpDays
-======
-.. autoclass:: backtrader.indicators.UpDays
+UpDay
+=====
+.. autoclass:: backtrader.indicators.UpDay
 
-.. _downdays:
+.. _downday:
 
-DownDays
-========
-.. autoclass:: backtrader.indicators.DownDays
+DownDay
+=======
+.. autoclass:: backtrader.indicators.DownDay
