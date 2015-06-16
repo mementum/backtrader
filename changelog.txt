@@ -1,7 +1,19 @@
-1.0.4.36
+1.0.4.47
   - Tests for strategy optimized/not optimized added
   - Cosmetic change to "triggered" parameter initialization in StopLimitOrders
   - Test added for "Operation"
+  - Test for "Position"
+  - All indicators changed to used absolute imports for clarity and possible
+    independence
+  - Added indicator MeanDeviation (and doc)
+  - Added indicator CommodityChannelIndex (CCI) (docs and test)
+  - Reordered StdDeviation/MeanDeviation into own module and doc sub-section
+  - Plot support for lines having a name different than the class alias (ex:
+    plusDI can be plotted as +DI)
+  - Update docs badge link to project, add direct link to indicators in docs and
+    clarify installation from sources with header
+  - Refactoring of UpDays/DownDays to UpDay/DownDay for RSI
+  - DirectionalMove Indicators (+tests/docs): DI, +DI, -DI, ADX, ADXR, DMI, DM
 
 1.0.3.36
   - Wikipedia link for DetrendedPriceOscillator
