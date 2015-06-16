@@ -46,6 +46,12 @@ Averages are listed under a group.
 
 ----
 
+- :ref:`momentum`
+- :ref:`momentumoscillator`
+- :ref:`rateofchange`
+
+----
+
 - :ref:`macd`
 - :ref:`macdhisto`
 
@@ -67,9 +73,14 @@ Averages are listed under a group.
 
 ----
 
-- :ref:`momentum`
-- :ref:`momentumoscillator`
-- :ref:`rateofchange`
+- :ref:`plusdirectionalindicator`
+- :ref:`minusdirectionalindicator`
+- :ref:`directionalindicator`
+- :ref:`averagedirectionalmovementindex`
+- :ref:`averagedirectionalmovementindexrating`
+- :ref:`directionalmovementindex`
+- :ref:`directionalmovement`
+
 
 Envelopes
 *********
@@ -88,8 +99,10 @@ Utility Indicators
 - :ref:`lowest`
 - :ref:`sumn`
 
-- :ref:`updays`
-- :ref:`downdays`
+- :ref:`upday`
+- :ref:`downday`
+- :ref:`upmove`
+- :ref:`downmove`
 
 - :ref:`crossover`
 - :ref:`crossup`
