@@ -25,8 +25,8 @@ from backtrader import Indicator, Max
 from backtrader.indicators import MovAv
 
 
-class UpDays(Indicator):
-    '''UpDays
+class UpDay(Indicator):
+    '''UpDay
 
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* for the RSI
@@ -35,25 +35,25 @@ class UpDays(Indicator):
     higher than the day before.
 
     Formula:
-      - up = max(close - close_prev, 0)
+      - upday = max(close - close_prev, 0)
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
 
     Lines:
-      - up
+      - upday
 
     Params:
       (None)
     '''
-    lines = ('up',)
+    lines = ('upday',)
 
     def __init__(self):
-        self.lines.up = Max(self.data - self.data(-1), 0.0)
+        self.lines.upday = Max(self.data - self.data(-1), 0.0)
 
 
-class DownDays(Indicator):
-    '''DownDays
+class DownDay(Indicator):
+    '''DownDay
 
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* for the RSI
@@ -62,21 +62,21 @@ class DownDays(Indicator):
     lower than the day before.
 
     Formula:
-      - down = max(close_prev - close, 0)
+      - downday = max(close_prev - close, 0)
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
 
     Lines:
-      - down
+      - downday
 
     Params:
       (None)
     '''
-    lines = ('down',)
+    lines = ('downday',)
 
     def __init__(self):
-        self.lines.down = Max(self.data(-1) - self.data, 0.0)
+        self.lines.downday = Max(self.data(-1) - self.data, 0.0)
 
 
 class RSI(Indicator):
@@ -90,8 +90,8 @@ class RSI(Indicator):
     the result between 0 and 100
 
     Formula:
-      - up = updays(data)
-      - down = downdays(data)
+      - up = upday(data)
+      - down = downday(data)
       - maup = movingaverage(up, period)
       - madown = movingaverage(down, period)
       - rs = maup / madown
@@ -141,10 +141,10 @@ class RSI(Indicator):
         self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
         self.plotinfo.plotyticks = self.plotinfo.plothlines
 
-        updays = UpDays(self.data)
-        downdays = DownDays(self.data)
-        maup = self.p.movav(updays, period=self.p.period)
-        madown = self.p.movav(downdays, period=self.p.period)
+        upday = UpDay(self.data)
+        downday = DownDay(self.data)
+        maup = self.p.movav(upday, period=self.p.period)
+        madown = self.p.movav(downday, period=self.p.period)
         rs = maup / madown
         self.lines.rsi = 100.0 - 100.0 / (1.0 + rs)
 
