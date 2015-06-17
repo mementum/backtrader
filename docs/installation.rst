@@ -6,7 +6,11 @@ Requirements and versions
 
 Basic requirements are:
 
-  - Python >= 2.7.5
+  - Python 2.6/2.7
+  - Python 3.2/3.3/3.4
+
+And the Python 2/3 compatibility package:
+
   - six
 
 Additional requirements if plotting is wished:
@@ -16,19 +20,14 @@ Additional requirements if plotting is wished:
     It may work with previous versions, but this the one used for
     development
 
-Python 3.x compatibility
-========================
+Python 2.x/3.x compatibility
+============================
 
-Every attempt has been made to remain cross-compatible with 2.7.x and
-3.x by also using the six module as needed.
+Development takes place under Python 2.7 and sometimes under 3.4. Tests are run
+locally with both version.
 
-At the time of writing Python 3.x was long untested. It will need some
-checking to assure that Python 3.x is supported.
-
-.. note:: The latest tests were run with 3.4 and the platform run
-	  smoothly but slower
-
-There are different ways to install and use **backtrader**.
+Compatibility with 2.6/3.2/3.3 is checked with continuous integration under
+Travis
 
 Install from pypi
 *****************

@@ -36,6 +36,16 @@ List of built-in Indicators:
 
   - `backtrader indicators <http://backtrader.readthedocs.org/indicators.html>`_
 
+Python 2/3 Support
+==================
+
+  - Python 2.6/2.7
+  - Python 3.2/3.3/3.4
+
+Compatibility is tested during development with 2.7 and 3.4
+
+The other versions are tested automatically with Travis.
+
 Installation
 ============
 
@@ -49,8 +59,9 @@ From pypi:
 
 From source:
 
-  - Or run directly from source by placing the *backtrader* directory found in
-    the sources inside your project
+  - Place the *backtrader* directory found in the sources inside your project
+
+    One dependency exists: ``six``
 
 Features:
 =========
