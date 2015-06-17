@@ -24,6 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 import itertools
 import time
 
+from six.moves import xrange
+
 import testcommon
 
 import backtrader as bt
