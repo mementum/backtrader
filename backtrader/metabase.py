@@ -21,11 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import collections
 try:
     from collections import OrderedDict
 except ImportError:
-    from utils.ordereddict import OrderedDict
+    from .utils.ordereddict import OrderedDict
 import itertools
 import sys
 
@@ -92,16 +91,16 @@ class MetaBase(type):
 
 
 class AutoInfoClass(object):
-    _getpairsbase = classmethod(lambda cls: collections.OrderedDict())
-    _getpairs = classmethod(lambda cls: collections.OrderedDict())
+    _getpairsbase = classmethod(lambda cls: OrderedDict())
+    _getpairs = classmethod(lambda cls: OrderedDict())
     _getrecurse = classmethod(lambda cls: False)
 
     @classmethod
     def _derive(cls, name, info, otherbases, recurse=False):
         # collect the 3 set of infos
-        # info = collections.OrderedDict(info)
+        # info = OrderedDict(info)
         baseinfo = cls._getpairs().copy()
-        obasesinfo = collections.OrderedDict()
+        obasesinfo = OrderedDict()
         for obase in otherbases:
             obasesinfo.update(obase._getpairs())
 
@@ -174,7 +173,7 @@ class AutoInfoClass(object):
         l = [
             (x, getattr(self, x))
             for x in self._getkeys() if not skip_ or not x.startswith('_')]
-        return collections.OrderedDict(l)
+        return OrderedDict(l)
 
     def _getvalues(self):
         return [getattr(self, x) for x in self._getkeys()]
