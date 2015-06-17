@@ -23,5 +23,3 @@ from __future__ import (absolute_import, division, print_function,
 
 from .date import *
 from .cmp import *
-
-from . import ordereddict

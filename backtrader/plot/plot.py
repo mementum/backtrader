@@ -26,7 +26,7 @@ import collections
 try:
     from collections import OrderedDict
 except ImportError:
-    from utils.ordereddict import OrderedDict
+    from .utils.ordereddict import OrderedDict
 
 import math
 
