@@ -52,6 +52,11 @@ class StandardDeviation(Indicator):
     lines = ('stddev',)
     params = (('period', 20), ('movav', MovAv.Simple),)
 
+    def _plotlabel(self):
+        plabels = [self.p.period]
+        plabels += [self.p.movav] * self.p.notdefault('movav')
+        return plabels
+
     def __init__(self):
         if len(self.datas) > 1:
             mean = self.data1
@@ -93,6 +98,11 @@ class MeanDeviation(Indicator):
     '''
     lines = ('meandev',)
     params = (('period', 20), ('movav', MovAv.Simple),)
+
+    def _plotlabel(self):
+        plabels = [self.p.period]
+        plabels += [self.p.movav] * self.p.notdefault('movav')
+        return plabels
 
     def __init__(self):
         if len(self.datas) > 1:
