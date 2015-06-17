@@ -94,6 +94,11 @@ class _DirectionalIndicator(Indicator):
 
     plotlines = dict(plusDI=dict(_name='+DI'), minusDI=dict(_name='-DI'))
 
+    def _plotlabel(self):
+        plabels = [self.p.period]
+        plabels += [self.p.movav] * self.p.notdefault('movav')
+        return plabels
+
     def __init__(self, _plus=True, _minus=True):
         atr = ATR(self.data, period=self.p.period, movav=self.p.movav)
 
