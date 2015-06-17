@@ -1,3 +1,18 @@
+1.0.5.47
+  - CCI Plotting labels improved
+  - WilliamsR plotname/plotlines names improved
+  - Stochastic plotlines names improved
+  - Momentum plotting labels improved
+  - DirectionalMovement plotting labels improved
+  - XXXDeviations plotting labels improved
+  - Changes (__hash__ in lineroot and list(xxx.values) when plotting) for Python
+    3.4 compatibility
+  - test_strategy_optimized import xrange from six for Python 3 and travis.yml
+    updated to runn with Python 3.4 too
+  - OrderedDict recipe added for Python 2.6 compatibility
+  - Continuous integration check under Travis added for 2.6/3.2/3.3
+  - Updated Readme and docs about Python compatibility
+
 1.0.4.47
   - Tests for strategy optimized/not optimized added
   - Cosmetic change to "triggered" parameter initialization in StopLimitOrders
