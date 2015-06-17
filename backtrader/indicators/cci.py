@@ -60,6 +60,11 @@ class CommodityChannelIndex(Indicator):
               ('upperband', 100.0),
               ('lowerband', -100.0),)
 
+    def _plotlabel(self):
+        plabels = [self.p.period, self.p.factor]
+        plabels += [self.p.movav] * self.p.notdefault('movav')
+        return plabels
+
     def __init__(self):
         self.plotinfo.plotyhlines = [0.0, self.p.upperband, self.p.lowerband]
 
