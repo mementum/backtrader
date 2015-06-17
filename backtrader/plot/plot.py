@@ -161,7 +161,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
                         upinds=self.dplotsup[ind],
                         downinds=self.dplotsdown[ind])
 
-            lastax = self.pinf.daxis.values()[-1]
+            lastax = list(self.pinf.daxis.values())[-1]
             # Date formatting for the x axis - only the last one needs it
             if False:
                 locator = mticker.AutoLocator()
@@ -196,7 +196,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
             mpyplot.autoscale(enable=True, axis=axtight, tight=True)
 
     def setlocators(self, data):
-        ax = self.pinf.daxis.values()[-1]
+        ax = list(self.pinf.daxis.values())[-1]
 
         comp = getattr(data, '_compression', 1)
         tframe = getattr(data, '_timeframe', TimeFrame.Days)
