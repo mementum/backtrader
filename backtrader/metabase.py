@@ -22,7 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from utils.ordereddict import OrderedDict
 import itertools
 import sys
 
