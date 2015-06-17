@@ -249,6 +249,10 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
     __bool__ = __nonzero__
 
+    # Python 3 forces explicit implementation of hash if
+    # the class has redefined __eq__
+    __hash__ = object.__hash__
+
 
 class LineMultiple(LineRoot):
     '''
