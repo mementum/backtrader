@@ -23,6 +23,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import bisect
 import collections
+try:
+    from collections import OrderedDict
+except ImportError:
+    from utils.ordereddict import OrderedDict
+
 import math
 
 import six
@@ -53,7 +58,7 @@ class PInfo(object):
         self.xlen = 0
         self.sharex = None
         self.figs = list()
-        self.daxis = collections.OrderedDict()
+        self.daxis = OrderedDict()
         self.ldaxis = list()
         self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
@@ -63,7 +68,7 @@ class PInfo(object):
     def newfig(self, numfig):
         fig = mpyplot.figure(numfig)
         self.figs.append(fig)
-        self.daxis = collections.OrderedDict()
+        self.daxis = OrderedDict()
         self.ldaxis.append(self.daxis)
         self.row = 0
         self.sharex = None
