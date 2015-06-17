@@ -28,7 +28,7 @@ import backtrader.indicators as btind
 
 chkdatas = 1
 chkvals = [
-    [u'3836.453333', u'3703.962333', u'3741.802000'],
+    ['3836.453333', '3703.962333', '3741.802000'],
 ]
 
 chkmin = 30  # period will be in weeks
