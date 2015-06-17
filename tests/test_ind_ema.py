@@ -28,7 +28,7 @@ import backtrader.indicators as btind
 
 chkdatas = 1
 chkvals = [
-    [u'4070.115719', u'3644.444667', u'3581.728712'],
+    ['4070.115719', '3644.444667', '3581.728712'],
 ]
 
 chkmin = 30
