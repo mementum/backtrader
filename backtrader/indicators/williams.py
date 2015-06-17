@@ -26,7 +26,7 @@ from backtrader.indicators import Highest, Lowest
 
 
 class WilliamsR(Indicator):
-    '''WilliamsR
+    '''WilliamsR%
 
     Developed by Larry Williams to show the relation of closing prices to
     the highest-lowest range of a given period.
@@ -53,6 +53,9 @@ class WilliamsR(Indicator):
     params = (('period', 14),
               ('upperband', -20.0),
               ('lowerband', -80.0),)
+
+    plotinfo = dict(plotname='Williams R%')
+    plotlines = dict(percR=dict(_name='R%'))
 
     def __init__(self):
         self.plotinfo.plothlines = [self.p.upperband, self.p.lowerband]
