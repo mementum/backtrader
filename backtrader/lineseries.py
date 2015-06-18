@@ -125,7 +125,8 @@ class Lines(object):
             if not isinstance(linealias, six.string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
-            setattr(cls, linealias, LineAlias(line))
+
+            setattr(newcls, linealias, LineAlias(line))
 
         return newcls
 
