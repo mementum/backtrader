@@ -54,11 +54,15 @@ class Envelope(Indicator):
     def __init__(self):
         perc = self.p.perc / 100.0
 
+        self._prepare()
         data = self._envsource()
 
         self.lines.mid = data
         self.lines.top = data * (1.0 + perc)
         self.lines.bot = data * (1.0 - perc)
+
+    def _prepare(self):
+        pass
 
     def _envsource(self):
         return self.data
@@ -77,11 +81,10 @@ class _MAEnvelope(Envelope):
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
-    def _envsource(self):
-        if not self.p.period:
-            # use the period from the chosen moving av
-            self.p.period = self.p.movav.params.period
+    def _prepare(self):
+        self.p.period = self.p.period or self.p.movav.params.period
 
+    def _envsource(self):
         return self.p.movav(self.data, period=self.p.period)
 
 
@@ -216,11 +219,11 @@ class KAMAEnvelope(_MAEnvelope):
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
-    def _envsource(self):
-        # use the period from the chosen moving av
-        self.p.period = self.p.period or self.p.movav.params.period
+    def _prepare(self):
+        super(KAMAEnvelope)._prepare()
         self.p.fast = self.p.fast or self.p.movav.params.fast
         self.p.slow = self.p.slow or self.p.movav.params.slow
 
+    def _envsource(self):
         return self.p.movav(self.data, period=self.p.period,
                             fast=self.p.fast, slow=self.p.slow)
