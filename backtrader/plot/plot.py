@@ -287,6 +287,8 @@ class Plot(six.with_metaclass(MetaParams, object)):
                 subinds=None, upinds=None, downinds=None,
                 masterax=None):
 
+        ind._plotinit()
+
         sch = self.p.scheme
 
         # check subind
