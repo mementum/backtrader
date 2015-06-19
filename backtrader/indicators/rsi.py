@@ -135,12 +135,10 @@ class RSI(Indicator):
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
-    plotinfo = dict(plotname='RSI')
+    def _plotinit(self):
+        self.plotinfo.plotyhlines = [self.p.overbought, self.p.oversold]
 
     def __init__(self):
-        self.plotinfo.plothlines = [self.p.overbought, self.p.oversold]
-        self.plotinfo.plotyticks = self.plotinfo.plothlines
-
         upday = UpDay(self.data)
         downday = DownDay(self.data)
         maup = self.p.movav(upday, period=self.p.period)
@@ -157,8 +155,8 @@ class RSI_SMMA(RSI):
     pass  # alias
 
 
-class RSI_Cutler(Indicator):
-    '''RSI_Cutler (alias RSI_SMA)
+class RSI_SMA(Indicator):
+    '''RSI_SMA (alias RSI_Cutler)
 
     Uses a SimpleMovingAverage as described in Wikipedia and other soures
 
@@ -177,7 +175,7 @@ class RSI_Cutler(Indicator):
     params = (('movav', MovAv.Simple),)
 
 
-class RSI_SMA(RSI_Cutler):
+class RSI_Cutler(RSI_SMA):
     pass  # alias
 
 
