@@ -28,7 +28,14 @@ from six.moves import xrange
 from backtrader import Indicator
 
 
-class OperationN(Indicator):
+class PeriodN(Indicator):
+    params = (('period', 1),)
+
+    def __init__(self):
+        self.addminperiod(self.p.period)
+
+
+class OperationN(PeriodN):
     '''OperationN
 
     Calculates "func" for a given period
@@ -51,11 +58,6 @@ class OperationN(Indicator):
     Params:
       - period (1): period for the operation
     '''
-    params = (('period', 1),)
-
-    def __init__(self):
-        self.addminperiod(self.p.period)
-
     def next(self):
         self.line[0] = self.func(self.data.get(size=self.p.period))
 
