@@ -172,9 +172,7 @@ class DirectionalIndicator(_DirectionalIndicator):
     lines = ('plusDI', 'minusDI',)
 
     def __init__(self):
-        if not hasattr(self, 'DIplus'):
-            # Avoid recalculation in multiple inheritance below
-            super(DirectionalIndicator, self).__init__()
+        super(DirectionalIndicator, self).__init__()
 
         self.lines.plusDI = self.DIplus
         self.lines.minusDI = self.DIminus
