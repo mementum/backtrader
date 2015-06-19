@@ -68,6 +68,8 @@ class LineAlias(object):
         inside the line can be "set". This is achieved by adding a binding
         to the line inside "value"
         '''
+        print('being triggered for obj', obj)
+        print('value to be set', value)
         if isinstance(value, LineMultiple):
             value = value.lines[0]
 
@@ -195,7 +197,7 @@ class Lines(object):
         '''
         Proxy line operation
         '''
-        self.lines[line][0] = value
+        setattr(self, self._getlinealias(line), value)
 
     def forward(self, value=NAN, size=1):
         '''
@@ -379,7 +381,7 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
         return self.lines[0][key]
 
     def __setitem__(self, key, value):
-        self.lines[0][key] = value
+        setattr(self.lines, self.lines._getlinealias(key), value)
 
     def __init__(self, *args, **kwargs):
         # if any args, kwargs make it up to here, something is broken
