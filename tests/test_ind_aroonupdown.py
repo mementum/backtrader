@@ -28,12 +28,12 @@ import backtrader.indicators as btind
 
 chkdatas = 1
 chkvals = [
-    ['4063.463000', '3644.444667', '3554.693333'],
+    ['42.857143', '35.714286', '85.714286'],
+    ['7.142857', '85.714286', '28.571429']
 ]
 
-chkmin = 30
-# chkind = btind.AroonUpDown
-chkind = btind.AroonOscillator
+chkmin = 15
+chkind = btind.AroonUpDown
 
 
 def test_run(main=False):

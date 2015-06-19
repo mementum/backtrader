@@ -21,61 +21,235 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from six.moves import xrange
-
 from backtrader import Indicator
-from backtrader.indicators import MovAv, OperationN
+from backtrader.indicators import (FindFirstIndexHighest, FindFirstIndexLowest)
 
 
-class FindLastHigh(OperationN):
-    lines = ('ago',)
+class _AroonBase(Indicator):
+    '''_AroonBase
 
-    def func(self, it):
-        m = max(it)
-        return next(i for i, v in enumerate(reversed(it)) if v == m)
+    Base class which does the calculation of the AroonUp/AroonDown values and
+    defines the common parameters.
+
+    It uses the class attributes _up and _down (boolean flags) to decide which
+    value has to be calculated.
+
+    Values are not assigned to lines but rather stored in the "up" and "down"
+    instance variables, which can be used by subclasses to for assignment or
+    further calculations
+    '''
+    _up = False
+    _down = False
+
+    params = (('period', 14), ('upperband', 70), ('lowerband', 30),)
+    plotinfo = dict(plotymargin=0.05, plotyhlines=[0, 100])
+
+    def _plotlabel(self):
+        plabels = [self.p.period]
+        return plabels
+
+    def _plotinit(self):
+        self.plotinfo.plotyhlines += [self.p.lowerband, self.p.upperband]
+
+    def __init__(self):
+        # Look backwards period + 1 for current data because the formula mus
+        # produce values between 0 and 100 and can only do that if the
+        # calculated hhidx/llidx go from 0 to period (hence period + 1 values)
+        idxperiod = self.p.period + 1
+
+        if self._up:
+            hhidx = FindFirstIndexHighest(self.data.high, period=idxperiod)
+            self.up = (100.0 / self.p.period) * (self.p.period - hhidx)
+
+        if self._down:
+            llidx = FindFirstIndexLowest(self.data.low, period=idxperiod)
+            self.down = (100.0 / self.p.period) * (self.p.period - llidx)
 
 
-class FindLastLow(OperationN):
-    lines = ('ago',)
+class AroonUp(_AroonBase):
+    '''ArooonUp
 
-    def func(self, it):
-        m = min(it)
-        return next(i for i, v in enumerate(reversed(it)) if v == m)
+    This is the AroonUp from the indicator AroonUpDown developed by Tushar
+    Chande in 1995.
 
+    Formula:
+      - up = 100 * (period - distance to highest high) / period
 
-class AroonUp(Indicator):
+    Note:
+      The lines oscillate between 0 and 100. That means that the "distance" to
+      the last highest or lowest must go from 0 to period so that the formula
+      can yield 0 and 100.
+
+      Hence the lookback period is period + 1, because the current bar is also
+      taken into account. And therefore this indicator needs an effective
+      lookback period of period + 1.
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    Lines:
+      - aroonup
+
+    Params:
+      - period (14): period for the indicator
+      - upperband (70): indication line of trend
+      - lowerband (30): indication line of counter trend
+
+    '''
+    _up = True
     lines = ('aroonup',)
-    params = (('period', 25),)
 
     def __init__(self):
-        hidist = FindLastHigh(self.data, period=self.p.period)
-        self.l.aroonup = 100.0 * (self.p.period - hidist) / self.p.period
+        super(AroonUp, self).__init__()
+
+        self.lines.aroonup = self.up
 
 
-class AroonDown(Indicator):
+class AroonDown(_AroonBase):
+    '''ArooonDown
+
+    This is the AroonDown from the indicator AroonUpDown developed by Tushar
+    Chande in 1995.
+
+    Formula:
+      - down = 100 * (period - distance to lowest low) / period
+
+    Note:
+      The lines oscillate between 0 and 100. That means that the "distance" to
+      the last highest or lowest must go from 0 to period so that the formula
+      can yield 0 and 100.
+
+      Hence the lookback period is period + 1, because the current bar is also
+      taken into account. And therefore this indicator needs an effective
+      lookback period of period + 1.
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    Lines:
+      - aroondown
+
+    Params:
+      - period (14): period for the indicator
+      - upperband (70): indication line of trend
+      - lowerband (30): indication line of counter trend
+
+    '''
+    _down = True
     lines = ('aroondown',)
-    params = (('period', 25),)
 
     def __init__(self):
-        lodist = FindLastLow(self.data, period=self.p.period)
-        self.l.aroondown = 100.0 * (self.p.period - lodist) / self.p.period
+        super(AroonDown, self).__init__()
+
+        self.lines.aroondown = self.down
 
 
-class AroonUpDown(Indicator):
-    lines = ('aroonup', 'aroondown',)
-    params = (('period', 25),)
+class AroonUpDown(AroonUp, AroonDown):
+    '''ArooonUpDown (alias AroonIndicator)
 
-    def __init__(self):
-        self.lines.aroonup = AroonUp(self.data, period=self.p.period)
-        self.lines.aroondown = AroonDown(self.data, period=self.p.period)
+    Developed by Tushar Chande in 1995.
+
+    It tries to determine if a trend exists or not by calculating how far away
+    within a given period the last highs/lows are (AroonUp/AroonDown)
+
+    Formula:
+      - up = 100 * (period - distance to highest high) / period
+      - down = 100 * (period - distance to lowest low) / period
+
+    Note:
+      The lines oscillate between 0 and 100. That means that the "distance" to
+      the last highest or lowest must go from 0 to period so that the formula
+      can yield 0 and 100.
+
+      Hence the lookback period is period + 1, because the current bar is also
+      taken into account. And therefore this indicator needs an effective
+      lookback period of period + 1.
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    Lines:
+      - aroonup
+      - aroondown
+
+    Params:
+      - period (14): period for the indicator
+      - upperband (70): indication line of trend
+      - lowerband (30): indication line of counter trend
+    '''
+    pass
 
 
-class AroonOscillator(Indicator):
+class AroonIndicator(AroonUpDown):
+    pass  # alias
+
+
+class AroonOscillator(_AroonBase):
+    '''ArooonOscillator (alias AroonOsc)
+
+    It is a variation of the AroonUpDown indicator which shows the current
+    difference between the AroonUp and AroonDown value, trying to present a
+    visualization which indicates which is stronger (greater than 0 -> AroonUp
+    and less than 0 -> AroonDown)
+
+    Formula:
+      - aroonosc = aroonup - aroondown
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    Lines:
+      - aroonosc
+
+    Params:
+      - period (14): period for the indicator
+      - upperband (70): (also displayed as -70) indication line
+      - lowerband (30): (also displayed as -30) indication line
+    '''
+    _up = True
+    _down = True
+
     lines = ('aroonosc',)
-    params = (('period', 25),)
+
+    def _plotinit(self):
+        super(AroonOscillator, self)._plotinit()
+
+        for yhline in self.plotinfo.plotyhlines[:]:
+            self.plotinfo.plotyhlines.append(-yhline)
 
     def __init__(self):
-        aroonup = AroonUp(self.data, period=self.p.period)
-        aroondown = AroonDown(self.data, period=self.p.period)
+        super(AroonOscillator, self).__init__()
 
-        self.lines.aroonosc = aroonup - aroondown
+        self.lines.aroonosc = self.up - self.down
+
+
+class AroonOsc(AroonOscillator):
+    pass  # alias
+
+
+class AroonUpDownOscillator(AroonUpDown, AroonOscillator):
+    '''ArooonUpDownOscillator (alias AroonUpDownOsc)
+
+    Presents together the indicators AroonUpDown and AroonOsc
+
+    Formula:
+      (None, uses the aforementioned indicators)
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    Lines:
+      - aroonup
+      - aroondown
+      - aroonosc
+
+    Params:
+      - period (14): period for the indicator
+      - upperband (70): (also displayed as -70) indication line
+      - lowerband (30): (also displayed as -30) indication line
+    '''
+    pass
+
+
+class AroonUpDownOsc(AroonUpDownOscillator):
+    pass  # alias
