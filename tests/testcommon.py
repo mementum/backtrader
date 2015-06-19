@@ -155,7 +155,7 @@ class TestStrategy(bt.Strategy):
                     chkvals.append(valtxt)
 
                     outtxt = '    [' + ', '.join(chkvals) + '],'
-                # outtxt = outtxt.rstrip(',') + '],'
+
                 if lidx == self.ind.size() - 1:
                     outtxt = outtxt.rstrip(',')
 
