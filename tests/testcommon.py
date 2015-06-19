@@ -148,10 +148,18 @@ class TestStrategy(bt.Strategy):
 
             for lidx in range(self.ind.size()):
                 chkvals = list()
+                outtxt = '    ['
                 for chkpt in chkpts:
-                    chkvals.append('%f' % self.ind.lines[lidx][chkpt])
+                    valtxt = "'%f'" % self.ind.lines[lidx][chkpt]
+                    outtxt += "'%s'," % valtxt
+                    chkvals.append(valtxt)
 
-                print('%s,' % chkvals)
+                    outtxt = '    [' + ', '.join(chkvals) + '],'
+                # outtxt = outtxt.rstrip(',') + '],'
+                if lidx == self.ind.size() - 1:
+                    outtxt = outtxt.rstrip(',')
+
+                print(outtxt)
 
             print('vs')
 
