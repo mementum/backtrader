@@ -24,6 +24,14 @@ Averages are listed under a group.
 
 ----
 
+- :ref:`aroonupdown`
+- :ref:`aroonoscillator`
+- :ref:`aroonupdownoscillator`
+- :ref:`aroonup`
+- :ref:`aroondown`
+
+----
+
 - :ref:`detrendedpriceoscillator`
 
 ----
@@ -95,9 +103,21 @@ Envelopes
 Utility Indicators
 ******************
 
+- :ref:`operationn`
 - :ref:`highest`
 - :ref:`lowest`
 - :ref:`sumn`
+
+----
+
+- :ref:`findfirstindex`
+- :ref:`findfirstindexhighest`
+- :ref:`findfirstindexlowest`
+- :ref:`findlastindex`
+- :ref:`findlastindexhighest`
+- :ref:`findlastindexlowest`
+
+----
 
 - :ref:`upday`
 - :ref:`downday`
