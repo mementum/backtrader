@@ -65,9 +65,10 @@ class CommodityChannelIndex(Indicator):
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
-    def __init__(self):
+    def _plotinit(self):
         self.plotinfo.plotyhlines = [0.0, self.p.upperband, self.p.lowerband]
 
+    def __init__(self):
         tp = (self.data.high + self.data.low + self.data.close) / 3.0
         tpmean = self.p.movav(tp, period=self.p.period)
 

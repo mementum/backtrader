@@ -57,10 +57,10 @@ class WilliamsR(Indicator):
     plotinfo = dict(plotname='Williams R%')
     plotlines = dict(percR=dict(_name='R%'))
 
-    def __init__(self):
-        self.plotinfo.plothlines = [self.p.upperband, self.p.lowerband]
-        self.plotinfo.plotyticks = [self.p.upperband, self.p.lowerband]
+    def _plotinif(self):
+        self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
 
+    def __init__(self):
         h = Highest(self.data.high, period=self.p.period)
         l = Lowest(self.data.low, period=self.p.period)
         c = self.data.close

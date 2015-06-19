@@ -38,9 +38,10 @@ class _StochasticBase(Indicator):
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
-    def __init__(self):
+    def _plotinit(self):
         self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
 
+    def __init__(self):
         highesthigh = Highest(self.data.high, period=self.p.period)
         lowestlow = Lowest(self.data.low, period=self.p.period)
         knum = self.data.close - lowestlow

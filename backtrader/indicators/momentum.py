@@ -82,8 +82,10 @@ class MomentumOscillator(Indicator):
         plabels = [self.p.period]
         return plabels
 
-    def __init__(self):
+    def _plotinit(self):
         self.plotinfo.plothlines = [self.p.band]
+
+    def __init__(self):
 
         self.l.momosc = 100.0 * (self.data / self.data(-self.p.period))
 
