@@ -68,8 +68,6 @@ class LineAlias(object):
         inside the line can be "set". This is achieved by adding a binding
         to the line inside "value"
         '''
-        print('being triggered for obj', obj)
-        print('value to be set', value)
         if isinstance(value, LineMultiple):
             value = value.lines[0]
 
@@ -98,8 +96,11 @@ class Lines(object):
         obasesextralines = 0
 
         for otherbase in otherbases:
-            obaseslines += otherbase._getlines()
-            obasesextralines += otherbase._getlinesextra()
+            if isinstance(otherbase, tuple):
+                obaseslines += otherbase
+            else:
+                obaseslines += otherbase._getlines()
+                obasesextralines += otherbase._getlinesextra()
 
         baselines = cls._getlines() + obaseslines
         baseextralines = cls._getlinesextra() + obasesextralines
@@ -388,6 +389,7 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
         # defining a __init__ guarantees the existence of im_func to findbases
         # in lineiterator later, because object.__init__ has no im_func
         # (object has slots)
+        super(LineSeries, self).__init__()
         pass
 
     def plotlabel(self):
