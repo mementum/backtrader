@@ -39,8 +39,7 @@ import matplotlib.legend as mlegend
 import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
 
-from .. import MetaParams
-from .. import TimeFrame
+from .. import AutoInfoClass, MetaParams, TimeFrame
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
@@ -308,7 +307,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         for lineidx in range(ind.size()):
             line = ind.lines[lineidx]
             linealias = ind.lines._getlinealias(lineidx)
-            lineplotinfo = getattr(ind.plotlines, linealias)
+            lineplotinfo = getattr(ind.plotlines, linealias, AutoInfoClass())
 
             if lineplotinfo._get('_plotskip', False):
                 continue
