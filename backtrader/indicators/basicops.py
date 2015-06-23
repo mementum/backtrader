@@ -32,6 +32,7 @@ class PeriodN(Indicator):
     params = (('period', 1),)
 
     def __init__(self):
+        super(PeriodN, self).__init__()
         self.addminperiod(self.p.period)
 
 
