@@ -102,7 +102,10 @@ class AutoInfoClass(object):
         baseinfo = cls._getpairs().copy()
         obasesinfo = OrderedDict()
         for obase in otherbases:
-            obasesinfo.update(obase._getpairs())
+            if isinstance(obase, (tuple, dict)):
+                obasesinfo.update(obase)
+            else:
+                obasesinfo.update(obase._getpairs())
 
         # update the info of this class (base) with that from the other bases
         baseinfo.update(obasesinfo)
@@ -119,15 +122,10 @@ class AutoInfoClass(object):
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
-        setattr(newcls,
-                '_getpairsbase',
+        setattr(newcls, '_getpairsbase',
                 classmethod(lambda cls: basesinfo.copy()))
-        setattr(newcls,
-                '_getpairs',
-                classmethod(lambda cls: clsinfo.copy()))
-        setattr(newcls,
-                '_getrecurse',
-                classmethod(lambda cls: recurse))
+        setattr(newcls, '_getpairs', classmethod(lambda cls: clsinfo.copy()))
+        setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
 
         for infoname, infoval in info2add.items():
             if recurse:
