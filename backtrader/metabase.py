@@ -157,7 +157,7 @@ class AutoInfoClass(object):
 
     @classmethod
     def _getdefaults(cls):
-        return [cls._getpairs().values()]
+        return list(cls._getpairs().values())
 
     @classmethod
     def _getitems(cls):
