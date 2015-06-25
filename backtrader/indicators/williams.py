@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import Highest, Lowest
+from . import Highest, Lowest
 
 
 class WilliamsR(Indicator):
-    '''WilliamsR%
-
+    '''
     Developed by Larry Williams to show the relation of closing prices to
     the highest-lowest range of a given period.
 
@@ -40,14 +39,6 @@ class WilliamsR(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Williams_%25R
-
-    Lines:
-      - percR (known as %R in indicator but % is not allowed)
-
-    Params:
-      - period (14): period to consider for highest and lowest values
-      - upperband (-20): upper band horizontal line
-      - lowerband (-80): lower band horizontal line
     '''
     lines = ('percR',)
     params = (('period', 14),
@@ -66,3 +57,5 @@ class WilliamsR(Indicator):
         c = self.data.close
 
         self.lines.percR = -100.0 * (h - c) / (h - l)
+
+        super(WilliamsR, self).__init__()

@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import MovAv, StdDev
+from . import MovAv, StdDev
 
 
 class BollingerBands(Indicator):
-    '''BollingerBands (alias BBands)
-
+    '''
     Defined by John Bollinger in the 80s. It measures volatility by defining
     upper and lower bands at distance x standard deviations
 
@@ -38,15 +37,9 @@ class BollingerBands(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Bollinger_Bands
-
-    Lines:
-      - mid, top, bot
-
-    Params:
-      - period (20): period for the moving average
-      - devfactor (2.0): distance of the bottom, top bands to the middle
-      - movav (SimpleMovingAverage): moving average type to apply
     '''
+    alias = ('BBands',)
+
     lines = ('mid', 'top', 'bot',)
     params = (('period', 20), ('devfactor', 2.0), ('movav', MovAv.Simple),)
 
@@ -64,10 +57,8 @@ class BollingerBands(Indicator):
 
     def __init__(self):
         self.lines.mid = ma = self.p.movav(self.data, period=self.p.period)
-        stddev = self.p.devfactor * StdDev(self.data, period=self.p.period)
+        stddev = self.p.devfactor * StdDev(self.data, ma, period=self.p.period)
         self.lines.top = ma + stddev
         self.lines.bot = ma - stddev
 
-
-class BBands(BollingerBands):
-    pass
+        super(BollingerBands, self).__init__()

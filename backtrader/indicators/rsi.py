@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator, Max
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
 class UpDay(Indicator):
-    '''UpDay
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* for the RSI
 
@@ -39,22 +38,16 @@ class UpDay(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
-
-    Lines:
-      - upday
-
-    Params:
-      (None)
     '''
     lines = ('upday',)
 
     def __init__(self):
         self.lines.upday = Max(self.data - self.data(-1), 0.0)
+        super(UpDay, self).__init__()
 
 
 class DownDay(Indicator):
-    '''DownDay
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* for the RSI
 
@@ -66,22 +59,16 @@ class DownDay(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
-
-    Lines:
-      - downday
-
-    Params:
-      (None)
     '''
     lines = ('downday',)
 
     def __init__(self):
         self.lines.downday = Max(self.data(-1) - self.data, 0.0)
+        super(DownDay, self).__init__()
 
 
-class RSI(Indicator):
-    '''RSI (alias RelativeStrengthIndex and RSI_SMMA)
-
+class RelativeStrengthIndex(Indicator):
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -114,21 +101,14 @@ class RSI(Indicator):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
-
-    Lines:
-      - rsi
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
-      - overbought (70): indication line of overbought territory
-      - oversold (30): indication line of oversold territory
     '''
+    alias = ('RSI', 'RSI_SMMA', 'RSI_Wilder',)
+
     lines = ('rsi',)
     params = (('period', 14),
               ('movav', MovAv.Smoothed),
-              ('overbought', 70.0),
-              ('oversold', 30.0))
+              ('upperband', 70.0),
+              ('lowerband', 30.0))
 
     def _plotlabel(self):
         plabels = [self.p.period]
@@ -136,7 +116,7 @@ class RSI(Indicator):
         return plabels
 
     def _plotinit(self):
-        self.plotinfo.plotyhlines = [self.p.overbought, self.p.oversold]
+        self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
 
     def __init__(self):
         upday = UpDay(self.data)
@@ -145,55 +125,26 @@ class RSI(Indicator):
         madown = self.p.movav(downday, period=self.p.period)
         rs = maup / madown
         self.lines.rsi = 100.0 - 100.0 / (1.0 + rs)
-
-
-class RelativeStrenghIndex(RSI):
-    pass  # alias
-
-
-class RSI_SMMA(RSI):
-    pass  # alias
+        super(RelativeStrengthIndex, self).__init__()
 
 
 class RSI_SMA(Indicator):
-    '''RSI_SMA (alias RSI_Cutler)
-
+    '''
     Uses a SimpleMovingAverage as described in Wikipedia and other soures
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
-
-    Lines:
-      - rsi
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Simple): moving average to apply
-      - overbought (70): indication line of overbought territory
-      - oversold (30): indication line of oversold territory
     '''
+    alias = ('RSI_Cutler',)
+
     params = (('movav', MovAv.Simple),)
 
 
-class RSI_Cutler(RSI_SMA):
-    pass  # alias
-
-
 class RSI_EMA(Indicator):
-    '''RSI_EMA
-
+    '''
     Uses an ExponentialMovingAverage as described in Wikipedia
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
-
-    Lines:
-      - rsi
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Exponential): moving average to apply
-      - overbought (70): indication line of overbought territory
-      - oversold (30): indication line of oversold territory
     '''
     params = (('movav', MovAv.Exponential),)

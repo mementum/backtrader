@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
 class StandardDeviation(Indicator):
-    '''StandardDeviation (alias StdDev)
-
+    '''
     Calculates the standard deviation of the passed data for a given period
 
     Note:
@@ -41,14 +40,9 @@ class StandardDeviation(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Standard_deviation
-
-    Lines:
-      - stddev
-
-    Params:
-      - period (20): period for the moving average
-      - movav (SimpleMovingAverage): moving average type to apply
     '''
+    alias = ('StdDev',)
+
     lines = ('stddev',)
     params = (('period', 20), ('movav', MovAv.Simple),)
 
@@ -68,10 +62,6 @@ class StandardDeviation(Indicator):
         self.lines.stddev = pow(meansq - sqmean, 0.5)
 
 
-class StdDev(StandardDeviation):
-    pass
-
-
 class MeanDeviation(Indicator):
     '''MeanDeviation (alias MeanDev)
 
@@ -88,14 +78,9 @@ class MeanDeviation(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_absolute_deviation
-
-    Lines:
-      - meandev
-
-    Params:
-      - period (20): period for the moving average
-      - movav (SimpleMovingAverage): moving average type to apply
     '''
+    alias = ('MeanDev',)
+
     lines = ('meandev',)
     params = (('period', 20), ('movav', MovAv.Simple),)
 
@@ -112,7 +97,3 @@ class MeanDeviation(Indicator):
 
         absdev = abs(self.data - mean)
         self.lines.meandev = self.p.movav(absdev, period=self.p.period)
-
-
-class MeanDev(MeanDeviation):
-    pass  # alias

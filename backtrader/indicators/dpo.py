@@ -23,12 +23,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
 class DetrendedPriceOscillator(Indicator):
-    '''DetrendedPriceOscillator (alias DPO)
-
+    '''
     Defined by Joe DiNapoli in his book *"Trading with DiNapoli levels"*
 
     It measures the price variations against a Moving Average (the trend)
@@ -40,14 +39,9 @@ class DetrendedPriceOscillator(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Detrended_price_oscillator
-
-    Lines:
-      - dpo
-
-    Params:
-      - period (20): period for the moving average
-      - movav (Simple): moving average to apply
     '''
+    # Named alias for invocation
+    alias = ('DPO',)
 
     # Named output lines
     lines = ('dpo',)
@@ -72,7 +66,4 @@ class DetrendedPriceOscillator(Indicator):
         # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
         self.lines.dpo = self.data - ma(-self.p.period // 2 + 1)
 
-
-# Alias for DPO
-class DPO(DetrendedPriceOscillator):
-    pass
+        super(DetrendedPriceOscillator, self).__init__()

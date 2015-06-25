@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import (FindFirstIndexHighest, FindFirstIndexLowest)
+from . import (FindFirstIndexHighest, FindFirstIndexLowest)
 
 
 class _AroonBase(Indicator):
-    '''_AroonBase
-
+    '''
     Base class which does the calculation of the AroonUp/AroonDown values and
     defines the common parameters.
 
@@ -65,10 +64,11 @@ class _AroonBase(Indicator):
             llidx = FindFirstIndexLowest(self.data.low, period=idxperiod)
             self.down = (100.0 / self.p.period) * (self.p.period - llidx)
 
+        super(_AroonBase, self).__init__()
+
 
 class AroonUp(_AroonBase):
-    '''ArooonUp
-
+    '''
     This is the AroonUp from the indicator AroonUpDown developed by Tushar
     Chande in 1995.
 
@@ -86,17 +86,9 @@ class AroonUp(_AroonBase):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
-
-    Lines:
-      - aroonup
-
-    Params:
-      - period (14): period for the indicator
-      - upperband (70): indication line of trend
-      - lowerband (30): indication line of counter trend
-
     '''
     _up = True
+
     lines = ('aroonup',)
 
     def __init__(self):
@@ -106,8 +98,7 @@ class AroonUp(_AroonBase):
 
 
 class AroonDown(_AroonBase):
-    '''ArooonDown
-
+    '''
     This is the AroonDown from the indicator AroonUpDown developed by Tushar
     Chande in 1995.
 
@@ -125,17 +116,9 @@ class AroonDown(_AroonBase):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
-
-    Lines:
-      - aroondown
-
-    Params:
-      - period (14): period for the indicator
-      - upperband (70): indication line of trend
-      - lowerband (30): indication line of counter trend
-
     '''
     _down = True
+
     lines = ('aroondown',)
 
     def __init__(self):
@@ -145,8 +128,7 @@ class AroonDown(_AroonBase):
 
 
 class AroonUpDown(AroonUp, AroonDown):
-    '''ArooonUpDown (alias AroonIndicator)
-
+    '''
     Developed by Tushar Chande in 1995.
 
     It tries to determine if a trend exists or not by calculating how far away
@@ -167,26 +149,12 @@ class AroonUpDown(AroonUp, AroonDown):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
-
-    Lines:
-      - aroonup
-      - aroondown
-
-    Params:
-      - period (14): period for the indicator
-      - upperband (70): indication line of trend
-      - lowerband (30): indication line of counter trend
     '''
-    pass
-
-
-class AroonIndicator(AroonUpDown):
-    pass  # alias
+    alias = ('AroonIndicator',)
 
 
 class AroonOscillator(_AroonBase):
-    '''ArooonOscillator (alias AroonOsc)
-
+    '''
     It is a variation of the AroonUpDown indicator which shows the current
     difference between the AroonUp and AroonDown value, trying to present a
     visualization which indicates which is stronger (greater than 0 -> AroonUp
@@ -197,17 +165,11 @@ class AroonOscillator(_AroonBase):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
-
-    Lines:
-      - aroonosc
-
-    Params:
-      - period (14): period for the indicator
-      - upperband (70): (also displayed as -70) indication line
-      - lowerband (30): (also displayed as -30) indication line
     '''
     _up = True
     _down = True
+
+    alias = ('AroonOsc',)
 
     lines = ('aroonosc',)
 
@@ -223,13 +185,8 @@ class AroonOscillator(_AroonBase):
         self.lines.aroonosc = self.up - self.down
 
 
-class AroonOsc(AroonOscillator):
-    pass  # alias
-
-
 class AroonUpDownOscillator(AroonUpDown, AroonOscillator):
-    '''ArooonUpDownOscillator (alias AroonUpDownOsc)
-
+    '''
     Presents together the indicators AroonUpDown and AroonOsc
 
     Formula:
@@ -237,19 +194,5 @@ class AroonUpDownOscillator(AroonUpDown, AroonOscillator):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
-
-    Lines:
-      - aroonup
-      - aroondown
-      - aroonosc
-
-    Params:
-      - period (14): period for the indicator
-      - upperband (70): (also displayed as -70) indication line
-      - lowerband (30): (also displayed as -30) indication line
     '''
-    pass
-
-
-class AroonUpDownOsc(AroonUpDownOscillator):
-    pass  # alias
+    alias = ('AroonUpDownOsc',)

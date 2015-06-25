@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
 class MACD(Indicator):
-    '''MACD
-
+    '''
     Moving Average Convergence Divergence. Defined by Gerald Appel in the 70s.
 
     It measures the distance of a short and a long term moving average to
@@ -42,16 +41,6 @@ class MACD(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/MACD
-
-    Lines:
-      - macd
-      - signal
-
-    Params:
-      - period_me1 (12): period for the 1st moving average
-      - period_me2 (26): period for the 2nd moving average
-      - period_signal (9): period for the signal moving average
-      - movav (Exponential): moving average type to apply
     '''
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
@@ -67,6 +56,7 @@ class MACD(Indicator):
         return plabels
 
     def __init__(self):
+        super(MACD, self).__init__()
         me1 = self.p.movav(self.data, period=self.p.period_me1)
         me2 = self.p.movav(self.data, period=self.p.period_me2)
         self.lines.macd = me1 - me2
@@ -75,8 +65,7 @@ class MACD(Indicator):
 
 
 class MACDHisto(MACD):
-    '''MACDHisto
-
+    '''
     Subclass of MACD which adds a "histogram" of the difference between the
     macd and signal lines
 
@@ -85,18 +74,9 @@ class MACDHisto(MACD):
 
     See:
       - http://en.wikipedia.org/wiki/MACD
-
-    Lines:
-      - macd
-      - signal
-      - histo
-
-    Params:
-      - period_me1 (12): period for the 1st moving average
-      - period_me2 (26): period for the 2nd moving average
-      - period_signal (9): period for the signal moving average
-      - movav (Exponential): moving average type to apply
     '''
+    alias = ('MACDHistogram',)
+
     lines = ('histo',)
     plotlines = dict(histo=dict(_method='bar', alpha=0.50, width=1.0))
 

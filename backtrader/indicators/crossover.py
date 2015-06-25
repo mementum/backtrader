@@ -41,8 +41,7 @@ class _CrossBase(Indicator):
 
 
 class CrossUp(_CrossBase):
-    '''CrossUp
-
+    '''
     This indicator gives a signal if the 1st provided data crosses over the 2nd
     indicator upwards
 
@@ -55,20 +54,12 @@ class CrossUp(_CrossBase):
       - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
     See:
       - (None)
-
-    Lines:
-      - cross
-
-    Params:
-      (None)
-
     '''
     _crossup = True
 
 
 class CrossDown(_CrossBase):
-    '''CrossDown
-
+    '''
     This indicator gives a signal if the 1st provided data crosses over the 2nd
     indicator upwards
 
@@ -81,20 +72,12 @@ class CrossDown(_CrossBase):
       - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
     See:
       - (None)
-
-    Lines:
-      - cross
-
-    Params:
-      (None)
-
     '''
     _crossup = False
 
 
 class CrossOver(Indicator):
-    '''CrossOver
-
+    '''
     This indicator gives a signal if the provided datas (2) cross up or down.
 
       - 1.0 if the 1st data crosses the 2nd data upwards
@@ -112,12 +95,6 @@ class CrossOver(Indicator):
 
     See:
       - (None)
-
-    Lines:
-      - cross
-
-    Params:
-      (None)
     '''
     lines = ('crossover',)
 
