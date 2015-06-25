@@ -33,3 +33,15 @@ WMAEnvelope
 KAMAEnvelope
 ============
 .. autoclass:: backtrader.indicators.KAMAEnvelope
+
+.. _demaenvelope:
+
+DEMAEnvelope
+============
+.. autoclass:: backtrader.indicators.DEMAEnvelope
+
+.. _temaenvelope:
+
+TEMAEnvelope
+============
+.. autoclass:: backtrader.indicators.TEMAEnvelope

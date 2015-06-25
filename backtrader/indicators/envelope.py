@@ -133,6 +133,36 @@ class KAMAEnvelope(MovAv.KAMA, EnvelopeMixIn):
     pass
 
 
+class DEMAEnvelope(MovAv.DEMA, EnvelopeMixIn):
+    '''
+    AdaptiveMovingAverage and envelope band separated "perc" from it
+
+    Formula:
+      - ma = DoubleExponentialMovingAverage
+      - top = mid * (1 + perc)
+      - bot = mid * (1 - perc)
+
+    See also:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
+    '''
+    pass
+
+
+class TEMAEnvelope(MovAv.TEMA, EnvelopeMixIn):
+    '''
+    AdaptiveMovingAverage and envelope band separated "perc" from it
+
+    Formula:
+      - ma = TripleExponentialMovingAverage
+      - top = mid * (1 + perc)
+      - bot = mid * (1 - perc)
+
+    See also:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
+    '''
+    pass
+
+
 class Envelope(Indicator, EnvelopeMixIn):
     '''
     It creates envelopes bands separated from the source data by a given
@@ -146,6 +176,8 @@ class Envelope(Indicator, EnvelopeMixIn):
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
     '''
+    lines = ('mid',)
+
     plotinfo = dict(subplot=False)
 
     def __init__(self):

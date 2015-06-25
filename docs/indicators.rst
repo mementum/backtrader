@@ -100,6 +100,8 @@ Envelopes
 - :ref:`smmaenvelope`
 - :ref:`wmaenvelope`
 - :ref:`kamaenvelope`
+- :ref:`demaenvelope`
+- :ref:`temaenvelope`
 
 Utility Indicators
 ******************
