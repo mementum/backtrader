@@ -10,12 +10,6 @@ SimpleMovingAverage
 ===================
 .. autoclass:: backtrader.indicators.SimpleMovingAverage
 
-.. _smoothingmovingaverage:
-
-SmoothingMovingAverage
-======================
-.. autoclass:: backtrader.indicators.SmoothingMovingAverage
-
 .. _exponentialmovingaverage:
 
 ExponentialMovingAverage

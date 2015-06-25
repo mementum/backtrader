@@ -42,13 +42,14 @@ Averages are listed under a group.
 
 - :ref:`simplemovingaverage`
 
-- :ref:`smoothingmovingaverage`
-
-  - :ref:`exponentialmovingaverage`
-  - :ref:`smoothedmovingaverage`
-  - :ref:`adaptivemovingaverage`
+- :ref:`exponentialmovingaverage`
+- :ref:`smoothedmovingaverage`
+- :ref:`adaptivemovingaverage`
 
 - :ref:`weightedmovingaverage`
+
+- :ref:`doubleexponentialmovingaverage`
+- :ref:`tripleexponentialmovingaverage`
 
 :ref:`MovingAverage Placeholder <movingaverage>`
 
