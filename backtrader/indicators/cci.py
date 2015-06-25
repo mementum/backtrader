@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator, Max
-from backtrader.indicators import MovAv, MeanDev
+from . import MovAv, MeanDev
 
 
 class CommodityChannelIndex(Indicator):
-    '''CommodityChannelIndex (alias CCI)
-
+    '''
     Introduced by Donald Lambert in 1980 to measure variations of the
     "typical price" (see below) from its mean to identify extremes and
     reversals
@@ -41,17 +40,9 @@ class CommodityChannelIndex(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Commodity_channel_index
-
-    Lines:
-      - cci
-
-    Params:
-      - period (20): period for the indicator
-      - factor (0.015): scaling factor
-      - movav (Simple): moving average type to apply
-      - upperband (100.0): upper band to draw for visual inspection
-      - lowerband (-100.0): upper band to draw for visual inspection
     '''
+    alias = ('CCI',)
+
     lines = ('cci',)
 
     params = (('period', 20),
@@ -77,6 +68,4 @@ class CommodityChannelIndex(Indicator):
 
         self.lines.cci = dev / (self.p.factor * meandev)
 
-
-class CCI(CommodityChannelIndex):
-    pass  # alias
+        super(CommodityChannelIndex, self).__init__()

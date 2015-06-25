@@ -22,12 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator, And, If
-from backtrader.indicators import MovAv, ATR
+from . import MovAv, ATR
 
 
 class UpMove(Indicator):
-    '''UpMove
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* as part of the Directional Move System to
     calculate Directional Indicators.
@@ -39,22 +38,16 @@ class UpMove(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Lines:
-      - upmove
-
-    Params:
-      (None)
     '''
     lines = ('upmove',)
 
     def __init__(self):
         self.lines.upmove = self.data - self.data(-1)
+        super(UpMove, self).__init__()
 
 
 class DownMove(Indicator):
-    '''DownMove
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* as part of the Directional Move System to
     calculate Directional Indicators.
@@ -66,22 +59,16 @@ class DownMove(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Lines:
-      - downmove
-
-    Params:
-      (None)
     '''
     lines = ('downmove',)
 
     def __init__(self):
         self.lines.downmove = self.data(-1) - self.data
+        super(DownMove, self).__init__()
 
 
 class _DirectionalIndicator(Indicator):
-    '''_DirectionalIndicator
-
+    '''
     This class serves as the root base class for all "Directional Movement
     System" related indicators, given that the calculations are first common
     and then derived from the common calculations.
@@ -119,10 +106,11 @@ class _DirectionalIndicator(Indicator):
 
             self.DIminus = 100.0 * minusDMav / atr
 
+        super(_DirectionalIndicator, self).__init__()
+
 
 class DirectionalIndicator(_DirectionalIndicator):
-    '''DirectionalIndicator (alias DI)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -160,15 +148,8 @@ class DirectionalIndicator(_DirectionalIndicator):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - plusDI
-      - minusDI
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
+    alias = ('DI',)
     lines = ('plusDI', 'minusDI',)
 
     def __init__(self):
@@ -178,13 +159,8 @@ class DirectionalIndicator(_DirectionalIndicator):
         self.lines.minusDI = self.DIminus
 
 
-class DI(DirectionalIndicator):
-    pass  # alias
-
-
 class PlusDirectionalIndicator(_DirectionalIndicator):
-    '''PlusDirectionalIndicator (alias PlusDI)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -220,14 +196,8 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - plusDI
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
+    alias = (('PlusDI', '+DI'),)
     lines = ('plusDI',)
 
     plotinfo = dict(plotname='+DirectionalIndicator')
@@ -238,14 +208,8 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
         self.lines.plusDI = self.DIplus
 
 
-class PlusDI(PlusDirectionalIndicator):
-    plotinfo = dict(plotname='+DI')
-    pass  # alias
-
-
 class MinusDirectionalIndicator(_DirectionalIndicator):
-    '''MinusDirectionalIndicator (alias MinusDI)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -281,14 +245,8 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - minusDI
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
+    alias = (('MinusDI', '-DI'),)
     lines = ('minusDI',)
 
     plotinfo = dict(plotname='-DirectionalIndicator')
@@ -299,14 +257,8 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
         self.lines.minusDI = self.DIminus
 
 
-class MinusDI(MinusDirectionalIndicator):
-    plotinfo = dict(plotname='-DI')
-    pass  # alias
-
-
 class AverageDirectionalMovementIndex(_DirectionalIndicator):
-    '''AverageDirectionalMovementIndex (alias ADX)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -346,14 +298,9 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - adx
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
+    alias = ('ADX',)
+
     lines = ('adx',)
 
     plotlines = dict(adx=dict(_name='ADX'))
@@ -365,13 +312,8 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
         self.lines.adx = 100.0 * self.p.movav(dx, period=self.p.period)
 
 
-class ADX(AverageDirectionalMovementIndex):
-    pass  # alias
-
-
 class AverageDirectionalMovementIndexRating(ADX):
-    '''AverageDirectionalMovementIndexRating (alias ADXR)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -414,17 +356,10 @@ class AverageDirectionalMovementIndexRating(ADX):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - adx
-      - adxr
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
-    lines = ('adxr',)
+    alias = ('ADXR',)
 
+    lines = ('adxr',)
     plotlines = dict(adxr=dict(_name='ADXR'))
 
     def __init__(self):
@@ -433,13 +368,8 @@ class AverageDirectionalMovementIndexRating(ADX):
         self.lines.adxr = (self.l.adx + self.l.adx(-self.p.period)) / 2.0
 
 
-class ADXR(AverageDirectionalMovementIndexRating):
-    pass  # alias
-
-
 class DirectionalMovementIndex(ADX, DI):
-    '''DirectionalMovementIndex (alias DMI)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -479,26 +409,12 @@ class DirectionalMovementIndex(ADX, DI):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - adx
-      - plusDI
-      - minusDI
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
-    pass
-
-
-class DMI(DirectionalMovementIndex):
-    pass  # alias
+    alias = ('DMI',)
 
 
 class DirectionalMovement(ADXR, DI):
-    '''DirectionalMovement (alias DM)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -539,19 +455,5 @@ class DirectionalMovement(ADXR, DI):
       Stockcharts has it right.
 
         - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
-
-    Lines:
-      - adx
-      - adxr
-      - plusDI
-      - minusDI
-
-    Params:
-      - period (14): period for the indicator
-      - movav (Smoothed): moving average to apply
     '''
-    pass
-
-
-class DM(DirectionalMovement):
-    pass  # alias
+    alias = ('DM',)

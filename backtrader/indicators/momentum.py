@@ -36,12 +36,6 @@ class Momentum(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Momentum_(technical_analysis)
-
-    Lines:
-      - momentum
-
-    Params:
-      - period (12): period to consider
     '''
     lines = ('momentum',)
     params = (('period', 12),)
@@ -49,11 +43,11 @@ class Momentum(Indicator):
 
     def __init__(self):
         self.l.momentum = self.data - self.data(-self.p.period)
+        super(Momentum, self).__init__()
 
 
 class MomentumOscillator(Indicator):
-    '''MomentumOscillator
-
+    '''
     Measures the ratio of change in prices over a period
 
     Formula:
@@ -61,14 +55,8 @@ class MomentumOscillator(Indicator):
 
     See:
       - http://ta.mql4.com/indicators/oscillators/momentum
-
-    Lines:
-      - momosc
-
-    Params:
-      - period (12): period to consider
-      - band (100.0): line to be plotted
     '''
+    alias = ('MomentumOsc',)
 
     # Named output lines
     lines = ('momosc',)
@@ -86,13 +74,12 @@ class MomentumOscillator(Indicator):
         self.plotinfo.plothlines = [self.p.band]
 
     def __init__(self):
-
         self.l.momosc = 100.0 * (self.data / self.data(-self.p.period))
+        super(MomentumOscillator, self).__init__()
 
 
 class RateOfChange(Indicator):
-    '''RateOfChange (alias ROC)
-
+    '''
     Measures the ratio of change in prices over a period
 
     Formula:
@@ -100,13 +87,8 @@ class RateOfChange(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Momentum_(technical_analysis)
-
-    Lines:
-      - roc
-
-    Params:
-      - period (12): period to consider
     '''
+    alias = ('ROC',)
 
     # Named output lines
     lines = ('roc',)
@@ -118,7 +100,4 @@ class RateOfChange(Indicator):
     def __init__(self):
         dperiod = self.data(-self.p.period)
         self.l.roc = (self.data - dperiod) / dperiod
-
-
-class ROC(RateOfChange):
-    pass  # alias
+        super(RateOfChange, self).__init__()

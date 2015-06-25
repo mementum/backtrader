@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator, Max
-from backtrader.indicators import MovAv, Highest, Lowest
+from . import MovAv, Highest, Lowest
 
 
 class _StochasticBase(Indicator):
@@ -49,10 +49,11 @@ class _StochasticBase(Indicator):
         self.k = 100.0 * (knum / kden)
         self.d = self.p.movav(self.k, period=self.p.period_dfast)
 
+        super(_StochasticBase, self).__init__()
+
 
 class StochasticFast(_StochasticBase):
-    '''StochasticFast
-
+    '''
     By Dr. George Lane in the 50s. It compares a closing price to the price
     range and tries to show convergence if the closing prices are close to the
     extremes
@@ -73,17 +74,6 @@ class StochasticFast(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
-
-    Lines:
-      - percK
-      - percD
-
-    Params:
-      - period (14): period for the indicator
-      - period_dfast (3): smoothing period for the percD average
-      - movav (Simple): moving average to apply
-      - upperband (80): indication line of overbought territory
-      - lowerband (20): indication line of oversold territory
     '''
     def __init__(self):
         super(StochasticFast, self).__init__()
@@ -92,8 +82,7 @@ class StochasticFast(_StochasticBase):
 
 
 class Stochastic(_StochasticBase):
-    '''Stochastic (alias StochasticSlow)
-
+    '''
     The regular (or slow version) adds an additional moving average layer and
     thus:
 
@@ -107,19 +96,8 @@ class Stochastic(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
-
-    Lines:
-      - percK
-      - percD
-
-    Params:
-      - period (14): period for the indicator
-      - period_dfast (3): smoothing period for the percD average
-      - period_dslow (3): additional smoothing period for the percD average
-      - movav (Simple): moving average to apply
-      - upperband (80): indication line of overbought territory
-      - lowerband (20): indication line of oversold territory
     '''
+    alias = ('StochasticSlow',)
     params = (('period_dslow', 3),)
 
     def _plotlabel(self):
@@ -133,13 +111,8 @@ class Stochastic(_StochasticBase):
         self.l.percD = self.p.movav(self.l.percK, period=self.p.period_dslow)
 
 
-class StochasticSlow(Stochastic):
-    pass
-
-
 class StochasticFull(_StochasticBase):
-    '''StochasticFull
-
+    '''
     This version displays the 3 possible lines:
 
       - percK
@@ -153,19 +126,6 @@ class StochasticFull(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
-
-    Lines:
-      - percK
-      - percD
-      - percDSlow
-
-    Params:
-      - period (14): period for the indicator
-      - period_dfast (3): smoothing period for the percD average
-      - period_dslow (3): additional smoothing period for the percD average
-      - movav (Simple): moving average to apply
-      - upperband (80): indication line of overbought territory
-      - lowerband (20): indication line of oversold territory
     '''
     lines = ('percDSlow',)
     params = (('period_dslow', 3),)

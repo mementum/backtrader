@@ -27,7 +27,7 @@ import operator
 from six.moves import xrange
 
 from backtrader import Indicator
-from backtrader.indicators import PeriodN, SumN
+from . import PeriodN, SumN
 
 
 class _MACommon(object):
@@ -59,8 +59,7 @@ class _SMA(_MABase):
 
 
 class SimpleMovingAverage(_MovingAverageBase):
-    '''SimpleMovingAverage (alias SMA)
-
+    '''
     Non-weighted average of the last n periods
 
     Formula:
@@ -68,13 +67,8 @@ class SimpleMovingAverage(_MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
     '''
+    alias = ('SMA',)
 
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
@@ -83,13 +77,8 @@ class SimpleMovingAverage(_MovingAverageBase):
         super(SimpleMovingAverage, self).__init__()
 
 
-class SMA(SimpleMovingAverage):
-    pass
-
-
 class ExpSmoothing(_SMA):
-    '''ExpSmoothing
-
+    '''
     Base class for Moving Averages that apply a smoothing factor to the
     previous and incoming input to calculate the new value
 
@@ -108,12 +97,6 @@ class ExpSmoothing(_SMA):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
     '''
     def __init__(self):
         super(ExpSmoothing, self).__init__()
@@ -152,8 +135,7 @@ class _EMA(ExpSmoothing):
 
 
 class ExponentialMovingAverage(_MovingAverageBase):
-    '''ExponentialMovingAverage (alias EMA)
-
+    '''
     A Moving Average that smoothes data exponentially over time.
 
     It is a subclass of SmoothingMovingAverage.
@@ -166,22 +148,14 @@ class ExponentialMovingAverage(_MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
     '''
+    alias = ('EMA',)
+
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
         self.lines[0] = _EMA(self.data, period=self.p.period)
         super(ExponentialMovingAverage, self).__init__()
-
-
-class EMA(ExponentialMovingAverage):
-    pass
 
 
 class _SMMA(ExpSmoothing):
@@ -191,8 +165,7 @@ class _SMMA(ExpSmoothing):
 
 
 class SmoothedMovingAverage(_MovingAverageBase):
-    '''SmoothedMovingAverage (alias SMMA)
-
+    '''
     Smoothing Moving Average used by Wilder in his 1978 book `New Concepts in
     Technical Trading`
 
@@ -210,22 +183,14 @@ class SmoothedMovingAverage(_MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
     '''
+    alias = ('SMMA', 'WilderMA',)
+
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
         self.lines[0] = _SMMA(self.data, period=self.p.period)
         super(SmoothedMovingAverage, self).__init__()
-
-
-class SMMA(SmoothedMovingAverage):
-    pass
 
 
 class _WMA(_MABase):
@@ -252,8 +217,7 @@ class _WMA(_MABase):
 
 
 class WeightedMovingAverage(_MovingAverageBase):
-    '''WeightedMovingAverage (alias WMA)
-
+    '''
     A Moving Average which gives an arithmetic weighting to values with the
     newest having the more weight
 
@@ -264,22 +228,14 @@ class WeightedMovingAverage(_MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
     '''
+    alias = ('WMA',)
+
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
         self.lines[0] = _WMA(self.data, period=self.p.period)
         super(WeightedMovingAverage, self).__init__()
-
-
-class WMA(WeightedMovingAverage):
-    pass  # alias
 
 
 class _KAMA(ExpSmoothing):
@@ -323,8 +279,7 @@ class _KAMA(ExpSmoothing):
 
 
 class AdaptiveMovingAverage(_MovingAverageBase):
-    '''AdaptiveMovingAverage (alias KAMA)
-
+    '''
     Defined by Perry Kaufman in his book `"Smarter Trading"`.
 
     It is A Moving Average with a continuosly scaled smoothing factor by taking
@@ -358,15 +313,9 @@ class AdaptiveMovingAverage(_MovingAverageBase):
       - http://fxcodebase.com/wiki/index.php/Kaufman's_Adaptive_Moving_Average_(KAMA)
       - http://www.metatrader5.com/en/terminal/help/analytics/indicators/trend_indicators/ama
       - http://help.cqg.com/cqgic/default.htm#!Documents/adaptivemovingaverag2.htm
-
-    Lines:
-      - ma
-
-    Params:
-      - period (30): period for the moving average
-      - fast (2): fast EMA period
-      - slow (30): slow EMA period
     '''
+    alias = ('KAMA',)
+
     params = (('fast', 2), ('slow', 30))
 
     def __init__(self):
@@ -376,10 +325,6 @@ class AdaptiveMovingAverage(_MovingAverageBase):
                               fast=self.p.fast, slow=self.p.slow)
 
         super(AdaptiveMovingAverage, self).__init__()
-
-
-class KAMA(AdaptiveMovingAverage):
-    pass  # alias
 
 
 class MovingAverage(object):
@@ -393,7 +338,7 @@ class MovingAverage(object):
       - Exponential or EMA
       - Smoothed or SMMA
       - Weighted or WMA
-      - Adaptive or AMA
+      - Adaptive or KAMA (Kaufman's AMA)
 
     Instantiating a SimpleMovingAverage can be achieved as follows::
 
@@ -402,7 +347,6 @@ class MovingAverage(object):
     Or using the shorter aliases::
 
       ema = MovAv.EMA(self.data, period)
-
     '''
     Simple = SimpleMovingAverage
     Exponential = ExponentialMovingAverage

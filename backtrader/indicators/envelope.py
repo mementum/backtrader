@@ -22,28 +22,44 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
-class _EnvelopeMixIn(object):
+class EnvelopeMixIn(object):
+    '''
+    MixIn class to create a subclass with another indicator. The main line of
+    that indicator will be surrounded by an upper and lower band separated a
+    given "perc"entage from the input main line
+
+    The usage is:
+
+      - Class XXXEnvelope(XXX, EnvelopeMixIn)
+
+    Formula:
+      - ma = SimpleMovingAverage
+      - top = ma * (1 + perc)
+      - bot = ma * (1 - perc)
+
+    See also:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
+    '''
     lines = ('top', 'bot',)
     params = (('perc', 2.5),)
     plotlines = dict(top=dict(_samecolor=True), bot=dict(_samecolor=True),)
 
     def __init__(self):
         # Mix-in & directly from object -> does not necessarily need super
-        # super(_EnvelopeMixIn, self).__init__()
+        # super(EnvelopeMixIn, self).__init__()
         perc = self.p.perc / 100.0
 
         self.lines.top = self.line * (1.0 + perc)
         self.lines.bot = self.line * (1.0 - perc)
 
-        super(_EnvelopeMixIn, self).__init__()
+        super(EnvelopeMixIn, self).__init__()
 
 
-class SMAEnvelope(MovAv.SMA, _EnvelopeMixIn):
-    '''SMAEnvelope
-
+class SMAEnvelope(MovAv.SMA, EnvelopeMixIn):
+    '''
     SimpleMovingAverage and envelope band separated "perc" from it
 
     Formula:
@@ -53,22 +69,12 @@ class SMAEnvelope(MovAv.SMA, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - ma
-      - top
-      - bot
-
-    Params:
-      - period (30): period to apply to the moving average
-      - perc (2.5): percentage to separate the envelope bands from the source
     '''
     pass
 
 
-class EMAEnvelope(MovAv.EMA, _EnvelopeMixIn):
-    '''EMAEnvelope
-
+class EMAEnvelope(MovAv.EMA, EnvelopeMixIn):
+    '''
     ExponentialMovingAverage and envelope band separated "perc" from it
 
     Formula:
@@ -78,22 +84,12 @@ class EMAEnvelope(MovAv.EMA, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - ema
-      - top
-      - bot
-
-    Params:
-      - period (30): period to apply to the moving average
-      - perc (2.5): percentage to separate the envelope bands from the source
     '''
     pass
 
 
-class SMMAEnvelope(MovAv.SMMA, _EnvelopeMixIn):
-    '''SMMAEnvelope
-
+class SMMAEnvelope(MovAv.SMMA, EnvelopeMixIn):
+    '''
     SmoothingMovingAverage and envelope band separated "perc" from it
 
     Formula:
@@ -103,22 +99,12 @@ class SMMAEnvelope(MovAv.SMMA, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - ma
-      - top
-      - bot
-
-    Params:
-      - perc (2.5): percentage to separate the envelope bands from the source
-      - period (30): period to apply to the moving average
     '''
     pass
 
 
-class WMAEnvelope(MovAv.WMA, _EnvelopeMixIn):
-    '''WMAEnvelope
-
+class WMAEnvelope(MovAv.WMA, EnvelopeMixIn):
+    '''
     WeightedMovingAverage and envelope band separated "perc" from it
 
     Formula:
@@ -128,22 +114,12 @@ class WMAEnvelope(MovAv.WMA, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - ma
-      - top
-      - bot
-
-    Params:
-      - perc (2.5): percentage to separate the envelope bands from the source
-      - period (30): period to apply to the moving average
     '''
     pass
 
 
-class KAMAEnvelope(MovAv.KAMA, _EnvelopeMixIn):
-    '''KAMAEnvelope
-
+class KAMAEnvelope(MovAv.KAMA, EnvelopeMixIn):
+    '''
     AdaptiveMovingAverage and envelope band separated "perc" from it
 
     Formula:
@@ -153,24 +129,12 @@ class KAMAEnvelope(MovAv.KAMA, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - ma
-      - top
-      - bot
-
-    Params:
-      - perc (2.5): percentage to separate the envelope bands from the source
-      - period (30): period to apply to the moving average
-      - fast (2): period for the fast adaptive exponential factor
-      - fast (30): period for the slow adaptive exponential factor
     '''
     pass
 
 
-class Envelope(Indicator, _EnvelopeMixIn):
-    '''Envelope
-
+class Envelope(Indicator, EnvelopeMixIn):
+    '''
     It creates envelopes bands separated from the source data by a given
     percentage
 
@@ -181,14 +145,6 @@ class Envelope(Indicator, _EnvelopeMixIn):
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-
-    Lines:
-      - mid
-      - top
-      - bot
-
-    Params:
-      - perc (2.5): percentage to separate the envelope bands from the source
     '''
     plotinfo = dict(subplot=False)
 

@@ -22,11 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import Indicator, Max, Min
-from backtrader.indicators import MovAv
+from . import MovAv
 
 
 class TrueRange(Indicator):
-    '''TrueRange (alias TR)
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book New Concepts in
     Technical Trading Systems.
 
@@ -42,14 +42,8 @@ class TrueRange(Indicator):
 
     The idea is to take the previoous close into account to calculate the range
     if it yields a larger range than the daily range (High - Low)
-
-    Lines:
-      - tr
-
-    Params:
-      (None)
-
     '''
+    alias = ('TR',)
 
     lines = ('tr',)
 
@@ -58,15 +52,11 @@ class TrueRange(Indicator):
         truehigh = Max(self.data.high, close1)
         truelow = Min(self.data.low, close1)
         self.lines.tr = truehigh - truelow
-
-
-class TR(TrueRange):
-    pass  # alias
+        super(TrueRange, self).__init__()
 
 
 class AverageTrueRange(Indicator):
-    '''AverageTrueRange (alias ATR)
-
+    '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
@@ -78,14 +68,8 @@ class AverageTrueRange(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Average_true_range
-
-    Lines:
-      - atr
-
-    Params:
-      - period (14): period for the moving average
-      - movav (SmoothedMovingAverage): moving average type to apply
     '''
+    alias = ('ATR',)
 
     lines = ('atr',)
     params = (('period', 14), ('movav', MovAv.Smoothed))
@@ -97,7 +81,4 @@ class AverageTrueRange(Indicator):
 
     def __init__(self):
         self.lines.atr = self.p.movav(TR(self.data), period=self.p.period)
-
-
-class ATR(AverageTrueRange):
-    pass  # alias
+        super(AverageTrueRange, self).__init__()
