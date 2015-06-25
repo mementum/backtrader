@@ -89,6 +89,7 @@ def runtest(datas, strategy,
 class TestStrategy(bt.Strategy):
     params = dict(main=False,
                   chkind=[],
+                  inddata=[],
                   chkmin=1,
                   chknext=0,
                   chkvals=None,
@@ -102,7 +103,11 @@ class TestStrategy(bt.Strategy):
         else:
             chkind = self.p.chkind
 
-        self.ind = chkind[0](self.data, **self.p.chkargs)
+        if len(self.p.inddata):
+            self.ind = chkind[0](*self.p.inddata, **self.p.chkargs)
+        else:
+            self.ind = chkind[0](self.data, **self.p.chkargs)
+
         for ind in chkind[1:]:
             ind(self.data)
 
