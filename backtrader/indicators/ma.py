@@ -339,6 +339,8 @@ class MovingAverage(object):
       - Smoothed or SMMA
       - Weighted or WMA
       - Adaptive or KAMA (Kaufman's AMA)
+      - DoubleExponential or DEMA
+      - TripleExponential or TEMA
 
     Instantiating a SimpleMovingAverage can be achieved as follows::
 
