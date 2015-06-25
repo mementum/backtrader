@@ -307,7 +307,12 @@ class Plot(six.with_metaclass(MetaParams, object)):
         for lineidx in range(ind.size()):
             line = ind.lines[lineidx]
             linealias = ind.lines._getlinealias(lineidx)
-            lineplotinfo = getattr(ind.plotlines, linealias, AutoInfoClass())
+            lineplotinfo = getattr(ind.plotlines, linealias, None)
+            if not lineplotinfo:
+                lineplotinfo = getattr(ind.plotlines, '_%d' % lineidx, None)
+
+            if not lineplotinfo:
+                lineplotinfo = AutoInfoClass()
 
             if lineplotinfo._get('_plotskip', False):
                 continue
