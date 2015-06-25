@@ -32,9 +32,15 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+try:
+    from collections import OrderedDict
+except ImportError:
+    from .utils.ordereddict import OrderedDict
 import operator
+import sys
 
 import six
+from six.moves import xrange
 
 from .linebuffer import LineBuffer, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple
@@ -284,6 +290,10 @@ class MetaLineSeries(LineMultiple.__class__):
         the class attributes
         '''
 
+        # Get the aliases - don't leave it there for subclasses
+        aliases = dct.pop('alias', ())
+        aliased = dct.pop('aliased', '')
+
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
         extralines = dct.pop('extralines', 0)
@@ -322,6 +332,82 @@ class MetaLineSeries(LineMultiple.__class__):
             [x.plotlines for x in bases[1:] if hasattr(x, 'plotlines')]
         cls.plotlines = plotlines._derive(
             name, newplotlines, morebasesplotlines, recurse=True)
+
+        # Update the doc
+        clsdocorig = getattr(cls, '__doc__', '') or ''
+        preclsdoc = name
+        if aliases:
+            aliasnames = list()
+            for alias in aliases:
+                if not isinstance(alias, six.string_types):
+                    # a tuple or list was passed, 1st is name, 2nd plotname
+                    alias = alias[0]
+                aliasnames.append(alias)
+
+            aliasdoc = ' (alias %s)\n' % ', '.join(aliasnames)
+            preclsdoc += aliasdoc
+
+        if aliased:
+            preclsdoc += ' (alias of %s)\n' % aliased
+
+        clsdoc = preclsdoc + clsdocorig
+
+        if clsdoc[-1] != '\n':
+            clsdoc += '\n'
+
+        if len(cls.params._getpairs()):
+            paramsdoc = '    Params:' + '\n'
+            for pkey, pvalue in cls.params._getitems():
+                paramsdoc += '      - %s (%s)\n' % (pkey, str(pvalue))
+
+            clsdoc += paramsdoc + '\n'
+
+        numlines = len(cls.lines._getlines())
+        if numlines:
+            linesdoc = '    Lines:' + '\n'
+            for i in xrange(numlines):
+                linesdoc += '      - ' + cls.lines._getlinealias(i) + '\n'
+
+            clsdoc += linesdoc + '\n'
+
+        if len(cls.plotinfo._getpairs()):
+            pinfodoc = '    PlotInfo:' + '\n'
+            for pkey, pvalue in cls.plotinfo._getitems():
+                pinfodoc += '      - %s (%s)\n' % (pkey, str(pvalue))
+
+            clsdoc += pinfodoc + '\n'
+
+        if len(cls.plotlines._getpairs()):
+            plinesdoc = '    PlotLines:' + '\n'
+            for pkey, pvalue in cls.plotlines._getitems():
+                if isinstance(pvalue, AutoInfoClass):
+                    plinesdoc += '      - %s:' % pkey
+                    for plkey, plvalue in pvalue._getitems():
+                        plinesdoc += '        - %s (%s)\n' % (plkey, plvalue)
+                elif isinstance(pvalue, (dict, OrderedDict)):
+                    plinesdoc += '      - %s:' % pkey
+                    for plkey, plvalue in pvalue.items():
+                        plinesdoc += '        - %s (%s)\n' % (plkey, plvalue)
+                else:
+                    plinesdoc += '      - %s (%s)\n' % (pkey, str(pvalue))
+
+            clsdoc += plinesdoc
+
+        cls.__doc__ = clsdoc
+
+        # create declared class aliases (a subclass with no modifications)
+        for alias in aliases:
+            aliasdct = {'__doc__': clsdocorig, 'aliased': cls.__name__}
+
+            if not isinstance(alias, six.string_types):
+                # a tuple or list was passed, 1st is name, 2nd plotname
+                alias = alias[0]
+                aliasplotname = alias[1]
+                aliasdct['plotinfo'] = dict(plotname=aliasplotname)
+
+            newcls = type(str(alias), (cls,), aliasdct)
+            module = sys.modules[cls.__module__]
+            setattr(module, alias, newcls)
 
         # return the class
         return cls
