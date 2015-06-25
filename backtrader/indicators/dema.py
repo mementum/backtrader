@@ -51,6 +51,8 @@ class DoubleExponentialMovingAverage(Indicator):
         ema2 = self.p._movav(ema, period=self.p.period)
         self.lines.dema = 2.0 * ema - ema2
 
+        super(DoubleExponentialMovingAverage, self).__init__()
+
 
 class TripleExponentialMovingAverage(Indicator):
     '''
@@ -81,6 +83,7 @@ class TripleExponentialMovingAverage(Indicator):
         ema3 = self.p._movav(ema2, period=self.p.period)
 
         self.lines.tema = 3.0 * ema - 3.0 * ema2 + ema3
+        super(TripleExponentialMovingAverage, self).__init__()
 
 
 MovAv.DoubleExponential = DoubleExponentialMovingAverage
