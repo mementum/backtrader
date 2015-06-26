@@ -52,8 +52,8 @@ class EnvelopeMixIn(object):
         # super(EnvelopeMixIn, self).__init__()
         perc = self.p.perc / 100.0
 
-        self.lines.top = self.line * (1.0 + perc)
-        self.lines.bot = self.line * (1.0 - perc)
+        self.lines.top = self.lines[0] * (1.0 + perc)
+        self.lines.bot = self.lines[0] * (1.0 - perc)
 
         super(EnvelopeMixIn, self).__init__()
 
@@ -163,23 +163,30 @@ class TEMAEnvelope(MovAv.TEMA, EnvelopeMixIn):
     pass
 
 
-class Envelope(Indicator, EnvelopeMixIn):
+class _EnvelopeBase(Indicator):
+    lines = ('src',)
+
+    # plot the envelope lines along the passed source
+    plotinfo = dict(subplot=False)
+
+    # Do not replot the data line
+    plotlines = dict(src=dict(_plotskip=True))
+
+    def __init__(self):
+        self.lines.src = self.data
+        super(_EnvelopeBase, self).__init__()
+
+
+class Envelope(_EnvelopeBase, EnvelopeMixIn):
     '''
     It creates envelopes bands separated from the source data by a given
     percentage
 
     Formula:
-      - mid = datasource
-      - top = datasource * (1 + perc)
-      - bot = datasource * (1 - perc)
+      - src = datasource
+      - top = src * (1 + perc)
+      - bot = src * (1 - perc)
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
     '''
-    lines = ('mid',)
-
-    plotinfo = dict(subplot=False)
-
-    def __init__(self):
-        self.lines.mid = self.data
-        super(Envelope, self).__init__()
