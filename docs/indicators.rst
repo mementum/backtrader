@@ -105,6 +105,22 @@ Envelopes
 
 - :ref:`envelopemixin`
 
+
+Oscillators
+***********
+
+- :ref:`oscillator`
+- :ref:`smaoscillator`
+- :ref:`emaoscillator`
+- :ref:`smmaoscillator`
+- :ref:`wmaoscillator`
+- :ref:`kamaoscillator`
+- :ref:`demaoscillator`
+- :ref:`temaoscillator`
+
+- :ref:`oscillatormixin`
+
+
 Utility Indicators
 ******************
 
