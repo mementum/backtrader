@@ -103,6 +103,8 @@ Envelopes
 - :ref:`demaenvelope`
 - :ref:`temaenvelope`
 
+- :ref:`envelopemixin`
+
 Utility Indicators
 ******************
 

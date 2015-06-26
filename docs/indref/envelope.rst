@@ -45,3 +45,9 @@ DEMAEnvelope
 TEMAEnvelope
 ============
 .. autoclass:: backtrader.indicators.TEMAEnvelope
+
+.. _envelopemixin:
+
+EnvelopeMixIn
+=============
+.. autoclass:: backtrader.indicators.EnvelopeMixIn
