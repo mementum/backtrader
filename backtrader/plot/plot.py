@@ -307,9 +307,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
         for lineidx in range(ind.size()):
             line = ind.lines[lineidx]
             linealias = ind.lines._getlinealias(lineidx)
-            lineplotinfo = getattr(ind.plotlines, linealias, None)
+
+            lineplotinfo = getattr(ind.plotlines, '_%d' % lineidx, None)
             if not lineplotinfo:
-                lineplotinfo = getattr(ind.plotlines, '_%d' % lineidx, None)
+                lineplotinfo = getattr(ind.plotlines, linealias, None)
 
             if not lineplotinfo:
                 lineplotinfo = AutoInfoClass()
@@ -481,6 +482,14 @@ class Plot(six.with_metaclass(MetaParams, object)):
             self.pinf.x = [x - self.pinf.pstart for x in self.pinf.x]
 
     def plotdata(self, data, indicators):
+        for ind in indicators:
+            upinds = self.dplotsup[ind]
+            for upind in upinds:
+                self.plotind(upind,
+                             subinds=self.dplotsover[upind],
+                             upinds=self.dplotsup[upind],
+                             downinds=self.dplotsdown[upind])
+
         # set the x axis data (if needed)
         self.setxdata(data)
 
@@ -582,6 +591,14 @@ class Plot(six.with_metaclass(MetaParams, object)):
             # hack: if title is set. legend has a Vbox for the labels
             # which has a default "center" set
             legend._legend_box.align = 'left'
+
+        for ind in indicators:
+            downinds = self.dplotsdown[ind]
+            for downind in downinds:
+                self.plotind(downind,
+                             subinds=self.dplotsover[downind],
+                             upinds=self.dplotsup[downind],
+                             downinds=self.dplotsdown[downind])
 
     def show(self):
         mpyplot.show()
