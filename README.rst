@@ -32,7 +32,7 @@ Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
 
-List of built-in Indicators (58)
+List of built-in Indicators (70)
 
   - `backtrader indicators <http://backtrader.readthedocs.org/indicators.html>`_
 

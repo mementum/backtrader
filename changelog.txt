@@ -1,3 +1,48 @@
+1.0.6.70
+  - Correction of bug which prevented lines in different indicators to have the
+    same name and different index at the same hierarchy level
+  - Added AroonUpDown, AroonOscillator, AroonUp, AroonDown,
+    AroonUpDownOscillator (with tests and docs)
+  - Added basic indicators FindFirstIndex, FindFirstIndexHighest,
+    FindFirstIndexLowest (with test and docs)
+  - Added basic indicators FindLastIndex, FindLastIndexHighest,
+    FindLastIndexLowest (with test and docs)
+  - Documented OperationN (so anyone can subclass it if wished)
+  - Removed old MaxN and MinN (same as Highest and Lowest)
+  - Made RSI_SMA the class and RSI_Cutler the alias
+  - Added support in plot and lineiterator to put plot specific code (like
+    dynamically setting plothlines) in a separate method to fully separate
+    indicator logic from any plotting logic
+  - Fully specified Python versions supported in setup.py and some PEP8 changes
+  - Changed test case generation string printing to simplify operations (Python
+    3.2 doesn't support 'u')
+  - Existing indicators updated to use new plot/indicator code logic separation
+  - Improvements to envelope object hierarchy with method to prepare periods
+  - Changed (previously unused) behavior of assignment to lines[x],
+    allowing establishing line bindings without knowing the alias
+  - Subclass OperationN from new PeriodN to allow for subclasses of
+    basic PeriodN with no need to define "func"
+  - LineSeries objects "lines" can be mixed with objects holding "lines"
+    attributes
+  - MetaParams objects can be mixed with other objects containing "params"
+  - MetaLineSeries support for alias definition and autodocumentation of alias,
+    lines, parameters, plotinfo and plotlines
+  - Correction to AutoInfoClass._getdefaults to correctly return a list under
+    Py3
+  - Refactored Moving Averages to be "formulated" objects rather than next/once
+    based to allow for easy mixin/subclassing
+  - Refactored and simplified envelope indicators
+  - Refactored indicators to use alias and semi-autodocumentation facilities
+    from LineSeries
+  - Indicators (60): DEMA, TEMA (with tests and docs)
+  - Indicators (62): DEMAEnvelope, TEMAEnvelope (with tests and docs)
+  - Indicators (70): Oscillator, SMAOsc, EMAOsc, SMMAOsc, WMAOsc, DEMAOsc and
+    TEMAOsc (with testcases and docs) added (MixIn also documented)
+  - Testcase for Envelope added
+  - Plot bug correccted which could prevent indicators (on same plot as data) on
+    indicators from being plotted
+  - Plot support for plotlines properties to be specified as lines
+
 1.0.5.47
   - CCI Plotting labels improved
   - WilliamsR plotname/plotlines names improved
