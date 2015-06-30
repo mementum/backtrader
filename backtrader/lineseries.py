@@ -291,8 +291,8 @@ class MetaLineSeries(LineMultiple.__class__):
         '''
 
         # Get the aliases - don't leave it there for subclasses
-        aliases = dct.pop('alias', ())
-        aliased = dct.pop('aliased', '')
+        aliases = dct.setdefault('alias', ())
+        aliased = dct.setdefault('aliased', '')
 
         # Remove the line definition (if any) from the class creation
         newlines = dct.pop('lines', ())
@@ -397,17 +397,19 @@ class MetaLineSeries(LineMultiple.__class__):
 
         # create declared class aliases (a subclass with no modifications)
         for alias in aliases:
-            aliasdct = {'__doc__': clsdocorig, 'aliased': cls.__name__}
+            newdct = {'__doc__': clsdocorig,
+                      '__module__': cls.__module__,
+                      'aliased': cls.__name__}
 
             if not isinstance(alias, six.string_types):
                 # a tuple or list was passed, 1st is name, 2nd plotname
                 alias = alias[0]
                 aliasplotname = alias[1]
-                aliasdct['plotinfo'] = dict(plotname=aliasplotname)
+                newdct['plotinfo'] = dict(plotname=aliasplotname)
 
-            newcls = type(str(alias), (cls,), aliasdct)
-            module = sys.modules[cls.__module__]
-            setattr(module, alias, newcls)
+            newcls = type(str(alias), (cls,), newdct)
+            clsmodule = sys.modules[cls.__module__]
+            setattr(clsmodule, alias, newcls)
 
         # return the class
         return cls
