@@ -21,8 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator, And, If
-from . import MovAv, ATR
+from . import Indicator, And, If, MovAv, ATR
 
 
 class UpMove(Indicator):
