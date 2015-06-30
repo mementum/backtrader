@@ -21,10 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import sys
+
 import six
 
-from backtrader import Indicator
-from . import MovAv
+from . import Indicator, MovingAverage
 
 
 class OscillatorMixIn(Indicator):
@@ -53,55 +54,6 @@ class OscillatorMixIn(Indicator):
     def __init__(self):
         self.lines[0] = self.data - self.lines[0]
         super(OscillatorMixIn, self).__init__()
-
-
-class SimpleMovingAverageOsc(MovAv.SMA, OscillatorMixIn):
-    '''
-    Oscillation of a SimpleMovingAverage around its data
-    '''
-    alias = ('SMAOscillator', 'SMAOsc',)
-
-
-class ExponentialMovingAverageOsc(MovAv.EMA, OscillatorMixIn):
-    '''
-    Oscillation of an ExponentialMovingAverage around its data
-    '''
-    alias = ('EMAOscillator', 'EMAOsc',)
-
-
-class SmoothedMovingAverageOsc(MovAv.SMMA, OscillatorMixIn):
-    '''
-    Oscillation of an SmoothedMovingAverage around its data
-    '''
-    alias = ('SMMAOscillator', 'SMMAOsc',)
-
-
-class WeightedMovingAverageOsc(MovAv.WMA, OscillatorMixIn):
-    '''
-    Oscillation of an WeightedMovingAverage around its data
-    '''
-    alias = ('WMAOscillator', 'WMAOsc',)
-
-
-class AdaptiveMovingAverageOsc(MovAv.KAMA, OscillatorMixIn):
-    '''
-    Oscillation of an AdaptiveMovingAverage around its data
-    '''
-    alias = ('KAMAOscillator', 'KAMAOsc',)
-
-
-class DoubleExponentialMovingAverageOsc(MovAv.DEMA, OscillatorMixIn):
-    '''
-    Oscillation of an DoubleExponentialMovingAverage around its data
-    '''
-    alias = ('DEMAOscillator', 'DEMAOsc',)
-
-
-class TripleExponentialMovingAverageOsc(MovAv.TEMA, OscillatorMixIn):
-    '''
-    Oscillation of an TripleExponentialMovingAverage around its data
-    '''
-    alias = ('TEMAOscillator', 'TEMAOsc',)
 
 
 class Oscillator(Indicator):
@@ -147,3 +99,32 @@ class Oscillator(Indicator):
             self.dataosc = self.data
 
             self.lines[0] = datasrc - self.dataosc
+
+
+# Automatic creation of Oscillating Lines
+
+for movav in MovingAverage._movavs[1:]:
+    _newclsdoc = '''
+    Oscillation of a %s around its data
+    '''
+    # Skip aliases - they will be created automatically
+    if getattr(movav, 'aliased', ''):
+        continue
+
+    movname = movav.__name__
+    linename = movav.lines._getlinealias(0)
+    newclsname = movname + 'Oscillator'
+
+    newaliases = [movname + 'Osc']
+    for alias in getattr(movav, 'alias', []):
+        for suffix in ['Oscillator', 'Osc']:
+            newaliases.append(alias + suffix)
+
+    newclsdoc = _newclsdoc % movname
+    newclsdct = {'__doc__': newclsdoc,
+                 '__module__': OscillatorMixIn.__module__,
+                 'alias': newaliases}
+
+    newcls = type(str(newclsname), (movav, OscillatorMixIn), newclsdct)
+    module = sys.modules[OscillatorMixIn.__module__]
+    setattr(module, newclsname, newcls)
