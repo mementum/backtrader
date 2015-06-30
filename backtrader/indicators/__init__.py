@@ -21,6 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from backtrader import Indicator
+from backtrader.functions import *
+
 # The modules below should/must define __all__ with the Indicator objects
 # of prepend an "_" (underscore) to private classes/variables
 
