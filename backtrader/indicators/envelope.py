@@ -21,8 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from . import MovAv
+import sys
+
+from . import Indicator, MovingAverage
 
 
 class EnvelopeMixIn(object):
@@ -36,9 +37,9 @@ class EnvelopeMixIn(object):
       - Class XXXEnvelope(XXX, EnvelopeMixIn)
 
     Formula:
-      - ma = SimpleMovingAverage
-      - top = ma * (1 + perc)
-      - bot = ma * (1 - perc)
+      - 'line' (inherited from XXX))
+      - top = 'line' * (1 + perc)
+      - bot = 'line' * (1 - perc)
 
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
@@ -56,111 +57,6 @@ class EnvelopeMixIn(object):
         self.lines.bot = self.lines[0] * (1.0 - perc)
 
         super(EnvelopeMixIn, self).__init__()
-
-
-class SMAEnvelope(MovAv.SMA, EnvelopeMixIn):
-    '''
-    SimpleMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = SimpleMovingAverage
-      - top = ma * (1 + perc)
-      - bot = ma * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class EMAEnvelope(MovAv.EMA, EnvelopeMixIn):
-    '''
-    ExponentialMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = ExponentialMovingAverage
-      - top = ma * (1 + perc)
-      - bot = ma * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class SMMAEnvelope(MovAv.SMMA, EnvelopeMixIn):
-    '''
-    SmoothingMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = SmoothingMovingAverage
-      - top = mid * (1 + perc)
-      - bot = mid * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class WMAEnvelope(MovAv.WMA, EnvelopeMixIn):
-    '''
-    WeightedMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = WeightedMovingAverage
-      - top = mid * (1 + perc)
-      - bot = mid * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class KAMAEnvelope(MovAv.KAMA, EnvelopeMixIn):
-    '''
-    AdaptiveMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = AdaptiveMovingAverage
-      - top = mid * (1 + perc)
-      - bot = mid * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class DEMAEnvelope(MovAv.DEMA, EnvelopeMixIn):
-    '''
-    AdaptiveMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = DoubleExponentialMovingAverage
-      - top = mid * (1 + perc)
-      - bot = mid * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
-
-
-class TEMAEnvelope(MovAv.TEMA, EnvelopeMixIn):
-    '''
-    AdaptiveMovingAverage and envelope band separated "perc" from it
-
-    Formula:
-      - ma = TripleExponentialMovingAverage
-      - top = mid * (1 + perc)
-      - bot = mid * (1 - perc)
-
-    See also:
-      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
-    '''
-    pass
 
 
 class _EnvelopeBase(Indicator):
@@ -190,3 +86,40 @@ class Envelope(_EnvelopeBase, EnvelopeMixIn):
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
     '''
+
+
+# Automatic creation of Moving Average Envelope classes
+
+for movav in MovingAverage._movavs[1:]:
+    _newclsdoc = '''
+    %s and envelope bands separated "perc" from it
+
+    Formula:
+      - %s (from %s)
+      - top = %s * (1 + perc)
+      - bot = %s * (1 - perc)
+
+    See also:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
+    '''
+    # Skip aliases - they will be created automatically
+    if getattr(movav, 'aliased', ''):
+        continue
+
+    movname = movav.__name__
+    linename = movav.lines._getlinealias(0)
+    newclsname = movname + 'Envelope'
+
+    newaliases = []
+    for alias in getattr(movav, 'alias', []):
+        for suffix in ['Envelope']:
+            newaliases.append(alias + suffix)
+
+    newclsdoc = _newclsdoc % (movname, linename, movname, linename, linename)
+
+    newclsdct = {'__doc__': newclsdoc,
+                 '__module__': EnvelopeMixIn.__module__,
+                 'alias': newaliases}
+    newcls = type(str(newclsname), (movav, EnvelopeMixIn), newclsdct)
+    module = sys.modules[EnvelopeMixIn.__module__]
+    setattr(module, newclsname, newcls)
