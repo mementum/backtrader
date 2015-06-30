@@ -21,8 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator, Max
-from . import MovAv
+from . import Indicator, Max, MovAv
 
 
 class UpDay(Indicator):
@@ -65,6 +64,54 @@ class DownDay(Indicator):
     def __init__(self):
         self.lines.downday = Max(self.data(-1) - self.data, 0.0)
         super(DownDay, self).__init__()
+
+
+class UpDayBool(Indicator):
+    '''
+    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
+    Technical Trading Systems"* for the RSI
+
+    Recods days which have been "up", i.e.: the close price has been
+    higher than the day before.
+
+    Note:
+      - This version returns a bool rather than the difference
+
+    Formula:
+      - upday = close > close_prev
+
+    See:
+      - http://en.wikipedia.org/wiki/Relative_strength_index
+    '''
+    lines = ('upday',)
+
+    def __init__(self):
+        self.lines.upday = self.data > self.data(-1)
+        super(UpDayBool, self).__init__()
+
+
+class DownDayBool(Indicator):
+    '''
+    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
+    Technical Trading Systems"* for the RSI
+
+    Recods days which have been "down", i.e.: the close price has been
+    lower than the day before.
+
+    Note:
+      - This version returns a bool rather than the difference
+
+    Formula:
+      - downday = close_prev > close
+
+    See:
+      - http://en.wikipedia.org/wiki/Relative_strength_index
+    '''
+    lines = ('downday',)
+
+    def __init__(self):
+        self.lines.downday = self.data(-1) > self.data
+        super(DownDayBool, self).__init__()
 
 
 class RelativeStrengthIndex(Indicator):
