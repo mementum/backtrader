@@ -21,44 +21,76 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import math
-import operator
-
-from six.moves import xrange
+import six
 
 from backtrader import Indicator
-from . import PeriodN, SumN
+from . import (SumN, Average, ExpSmoothing, ExpSmoothingDynamic,
+               AverageWeighted)
 
 
-class _MACommon(object):
-    lines = ('ma',)
+class MovingAverage(object):
+    '''MovingAverage (alias MovAv)
+
+    A placeholder to gather all Moving Average Types in a single place.
+
+    Instantiating a SimpleMovingAverage can be achieved as follows::
+
+      sma = MovingAverage.Simple(self.data, period)
+
+    Or using the shorter aliases::
+
+      sma = MovAv.SMA(self.data, period)
+
+    or with the full (forwards and backwards) names:
+
+      sma = MovAv.SimpleMovingAverage(self.data, period)
+
+      sma = MovAv.MovingAverageSimple(self.data, period)
+
+    '''
+    _movavs = []
+
+    @classmethod
+    def register(cls, regcls):
+        cls._movavs.append(regcls)
+
+        clsname = regcls.__name__
+        setattr(cls, clsname, regcls)
+
+        clsalias = ''
+        if clsname.endswith('MovingAverage'):
+            clsalias = clsname.split('MovingAverage')[0]
+        elif clsname.startswith('MovingAverage'):
+            clsalias = clsname.split('MovingAverage')[1]
+
+        if clsalias:
+            setattr(cls, clsalias, regcls)
+
+
+class MovAv(MovingAverage):
+    pass  # alias
+
+
+class MetaMovAvBase(Indicator.__class__):
+    # Register any MovingAverage with the placeholder to allow the automatic
+    # creation of envelopes and oscillators
+
+    def __new__(meta, name, bases, dct):
+        # Create the class
+        cls = super(MetaMovAvBase, meta).__new__(meta, name, bases, dct)
+
+        MovingAverage.register(cls)
+
+        # return the class
+        return cls
+
+
+class MovingAverageBase(six.with_metaclass(MetaMovAvBase, Indicator)):
     params = (('period', 30),)
     plotinfo = dict(subplot=False)
 
 
-class _MABase(PeriodN, _MACommon):
-    pass
-
-
-class _MovingAverageBase(Indicator, _MACommon):
-    pass
-
-
-class _SMA(_MABase):
-    def next(self):
-        self.line[0] = \
-            math.fsum(self.data.get(size=self.p.period)) / self.p.period
-
-    def once(self, start, end):
-        src = self.data.array
-        dst = self.line.array
-        period = self.p.period
-
-        for i in xrange(start, end):
-            dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
-
-
-class SimpleMovingAverage(_MovingAverageBase):
+class MovingAverageSimple(MovingAverageBase):
     '''
     Non-weighted average of the last n periods
 
@@ -68,73 +100,17 @@ class SimpleMovingAverage(_MovingAverageBase):
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
     '''
-    alias = ('SMA',)
+    alias = ('SMA', 'SimpleMovingAverage',)
+    lines = ('sma',)
 
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = _SMA(self.data, period=self.p.period)
-        super(SimpleMovingAverage, self).__init__()
+        self.lines[0] = Average(self.data, period=self.p.period)
+        super(MovingAverageSimple, self).__init__()
 
 
-class ExpSmoothing(_SMA):
-    '''
-    Base class for Moving Averages that apply a smoothing factor to the
-    previous and incoming input to calculate the new value
-
-    It is a subclass of SimpleMovingAverage and uses the 1st value
-    produced by it as the seed for the next values
-
-    Subclasses must override the method ``smoothingfactor`` which calculates
-    two values:
-
-      - self.smfactor -> the smoothing factor applied to new input
-      - self.smfactor1 -> the smoothing factor applied to the olf value.
-        usually `1 - self.smfactor`
-
-    Formula:
-      - movav = prev * (1 - smoothfactor) + newdata * smoothfactor
-
-    See also:
-      - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
-    '''
-    def __init__(self):
-        super(ExpSmoothing, self).__init__()
-        self.smoothingfactor()
-
-    def smoothingfactor(self):
-        raise NotImplementedError
-
-    def nextstart(self):
-        super(ExpSmoothing, self).next()
-
-    def next(self):
-        prev = self.line[-1]
-        self.line[0] = prev * self.smfactor1 + self.data[0] * self.smfactor
-
-    def oncestart(self, start, end):
-        super(ExpSmoothing, self).once(start, end)
-
-    def once(self, start, end):
-        darray = self.data.array
-        larray = self.line.array
-        smfactor = self.smfactor
-        smfactor1 = self.smfactor1
-
-        # Seed value from SMA calculated with the call to oncestart
-        prev = larray[start - 1]
-
-        for i in xrange(start, end):
-            larray[i] = prev = prev * smfactor1 + darray[i] * smfactor
-
-
-class _EMA(ExpSmoothing):
-    def smoothingfactor(self):
-        self.smfactor = 2.0 / (1.0 + self.p.period)
-        self.smfactor1 = 1.0 - self.smfactor
-
-
-class ExponentialMovingAverage(_MovingAverageBase):
+class ExponentialMovingAverage(MovingAverageBase):
     '''
     A Moving Average that smoothes data exponentially over time.
 
@@ -149,22 +125,18 @@ class ExponentialMovingAverage(_MovingAverageBase):
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
     '''
-    alias = ('EMA',)
+    alias = ('EMA', 'MovingAverageExponential',)
+    lines = ('ema',)
 
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = _EMA(self.data, period=self.p.period)
+        self.lines[0] = ExpSmoothing(self.data, period=self.p.period,
+                                     alpha=2.0 / (1.0 + self.p.period))
         super(ExponentialMovingAverage, self).__init__()
 
 
-class _SMMA(ExpSmoothing):
-    def smoothingfactor(self):
-        self.smfactor = 1.0 / self.p.period
-        self.smfactor1 = 1.0 - self.smfactor
-
-
-class SmoothedMovingAverage(_MovingAverageBase):
+class SmoothedMovingAverage(MovingAverageBase):
     '''
     Smoothing Moving Average used by Wilder in his 1978 book `New Concepts in
     Technical Trading`
@@ -184,101 +156,19 @@ class SmoothedMovingAverage(_MovingAverageBase):
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
     '''
-    alias = ('SMMA', 'WilderMA',)
+    alias = ('SMMA', 'WilderMA', 'MovingAverageSmoothed',
+             'MovingAverageWilder',)
+    lines = ('smma',)
 
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = _SMMA(self.data, period=self.p.period)
+        self.lines[0] = ExpSmoothing(self.data, period=self.p.period,
+                                     alpha=1.0 / self.p.period)
         super(SmoothedMovingAverage, self).__init__()
 
 
-class _WMA(_MABase):
-    def __init__(self):
-        super(_WMA, self).__init__()
-        self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
-        self.weights = [float(x) for x in range(1, self.p.period + 1)]
-
-    def next(self):
-        data = self.data.get(size=self.p.period)
-        self.line[0] = self.coef *\
-            math.fsum(map(operator.mul, data, self.weights))
-
-    def once(self, start, end):
-        darray = self.data.array
-        larray = self.line.array
-        period = self.p.period
-        coef = self.coef
-        weights = self.weights
-
-        for i in xrange(start, end):
-            data = darray[i - period + 1: i + 1]
-            larray[i] = coef * math.fsum(map(operator.mul, data, weights))
-
-
-class WeightedMovingAverage(_MovingAverageBase):
-    '''
-    A Moving Average which gives an arithmetic weighting to values with the
-    newest having the more weight
-
-    Formula:
-      - weights = range(1, period + 1)
-      - coef = 2 / (period * (period + 1))
-      - movav = coef * Sum(weight[i] * data[period - i] for i in range(period))
-
-    See also:
-      - http://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
-    '''
-    alias = ('WMA',)
-
-    def __init__(self):
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
-        self.lines[0] = _WMA(self.data, period=self.p.period)
-        super(WeightedMovingAverage, self).__init__()
-
-
-class _KAMA(ExpSmoothing):
-    params = (('fast', 2), ('slow', 30))
-
-    def __init__(self):
-        super(_KAMA, self).__init__()
-
-        direction = self.data - self.data(-self.p.period)
-        volatility = SumN(abs(self.data - self.data(-1)), period=self.p.period)
-
-        er = abs(direction / volatility)  # efficiency ratio
-
-        fast = 2.0 / (self.p.fast + 1.0)  # fast ema smoothing factor
-        slow = 2.0 / (self.p.slow + 1.0)  # slow ema smoothing factor
-
-        self.sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
-        self.sc1 = 1.0 - self.sc
-
-    def smoothingfactor(self):
-        # Smoothingfactors are dynamic and calculated during init as lines
-        pass
-
-    def next(self):
-        # Need to override next to apply [] to sc and sc1
-        prev = self.line[-1]
-        self.line[0] = prev * self.sc1[0] + self.data[0] * self.sc[0]
-
-    def once(self, start, end):
-        # Need to override once to apply [] to sc and sc1
-        darray = self.data.array
-        larray = self.line.array
-        sc = self.sc.array
-        sc1 = self.sc1.array
-
-        # Seed value from SMA calculated with the call to oncestart
-        prev = larray[start - 1]
-
-        for i in xrange(start, end):
-            larray[i] = prev = prev * sc1[i] + darray[i] * sc[i]
-
-
-class AdaptiveMovingAverage(_MovingAverageBase):
+class AdaptiveMovingAverage(MovingAverageBase):
     '''
     Defined by Perry Kaufman in his book `"Smarter Trading"`.
 
@@ -293,9 +183,6 @@ class AdaptiveMovingAverage(_MovingAverageBase):
 
     It is a subclass of SmoothingMovingAverage, overriding once to account for
     the live nature of the smoothing factor
-
-      - self.smfactor -> 2 / (1 + period)
-      - self.smfactor1 -> `1 - self.smfactor`
 
     Formula:
       - direction = close - close_period
@@ -314,54 +201,51 @@ class AdaptiveMovingAverage(_MovingAverageBase):
       - http://www.metatrader5.com/en/terminal/help/analytics/indicators/trend_indicators/ama
       - http://help.cqg.com/cqgic/default.htm#!Documents/adaptivemovingaverag2.htm
     '''
-    alias = ('KAMA',)
-
+    alias = ('KAMA', 'MovingAverageAdaptive',)
+    lines = ('kama',)
     params = (('fast', 2), ('slow', 30))
 
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = _KAMA(self.data, period=self.p.period,
-                              fast=self.p.fast, slow=self.p.slow)
+        direction = self.data - self.data(-self.p.period)
+        volatility = SumN(abs(self.data - self.data(-1)), period=self.p.period)
+
+        er = abs(direction / volatility)  # efficiency ratio
+
+        fast = 2.0 / (self.p.fast + 1.0)  # fast ema smoothing factor
+        slow = 2.0 / (self.p.slow + 1.0)  # slow ema smoothing factor
+
+        sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
+
+        self.lines[0] = ExpSmoothingDynamic(self.data, period=self.p.period,
+                                            alpha=sc)
 
         super(AdaptiveMovingAverage, self).__init__()
 
 
-class MovingAverage(object):
-    '''MovingAverage (alias MovAv)
-
-    A placeholder to gather all Moving Average Types in a single place.
-
-    It has the following attributes to access MovingAverages
-
-      - Simple or SMA
-      - Exponential or EMA
-      - Smoothed or SMMA
-      - Weighted or WMA
-      - Adaptive or KAMA (Kaufman's AMA)
-      - DoubleExponential or DEMA
-      - TripleExponential or TEMA
-
-    Instantiating a SimpleMovingAverage can be achieved as follows::
-
-      sma = MovingAverage.Simple(self.data, period)
-
-    Or using the shorter aliases::
-
-      ema = MovAv.EMA(self.data, period)
+class WeightedMovingAverage(MovingAverageBase):
     '''
-    Simple = SimpleMovingAverage
-    Exponential = ExponentialMovingAverage
-    Smoothed = SmoothedMovingAverage
-    Weighted = WeightedMovingAverage
-    Adaptive = AdaptiveMovingAverage
+    A Moving Average which gives an arithmetic weighting to values with the
+    newest having the more weight
 
-    SMA = SMA
-    EMA = EMA
-    SMMA = SMMA
-    WMA = WMA
-    KAMA = KAMA
+    Formula:
+      - weights = range(1, period + 1)
+      - coef = 2 / (period * (period + 1))
+      - movav = coef * Sum(weight[i] * data[period - i] for i in range(period))
 
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
+    '''
+    alias = ('WMA', 'MovingAverageWeighted',)
+    lines = ('wma',)
 
-class MovAv(MovingAverage):
-    pass  # alias
+    def __init__(self):
+        coef = 2.0 / (self.p.period * (self.p.period + 1.0))
+        weights = [float(x) for x in range(1, self.p.period + 1)]
+
+        # Before super to ensure mixins (right-hand side in subclassing)
+        # can see the assignment operation and operate on the line
+        self.lines[0] = AverageWeighted(self.data, period=self.p.period,
+                                        coef=coef, weights=weights)
+        super(WeightedMovingAverage, self).__init__()
