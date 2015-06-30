@@ -23,8 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 
-from backtrader import Indicator
-from . import (SumN, Average, ExpSmoothing, ExpSmoothingDynamic,
+from . import (Indicator, SumN, Average, ExpSmoothing, ExpSmoothingDynamic,
                AverageWeighted)
 
 

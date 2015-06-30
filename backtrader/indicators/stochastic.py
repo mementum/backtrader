@@ -21,8 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator, Max
-from . import MovAv, Highest, Lowest
+from . import Indicator, Max, MovAv, Highest, Lowest
 
 
 class _StochasticBase(Indicator):

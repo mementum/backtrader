@@ -26,7 +26,7 @@ import operator
 
 from six.moves import xrange
 
-from backtrader import Indicator
+from . import Indicator
 
 
 class PeriodN(Indicator):
