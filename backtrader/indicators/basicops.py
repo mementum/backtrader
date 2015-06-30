@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import math
+import operator
 
 from six.moves import xrange
 
@@ -289,3 +290,149 @@ class FindLastIndexLowest(FindLastIndex):
       - period (1): period for the operation
     '''
     params = (('_evalfunc', min),)
+
+
+class Accum(Indicator):
+    lines = ('accum',)
+    params = (('seed', 0.0),)
+
+    # xxxstart methods use the seed (starting value) and passed data to
+    # construct the first value keeping the minperiod to 1 since no
+    # initial look-back value is needed
+
+    def nextstart(self):
+        self.line[0] = self.p.seed + self.data[0]
+
+    def next(self):
+        self.line[0] = self.lines[-1] + self.data[0]
+
+    def oncestart(self, start, end):
+        dst = self.line.array
+        src = self.data.array
+        prev = self.p.seed
+
+        for i in xrange(start, end):
+            dst[i] = prev = prev + src[i]
+
+    def once(self, start, end):
+        dst = self.line.array
+        src = self.data.array
+        prev = dst[start - 1]
+
+        for i in xrange(start, end):
+            dst[i] = prev = prev + src[i]
+
+
+class Average(PeriodN):
+    alias = ('ArithmeticMean', 'Mean',)
+    lines = ('av',)
+
+    def next(self):
+        self.line[0] = \
+            math.fsum(self.data.get(size=self.p.period)) / self.p.period
+
+    def once(self, start, end):
+        src = self.data.array
+        dst = self.line.array
+        period = self.p.period
+
+        for i in xrange(start, end):
+            dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
+
+
+class ExponentialSmoothing(Average):
+    '''
+    Base class for Moving Averages that apply a smoothing factor to the
+    previous and incoming input to calculate the new value
+
+    It is a subclass of SimpleMovingAverage and uses the 1st value
+    produced by it as the seed for the next values
+
+    Subclasses must override the method ``smoothingfactor`` which calculates
+    two values:
+
+      - self.smfactor -> the smoothing factor applied to new input
+      - self.smfactor1 -> the smoothing factor applied to the olf value.
+        usually `1 - self.smfactor`
+
+    Formula:
+      - movav = prev * (1 - smoothfactor) + newdata * smoothfactor
+
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
+    '''
+    alias = ('ExpSmoothing',)
+    params = (('alpha', None),)
+
+    def __init__(self):
+        self.alpha = self.p.alpha
+        self.alpha1 = 1.0 - self.p.alpha
+        super(ExponentialSmoothing, self).__init__()
+
+    def nextstart(self):
+        # Fetch the seed value from the base class calculation
+        super(ExponentialSmoothing, self).next()
+
+    def next(self):
+        self.line[0] = self.line[-1] * self.alpha1 + self.data[0] * self.alpha
+
+    def oncestart(self, start, end):
+        # Fetch the seed value from the base class calculation
+        super(ExponentialSmoothing, self).once(start, end)
+
+    def once(self, start, end):
+        darray = self.data.array
+        larray = self.line.array
+        alpha = self.alpha
+        alpha1 = self.alpha1
+
+        # Seed value from SMA calculated with the call to oncestart
+        prev = larray[start - 1]
+        for i in xrange(start, end):
+            larray[i] = prev = prev * alpha1 + darray[i] * alpha
+
+
+class ExponentialSmoothingDynamic(ExpSmoothing):
+    '''
+    The alpha value is not a constant but a variable which must be fetched from
+    the array and hence the overriden method
+    '''
+    alias = ('ExpSmoothingDynamic',)
+
+    def once(self, start, end):
+        darray = self.data.array
+        larray = self.line.array
+        alpha = self.alpha.array
+        alpha1 = self.alpha1.array
+
+        # Seed value from SMA calculated with the call to oncestart
+        prev = larray[start - 1]
+        for i in xrange(start, end):
+            larray[i] = prev = prev * alpha1[i] + darray[i] * alpha[i]
+
+
+class WeightedAverage(PeriodN):
+    alias = ('AverageWeighted',)
+    lines = ('wav',)
+    params = (('coef', 1.0), ('weights', []),)
+
+    def __init__(self):
+        super(WeightedAverage, self).__init__()
+        self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
+        self.weights = [float(x) for x in range(1, self.p.period + 1)]
+
+    def next(self):
+        data = self.data.get(size=self.p.period)
+        dataweighted = map(operator.mul, data, self.p.weights)
+        self.line[0] = self.p.coef * math.fsum(dataweighted)
+
+    def once(self, start, end):
+        darray = self.data.array
+        larray = self.line.array
+        period = self.p.period
+        coef = self.p.coef
+        weights = self.p.weights
+
+        for i in xrange(start, end):
+            data = darray[i - period + 1: i + 1]
+            larray[i] = coef * math.fsum(map(operator.mul, data, weights))
