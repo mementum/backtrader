@@ -23,10 +23,10 @@ from __future__ import (absolute_import, division, print_function,
 
 
 from backtrader import Indicator
-from . import MovAv
+from . import MovingAverageBase, MovAv
 
 
-class DoubleExponentialMovingAverage(Indicator):
+class DoubleExponentialMovingAverage(MovingAverageBase):
     '''
     DEMA was first time introduced in 1994, in the article "Smoothing Data with
     Faster Moving Averages" by Patrick G. Mulloy in "Technical Analysis of
@@ -40,11 +40,10 @@ class DoubleExponentialMovingAverage(Indicator):
     See:
       (None)
     '''
-    alias = ('DEMA',)
+    alias = ('DEMA', 'MovingAverageDoubleExponential',)
 
     lines = ('dema',)
-    params = (('period', 30), ('_movav', MovAv.EMA),)
-    plotinfo = dict(subplot=False)
+    params = (('_movav', MovAv.EMA),)
 
     def __init__(self):
         ema = self.p._movav(self.data, period=self.p.period)
@@ -54,7 +53,7 @@ class DoubleExponentialMovingAverage(Indicator):
         super(DoubleExponentialMovingAverage, self).__init__()
 
 
-class TripleExponentialMovingAverage(Indicator):
+class TripleExponentialMovingAverage(MovingAverageBase):
     '''
     TEMA was first time introduced in 1994, in the article "Smoothing Data with
     Faster Moving Averages" by Patrick G. Mulloy in "Technical Analysis of
@@ -71,22 +70,27 @@ class TripleExponentialMovingAverage(Indicator):
     See:
       (None)
     '''
-    alias = ('TEMA',)
+    alias = ('TEMA', 'MovingAverageTripleExponential',)
 
     lines = ('tema',)
-    params = (('period', 30), ('_movav', MovAv.EMA),)
-    plotinfo = dict(subplot=False)
+    params = (('_movav', MovAv.EMA),)
 
     def __init__(self):
-        ema = self.p._movav(self.data, period=self.p.period)
-        ema2 = self.p._movav(ema, period=self.p.period)
+        ema1 = self.p._movav(self.data, period=self.p.period)
+        ema2 = self.p._movav(ema1, period=self.p.period)
         ema3 = self.p._movav(ema2, period=self.p.period)
 
-        self.lines.tema = 3.0 * ema - 3.0 * ema2 + ema3
+        self.lines.tema = 3.0 * ema1 - 3.0 * ema2 + ema3
         super(TripleExponentialMovingAverage, self).__init__()
 
 
-MovAv.DoubleExponential = DoubleExponentialMovingAverage
-MovAv.TripleExponential = TripleExponentialMovingAverage
-MovAv.DEMA = DEMA
-MovAv.TEMA = TEMA
+class ZeroLagExponentialMovingAverage(MovingAverageBase):
+    alias = ('ZLEMA', 'MovingAverageZeroLag',)
+
+    lines = ('zlema',)
+    params = (('_movav', MovAv.EMA),)
+
+    def __init__(self):
+        lag = (self.p.period - 1) // 2
+        data = 2 * self.data - self.data(-lag)
+        self.lines.zlema = self.p._movav(data, period=self.p.period)
