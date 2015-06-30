@@ -7,5 +7,5 @@ StandardDeviation
 .. _meandeviation:
 
 MeanDeviation
-=================
+=============
 .. autoclass:: backtrader.indicators.MeanDeviation
