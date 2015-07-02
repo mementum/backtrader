@@ -29,6 +29,19 @@ from .lineiterator import LineIterator, IndicatorBase
 
 
 class MetaIndicator(IndicatorBase.__class__):
+    _indcol = dict()
+
+    def __init__(cls, name, bases, dct):
+        '''
+        Class has already been created ... register subclasses
+        '''
+        # Initialize the class
+        super(MetaIndicator, cls).__init__(name, bases, dct)
+
+        if not cls.aliased and \
+           name != 'Indicator' and not name.startswith('_'):
+            cls._indcol[name] = cls
+
     def donew(cls, *args, **kwargs):
 
         if IndicatorBase.next == cls.next:
