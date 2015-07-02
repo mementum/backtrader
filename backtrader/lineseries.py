@@ -333,71 +333,9 @@ class MetaLineSeries(LineMultiple.__class__):
         cls.plotlines = plotlines._derive(
             name, newplotlines, morebasesplotlines, recurse=True)
 
-        # Update the doc
-        clsdocorig = getattr(cls, '__doc__', '') or ''
-        preclsdoc = name
-        if aliases:
-            aliasnames = list()
-            for alias in aliases:
-                if not isinstance(alias, six.string_types):
-                    # a tuple or list was passed, 1st is name, 2nd plotname
-                    alias = alias[0]
-                aliasnames.append(alias)
-
-            aliasdoc = ' (alias %s)\n' % ', '.join(aliasnames)
-            preclsdoc += aliasdoc
-
-        if aliased:
-            preclsdoc += ' (alias of %s)\n' % aliased
-
-        clsdoc = preclsdoc + clsdocorig
-
-        if clsdoc[-1] != '\n':
-            clsdoc += '\n'
-
-        if len(cls.params._getpairs()):
-            paramsdoc = '    Params:' + '\n'
-            for pkey, pvalue in cls.params._getitems():
-                paramsdoc += '      - %s (%s)\n' % (pkey, str(pvalue))
-
-            clsdoc += paramsdoc + '\n'
-
-        numlines = len(cls.lines._getlines())
-        if numlines:
-            linesdoc = '    Lines:' + '\n'
-            for i in xrange(numlines):
-                linesdoc += '      - ' + cls.lines._getlinealias(i) + '\n'
-
-            clsdoc += linesdoc + '\n'
-
-        if len(cls.plotinfo._getpairs()):
-            pinfodoc = '    PlotInfo:' + '\n'
-            for pkey, pvalue in cls.plotinfo._getitems():
-                pinfodoc += '      - %s (%s)\n' % (pkey, str(pvalue))
-
-            clsdoc += pinfodoc + '\n'
-
-        if len(cls.plotlines._getpairs()):
-            plinesdoc = '    PlotLines:' + '\n'
-            for pkey, pvalue in cls.plotlines._getitems():
-                if isinstance(pvalue, AutoInfoClass):
-                    plinesdoc += '      - %s:' % pkey
-                    for plkey, plvalue in pvalue._getitems():
-                        plinesdoc += '        - %s (%s)\n' % (plkey, plvalue)
-                elif isinstance(pvalue, (dict, OrderedDict)):
-                    plinesdoc += '      - %s:' % pkey
-                    for plkey, plvalue in pvalue.items():
-                        plinesdoc += '        - %s (%s)\n' % (plkey, plvalue)
-                else:
-                    plinesdoc += '      - %s (%s)\n' % (pkey, str(pvalue))
-
-            clsdoc += plinesdoc
-
-        cls.__doc__ = clsdoc
-
         # create declared class aliases (a subclass with no modifications)
         for alias in aliases:
-            newdct = {'__doc__': clsdocorig,
+            newdct = {'__doc__': cls.__doc__,
                       '__module__': cls.__module__,
                       'aliased': cls.__name__}
 
