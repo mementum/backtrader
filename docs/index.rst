@@ -18,10 +18,9 @@ Contents:
    operating
    advanced
    inddev
-   indicators
    plotting
    todo
-
+   indautoref
 
 Indices and tables
 ==================
