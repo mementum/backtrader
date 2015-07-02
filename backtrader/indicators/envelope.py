@@ -119,6 +119,7 @@ for movav in MovingAverage._movavs[1:]:
 
     newclsdct = {'__doc__': newclsdoc,
                  '__module__': EnvelopeMixIn.__module__,
+                 '_notregister': True,
                  'alias': newaliases}
     newcls = type(str(newclsname), (movav, EnvelopeMixIn), newclsdct)
     module = sys.modules[EnvelopeMixIn.__module__]

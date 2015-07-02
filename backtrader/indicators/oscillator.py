@@ -123,6 +123,7 @@ for movav in MovingAverage._movavs[1:]:
     newclsdoc = _newclsdoc % movname
     newclsdct = {'__doc__': newclsdoc,
                  '__module__': OscillatorMixIn.__module__,
+                 '_notregister': True,
                  'alias': newaliases}
 
     newcls = type(str(newclsname), (movav, OscillatorMixIn), newclsdct)

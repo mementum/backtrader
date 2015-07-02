@@ -51,6 +51,9 @@ class MovingAverage(object):
 
     @classmethod
     def register(cls, regcls):
+        if getattr(regcls, '_notregister', False):
+            return
+
         cls._movavs.append(regcls)
 
         clsname = regcls.__name__
