@@ -79,6 +79,12 @@ class IndRefDirective(Directive):
             if indparams:
                 inddoc.append(u'Params:')
                 for pkey, pvalue in indcls.params._getitems():
+                    try:
+                        if issubclass(pvalue, Indicator):
+                            pvalue = pvalue.__name__
+                    except:
+                        pass
+
                     inddoc.append(u'  - %s (%s)' % (pkey, str(pvalue)))
 
             # Plotinfo section
