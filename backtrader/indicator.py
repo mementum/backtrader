@@ -26,6 +26,7 @@ import six
 from six.moves import xrange
 
 from .lineiterator import LineIterator, IndicatorBase
+from .lineseries import LineSeriesMaker
 
 
 class MetaIndicator(IndicatorBase.__class__):
@@ -60,6 +61,23 @@ class MetaIndicator(IndicatorBase.__class__):
             pass
 
         _obj, args, kwargs = super(MetaIndicator, cls).donew(*args, **kwargs)
+
+        # If only 1 data was passed and it's multiline, put the 2nd
+        # and later lines in the datas array. This allows things like
+        # passing a "Stochastic" to a crossover indicator and it will
+        # automatically calculate the crossover of %k and %d
+        if len(_obj.datas) == 1:
+            if _obj.data.size():
+                r = range(1, _obj.data.size())
+            else:
+                r = range(0, _obj.data.lines.extrasize())
+
+            # print('init object', _obj)
+            # print('with datas', _obj.datas)
+
+            for l in r:
+                newdata = LineSeriesMaker(_obj.data.lines[l])
+                _obj.datas.append(newdata)
 
         # return the values
         return _obj, args, kwargs
