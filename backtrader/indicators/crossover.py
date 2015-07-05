@@ -52,8 +52,6 @@ class CrossUp(_CrossBase):
 
     Formula:
       - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
-    See:
-      - (None)
     '''
     _crossup = True
 
@@ -70,8 +68,6 @@ class CrossDown(_CrossBase):
 
     Formula:
       - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
-    See:
-      - (None)
     '''
     _crossup = False
 
@@ -92,9 +88,6 @@ class CrossOver(Indicator):
       - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
       - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
       - crossover = upcross - downcross
-
-    See:
-      - (None)
     '''
     lines = ('crossover',)
 

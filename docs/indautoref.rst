@@ -1,3 +1,5 @@
+.. _indautoref:
+
 Indicator Reference
 ===================
 

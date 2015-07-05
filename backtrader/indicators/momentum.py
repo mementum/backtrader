@@ -25,8 +25,7 @@ from . import Indicator
 
 
 class Momentum(Indicator):
-    '''Momentum
-
+    '''
     Measures the change in price by calculating the difference between the
     current price and the price from a given period ago
 
