@@ -81,15 +81,3 @@ class TripleExponentialMovingAverage(MovingAverageBase):
 
         self.lines.tema = 3.0 * ema1 - 3.0 * ema2 + ema3
         super(TripleExponentialMovingAverage, self).__init__()
-
-
-class ZeroLagExponentialMovingAverage(MovingAverageBase):
-    alias = ('ZLEMA', 'MovingAverageZeroLag',)
-
-    lines = ('zlema',)
-    params = (('_movav', MovAv.EMA),)
-
-    def __init__(self):
-        lag = (self.p.period - 1) // 2
-        data = 2 * self.data - self.data(-lag)
-        self.lines.zlema = self.p._movav(data, period=self.p.period)
