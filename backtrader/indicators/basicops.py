@@ -209,7 +209,7 @@ class Accum(Indicator):
     Formula:
       - accum += data
     '''
-    alias = ('CummSum', 'CummulativeSum',)
+    alias = ('CumSum', 'CumulativeSum',)
     lines = ('accum',)
     params = (('seed', 0.0),)
 
