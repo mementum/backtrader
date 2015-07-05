@@ -1,3 +1,37 @@
+1.0.7.86
+  - Import Indicator and functions into the indicators package to enable
+    indicators to do a "from ." import
+  - Improvements to class alias definition
+  - Indicators (74): basicops receives Average, WeightedAverage, ExpSmoothing,
+    ExpSmoothingDynamic
+  - Indicator (75): ZLEMA with tests and documentation
+  - Refactored MovingAverage placeholder and MovingAverages to use basic
+    operations and autoregister in the placeholder
+  - Refactored DEMA, TEMA, ZLEMA to subclasses of MovingAverageBase for
+    autoregistrattion
+  - Refactored envelope to automatically create envelopes from all
+    auto-registered MovingAverages
+  - Refactored oscillator to automatically create envelopes from all
+    auto-registered MovingAverages
+  - Indicators (77): ZLEMAEnvelope, ZLEMAOscillator added
+  - Indicators (79): TrueLow, TrueHigh added and TrueRange refactored to use them
+  - Indicators (81): UpDayBool, DownDayBool as specialized versions of UpDay and
+    DownDay
+  - Refactored all indicators to do a relative "." import for Indicator and
+    functions
+  - Removed docstring code from LineSeries to move it to a sphinx extension
+  - Added sphinx etension to automate documentation of indicators
+  - Removed previous indicator documentation and added "indautoref" own
+    directive for autodocumentation
+  - indicators autoregister with Indicator (for things like autodocumentation)
+  - Avoid automatically generated Envelope/Oscillator from MovingAverages to
+    register to avoid "EnvelopeOscillator" subclasses
+  - Indicators receiving only 1 data get the 2nd and later lines as extras (use
+    case: a crossover uses line 0 and 1 automatically)
+  - Indicators (85): PriceOscillator, PercentagePriceOscillator,
+    PercentagePriceOscillatorShort, PrettyGoodOscillator added
+  - Indicators (86) - Williams Accumulation/Distribution (WilliamsAD) added
+
 1.0.6.70
   - Correction of bug which prevented lines in different indicators to have the
     same name and different index at the same hierarchy level
