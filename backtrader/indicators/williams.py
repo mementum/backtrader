@@ -21,8 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from . import Highest, Lowest
+from . import (Indicator, Highest, Lowest, If, UpDay, DownDay, Accum, TrueLow,
+               TrueHigh)
 
 
 class WilliamsR(Indicator):
@@ -59,3 +59,29 @@ class WilliamsR(Indicator):
         self.lines.percR = -100.0 * (h - c) / (h - l)
 
         super(WilliamsR, self).__init__()
+
+
+class WilliamsAD(Indicator):
+    '''
+    By Larry Williams. It does cumulatively measure if the price is
+    accumulating (upwards) or distributing (downwards) by using the concept of
+    UpDays and DownDays.
+
+    Prices can go upwards but do so in a fashion that no longer shows
+    accumulation because updays and downdays are canceling out each other,
+    creating a divergence.
+
+    See:
+    - http://www.metastock.com/Customer/Resources/TAAZ/?p=125
+    - http://ta.mql4.com/indicators/trends/williams_accumulation_distribution
+    '''
+    lines = ('ad',)
+
+    def __init__(self):
+        upday = UpDay(self.data.close)
+        downday = DownDay(self.data.close)
+
+        adup = If(upday, self.data.close - TrueLow(self.data), 0.0)
+        addown = If(downday, self.data.close - TrueHigh(self.data), 0.0)
+
+        self.lines.ad = Accum(adup + addown)
