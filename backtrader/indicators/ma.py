@@ -156,10 +156,10 @@ class SmoothedMovingAverage(MovingAverageBase):
       - movav = prev * (1.0 - smoothfactor) + newdata * smoothfactor
 
     See also:
-      - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+      - http://en.wikipedia.org/wiki/Moving_average#Modified_moving_average
     '''
     alias = ('SMMA', 'WilderMA', 'MovingAverageSmoothed',
-             'MovingAverageWilder',)
+             'MovingAverageWilder', 'ModifiedMovingAverage',)
     lines = ('smma',)
 
     def __init__(self):

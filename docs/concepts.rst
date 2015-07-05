@@ -59,7 +59,7 @@ stratey in the sequential order in which they were added to the systems.
 
 .. note:: This also applies to Indicators, should the end user develop his own
 	  customer Indicator or when having a look at the source code for some
-	  of the existing :ref:`indicators_list`
+	  of the existing :ref:`indautoref`
 
 Shortcuts for Datas
 ===================
