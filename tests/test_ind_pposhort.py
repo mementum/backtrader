@@ -21,35 +21,32 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from backtrader.functions import *
+import testcommon
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+import backtrader as bt
+import backtrader.indicators as btind
 
-from .basicops import *
+chkdatas = 1
+chkvals = [
+    ['0.629452', '0.875813', '0.049405'],
+    ['0.537193', '0.718852', '-0.080645'],
+    ['0.092259', '0.156962', '0.130050']
+]
 
-# depends on basicops
-from .ma import *
+chkmin = 34
+chkind = btind.PPOShort
 
-# depends on moving averages
-from .deviation import *
 
-# depend on basicops, moving averages and deviations
-from .atr import *
-from .aroon import *
-from .bollinger import *
-from .cci import *
-from .crossover import *
-from .dema import *
-from .dpo import *
-from .directionalmove import *
-from .envelope import *
-from .macd import *
-from .momentum import *
-from .oscillator import *
-from .prettygoodoscillator import *
-from .priceoscillator import *
-from .rsi import *
-from .stochastic import *
-from .williams import *
+def test_run(main=False):
+    datas = [testcommon.getdata(i) for i in range(chkdatas)]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals)
+
+
+if __name__ == '__main__':
+    test_run(main=True)
