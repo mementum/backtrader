@@ -123,7 +123,7 @@ class AutoInfoClass(object):
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
 
         setattr(newcls, '_getpairsbase',
-                classmethod(lambda cls: basesinfo.copy()))
+                classmethod(lambda cls: baseinfo.copy()))
         setattr(newcls, '_getpairs', classmethod(lambda cls: clsinfo.copy()))
         setattr(newcls, '_getrecurse', classmethod(lambda cls: recurse))
 

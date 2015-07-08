@@ -216,9 +216,9 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         '''
 
         # Remove the observers added by the previous analyzer
-        observers = _obj._lineiterators[LineIterator.ObsType]
-        for obs in _obj._analyzer_obs:
+        observers = self._lineiterators[LineIterator.ObsType]
+        for obs in self._analyzer_obs:
             observers.remove(obs)
 
         self.analyzer = None
-        _obj._analyzer_obs = list()
+        self._analyzer_obs = list()
