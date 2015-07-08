@@ -7,7 +7,9 @@ python:
   - "3.4"
 
 # command to install dependencies
-install: "pip install -r requirements.txt"
+install:
+  - pip install six==1.9.0
+  - pip install nose-exclude==0.2.0
 
 # command to run tests
 script: nosetests -v -v --exclude-dir=backtrader/plot
