@@ -23,15 +23,12 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 import datetime
-import io
 import itertools
 
 import six
 from six.moves import urllib
 
-from .. import dataseries
 from .. import feed
-from .. import linebuffer
 from ..utils import date2num
 
 

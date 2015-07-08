@@ -310,7 +310,7 @@ class ExponentialSmoothing(Average):
             larray[i] = prev = prev * alpha1 + darray[i] * alpha
 
 
-class ExponentialSmoothingDynamic(ExpSmoothing):
+class ExponentialSmoothingDynamic(ExponentialSmoothing):
     '''
     Averages a given data over a period using exponential smoothing
 

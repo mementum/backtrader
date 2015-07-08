@@ -190,7 +190,7 @@ class DataResampler(BaseResampler):
             distance = len(self.data) - self.lastbar
             if distance:
                 # someone has moved the pointer ...
-                for i in xrange(-dist, 1):
+                for i in xrange(-distance, 1):
                     if self._baroverlimit(i):
                         return self._havebar()
 

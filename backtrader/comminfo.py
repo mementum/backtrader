@@ -64,7 +64,7 @@ class CommissionInfo(six.with_metaclass(MetaParams)):
         if hasattr(self.params, name):
             raise AttributeError
 
-        super(CommInfo, self).__setattribute__(name, value)
+        super(CommissionInfo, self).__setattribute__(name, value)
 
     def checkmargin(self, size, price, cash):
         '''Calculates if cash is enough to execute an operation'''

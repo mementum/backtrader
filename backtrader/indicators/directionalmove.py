@@ -251,7 +251,7 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
     plotinfo = dict(plotname='-DirectionalIndicator')
 
     def __init__(self):
-        super(PlusDirectionalIndicator, self).__init__(_plus=False)
+        super(MinusDirectionalIndicator, self).__init__(_plus=False)
 
         self.lines.minusDI = self.DIminus
 
@@ -311,7 +311,7 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
         self.lines.adx = 100.0 * self.p.movav(dx, period=self.p.period)
 
 
-class AverageDirectionalMovementIndexRating(ADX):
+class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
@@ -367,7 +367,8 @@ class AverageDirectionalMovementIndexRating(ADX):
         self.lines.adxr = (self.l.adx + self.l.adx(-self.p.period)) / 2.0
 
 
-class DirectionalMovementIndex(ADX, DI):
+class DirectionalMovementIndex(AverageDirectionalMovementIndex,
+                               DirectionalIndicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
@@ -412,7 +413,8 @@ class DirectionalMovementIndex(ADX, DI):
     alias = ('DMI',)
 
 
-class DirectionalMovement(ADXR, DI):
+class DirectionalMovement(AverageDirectionalMovementIndexRating,
+                          DirectionalIndicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.

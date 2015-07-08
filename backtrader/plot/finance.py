@@ -57,26 +57,26 @@ class CandlestickPlotHandler(object):
         self.colordown = r, g, b, alpha
         # Manage the edge up/down colors for the bars
         if edgeup:
-            r, g, b = colorConverter.to_rgb(edgeup)
+            r, g, b = mcolors.colorConverter.to_rgb(edgeup)
             self.edgeup = ((r, g, b, alpha),)
         else:
             self.edgeup = shade_color(self.colorup, edgeshading)
 
         if edgedown:
-            r, g, b = colorConverter.to_rgb(edgedown)
+            r, g, b = mcolors.colorConverter.to_rgb(edgedown)
             self.edgedown = ((r, g, b, alpha),)
         else:
             self.edgedown = shade_color(self.colordown, edgeshading)
 
             # Manage the up/down tick colors
         if tickup:
-            r, g, b = colorConverter.to_rgb(tickup)
+            r, g, b = mcolors.colorConverter.to_rgb(tickup)
             self.tickup = ((r, g, b, alpha),)
         else:
             self.tickup = self.edgeup
 
         if tickdown:
-            r, g, b = colorConverter.to_rgb(tickdown)
+            r, g, b = mcolors.colorConverter.to_rgb(tickdown)
             self.tickdown = ((r, g, b, alpha),)
         else:
             self.tickdown = self.edgedown
