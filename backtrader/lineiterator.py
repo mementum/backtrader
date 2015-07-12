@@ -46,6 +46,11 @@ class MetaLineIterator(LineSeries.__class__):
         # already being given to the line iterator
         newargs = [x for x in args if not isinstance(x, LineRoot)]
 
+        # If no datas have been passed to an indicator ... use the
+        # main data of the owner, easing up adding "self.data" ...
+        if not _obj.datas and isinstance(_obj, IndicatorBase):
+            _obj.datas = [_obj._owner.datas[0]]
+
         # For each found data add access member -
         # for the first data 2 (data and data0)
         if _obj.datas:
