@@ -104,6 +104,12 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         '''
         raise NotImplementedError
 
+    def incminperiod(self, minperiod):
+        '''
+        Increment the minperiod with no considerations
+        '''
+        raise NotImplementedError
+
     def prenext(self):
         '''
         It will be called during the "minperiod" phase of an iteration.
@@ -280,6 +286,15 @@ class LineMultiple(LineRoot):
         for line in self.lines:
             line.addminperiod(minperiod)
 
+    def incminperiod(self, minperiod):
+        '''
+        The passed minperiod is fed to the lins
+        '''
+        # pass it down to the lines
+        for line in self.lines:
+            line.incminperiod(minperiod)
+
+
     def _makeoperation(self, other, operation, r=False, _ownerskip=None):
         return self.lines[0]._makeoperation(other, operation, r, _ownerskip)
 
@@ -296,3 +311,9 @@ class LineSingle(LineRoot):
         Add the minperiod (substracting the overlapping 1 minimum period)
         '''
         self._minperiod += minperiod - 1
+
+    def incminperiod(self, minperiod):
+        '''
+        Increment the minperiod with no considerations
+        '''
+        self._minperiod += minperiod
