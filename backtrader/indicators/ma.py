@@ -23,8 +23,8 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 
-from . import (Indicator, SumN, Average, ExpSmoothing, ExpSmoothingDynamic,
-               AverageWeighted)
+from . import (Indicator, SumN, Average, AverageWeighted, ExponentialSmoothing,
+               ExponentialSmoothingDynamic)
 
 
 class MovingAverage(object):
@@ -133,8 +133,9 @@ class ExponentialMovingAverage(MovingAverageBase):
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = ExpSmoothing(self.data, period=self.p.period,
-                                     alpha=2.0 / (1.0 + self.p.period))
+        self.lines[0] = ExponentialSmoothing(self.data,
+                                             period=self.p.period,
+                                             alpha=2.0 / (1.0 + self.p.period))
         super(ExponentialMovingAverage, self).__init__()
 
 
@@ -165,8 +166,9 @@ class SmoothedMovingAverage(MovingAverageBase):
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = ExpSmoothing(self.data, period=self.p.period,
-                                     alpha=1.0 / self.p.period)
+        self.lines[0] = ExponentialSmoothing(self.data,
+                                             period=self.p.period,
+                                             alpha=1.0 / self.p.period)
         super(SmoothedMovingAverage, self).__init__()
 
 
@@ -220,8 +222,9 @@ class AdaptiveMovingAverage(MovingAverageBase):
 
         sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
 
-        self.lines[0] = ExpSmoothingDynamic(self.data, period=self.p.period,
-                                            alpha=sc)
+        self.lines[0] = ExponentialSmoothingDynamic(self.data,
+                                                    period=self.p.period,
+                                                    alpha=sc)
 
         super(AdaptiveMovingAverage, self).__init__()
 
