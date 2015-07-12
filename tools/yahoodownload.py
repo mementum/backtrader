@@ -60,7 +60,7 @@ class YahooDownload(object):
             self.datafile.close()
             raise ValueError(
                 'Wrong Content Type in headers %s' %
-                datafile.headers['Content-Type'])
+                self.datafile.headers['Content-Type'])
 
         self.headers = self.datafile.readline()  # skip the headers
 
