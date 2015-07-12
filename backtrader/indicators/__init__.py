@@ -54,5 +54,3 @@ from .rsi import *
 from .stochastic import *
 from .williams import *
 from .zlema import *
-
-from .sqn import *
