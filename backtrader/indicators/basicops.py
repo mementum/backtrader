@@ -242,7 +242,7 @@ class Accum(Indicator):
 
 class Average(PeriodN):
     '''
-    Averages a given data arithmeticall over a period
+    Averages a given data arithmetically over a period
 
     Formula:
       - av = data(period) / period
@@ -327,6 +327,19 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
       - https://en.wikipedia.org/wiki/Exponential_smoothing
     '''
     alias = ('ExpSmoothingDynamic',)
+
+    def __init__(self):
+        super(ExponentialSmoothingDynamic, self).__init__()
+
+        # Hack: alpha is a "line" and carries a minperiod which is not being
+        # considered because this indicator makes no line assignment. It has
+        # therefore to be considered manually
+        minperioddiff = max(0, self.alpha._minperiod - self.p.period)
+        self.lines[0].incminperiod(minperioddiff)
+
+    def next(self):
+        self.line[0] = \
+            self.line[-1] * self.alpha1[0] + self.data[0] * self.alpha[0]
 
     def once(self, start, end):
         darray = self.data.array
