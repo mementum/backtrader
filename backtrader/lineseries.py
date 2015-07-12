@@ -341,8 +341,8 @@ class MetaLineSeries(LineMultiple.__class__):
 
             if not isinstance(alias, six.string_types):
                 # a tuple or list was passed, 1st is name, 2nd plotname
-                alias = alias[0]
                 aliasplotname = alias[1]
+                alias = alias[0]
                 newdct['plotinfo'] = dict(plotname=aliasplotname)
 
             newcls = type(str(alias), (cls,), newdct)
