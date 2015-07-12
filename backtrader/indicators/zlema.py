@@ -49,3 +49,5 @@ class ZeroLagExponentialMovingAverage(MovingAverageBase):
         lag = (self.p.period - 1) // 2
         data = 2 * self.data - self.data(-lag)
         self.lines.zlema = self.p._movav(data, period=self.p.period)
+
+        super(ZeroLagExponentialMovingAverage, self).__init__()
