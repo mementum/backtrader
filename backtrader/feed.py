@@ -189,8 +189,11 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
         for pname, pvalue in self.p._getitems():
             kwargs.setdefault(pname, getattr(self.p, pname))
 
-        data = self._getdata(dataname, **kwargs)
+        kwargs['dataname'] = dataname
+        data = self._getdata(**kwargs)
+
         data._name = name
+
         self.datas.append(data)
         return data
 
@@ -198,7 +201,8 @@ class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
         for pname, pvalue in self.p._getitems():
             kwargs.setdefault(pname, getattr(self.p, pname))
 
-        return self.DataCls(data=dataname, **kwargs)
+        kwargs['dataname'] = dataname
+        return self.DataCls(**kwargs)
 
 
 class MetaCSVDataBase(DataBase.__class__):
