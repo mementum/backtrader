@@ -26,7 +26,7 @@ import collections
 try:
     from collections import OrderedDict
 except ImportError:
-    from .utils.ordereddict import OrderedDict
+    from ..utils.ordereddict import OrderedDict
 
 import math
 
@@ -45,6 +45,7 @@ from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
 from .scheme import PlotScheme
 from .utils import tag_box_style
+from .multicursor import MultiCursor
 
 
 class PInfo(object):
@@ -57,6 +58,7 @@ class PInfo(object):
         self.xlen = 0
         self.sharex = None
         self.figs = list()
+        self.cursors = list()
         self.daxis = OrderedDict()
         self.ldaxis = list()
         self.zorder = dict()
@@ -164,6 +166,13 @@ class Plot(six.with_metaclass(MetaParams, object)):
                         subinds=self.dplotsover[ind],
                         upinds=self.dplotsup[ind],
                         downinds=self.dplotsdown[ind])
+
+            cursor = MultiCursor(
+                fig.canvas, list(self.pinf.daxis.values()),
+                useblit=True, horizOn=True, vertOn=True,
+                color='black', lw=1, ls=':')
+
+            self.pinf.cursors.append(cursor)
 
             lastax = list(self.pinf.daxis.values())[-1]
             # Date formatting for the x axis - only the last one needs it
