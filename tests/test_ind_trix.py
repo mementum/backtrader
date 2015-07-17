@@ -21,44 +21,30 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from backtrader.functions import *
+import testcommon
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+import backtrader as bt
+import backtrader.indicators as btind
 
-from .basicops import *
+chkdatas = 1
+chkvals = [
+    ['0.071304', '0.181480', '0.050954']
+]
 
-# base for moving averages
-from .mabase import *
+chkmin = 44
+chkind = btind.Trix
 
-# moving averages (so envelope and oscillators can be auto-generated)
-from .sma import *
-from .ema import *
-from .smma import *
-from .wma import *
-from .dema import *
-from .kama import *
-from .zlema import *
 
-# depends on moving averages
-from .deviation import *
+def test_run(main=False):
+    datas = [testcommon.getdata(i) for i in range(chkdatas)]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals)
 
-# depend on basicops, moving averages and deviations
-from .atr import *
-from .aroon import *
-from .bollinger import *
-from .cci import *
-from .crossover import *
-from .dpo import *
-from .directionalmove import *
-from .envelope import *
-from .macd import *
-from .momentum import *
-from .oscillator import *
-from .prettygoodoscillator import *
-from .priceoscillator import *
-from .rsi import *
-from .stochastic import *
-from .trix import *
-from .williams import *
+
+if __name__ == '__main__':
+    test_run(main=True)
