@@ -156,8 +156,8 @@ Let's put a Strategy into the equation and print the "Close" price of each day
 (bar).
 
 **DataSeries** (the underlying class in *Data Feeds*) objects have aliases to
- access the well known OHLC (Open High Low Close) daily values. This should ease
- up the creation of our printing logic.
+access the well known OHLC (Open High Low Close) daily values. This should ease
+up the creation of our printing logic.
 
 .. literalinclude:: ../samples/quickstart04.py
    :language: python
