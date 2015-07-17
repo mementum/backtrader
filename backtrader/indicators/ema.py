@@ -21,43 +21,33 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from backtrader.functions import *
+from . import MovingAverageBase, ExponentialSmoothing
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
 
-from .basicops import *
+class ExponentialMovingAverage(MovingAverageBase):
+    '''
+    A Moving Average that smoothes data exponentially over time.
 
-# base for moving averages
-from .mabase import *
+    It is a subclass of SmoothingMovingAverage.
 
-# moving averages (so envelope and oscillators can be auto-generated)
-from .sma import *
-from .ema import *
-from .smma import *
-from .wma import *
-from .dema import *
-from .kama import *
-from .zlema import *
+      - self.smfactor -> 2 / (1 + period)
+      - self.smfactor1 -> `1 - self.smfactor`
 
-# depends on moving averages
-from .deviation import *
+    Formula:
+      - movav = prev * (1.0 - smoothfactor) + newdata * smoothfactor
 
-# depend on basicops, moving averages and deviations
-from .atr import *
-from .aroon import *
-from .bollinger import *
-from .cci import *
-from .crossover import *
-from .dpo import *
-from .directionalmove import *
-from .envelope import *
-from .macd import *
-from .momentum import *
-from .oscillator import *
-from .prettygoodoscillator import *
-from .priceoscillator import *
-from .rsi import *
-from .stochastic import *
-from .williams import *
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+    '''
+    alias = ('EMA', 'MovingAverageExponential',)
+    lines = ('ema',)
+
+    def __init__(self):
+        # Before super to ensure mixins (right-hand side in subclassing)
+        # can see the assignment operation and operate on the line
+        self.lines[0] = ExponentialSmoothing(
+            self.data,
+            period=self.p.period,
+            alpha=2.0 / (1.0 + self.p.period))
+
+        super(ExponentialMovingAverage, self).__init__()

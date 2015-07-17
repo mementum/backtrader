@@ -21,43 +21,25 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import Indicator
-from backtrader.functions import *
+from . import MovingAverageBase, Average
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
 
-from .basicops import *
+class MovingAverageSimple(MovingAverageBase):
+    '''
+    Non-weighted average of the last n periods
 
-# base for moving averages
-from .mabase import *
+    Formula:
+      - movav = Sum(data, period) / period
 
-# moving averages (so envelope and oscillators can be auto-generated)
-from .sma import *
-from .ema import *
-from .smma import *
-from .wma import *
-from .dema import *
-from .kama import *
-from .zlema import *
+    See also:
+      - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
+    '''
+    alias = ('SMA', 'SimpleMovingAverage',)
+    lines = ('sma',)
 
-# depends on moving averages
-from .deviation import *
+    def __init__(self):
+        # Before super to ensure mixins (right-hand side in subclassing)
+        # can see the assignment operation and operate on the line
+        self.lines[0] = Average(self.data, period=self.p.period)
 
-# depend on basicops, moving averages and deviations
-from .atr import *
-from .aroon import *
-from .bollinger import *
-from .cci import *
-from .crossover import *
-from .dpo import *
-from .directionalmove import *
-from .envelope import *
-from .macd import *
-from .momentum import *
-from .oscillator import *
-from .prettygoodoscillator import *
-from .priceoscillator import *
-from .rsi import *
-from .stochastic import *
-from .williams import *
+        super(MovingAverageSimple, self).__init__()
