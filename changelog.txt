@@ -1,3 +1,22 @@
+1.0.8.88:
+  - Correction to yahoodownload from landscape.io check when exception is raised
+  - alias plotname assignment done before the alias variable is overwritten to
+    avoid plotname from just being the 2nd letter of the alias
+  - Added incminperiod to increase minperiods with non further calculations
+  - Notation relaxation: indicators may not indicate on which data they operate
+    and the data of the owner will be used automatically
+  - zlema now calles super on init
+  - Cosmetic corrections to moving averages to not use aliased names
+  - Corner minimum period calculation case covered in
+    ExponentialSmoothingDynamic in which a passed line as a parameter is not being
+    considered in any calculation because there is no line assignment in the
+    indicator
+  - Corrections to FeedBase to avoid passing "dataname" twice
+  - Added a crosshairs cursor to the charts using modified MultiCursor from
+    matplotlib (submitted to Matplotlib)
+  - Moving Average Refactoring into separated files
+  - Indicators (88): Trix/TrixSignal (w doc/test)
+
 1.0.7.86
   - Import Indicator and functions into the indicators package to enable
     indicators to do a "from ." import
