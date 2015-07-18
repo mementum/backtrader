@@ -28,6 +28,10 @@ BackTesting platform written in Python to test trading strategies.
 Documentation
 =============
 
+The blog:
+
+  - `backtrader blog <http://www.backtrader.com>`_
+
 Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
