@@ -107,17 +107,17 @@ if __name__ == '__main__':
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, './datas/yahoo/oracle-1995-2014.csv')
+    datapath = os.path.join(modpath, './datas/yahoo/orcl-1995-2014.txt')
 
     # Create a Data Feed
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         # Do not pass values before this date
-        fromdate=datetime.datetime(2000, 01, 01),
+        fromdate=datetime.datetime(2000, 1, 1),
         # Do not pass values before this date
         todate=datetime.datetime(2000, 12, 31),
         # Do not pass values after this date
-        reversed=True)
+        reverse=False)
 
     # Add the Data Feed to Cerebro
     cerebro.adddata(data)
