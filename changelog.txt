@@ -1,3 +1,14 @@
+1.0.9.88:
+  - Multicore support for optimization
+  - Corrected quickstart samples to change Yahoo "reversed" to "reverse" and
+    change the value from True to False
+  - Changes needed to support pickling: adding dynamic classes to modules,
+    assigning unique names to dynamic classes, not keeping instance methods in
+    variables and removing lambda definitions for functions defined at module
+    level
+  - Changes to testcommon and test_strategy_optimized to avoid nosetests errors
+    with multiprocessing
+
 1.0.8.88:
   - Correction to yahoodownload from landscape.io check when exception is raised
   - alias plotname assignment done before the alias variable is overwritten to

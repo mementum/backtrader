@@ -84,7 +84,7 @@ Features:
     - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
 
   - Position Sizers for the automatic determination of the stake
-  - Optimization of Strategies
+  - Optimization of Strategies with multicore support
   - Plotting
 
 Version numbering
