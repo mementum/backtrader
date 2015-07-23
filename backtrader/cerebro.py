@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 import itertools
+import multiprocessing
 
 import six
 from six.moves import xrange
@@ -37,9 +38,11 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('preload', True),
         ('runonce', True),
         ('lookahead', 0),
+        ('maxcpus', None),
     )
 
     def __init__(self):
+        self._dooptimize = False
         self.feeds = list()
         self.datas = list()
         self.strats = list()
@@ -67,6 +70,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self.feeds.append(feed)
 
     def optstrategy(self, strategy, *args, **kwargs):
+        self._dooptimize = True
         args = self.iterize(args)
         optargs = itertools.product(*args)
 
@@ -100,54 +104,71 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             from . import plot
             plotter = plot.Plot(**kwargs)
 
-        for strat in self.runstrats:
-            plotter.plot(strat, numfigs=numfigs)
+        for stratlist in self.runstrats:
+            for strat in stratlist:
+                plotter.plot(strat, numfigs=numfigs)
 
         plotter.show()
+
+    def __call__(self, iterstrat):
+        return self.runstrategies(iterstrat)
 
     def run(self):
         if not self.datas:
             return
 
-        for iterstrat in itertools.product(*self.strats):
-            self.runstrats = list()
-
-            self._broker.start()
-
-            for feed in self.feeds:
-                feed.start()
-
-            for data in self.datas:
-                data.reset()
-                data.extend(size=self.params.lookahead)
-                data.start()
-                if self.params.preload:
-                    data.preload()
-
-            for stratcls, sargs, skwargs in iterstrat:
-                sargs = self.datas + list(sargs)
-                strat = stratcls(self, *sargs, **skwargs)
-                self.runstrats.append(strat)
-
-            # loop separated for clarity
-            for strat in self.runstrats:
-                strat.start()
-
-            if self.params.preload and self.params.runonce:
-                self._runonce()
-            else:
-                self._runnext()
-
-            for strat in self.runstrats:
-                strat.stop()
-
-            for data in self.datas:
-                data.stop()
-
-            for feed in self.feeds:
-                feed.stop()
+        self.runstrats = list()
+        iterstrats = itertools.product(*self.strats)
+        if False or not self._dooptimize or self.p.maxcpus == 1:
+            # If no optimmization is wished ... or 1 core is to be used
+            # let's skip process "spawning"
+            for iterstrat in iterstrats:
+                runstrat = self.runstrategies(iterstrat)
+                self.runstrats.append(runstrat)
+        else:
+            pool = multiprocessing.Pool(self.p.maxcpus)
+            self.runstrats = list(pool.map(self, iterstrats))
 
         return self.runstrats
+
+    def runstrategies(self, iterstrat):
+        runstrats = list()
+        self._broker.start()
+
+        for feed in self.feeds:
+            feed.start()
+
+        for data in self.datas:
+            data.reset()
+            data.extend(size=self.params.lookahead)
+            data.start()
+            if self.params.preload:
+                data.preload()
+
+        for stratcls, sargs, skwargs in iterstrat:
+            sargs = self.datas + list(sargs)
+            strat = stratcls(self, *sargs, **skwargs)
+            runstrats.append(strat)
+
+        # loop separated for clarity
+        for strat in runstrats:
+            strat.start()
+
+        if self.params.preload and self.params.runonce:
+            self._runonce(runstrats)
+        else:
+            self._runnext(runstrats)
+
+        for strat in runstrats:
+            strat.stop()
+
+        for data in self.datas:
+            data.stop()
+
+        for feed in self.feeds:
+            feed.stop()
+
+        return runstrats
 
     def _brokernotify(self):
         self._broker.next()
@@ -155,7 +176,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             order = self._broker.notifs.popleft()
             order.owner._addnotification(order)
 
-    def _runnext(self):
+    def _runnext(self, runstrats):
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:
@@ -163,11 +184,11 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
             self._brokernotify()
 
-            for strat in self.runstrats:
+            for strat in runstrats:
                 strat._next()
 
-    def _runonce(self):
-        for strat in self.runstrats:
+    def _runonce(self, runstrats):
+        for strat in runstrats:
             strat._once()
 
         # The default once for strategies does nothing and therefore
@@ -183,5 +204,5 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
             self._brokernotify()
 
-            for strat in self.runstrats:
+            for strat in runstrats:
                 strat._oncepost()
