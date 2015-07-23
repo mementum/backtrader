@@ -121,6 +121,8 @@ class AutoInfoClass(object):
 
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
+        clsmodule = sys.modules[cls.__module__]
+        setattr(clsmodule, str(cls.__name__ + '_' + name), newcls)
 
         setattr(newcls, '_getpairsbase',
                 classmethod(lambda cls: baseinfo.copy()))

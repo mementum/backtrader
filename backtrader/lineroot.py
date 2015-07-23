@@ -70,17 +70,28 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
     '''
     _OwnerCls = None
     _minperiod = 1
+    _opstage = 1
 
     IndType, StratType, ObsType = range(3)
 
     def _stage1(self):
-        self._operation = self._operation_stage1
-        self._operationown = self._operationown_stage1
+        self._opstage = 1
 
     def _stage2(self):
-        # change to real comparison function
-        self._operation = self._operation_stage2
-        self._operationown = self._operationown_stage2
+        self._opstage = 2
+
+    def _operation(self, other, operation, r=False, intify=False):
+        if self._opstage == 1:
+            return self._operation_stage1(
+                other, operation, r=r, intify=intify)
+
+        return self._operation_stage2(other, operation)
+
+    def _operationown(self, operation):
+        if self._opstage == 1:
+            return self._operationown_stage1(operation)
+
+        return self._operationown_stage2(operation)
 
     def setminperiod(self, minperiod):
         '''
@@ -164,8 +175,6 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
         '''
         return self._makeoperationown(operation, _ownerskip=self)
 
-    _operationown = _operationown_stage1
-
     def _roperation(self, other, operation, intify=False):
         '''
         Relies on self._operation to and passes "r" True to define a
@@ -182,8 +191,6 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
             other = other.lines[0]
 
         return self._makeoperation(other, operation, r, self)
-
-    _operation = _operation_stage1
 
     def _operation_stage2(self, other, operation):
         '''
@@ -293,7 +300,6 @@ class LineMultiple(LineRoot):
         # pass it down to the lines
         for line in self.lines:
             line.incminperiod(minperiod)
-
 
     def _makeoperation(self, other, operation, r=False, _ownerskip=None):
         return self.lines[0]._makeoperation(other, operation, r, _ownerskip)

@@ -96,12 +96,22 @@ class MultiLogicReduce(MultiLogic):
         self.flogic = functools.partial(functools.reduce, self.flogic)
 
 
+# The _xxxlogic functions are defined at module scope to make them
+# pickable and therefore compatible with multiprocessing
+def _andlogic(x, y):
+    return x and y
+
+
 class And(MultiLogicReduce):
-    flogic = staticmethod(lambda x, y: x and y)
+    flogic = staticmethod(_andlogic)
+
+
+def _orlogic(x, y):
+    return x and y
 
 
 class Or(MultiLogicReduce):
-    flogic = staticmethod(lambda x, y: x or y)
+    flogic = staticmethod(_orlogic)
 
 
 class Max(MultiLogic):

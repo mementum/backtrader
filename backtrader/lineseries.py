@@ -118,6 +118,9 @@ class Lines(object):
 
         # str for Python 2/3 compatibility
         newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
+        clsmodule = sys.modules[cls.__module__]
+        newcls.__module__ = cls.__module__
+        setattr(clsmodule, str(cls.__name__ + '_' + name), newcls)
 
         setattr(newcls, '_getlinesbase', classmethod(lambda cls: baselines))
         setattr(newcls, '_getlines', classmethod(lambda cls: clslines))
@@ -319,7 +322,7 @@ class MetaLineSeries(LineMultiple.__class__):
         # Create a plotinfo/plotlines subclass and set it in the class
         morebasesplotinfo = \
             [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
-        cls.plotinfo = plotinfo._derive(name, newplotinfo, morebasesplotinfo)
+        cls.plotinfo = plotinfo._derive('pi_' + name, newplotinfo, morebasesplotinfo)
 
         # Before doing plotline newlines have been added and no plotlineinfo
         # is there add a default
@@ -331,7 +334,7 @@ class MetaLineSeries(LineMultiple.__class__):
         morebasesplotlines = \
             [x.plotlines for x in bases[1:] if hasattr(x, 'plotlines')]
         cls.plotlines = plotlines._derive(
-            name, newplotlines, morebasesplotlines, recurse=True)
+            'pl_' + name, newplotlines, morebasesplotlines, recurse=True)
 
         # create declared class aliases (a subclass with no modifications)
         for alias in aliases:
