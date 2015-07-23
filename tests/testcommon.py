@@ -26,19 +26,11 @@ import os
 import os.path
 import sys
 
-try:
-    import backtrader as bt
-    import backtrader.utils.flushfile
-except ImportError:
-    # append module root directory to sys.path
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# append module root directory to sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    import backtrader as bt
-    import backtrader.utils.flushfile
-
-    # Should any exception happen, then the module cannot be imported
-    # let the exception propagate to signal the error
+import backtrader as bt
+import backtrader.utils.flushfile
 
 
 modpath = os.path.dirname(os.path.abspath(__file__))
@@ -66,10 +58,10 @@ def getdata(index, fromdate=FROMDATE, todate=TODATE):
 
 
 def runtest(datas, strategy,
-            runonce=True, preload=True, plot=False, optimize=False,
+            runonce=True, preload=True, plot=False, optimize=False, maxcpus=1,
             **kwargs):
 
-    cerebro = bt.Cerebro(runonce=runonce, preload=preload)
+    cerebro = bt.Cerebro(runonce=runonce, preload=preload, maxcpus=maxcpus)
 
     if isinstance(datas, bt.LineSeries):
         datas = [datas]

@@ -78,19 +78,16 @@ class TestStrategy(bt.Strategy):
 
     def start(self):
         self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
-        if self.p.printdata:
-            self.log('-------------------------')
-            self.log('Starting portfolio value: %.2f' % self.broker.getvalue())
-
         self.tstart = time.clock()
         self.buy_create_idx = itertools.count()
 
     def stop(self):
         tused = time.clock() - self.tstart
         if self.p.printdata:
-            self.log('Time used: %s' % str(tused))
-            self.log('Final portfolio value: %.2f' % self.broker.getvalue())
-            self.log('-------------------------')
+            self.log(('Time used: %s  - Period % d - '
+                      'Start value: %.2f - End value: %.2f') %
+                     (str(tused), self.p.period,
+                      self.broker.startingcash, self.broker.getvalue()))
 
         value = '%.2f' % self.broker.getvalue()
         _chkvalues.append(value)
