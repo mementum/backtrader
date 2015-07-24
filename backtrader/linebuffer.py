@@ -435,23 +435,29 @@ class LinesOperation(LineActions):
         self.a = a  # always a linebuffer
         self.b = b
 
-        if not isinstance(b, LineBuffer):
-            self.next = self._next_val_op if not r else self._next_val_op_r
-            self.once = self._once_val_op if not r else self._once_val_op_r
+        self.r = r
+        self.bfloat = not isinstance(b, LineBuffer)
 
         if r:
             self.a, self.b = b, a
 
     def next(self):
-        self[0] = self.operation(self.a[0], self.b[0])
-
-    def _next_val_op(self):
-        self[0] = self.operation(self.a[0], self.b)
-
-    def _next_val_op_r(self):
-        self[0] = self.operation(self.a, self.b[0])
+        if not self.bfloat:
+            self[0] = self.operation(self.a[0], self.b[0])
+        elif not self.r:
+            self[0] = self.operation(self.a[0], self.b)
+        else:
+            self[0] = self.operation(self.a, self.b[0])
 
     def once(self, start, end):
+        if not self.bfloat:
+            self._once_op(start, end)
+        elif not self.r:
+            self._once_val_op(start, end)
+        else:
+            self._once_val_op_r(start, end)
+
+    def _once_op(self, start, end):
         # cache python dictionary lookups
         dst = self.array
         srca = self.a.array

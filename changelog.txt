@@ -1,3 +1,6 @@
+1.0.10.88:
+  - Further corrections for more "unpickable" cases
+
 1.0.9.88:
   - Multicore support for optimization
   - Corrected quickstart samples to change Yahoo "reversed" to "reverse" and
