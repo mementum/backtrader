@@ -732,7 +732,7 @@ After the execution the output is::
 
 The chart:
 
-.. image:: ../samples/images/quickstart10.png
+.. thumbnail:: ../samples/images/quickstart10.png
 
 
 Let's Optimize

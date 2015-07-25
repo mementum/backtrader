@@ -17,6 +17,7 @@ Contents:
    concepts
    operating
    advanced
+   induse
    inddev
    plotting
    todo

@@ -57,9 +57,9 @@ Notice the following:
 So it is. `Datas` get added to the platform and they will show up inside the
 stratey in the sequential order in which they were added to the systems.
 
-.. note:: This also applies to Indicators, should the end user develop his own
-	  customer Indicator or when having a look at the source code for some
-	  of the existing :ref:`indautoref`
+.. note:: This also applies to ``Indicators``, should the end user develop his
+	  own customer Indicator or when having a look at the source code for
+	  some of the existing :ref:`indautoref`
 
 Shortcuts for Datas
 ===================
@@ -69,6 +69,37 @@ membervariables:
 
   - ``self.data`` targets ``self.datas[0]``
   - ``self.dataX`` targets ``self.datas[X]``
+
+The example then::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period=20)
+
+      def __init__(self):
+
+          sma = btind.SimpleMovingAverage(self.data, period=self.params.period)
+
+      ...
+
+
+Omitting the Datas
+==================
+
+The example above can be further simplfied to::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period=20)
+
+      def __init__(self):
+
+          sma = btind.SimpleMovingAverage(period=self.params.period)
+
+      ...
+
+``self.data`` has been completely removed. If this is done, the indicator (in
+this case the SimpleMovingAverage) receives the first data of the object in
+which is being created (the Strategy), which is ``self.data``
+
 
 Indicators and Operations ara DATAS
 ===================================
@@ -105,7 +136,7 @@ indicators::
 
       ...
 
-Basically everything gets transformed into an object which can be uses as a data
+Basically everything gets transformed into an object which can be used as a data
 once it has been operated upon.
 
 Parameters
@@ -128,7 +159,7 @@ for the sake of redundancy, again, focusing only on the parameters::
       params = dict(period=20)
 
       def __init__(self):
-          sma = btind.SimpleMovingAverage(self.data, self.p.period)
+          sma = btind.SimpleMovingAverage(self.data, period=self.p.period)
 
 
 Lines

@@ -18,7 +18,7 @@ Features:
     - Commision schemes for stocks and derivatives
     - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
   - Position Sizers for the automatic determination of the stake
-  - Optimization of Strategies
+  - Optimization of Strategies (multicore capable)
   - Plotting
 
 The development focused on two rules:

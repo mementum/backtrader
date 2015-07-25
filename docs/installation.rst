@@ -71,3 +71,6 @@ Unix-like OS for example::
   tar xzf backgrader.tgz
   cd backtrader
   cp -r backtrader project_directory
+
+Remember that you would then need to manually install ``six`` (and
+``matplotlib`` for plotting)
