@@ -19,6 +19,7 @@ Contents:
    advanced
    induse
    inddev
+   commission-schemes
    plotting
    todo
    indautoref
