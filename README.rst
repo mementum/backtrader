@@ -22,6 +22,10 @@ backtrader
    :alt: Documentation Status
    :scale: 100%
    :target: https://readthedocs.org/projects/backtrader/
+.. image:: https://badges.gitter.im/mementum/backtrader.png
+   :alt: Gitter chat
+   :scale: 100%
+   :target: https://https://gitter.im/mementum/backtrader
 
 BackTesting platform written in Python to test trading strategies.
 
