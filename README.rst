@@ -116,3 +116,8 @@ cup of tea, you can always have a look at similar Python platforms:
      approach but it is funny I chose *bt* as the abbreviation for
      ``backtrader`` during imports and that some of the methods have the same
      naming (obvious naming anyhow): "run, plot ..."
+
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+   :alt: Join the chat at https://gitter.im/mementum/backtrader
+   :target: https://gitter.im/mementum/backtrader?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
