@@ -41,8 +41,7 @@ down to it. If you have given a ``name`` to your data feed, because several
 instruments are being considered simultaneously on a chart, this call can be
 slightly extended to look as follows::
 
-   cerebro.broker.setcommission(commission=2.0, margin=2000.0, mult=10.0,
-   name='Eurostoxxx50')
+   cerebro.broker.setcommission(commission=2.0, margin=2000.0, mult=10.0, name='Eurostoxxx50')
 
 In this case this on-the-fly commission scheme will only applied to instruments
 whose name matches ``Eurostoxx50``.
@@ -218,7 +217,6 @@ But:
 
   - Futures accumulated net profit & loss: 324.00 + (-247.30) = 76.70
   - Stocks accumulated net profit & loss: (-4.91) + (-62.84) = -67.75
-
 
 The accumulated effect can be seen on the charts below, where it can also be
 seen that at the end of the full year, futures have produced a larger profit,
