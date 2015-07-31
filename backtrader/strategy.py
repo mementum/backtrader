@@ -30,6 +30,7 @@ from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
 from .analyzer import Analyzer
 from .sizer import SizerFix
+from .datapos import Operation
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -41,13 +42,29 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._sizer = SizerFix()
         _obj._orders = list()
         _obj._orderspending = list()
+        _obj._operations = collections.defaultdict(list)
+        _obj._current_ops = dict()
+        _obj._operationspending = list()
 
-        # Create an analyzer
-        if _obj.params.analyzer:
-            _obj.analyzer = Analyzer()
+        if _obj.params._analyzer in [False, None]:
+            _obj.analyzer = None
+            pass  # requested nothing
+        elif _obj.params._analyzer is True:
+            # Default to be used
+            _obj.analyzer = _obj.stats = Analyzer()
+        elif isinstance(_obj.params._analyzer, (list, tuple)):
+            # a custom analyzer a tuple/list is expected
+            aclass = _obj.params._analyzer[0]
 
-        # Keep a copy of the created observers by the Analyzer
-        _obj._analyzer_obs = _obj._lineiterators[LineIterator.ObsType][:]
+            akwargs = dict()
+            if len(_obj.params._analyzer) > 1:
+                akwargs = _obj.params._analyzer[1]
+
+            _obj.analyzer = aclass(**akwargs)
+
+        else:
+            # assume a class was passed
+            _obj.analyzer = _obj.params._analyzer()
 
         return _obj, args, kwargs
 
@@ -109,7 +126,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
-    params = (('analyzer', True),)
+    params = (('_analyzer', True),)
 
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
@@ -149,14 +166,56 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self._orders.extend(self._orderspending)
         self._orderspending = list()
 
+        self._operationspending = list()
+
     def _addnotification(self, order):
         self._orderspending.append(order)
+
+        if not order.executed.size:
+            return
+
+        opdata = order.data
+        dataops = self._operations[opdata]
+        if not dataops:
+            dataops.append(Operation(data=opdata))
+
+        operation = dataops[-1]
+
+        for exbit in order.executed.exbits:
+            operation.update(exbit.closed,
+                             exbit.price,
+                             exbit.closedvalue,
+                             exbit.closedcomm,
+                             exbit.pnl)
+
+            if operation.isclosed:
+                self._operationspending.append(operation)
+
+                # Open the next operation
+                operation = Operation(data=opdata)
+                dataops.append(operation)
+
+            # Update it if needed
+            operation.update(exbit.opened,
+                             exbit.price,
+                             exbit.openedvalue,
+                             exbit.openedcomm,
+                             exbit.pnl)
+
+            if operation.justopened:
+                self._operationspending.append(operation)
 
     def _notify(self):
         for order in self._orderspending:
             self.notify(order)
 
+        for operation in self._operationspending:
+            self.notify_operation(operation)
+
     def notify(self, order):
+        pass
+
+    def notify_operation(self, operation):
         pass
 
     def buy(self, data=None, size=None, price=None, exectype=None, valid=None):
@@ -204,21 +263,3 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def getsizing(self, data=None):
         data = data or self.datas[0]
         return self._sizer.getsizing(data)
-
-    def delanalyzer(self):
-        '''
-        This is a one time operation, because is meant to replace the
-        automatically generated "analyzer" by (before init) keeping a
-        list of the observers created by the analyzer.
-
-        A user-generated analyzer can be kept in a member variable by the user.
-        No need to keep it in the system any longer
-        '''
-
-        # Remove the observers added by the previous analyzer
-        observers = self._lineiterators[LineIterator.ObsType]
-        for obs in self._analyzer_obs:
-            observers.remove(obs)
-
-        self.analyzer = None
-        self._analyzer_obs = list()

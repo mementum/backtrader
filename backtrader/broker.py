@@ -127,6 +127,9 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
         # Adjust position with operation size
         position = self.positions[order.data]
+        oldpsize = position.size
+        oldpprice = position.price
+
         psize, pprice, opened, closed = position.update(size, price)
         abopened, abclosed = abs(opened), abs(closed)
 
@@ -145,8 +148,13 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             self.cash -= comminfo.cashadjust(abclosed,
                                              price,
                                              order.data.close[0])
+
+            # if part/all of a position has been closed, then there has been
+            # a profitandloss ... record it
+            pnl = comminfo.profitandloss(oldpsize, oldpprice, price)
+
         else:
-            closedvalue = closedcomm = 0.0
+            pnl = closedvalue = closedcomm = 0.0
 
         if opened:
             openedvalue = comminfo.getoperationcost(abopened, price)
@@ -166,7 +174,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         order.execute(dt, size, price,
                       closed, closedvalue, closedcomm,
                       opened, openedvalue, openedcomm,
-                      comminfo.margin, psize, pprice)
+                      comminfo.margin, pnl,
+                      psize, pprice)
 
         self.notify(order)
 

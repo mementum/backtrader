@@ -31,6 +31,7 @@ class OrderExecutionBit(object):
                  dt=None, size=0, price=0.0,
                  closed=0, closedvalue=0.0, closedcomm=0.0,
                  opened=0, openedvalue=0.0, openedcomm=0.0,
+                 pnl=0.0,
                  psize=0, pprice=0.0):
 
         self.dt = dt
@@ -46,6 +47,7 @@ class OrderExecutionBit(object):
 
         self.value = closedvalue + openedvalue
         self.comm = closedcomm + openedcomm
+        self.pnl = pnl
 
         self.psize = psize
         self.pprice = pprice
@@ -70,6 +72,7 @@ class OrderData(object):
         self.value = 0.0
         self.comm = 0.0
         self.margin = None
+        self.pnl = 0.0
 
         self.psize = 0
         self.pprice = 0
@@ -82,13 +85,13 @@ class OrderData(object):
 
     def add(self, dt, size, price,
             closed, closedvalue, closedcommission,
-            opened, openedvalue, openedcomm,
+            opened, openedvalue, openedcomm, pnl,
             psize, pprice):
 
         self.addbit(
             OrderExecutionBit(dt, size, price,
                               closed, closedvalue, closedcommission,
-                              opened, openedvalue, openedcomm,
+                              opened, openedvalue, openedcomm, pnl,
                               psize, pprice))
 
     def addbit(self, exbit):
@@ -103,6 +106,7 @@ class OrderData(object):
         self.price = (oldvalue + newvalue) / self.size
         self.value += exbit.value
         self.comm += exbit.comm
+        self.pnl += exbit.pnl
         self.psize = exbit.psize
         self.pprice = exbit.pprice
 
@@ -169,15 +173,17 @@ class Order(six.with_metaclass(MetaParams, object)):
     def execute(self, dt, size, price,
                 closed, closedvalue, closedcomm,
                 opened, openedvalue, openedcomm,
-                margin, psize, pprice):
+                margin, pnl,
+                psize, pprice):
+
         if not size:
             return
 
-        # NOTE: MARGIN ... DO I NEED THAT IN THE ORDER ...
         self.executed.add(dt, size, price,
                           closed, closedvalue, closedcomm,
                           opened, openedvalue, openedcomm,
-                          psize, pprice)
+                          pnl, psize, pprice)
+
         self.executed.margin = margin
         if self.executed.remsize:
             self.status = Order.Partial

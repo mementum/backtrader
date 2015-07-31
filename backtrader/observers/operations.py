@@ -29,40 +29,24 @@ class _OperationsPnLObserver(LineObserver):
     lines = ('pnl',)
 
     plotinfo = dict(
-        plotname='Operation Gross Profit/Loss',
+        plotname='Operation Net Profit/Loss',
         plothlines=[0.0])
+
     plotlines = dict(
         pnl=dict(marker='o', color='blue', markersize=8.0, fillstyle='full'))
 
     def __init__(self, dataidx):
         self.data = self.datas[dataidx]
-        self.operation = Operation()
-        self.operations = list()
 
     def next(self):
-        for order in self._owner._orderspending:
-            if order.data is not self.data or not order.executed.size:
+        for operation in self._owner._operationspending:
+            if operation.data is not self.data:
                 continue
 
-            for exbit in order.executed.exbits:
-                self.operation.update(exbit.closed,
-                                      exbit.price,
-                                      exbit.closedvalue,
-                                      exbit.closedcomm)
+            if not operation.isclosed:
+                continue
 
-                if self.operation.isclosed:
-                    # operation closed, record the pnl
-                    self.lines.pnl[0] = self.operation.pnl
-                    self.operations.append(self.operation)
-
-                    # Open the next operation
-                    self.operation = Operation()
-
-                # Updated
-                self.operation.update(exbit.opened,
-                                      exbit.price,
-                                      exbit.openedvalue,
-                                      exbit.openedcomm)
+            self.lines.pnl[0] = operation.pnl
 
 
 class OperationsPnLObserver(ObserverPot):

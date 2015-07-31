@@ -54,7 +54,7 @@ def check_stocks():
     assert commcost == size * price * commission
 
     newprice = 5.0
-    pnl = comm.profitandloss(pos, newprice)
+    pnl = comm.profitandloss(pos.size, pos.price, newprice)
     assert pnl == pos.size * (newprice - price)
 
     ca = comm.cashadjust(size, price, newprice)
@@ -90,7 +90,7 @@ def check_futures():
     assert commcost == size * commission
 
     newprice = 5.0
-    pnl = comm.profitandloss(pos, newprice)
+    pnl = comm.profitandloss(pos.size, pos.price, newprice)
     assert pnl == pos.size * (newprice - price) * mult
 
     ca = comm.cashadjust(size, price, newprice)

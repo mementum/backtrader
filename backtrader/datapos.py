@@ -144,8 +144,15 @@ class Operation(object):
         isclosed (bool): records if the last update closed (set size to null
                          the operation
         isopen (bool): records if any update has opened the operation
+        justopened (bool): if the operation was just opened
+        baropen (int): bar in which this operation was opened
+        barclose (int): bar in which this operation was closed
+        barlen (int): number of bars this operation was open
     '''
-    def __init__(self, size=0, price=0.0, value=0.0, commission=0.0):
+    def __init__(self, data=None,
+                 size=0, price=0.0, value=0.0, commission=0.0):
+
+        self.data = data
         self.size = size
         self.price = price
         self.value = value
@@ -154,13 +161,18 @@ class Operation(object):
         self.pnl = 0.0
         self.pnlcomm = 0.0
 
+        self.justopened = False
         self.isopen = False
         self.isclosed = False
+
+        self.baropen = 0
+        self.barclose = 0
+        self.barlen = 0
 
     def __len__(self):
         return self.size
 
-    def update(self, size, price, value, commission):
+    def update(self, size, price, value, commission, pnl):
         '''
         Updates the current operation. The logic does not check if the
         operation is reversed, which is not conceptually supported by the
@@ -190,11 +202,24 @@ class Operation(object):
         oldsize = self.size
         self.size += size  # size will carry the opposite sign if reducing
 
+        # Check if it has been currently opened
+        self.justopened = not oldsize and size
+
+        if self.justopened:
+            self.baropen = len(self.data)
+
         # Any size means the operation was opened
         self.isopen = True
 
+        # Update current operation length
+        self.barlen = len(self.data) - self.baropen
+
         # record if the position was closed (set to null)
-        self.isclosed = not self.size
+        self.isclosed = oldsize and not self.size
+
+        # record last bar for the operation
+        if self.isclosed and not self.barclose:
+            self.barclose = len(self.data)
 
         if abs(self.size) > abs(oldsize):
             # position increased (be it positive or negative)
@@ -209,7 +234,9 @@ class Operation(object):
             # and loss has to be inverted. If the original position is 10
             # reducing/closing the position needs a negative size. If the
             # formula is not inverted profit and loss figures would be inverted
-            self.pnl += size * (self.price - price)
+
+            # self.pnl += size * (self.price - price)
+            self.pnl += pnl
             self.pnlcomm = self.pnl - self.commission
 
         self.value = self.size * self.price

@@ -28,7 +28,7 @@ from backtrader import datapos
 
 
 def test_run(main=False):
-    op = datapos.Operation()
+    op = datapos.Operation(data=[None])
 
     commrate = 0.025
     size = 10
@@ -36,7 +36,8 @@ def test_run(main=False):
     value = size * price
     commission = value * commrate
 
-    op.update(size=size, price=price, value=value, commission=commission)
+    op.update(size=size, price=price, value=value,
+              commission=commission, pnl=0.0)
 
     assert not op.isclosed
     assert op.size == size
@@ -51,7 +52,8 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue, commission=upcomm)
+    op.update(size=upsize, price=upprice, value=upvalue,
+              commission=upcomm, pnl=0.0)
 
     assert not op.isclosed
     assert op.size == size + upsize
@@ -68,7 +70,8 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue, commission=upcomm)
+    op.update(size=upsize, price=upprice, value=upvalue,
+              commission=upcomm, pnl=0.0)
 
     assert not op.isclosed
     assert op.size == size + upsize
@@ -85,7 +88,8 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue, commission=upcomm)
+    op.update(size=upsize, price=upprice, value=upvalue,
+              commission=upcomm, pnl=0.0)
 
     assert op.isclosed
     assert op.size == size + upsize
