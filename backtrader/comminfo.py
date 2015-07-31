@@ -93,9 +93,9 @@ class CommissionInfo(six.with_metaclass(MetaParams)):
         price = order.price if not self.margin else 1.0
         return order.size * self.commission * price
 
-    def profitandloss(self, position, price):
+    def profitandloss(self, size, price, newprice):
         '''Return actual profit and loss a position has'''
-        return position.size * (price - position.price) * self.mult
+        return size * (newprice - price) * self.mult
 
     def mustcheckmargin(self):
         return not self.margin
