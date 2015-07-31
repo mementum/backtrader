@@ -39,6 +39,6 @@ class Analyzer(LineObserver):
     )
 
     def __init__(self, *args, **kwargs):
-        self.cashvalue = CashValueObserver(plot=self.params.plotcashvalue)
-        self.operations = OperationsPnLObserver(plot=self.params.plotcashvalue)
-        self.buysell = BuySellObserver(plot=self.params.plotbuysell)
+        self._cashvalue = CashValueObserver(plot=self.p.plotcashvalue)
+        self._operations = OperationsPnLObserver(plot=self.p.plotcashvalue)
+        self._buysell = BuySellObserver(plot=self.p.plotbuysell)
