@@ -169,9 +169,10 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             cursor = MultiCursor(
                 fig.canvas, list(self.pinf.daxis.values()),
-                useblit=True, horizOn=True, vertOn=True,
+                useblit=True,
+                horizOn=True, vertOn=True,
+                horizMulti=False, vertMulti=True,
                 horizShared=True, vertShared=False,
-                horizMulti=True, vertMulti=False,
                 color='black', lw=1, ls=':')
 
             self.pinf.cursors.append(cursor)
