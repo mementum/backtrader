@@ -22,32 +22,50 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .. import LineObserver, ObserverPot
-from ..datapos import Operation
+from ..trade import Trade
 
 
-class _OperationsPnLObserver(LineObserver):
-    lines = ('pnl',)
+class _TradesPnLObserver(LineObserver):
+    lines = ('pnlplus', 'pnlminus')
 
     plotinfo = dict(
-        plotname='Operation Net Profit/Loss',
+        plotname='Trade Net Profit/Loss',
         plothlines=[0.0])
 
     plotlines = dict(
-        pnl=dict(marker='o', color='blue', markersize=8.0, fillstyle='full'))
+        pnlplus=dict(_name='Positive',
+                     marker='o', color='blue',
+                     markersize=8.0, fillstyle='full'),
+        pnlminus=dict(_name='Negative',
+                      marker='o', color='red',
+                      markersize=8.0, fillstyle='full')
+    )
 
-    def __init__(self, dataidx):
-        self.data = self.datas[dataidx]
+    def __init__(self):
+
+        self.trades = 0
+        self.trades_long = 0
+        self.trades_short = 0
+        self.trades_plus = 0
+        self.trades_short = 0
+        self.trades_length = 0
+        self.trades_length_max = 0
+        self.trades_length_min = 0
 
     def next(self):
         for operation in self._owner._operationspending:
             if operation.data is not self.data:
                 continue
 
-            if not operation.isclosed:
-                continue
+            if operation.justopened:
+                self.operations += 1
 
-            self.lines.pnl[0] = operation.pnl
+            if operation.isclosed:
+                if operation.pnl >= 0:
+                    self.lines.pnlplus[0] = operation.pnl
+                else:
+                    self.lines.pnlminus[0] = operation.pnl
 
 
-class OperationsPnLObserver(ObserverPot):
-    _ObserverCls = _OperationsPnLObserver
+class TradesPnLObserver(ObserverPot):
+    _ObserverCls = _TradesPnLObserver

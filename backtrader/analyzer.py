@@ -27,18 +27,27 @@ from .observer import LineObserver
 from .observers import BuySellObserver
 from .observers import CashValueObserver
 from .observers import OperationsPnLObserver
+from .observers import DrawDownObserver
 
 
 class Analyzer(LineObserver):
     plotinfo = dict(plot=False, plotskip=True)
 
     params = dict(
-        plotbuysell=True,
         plotcashvalue=True,
+        plotdrawdown=True,
         plotoperations=True,
+        plotbuysell=True,
     )
 
     def __init__(self, *args, **kwargs):
         self._cashvalue = CashValueObserver(plot=self.p.plotcashvalue)
+        self.cash = self._cashvalue.lines.cash
+        self.value = self._cashvalue.lines.value
+
+        self._drawdown = DrawDownObserver(plot=self.p.plotdrawdown)
+        self.drawdown = self._drawdown.lines.drawdown
+        self.maxdrawdown = self._drawdown.lines.maxdrawdown
+
         self._operations = OperationsPnLObserver(plot=self.p.plotcashvalue)
         self._buysell = BuySellObserver(plot=self.p.plotbuysell)

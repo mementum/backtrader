@@ -30,7 +30,7 @@ from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
 from .analyzer import Analyzer
 from .sizer import SizerFix
-from .datapos import Operation
+from .trade import Trade
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -42,9 +42,8 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._sizer = SizerFix()
         _obj._orders = list()
         _obj._orderspending = list()
-        _obj._operations = collections.defaultdict(list)
-        _obj._current_ops = dict()
-        _obj._operationspending = list()
+        _obj._trades = collections.defaultdict(list)
+        _obj._tradespending = list()
 
         if _obj.params._analyzer in [False, None]:
             _obj.analyzer = None
@@ -166,7 +165,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self._orders.extend(self._orderspending)
         self._orderspending = list()
 
-        self._operationspending = list()
+        self._tradespending = list()
 
     def _addnotification(self, order):
         self._orderspending.append(order)
@@ -174,48 +173,48 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if not order.executed.size:
             return
 
-        opdata = order.data
-        dataops = self._operations[opdata]
-        if not dataops:
-            dataops.append(Operation(data=opdata))
+        tradedata = order.data
+        datatrades = self._trades[tradedata]
+        if not datatrades:
+            datatrades.append(Trade(data=tradedata))
 
-        operation = dataops[-1]
+        trade = datatrades[-1]
 
         for exbit in order.executed.exbits:
-            operation.update(exbit.closed,
-                             exbit.price,
-                             exbit.closedvalue,
-                             exbit.closedcomm,
-                             exbit.pnl)
+            trade.update(exbit.closed,
+                         exbit.price,
+                         exbit.closedvalue,
+                         exbit.closedcomm,
+                         exbit.pnl)
 
-            if operation.isclosed:
-                self._operationspending.append(operation)
+            if trade.isclosed:
+                self._tradespending.append(trade)
 
-                # Open the next operation
-                operation = Operation(data=opdata)
-                dataops.append(operation)
+                # Open the next trade
+                trade = Trade(data=tradedata)
+                datatrades.append(trade)
 
             # Update it if needed
-            operation.update(exbit.opened,
-                             exbit.price,
-                             exbit.openedvalue,
-                             exbit.openedcomm,
-                             exbit.pnl)
+            trade.update(exbit.opened,
+                         exbit.price,
+                         exbit.openedvalue,
+                         exbit.openedcomm,
+                         exbit.pnl)
 
-            if operation.justopened:
-                self._operationspending.append(operation)
+            if trade.justopened:
+                self._tradespending.append(trade)
 
     def _notify(self):
         for order in self._orderspending:
             self.notify(order)
 
-        for operation in self._operationspending:
-            self.notify_operation(operation)
+        for trade in self._tradespending:
+            self.notify_trade(trade)
 
     def notify(self, order):
         pass
 
-    def notify_operation(self, operation):
+    def notify_trade(self, trade):
         pass
 
     def buy(self, data=None, size=None, price=None, exectype=None, valid=None):

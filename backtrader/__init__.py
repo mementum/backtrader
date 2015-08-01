@@ -35,6 +35,8 @@ from .broker import *
 from .cerebro import *
 from .functions import *
 from .resampler import *
+from .trade import *
+from .position import *
 
 from .utils import num2date, date2num
 
@@ -43,4 +45,4 @@ from . import indicators
 from . import strategies
 from . import observers
 
-__version__ = '1.0.10.88'
+__version__ = '1.0.11.88'

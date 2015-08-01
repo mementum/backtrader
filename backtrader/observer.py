@@ -53,9 +53,9 @@ class ObserverPot(LineObserver):
 
     def __init__(self, *args, **kwargs):
         self.pot = dict()
-        for didx, data in enumerate(self.datas):
+        for data in self.datas:
             self.pot[data] = self._ObserverCls(
-                didx, *args, plot=self.plotinfo.plot, **kwargs)
+                data, *args, plot=self.plotinfo.plot, **kwargs)
 
     def __getitem__(self, key):
         return self.pot[key]

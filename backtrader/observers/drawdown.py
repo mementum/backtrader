@@ -21,37 +21,29 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import math
-
-from ..observer import LineObserver, ObserverPot
+from .. import LineObserver
 
 
-class _BuySellObserver(LineObserver):
-    lines = ('buy', 'sell',)
+class DrawDownObserver(LineObserver):
+    lines = ('drawdown', 'maxdrawdown',)
 
-    plotinfo = dict(subplot=False, plotlinelabels=True)
-    plotlines = dict(
-        buy=dict(marker='^', markersize=8.0, color='lime', fillstyle='full'),
-        sell=dict(marker='v', markersize=8.0, color='red', fillstyle='full')
-    )
+    plotinfo = dict(plotname='DrawDown')
+
+    plotlines = dict(maxdrawdown=dict(_plotskip='True',))
+
+    def __init__(self):
+        self.maxdd = 0.0
+        self.peak = float('-inf')
 
     def next(self):
-        buy = list()
-        sell = list()
+        value = self._owner.stats.value[0]
 
-        for order in self._owner._orderspending:
-            if order.data is not self.data or not order.executed.size:
-                continue
+        # update the maximum seen peak
+        if value > self.peak:
+            self.peak = value
 
-            if order.isbuy():
-                buy.append(order.executed.price)
-            else:
-                sell.append(order.executed.price)
+        # calculate the current drawdown
+        self.lines.drawdown[0] = dd = 100.0 * (1.0 - value / self.peak)
 
-        # Write down the average buy/sell price
-        self.lines.buy[0] = math.fsum(buy)/float(len(buy) or 'NaN')
-        self.lines.sell[0] = math.fsum(sell)/float(len(sell) or 'NaN')
-
-
-class BuySellObserver(ObserverPot):
-    _ObserverCls = _BuySellObserver
+        # update the maxdrawdown if needed
+        self.lines.maxdrawdown[0] = self.maxdd = max(self.maxdd, dd)
