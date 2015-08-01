@@ -24,14 +24,14 @@ from __future__ import (absolute_import, division, print_function,
 import testcommon
 
 import backtrader as bt
-from backtrader import datapos
+from backtrader import position
 
 
 def test_run(main=False):
     size = 10
     price = 10.0
 
-    pos = datapos.Position(size=size, price=price)
+    pos = position.Position(size=size, price=price)
     assert pos.size == size
     assert pos.price == price
 

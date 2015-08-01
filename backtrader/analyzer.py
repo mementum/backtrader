@@ -26,7 +26,7 @@ import six
 from .observer import LineObserver
 from .observers import BuySellObserver
 from .observers import CashValueObserver
-from .observers import OperationsPnLObserver
+from .observers import TradesPnLObserver
 from .observers import DrawDownObserver
 
 
@@ -36,7 +36,7 @@ class Analyzer(LineObserver):
     params = dict(
         plotcashvalue=True,
         plotdrawdown=True,
-        plotoperations=True,
+        plottrades=True,
         plotbuysell=True,
     )
 
@@ -49,5 +49,5 @@ class Analyzer(LineObserver):
         self.drawdown = self._drawdown.lines.drawdown
         self.maxdrawdown = self._drawdown.lines.maxdrawdown
 
-        self._operations = OperationsPnLObserver(plot=self.p.plotcashvalue)
+        self._trades = TradesPnLObserver(plot=self.p.plottrades)
         self._buysell = BuySellObserver(plot=self.p.plotbuysell)

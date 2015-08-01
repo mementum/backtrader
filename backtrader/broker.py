@@ -26,7 +26,7 @@ import collections
 import six
 
 from .comminfo import CommissionInfo
-from .datapos import Position
+from .position import Position
 from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
 

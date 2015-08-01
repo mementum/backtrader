@@ -24,11 +24,11 @@ from __future__ import (absolute_import, division, print_function,
 import testcommon
 
 import backtrader as bt
-from backtrader import datapos
+from backtrader import trade
 
 
 def test_run(main=False):
-    op = datapos.Operation(data=[None])
+    tr = trade.Trade(data=[None])
 
     commrate = 0.025
     size = 10
@@ -36,66 +36,66 @@ def test_run(main=False):
     value = size * price
     commission = value * commrate
 
-    op.update(size=size, price=price, value=value,
+    tr.update(size=size, price=price, value=value,
               commission=commission, pnl=0.0)
 
-    assert not op.isclosed
-    assert op.size == size
-    assert op.price == price
-    assert op.value == value
-    assert op.commission == commission
-    assert not op.pnl
-    assert not op.pnlcomm
+    assert not tr.isclosed
+    assert tr.size == size
+    assert tr.price == price
+    assert tr.value == value
+    assert tr.commission == commission
+    assert not tr.pnl
+    assert not tr.pnlcomm
 
     upsize = -5
     upprice = 12.5
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue,
+    tr.update(size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0)
 
-    assert not op.isclosed
-    assert op.size == size + upsize
-    assert op.price == price  # size is being reduced, price must not change
-    assert op.value == op.size * op.price
-    assert op.commission == commission + upcomm
+    assert not tr.isclosed
+    assert tr.size == size + upsize
+    assert tr.price == price  # size is being reduced, price must not change
+    assert tr.value == upvalue
+    assert tr.commission == commission + upcomm
 
-    size = op.size
-    price = op.price
-    commission = op.commission
+    size = tr.size
+    price = tr.price
+    commission = tr.commission
 
     upsize = 7
     upprice = 14.5
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue,
+    tr.update(size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0)
 
-    assert not op.isclosed
-    assert op.size == size + upsize
-    assert op.price == ((size * price) + (upsize * upprice)) / (size + upsize)
-    assert op.value == op.size * op.price
-    assert op.commission == commission + upcomm
+    assert not tr.isclosed
+    assert tr.size == size + upsize
+    assert tr.price == ((size * price) + (upsize * upprice)) / (size + upsize)
+    assert tr.value == upvalue
+    assert tr.commission == commission + upcomm
 
-    size = op.size
-    price = op.price
-    commission = op.commission
+    size = tr.size
+    price = tr.price
+    commission = tr.commission
 
     upsize = -size
     upprice = 12.5
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    op.update(size=upsize, price=upprice, value=upvalue,
+    tr.update(size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0)
 
-    assert op.isclosed
-    assert op.size == size + upsize
-    assert op.price == price  # no change ... we simple closed the operation
-    assert op.value == op.size * op.price
-    assert op.commission == commission + upcomm
+    assert tr.isclosed
+    assert tr.size == size + upsize
+    assert tr.price == price  # no change ... we simple closed the operation
+    assert tr.value == upvalue
+    assert tr.commission == commission + upcomm
 
 
 if __name__ == '__main__':

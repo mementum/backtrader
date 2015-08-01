@@ -53,18 +53,18 @@ class _TradesPnLObserver(LineObserver):
         self.trades_length_min = 0
 
     def next(self):
-        for operation in self._owner._operationspending:
-            if operation.data is not self.data:
+        for trade in self._owner._tradespending:
+            if trade.data is not self.data:
                 continue
 
-            if operation.justopened:
-                self.operations += 1
+            if trade.justopened:
+                self.trades += 1
 
-            if operation.isclosed:
-                if operation.pnl >= 0:
-                    self.lines.pnlplus[0] = operation.pnl
+            if trade.isclosed:
+                if trade.pnl >= 0:
+                    self.lines.pnlplus[0] = trade.pnl
                 else:
-                    self.lines.pnlminus[0] = operation.pnl
+                    self.lines.pnlminus[0] = trade.pnl
 
 
 class TradesPnLObserver(ObserverPot):
