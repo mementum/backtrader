@@ -21,42 +21,33 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import LineObserver
+from .. import Observer
 
 
-class CashObserver(LineObserver):
+class Cash(Observer):
     lines = ('cash',)
+
+    plotinfo = dict(plot=True, subplot=True)
 
     def next(self):
         self.lines[0][0] = self._owner.broker.getcash()
 
 
-class ValueObserver(LineObserver):
+class Value(Observer):
     lines = ('value',)
+
+    plotinfo = dict(plot=True, subplot=True)
 
     def next(self):
         self.lines[0][0] = self._owner.broker.getvalue()
 
 
-class CashValueObserver(LineObserver):
+class Broker(Observer):
+    alias = ('CashValue',)
     lines = ('cash', 'value')
 
-    plotinfo = dict(plotname='Cash/Market Value')
-
-    def __init__(self):
-        self.maxdrawdown = 0.0
-        self.peak = float('-inf')
+    plotinfo = dict(plot=True, subplot=True)
 
     def next(self):
         self.lines.cash[0] = self._owner.broker.getcash()
         self.lines.value[0] = value = self._owner.broker.getvalue()
-
-        # update the maximum seen peak
-        if value > self.peak:
-            self.peak = value
-
-        # calculate the current drawdown
-        drawdown = 100.0 * (self.peak - value) / self.peak
-
-        # update the maxdrawdown if needed
-        self.maxdrawdown = max(self.maxdrawdown, drawdown)

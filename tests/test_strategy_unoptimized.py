@@ -61,7 +61,7 @@ class TestStrategy(bt.Strategy):
         dt = bt.num2date(dt)
         print('%s, %s' % (dt.isoformat(), txt))
 
-    def notify(self, order):
+    def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
             return  # Await further notifications
 

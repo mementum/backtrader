@@ -21,16 +21,16 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import LineObserver, ObserverPot
+from .. import Observer
 from ..trade import Trade
 
 
-class _TradesPnLObserver(LineObserver):
+class Trades(Observer):
     lines = ('pnlplus', 'pnlminus')
 
-    plotinfo = dict(
-        plotname='Trade Net Profit/Loss',
-        plothlines=[0.0])
+    plotinfo = dict(plot=True, subplot=True,
+                    plotname='Trades - Net Profit/Loss',
+                    plothlines=[0.0])
 
     plotlines = dict(
         pnlplus=dict(_name='Positive',
@@ -44,10 +44,24 @@ class _TradesPnLObserver(LineObserver):
     def __init__(self):
 
         self.trades = 0
+
         self.trades_long = 0
         self.trades_short = 0
+
         self.trades_plus = 0
-        self.trades_short = 0
+        self.trades_minus = 0
+
+        self.trades_plus_gross = 0
+        self.trades_minus_gross = 0
+
+        self.trades_win = 0
+        self.trades_win_max = 0
+        self.trades_win_min = 0
+
+        self.trades_loss = 0
+        self.trades_loss_max = 0
+        self.trades_loss_min = 0
+
         self.trades_length = 0
         self.trades_length_max = 0
         self.trades_length_min = 0
@@ -57,15 +71,38 @@ class _TradesPnLObserver(LineObserver):
             if trade.data is not self.data:
                 continue
 
-            if trade.justopened:
-                self.trades += 1
+            if not trade.isclosed:
+                continue
 
-            if trade.isclosed:
+            if trade.pnl >= 0:
+                self.lines.pnlplus[0] = trade.pnl
+            else:
+                self.lines.pnlminus[0] = trade.pnl
+
+            if False:
+                self.trades_long += trade.long
+                self.trades_short += not trade.long
+
+                self.trades_plus += trade.pnl > 0
+                self.trades_minus += trade.pnl < 0
+
+                self.trades_plus_gross += trade.pnlcomm > 0
+                self.trades_minus_gross += trade.pnlcomm < 0
+
                 if trade.pnl >= 0:
-                    self.lines.pnlplus[0] = trade.pnl
-                else:
-                    self.lines.pnlminus[0] = trade.pnl
+                    w = self.trades_win * self.trades + trade.pnl
+                    self.trades_win = w / (self.trades + 1)
+                    self.trades_win_max = max(self.trades_win_max, trade.pnl)
+                    self.trades_win_min = min(self.trades_win_min, trade.pnl)
+                elif trade.pnl < 0:
+                    l = self.trades_loss * self.trades + trade.pnl
+                    self.trades_loss = l / (self.trades + 1)
+                    self.trades_loss_max = max(self.trades_loss_max, trade.pnl)
+                    self.trades_loss_min = min(self.trades_loss_min, trade.pnl)
 
+                l = self.trades_length * self.trades + trade.barlen
+                self.trades_length = l / (self.trades + 1)
+                self.trades_length_max = max(self.trades_length_max, trade.barlen)
+                self.trades_length_min = min(self.trades_length_min, trade.barlen)
 
-class TradesPnLObserver(ObserverPot):
-    _ObserverCls = _TradesPnLObserver
+                self.trades += 1

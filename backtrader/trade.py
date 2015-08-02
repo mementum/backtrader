@@ -108,6 +108,7 @@ class Trade(object):
 
         if self.justopened:
             self.baropen = len(self.data)
+            self.long = self.size > 0
 
         # Any size means the trade was opened
         self.isopen = True
@@ -130,15 +131,7 @@ class Trade(object):
 
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
-
-            # This is an "update" and therefore the usual formula
-            # "current price - original price" to calculate the profit
-            # and loss has to be inverted. If the original position is 10
-            # reducing/closing the position needs a negative size. If the
-            # formula is not inverted profit and loss figures would be inverted
-
-            # self.pnl += size * (self.price - price)
             self.pnl += pnl
-            self.pnlcomm = self.pnl - self.commission
+            self.pnlcomm += pnl - commission
 
         self.value = value

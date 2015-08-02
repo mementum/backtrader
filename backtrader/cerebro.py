@@ -30,6 +30,7 @@ from six.moves import xrange
 
 from .broker import BrokerBack
 from .metabase import MetaParams
+from . import observers
 
 
 class Cerebro(six.with_metaclass(MetaParams, object)):
@@ -39,6 +40,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('runonce', True),
         ('lookahead', 0),
         ('maxcpus', None),
+        ('stdstats', True),
     )
 
     def __init__(self):
@@ -46,6 +48,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.feeds = list()
         self.datas = list()
         self.strats = list()
+        self.observers = list()
         self._broker = BrokerBack()
 
     @staticmethod
@@ -60,6 +63,12 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addobserver(self, obscls, *args, **kwargs):
+        self.observers.append((False, obscls, args, kwargs))
+
+    def addobservermulti(self, obscls, *args, **kwargs):
+        self.observers.append((True, obscls, args, kwargs))
 
     def adddata(self, data, name=None):
         if name is not None:
@@ -113,13 +122,18 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
     def __call__(self, iterstrat):
         return self.runstrategies(iterstrat)
 
-    def run(self):
+    def run(self, **kwargs):
         if not self.datas:
             return
 
+        pkeys = self.params._getkeys()
+        for key, val in kwargs.items():
+            if key in pkeys:
+                setattr(self.params, key, val)
+
         self.runstrats = list()
         iterstrats = itertools.product(*self.strats)
-        if False or not self._dooptimize or self.p.maxcpus == 1:
+        if not self._dooptimize or self.p.maxcpus == 1:
             # If no optimmization is wished ... or 1 core is to be used
             # let's skip process "spawning"
             for iterstrat in iterstrats:
@@ -152,6 +166,15 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         # loop separated for clarity
         for strat in runstrats:
+
+            if self.p.stdstats:
+                strat._addobserver(False, observers.Broker)
+                strat._addobserver(False, observers.BuySell)
+                strat._addobserver(False, observers.Trades)
+
+            for multi, obscls, obsargs, obskwargs in self.observers:
+                strat._addobserver(multi, obscls, *obsargs, **obskwargs)
+
             strat.start()
 
         if self.params.preload and self.params.runonce:

@@ -21,22 +21,24 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import LineObserver
+from .. import Observer
 
 
-class DrawDownObserver(LineObserver):
+class DrawDown(Observer):
     lines = ('drawdown', 'maxdrawdown',)
 
-    plotinfo = dict(plotname='DrawDown')
+    plotinfo = dict(plot=True, subplot=True)
 
     plotlines = dict(maxdrawdown=dict(_plotskip='True',))
 
     def __init__(self):
+        super(DrawDown, self).__init__()
+
         self.maxdd = 0.0
         self.peak = float('-inf')
 
     def next(self):
-        value = self._owner.stats.value[0]
+        value = self._owner.stats.broker.value[0]
 
         # update the maximum seen peak
         if value > self.peak:

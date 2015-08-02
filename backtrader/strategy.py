@@ -22,18 +22,33 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import itertools
 import operator
 
 import six
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
-from .analyzer import Analyzer
 from .sizer import SizerFix
 from .trade import Trade
 
 
+class _Template(object):
+    pass
+
+
 class MetaStrategy(StrategyBase.__class__):
+    def __new__(meta, name, bases, dct):
+        # Hack to support original method name for notify_order
+        if 'notify' in dct:
+            # rename 'notify' to 'notify_order'
+            dct['notify_order'] = dct.pop('notify')
+        if 'notify_operation' in dct:
+            # rename 'notify' to 'notify_order'
+            dct['notify_trade'] = dct.pop('notify_operation')
+
+        return super(MetaStrategy, meta).__new__(meta, name, bases, dct)
+
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
@@ -45,25 +60,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._trades = collections.defaultdict(list)
         _obj._tradespending = list()
 
-        if _obj.params._analyzer in [False, None]:
-            _obj.analyzer = None
-            pass  # requested nothing
-        elif _obj.params._analyzer is True:
-            # Default to be used
-            _obj.analyzer = _obj.stats = Analyzer()
-        elif isinstance(_obj.params._analyzer, (list, tuple)):
-            # a custom analyzer a tuple/list is expected
-            aclass = _obj.params._analyzer[0]
-
-            akwargs = dict()
-            if len(_obj.params._analyzer) > 1:
-                akwargs = _obj.params._analyzer[1]
-
-            _obj.analyzer = aclass(**akwargs)
-
-        else:
-            # assume a class was passed
-            _obj.analyzer = _obj.params._analyzer()
+        _obj.stats = _Template()
 
         return _obj, args, kwargs
 
@@ -125,7 +122,23 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
-    params = (('_analyzer', True),)
+    def _addobserver(self, multi, obscls, *obsargs, **obskwargs):
+        obsname = obskwargs.pop('obsname', '')
+        if not obsname:
+            obsname = obscls.__name__.lower()
+
+        if not multi:
+            newargs = list(itertools.chain(self.datas, obsargs))
+            obs = obscls(*newargs, **obskwargs)
+            setattr(self.stats, obsname, obs)
+            return
+
+        setattr(self.stats, obsname, list())
+        l = getattr(self.stats, obsname)
+
+        for data in self.datas:
+            obs = obscls(data, *obsargs, **obskwargs)
+            l.append(obs)
 
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
@@ -206,12 +219,12 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def _notify(self):
         for order in self._orderspending:
-            self.notify(order)
+            self.notify_order(order)
 
         for trade in self._tradespending:
             self.notify_trade(trade)
 
-    def notify(self, order):
+    def notify_order(self, order):
         pass
 
     def notify_trade(self, trade):

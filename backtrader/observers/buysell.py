@@ -23,13 +23,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import math
 
-from ..observer import LineObserver, ObserverPot
+from ..observer import Observer
 
 
-class _BuySellObserver(LineObserver):
+class BuySell(Observer):
     lines = ('buy', 'sell',)
 
-    plotinfo = dict(subplot=False, plotlinelabels=True)
+    plotinfo = dict(plot=True, subplot=False, plotlinelabels=True)
     plotlines = dict(
         buy=dict(marker='^', markersize=8.0, color='lime', fillstyle='full'),
         sell=dict(marker='v', markersize=8.0, color='red', fillstyle='full')
@@ -51,7 +51,3 @@ class _BuySellObserver(LineObserver):
         # Write down the average buy/sell price
         self.lines.buy[0] = math.fsum(buy)/float(len(buy) or 'NaN')
         self.lines.sell[0] = math.fsum(sell)/float(len(sell) or 'NaN')
-
-
-class BuySellObserver(ObserverPot):
-    _ObserverCls = _BuySellObserver

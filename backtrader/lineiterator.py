@@ -48,7 +48,7 @@ class MetaLineIterator(LineSeries.__class__):
 
         # If no datas have been passed to an indicator ... use the
         # main data of the owner, easing up adding "self.data" ...
-        if not _obj.datas and isinstance(_obj, IndicatorBase):
+        if not _obj.datas and isinstance(_obj, (IndicatorBase, ObserverBase)):
             _obj.datas = [_obj._owner.datas[0]]
 
         # For each found data add access member -
@@ -306,7 +306,7 @@ class IndicatorBase(DataAccessor):
     pass
 
 
-class LineObserverBase(DataAccessor):
+class ObserverBase(DataAccessor):
     pass
 
 
