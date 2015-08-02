@@ -1,3 +1,19 @@
+1.1.0.88:
+  - Added Gitter stuff to README.rst
+  - Documentation updates
+  - Moved operations calculations to strategy with extra P&L information from
+    the broker (with an updated CommissionInfo profitandloss method) and
+    simplified Operations observer along the way
+  - Removal of the analyzer paradigm, refactoring the introduction of observers,
+    which now can be done through Cerebro to make them really usable as
+    statistics generators. Default observers get added from Cerebro unless
+    explicitly indicatoed not to do so
+  - notify renamed to notify_order (patch support included)
+  - notify_operation renamed to notify_trade
+  - All "Operation" references changed to "Trade"
+  - Minor version bump due to the "Operation" and "Observer" refactoring
+  - Addition of a drawdown observer
+
 1.0.10.88:
   - Further corrections for more "unpickable" cases
 
