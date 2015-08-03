@@ -67,7 +67,7 @@ class TestStrategy(bt.Strategy):
         bt.indicators.SmoothedMovingAverage(rsi, period=10)
         bt.indicators.ATR(self.datas[0], plot=False)
 
-    def notify(self, order):
+    def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
@@ -90,16 +90,17 @@ class TestStrategy(bt.Strategy):
                           order.executed.value,
                           order.executed.comm))
 
-                gross_pnl = (order.executed.price - self.buyprice) * \
-                    order.executed.size
-                net_pnl = gross_pnl - self.buycomm - order.executed.comm
-                self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' %
-                         (gross_pnl, net_pnl))
-
             self.bar_executed = len(self)
 
         # Write down: no pending order
         self.order = None
+
+    def notify_trade(self, trade):
+        if not trade.isclosed:
+            return
+
+        self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' %
+                 (trade.pnl, trade.pnlcomm))
 
     def next(self):
         # Simply log the closing price of the series from the reference
