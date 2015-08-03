@@ -24,3 +24,4 @@ from __future__ import (absolute_import, division, print_function,
 from .btcsv import *
 from .vchartcsv import *
 from .yahoo import *
+from .csvgeneric import *
