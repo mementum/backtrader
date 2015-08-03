@@ -55,7 +55,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.cash
 
     def setcash(self, cash):
-        self.startingcash = self.p.cash = cash
+        self.startingcash = self.cash = self.p.cash = cash
 
     def getcommissioninfo(self, data):
         if data._name in self.comminfo:
