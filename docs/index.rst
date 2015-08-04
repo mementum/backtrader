@@ -17,11 +17,12 @@ Contents:
    concepts
    operating
    advanced
+   datafeed
+   datafeed-develop-csv
    induse
    inddev
    commission-schemes
    plotting
-   todo
    indautoref
 
 Indices and tables
