@@ -154,7 +154,7 @@ Example to get Yahoo quotes for 1999::
 
   ...
 
-VchartCSVData
+VChartCSVData
 =============
 
 Parses a `VisualChart <http://www.visualchart.com>`_ CSV exported file.

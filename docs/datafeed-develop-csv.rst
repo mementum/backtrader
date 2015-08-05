@@ -1,3 +1,4 @@
+
 CSV Data Feed Development
 #########################
 
@@ -56,6 +57,24 @@ simplified version of the in-house defined CSV parsing code from
 ``BacktraderCSVData``. This one needs no initialization or clean-up (this could
 be opening a socket and closing it later, for example).
 
+.. note::
+
+   ``backtrader`` data feeds contain the usual industry standard feeds, which
+   are the ones to be filled. Namely:
+
+     - datetime
+     - open
+     - high
+     - low
+     - close
+     - volume
+     - openinterest
+
+   If your strategy/algorithm or simple data perusal only needs, for example the
+   closing prices you can leave the others untouched (each iteration fills them
+   automatically with a float('NaN') value before the end user code has a chance
+   to do anything.
+
 In this example only a daily format is supported::
 
   import itertools
@@ -100,3 +119,52 @@ using ``datetime.datetime.strptime``.
 
 More complex needs can be covered by adding just a few lines of code to account
 for null values, date format parsing. The ``GenericCSVData`` does that.
+
+Caveat Emptor
+=============
+
+Using the ``GenericCSVData`` existing feed and inheritance a lot can be
+acomplished in order to support formats.
+
+Let's add support for `Sierra Chart <www.sierrachart.com>`_ daily format (which
+is always stored in CSV format).
+
+Definition (by looking into one of the **'.dly'** data files:
+
+  - **Fields**: Date, Open, High, Low, Close, Volume, OpenInterest
+
+    The industry standard ones and the ones already supported by
+    ``GenericCSVData`` in the same order (which is also industry standard)
+
+  - **Separator**: ,
+
+  - **Date Format**: YYYY/MM/DD
+
+A parser for those files::
+
+  class SierraChartCSVData(backtrader.feeds.GenericCSVData):
+
+      params = (('dtformat', '%Y/%m/%d'),)
+
+The ``params`` definition simply redefines one of the existing parameters in the
+base class. In this case just the formatting string for dates needs a change.
+
+Et voilá ... the parser for **Sierra Chart** is finished.
+
+Here below the parameters definition of ``GenericCSVData`` as a reminder::
+
+  class GenericCSVData(feed.CSVDataBase):
+      params = (
+          ('nullvalue', float('NaN')),
+          ('dtformat', '%Y-%m-%d %H:%M:%S'),
+          ('tmformat', '%H:%M:%S'),
+
+          ('datetime', 0),
+          ('time', -1),
+          ('open', 1),
+          ('high', 2),
+          ('low', 3),
+          ('close', 4),
+          ('volume', 5),
+          ('openinterest', 6),
+      )
