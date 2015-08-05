@@ -22,8 +22,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from .csvgeneric import *
-from .btcsv import *
-from .vchartcsv import *
-from .yahoo import *
-from .sierrachart import *
+from . import GenericCSVData
+
+
+class SierraChartCSVData(GenericCSVData):
+    params = (('dtformat', '%Y/%m/%d'),)
