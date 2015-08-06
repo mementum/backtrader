@@ -230,18 +230,29 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def notify_trade(self, trade):
         pass
 
-    def buy(self, data=None, size=None, price=None, exectype=None, valid=None):
-        data = data or self.datas[0]
-        size = size or self.getsizing(data)
-        return self.broker.buy(
-            self, data, size=size, price=price, exectype=exectype, valid=valid)
+    def buy(self, data=None,
+            size=None, price=None, plimit=None,
+            exectype=None, valid=None):
 
-    def sell(self,
-             data=None, size=None, price=None, exectype=None, valid=None):
         data = data or self.datas[0]
         size = size or self.getsizing(data)
+
+        return self.broker.buy(
+            self, data,
+            size=size, price=price, plimit=plimit,
+            exectype=exectype, valid=valid)
+
+    def sell(self, data=None,
+             size=None, price=None, plimit=None,
+             exectype=None, valid=None):
+
+        data = data or self.datas[0]
+        size = size or self.getsizing(data)
+
         return self.broker.sell(
-            self, data, size=size, price=price, exectype=exectype, valid=valid)
+            self, data,
+            size=size, price=price, plimit=plimit,
+            exectype=exectype, valid=valid)
 
     def close(self,
               data=None, size=None, price=None, exectype=None, valid=None):

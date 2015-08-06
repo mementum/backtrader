@@ -111,14 +111,24 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.pending.append(order)
         return order
 
-    def buy(self, owner, data, size, price=None, exectype=None, valid=None):
+    def buy(self, owner, data,
+            size, price=None, plimit=None,
+            exectype=None, valid=None):
+
         order = BuyOrder(owner=owner, data=data, size=size,
-                         price=price, exectype=exectype, valid=valid)
+                         price=price, pricelimit=plimit,
+                         exectype=exectype, valid=valid)
+
         return self.submit(order)
 
-    def sell(self, owner, data, size, price=None, exectype=None, valid=None):
-        order = SellOrder(owner=owner, data=data, size=size,
-                          price=price, exectype=exectype, valid=valid)
+    def sell(self, owner, data,
+             size, price=None, plimit=None,
+             exectype=None, valid=None):
+
+        order = SellOrder(owner=owner, data=data,
+                          size=size, price=price, plimit=plimit,
+                          exectype=exectype, valid=valid)
+
         return self.submit(order)
 
     def _execute(self, order, dt, price):
