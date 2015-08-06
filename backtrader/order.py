@@ -24,6 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import six
 
 from .metabase import MetaParams
+from .utils import date2num
 
 
 class OrderExecutionBit(object):
@@ -153,6 +154,10 @@ class Order(six.with_metaclass(MetaParams, object)):
                                  price=self.params.price)
         self.executed = OrderData(remsize=self.params.size)
         self.position = 0
+
+        if isinstance(self.p.valid, (datetime.datetime, datetime.date)):
+            # comparison will later be done against the raw datetime[0] value
+            self.p.valid = date2num(self.p.valid)
 
     def setposition(self, position):
         self.position = position
