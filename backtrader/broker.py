@@ -115,8 +115,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             size, price=None, plimit=None,
             exectype=None, valid=None):
 
-        order = BuyOrder(owner=owner, data=data, size=size,
-                         price=price, pricelimit=plimit,
+        order = BuyOrder(owner=owner, data=data,
+                         size=size, price=price, pricelimit=plimit,
                          exectype=exectype, valid=valid)
 
         return self.submit(order)
@@ -126,7 +126,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
              exectype=None, valid=None):
 
         order = SellOrder(owner=owner, data=data,
-                          size=size, price=price, plimit=plimit,
+                          size=size, price=price, pricelimit=plimit,
                           exectype=exectype, valid=valid)
 
         return self.submit(order)
