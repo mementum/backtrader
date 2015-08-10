@@ -203,7 +203,7 @@ class Order(six.with_metaclass(MetaParams, object)):
 
         if self.valid and self.data.datetime[0] > self.valid:
             self.status = Order.Expired
-            self.executed = self.data.datetime[0]
+            self.executed.dt = self.data.datetime[0]
             return True
 
         return False
