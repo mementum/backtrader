@@ -22,6 +22,7 @@ Contents:
    induse
    inddev
    commission-schemes
+   order-creation-execution
    plotting
    indautoref
 
