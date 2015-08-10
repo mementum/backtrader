@@ -66,6 +66,8 @@ class OrderData(object):
         self.size = size
         self.remsize = remsize
         self.price = price
+        self.pricelimit = pricelimit
+
         if not pricelimit:
             # if no pricelimit is given, use the given price
             self.pricelimit = self.price
@@ -120,7 +122,8 @@ class Order(six.with_metaclass(MetaParams, object)):
     refbasis = itertools.count(1)
 
     Market, Close, Limit, Stop, StopLimit = range(5)
-    Buy, Sell, Stop, StopLimit = range(4)
+
+    Buy, Sell = range(2)
 
     Submitted, Accepted, Partial, Completed, \
         Canceled, Expired, Margin = range(7)
@@ -133,7 +136,7 @@ class Order(six.with_metaclass(MetaParams, object)):
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('exectype', None), ('valid', None),
-        ('triggered', True),
+        ('triggered', False),
     )
 
     def __getattr__(self, name):
@@ -164,7 +167,9 @@ class Order(six.with_metaclass(MetaParams, object)):
             self.params.size = -self.params.size
         self.created = OrderData(dt=self.data.datetime[0],
                                  size=self.params.size,
-                                 price=self.params.price)
+                                 price=self.params.price,
+                                 pricelimit=self.params.pricelimit)
+
         self.executed = OrderData(remsize=self.params.size)
         self.position = 0
 
@@ -241,7 +246,7 @@ class StopBuyOrder(BuyOrder):
 
 
 class StopLimitBuyOrder(BuyOrder):
-    params = (('triggered', False),)
+    pass
 
 
 class SellOrder(Order):
@@ -253,4 +258,4 @@ class StopSellOrder(SellOrder):
 
 
 class StopLimitSellOrder(SellOrder):
-    params = (('triggered', False),)
+    pass
