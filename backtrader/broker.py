@@ -109,6 +109,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         order.accept()
         self.orders.append(order)
         self.pending.append(order)
+        self.notify(order)
+
         return order
 
     def buy(self, owner, data,
@@ -191,7 +193,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.notify(order)
 
     def notify(self, order):
-        self.notifs.append(order)
+        self.notifs.append(order.clone())
 
     def next(self):
         for data, pos in self.positions.items():
