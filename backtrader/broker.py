@@ -227,7 +227,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self._try_exec_close(order, pclose1)
 
             elif order.exectype == Order.Limit:
-                self._try_exec_limit(order, popen, phigh, plow, plimit)
+                self._try_exec_limit(order, popen, phigh, plow, pcreated)
 
             elif order.exectype == Order.StopLimit and order.triggered:
                 self._try_exec_limit(order, popen, phigh, plow, plimit)
@@ -252,7 +252,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             self._execute(order, order.data.datetime[-1], price=pclose)
 
     def _try_exec_limit(self, order, popen, phigh, plow, plimit):
-        if isinstance(order, BuyOrder):
+        if order.isbuy():
             if plimit >= popen:
                 # open smaller/equal than requested - buy cheaper
                 self._execute(order, order.data.datetime[0], price=popen)
@@ -269,7 +269,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self._execute(order, order.data.datetime[0], price=plimit)
 
     def _try_exec_stop(self, order, popen, phigh, plow, pcreated):
-        if isinstance(order, BuyOrder):
+        if order.isbuy():
             if popen >= pcreated:
                 # price penetrated with an open gap - use open
                 self._execute(order, order.data.datetime[0], price=popen)
@@ -288,7 +288,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
     def _try_exec_stoplimit(self, order,
                             popen, phigh, plow, pclose,
                             pcreated, plimit):
-        if isinstance(order, BuyOrder):
+        if order.isbuy():
             if popen >= pcreated:
                 order.triggered = True
                 # price penetrated with an open gap
