@@ -1,3 +1,20 @@
+1.1.1.88:
+  - Quickstart documentation update to use Trades
+  - Issue #3 setcash before the run corrected
+  - Addition of GenericCSVData (following #6)
+  - Documentation on DataFeeds
+  - SierraChartCSVData added
+  - Documentation on DataFeed development
+  - #8 to address valid for order limited in time
+  - Improved to order creation (via buy/sell) from the strategy
+  - Corrected plimit typo in order execution
+  - Corrected redefinition of enum for order execution types Stop/StopLimit
+  - Order cloning and unique id per order to allow same order notified
+    twice in same interval with different events
+  - Added missing notification for order.accept
+  - Broker refactoring on BuyOrder detection and price naming for limit
+  - Documentation on order creation and execution
+
 1.1.0.88:
   - Added Gitter stuff to README.rst
   - Documentation updates
