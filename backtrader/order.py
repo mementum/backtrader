@@ -157,7 +157,7 @@ class Order(six.with_metaclass(MetaParams, object)):
         return self.ref != other.ref
 
     def __init__(self):
-        self.ref = self.refbasis.next()
+        self.ref = next(self.refbasis)
 
         if self.params.exectype is None:
             self.params.exectype = Order.Market
