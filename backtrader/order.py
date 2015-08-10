@@ -21,7 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import copy
 import datetime
+import itertools
 
 import six
 
@@ -115,6 +117,7 @@ class OrderData(object):
 
 
 class Order(six.with_metaclass(MetaParams, object)):
+    refbasis = itertools.count(1)
 
     Market, Close, Limit, Stop, StopLimit = range(5)
     Buy, Sell, Stop, StopLimit = range(4)
@@ -144,7 +147,15 @@ class Order(six.with_metaclass(MetaParams, object)):
         else:
             super(Order, self).__setattribute__(name, value)
 
+    def __eq__(self, other):
+        return self.ref == other.ref
+
+    def __ne__(self, other):
+        return self.ref != other.ref
+
     def __init__(self):
+        self.ref = self.refbasis.next()
+
         if self.params.exectype is None:
             self.params.exectype = Order.Market
 
@@ -160,6 +171,11 @@ class Order(six.with_metaclass(MetaParams, object)):
         if isinstance(self.p.valid, (datetime.datetime, datetime.date)):
             # comparison will later be done against the raw datetime[0] value
             self.p.valid = date2num(self.p.valid)
+
+    def clone(self):
+        obj = copy.copy(self)
+        obj.executed = copy.deepcopy(self.executed)
+        return obj
 
     def setposition(self, position):
         self.position = position
