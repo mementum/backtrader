@@ -19,6 +19,7 @@ Contents:
    advanced
    datafeed
    datafeed-develop-csv
+   datafeed-develop-general
    induse
    inddev
    commission-schemes
