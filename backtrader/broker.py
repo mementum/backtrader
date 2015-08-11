@@ -106,6 +106,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         # existing positions, simulating order execution and ending up
         # with a "cash" figure that can be used to check the margin requirement
         # of the order. If not met, the order can be immediately rejected
+        order.pannotated = None
+        order.plen = len(order.data)
         order.accept()
         self.orders.append(order)
         self.pending.append(order)
@@ -224,7 +226,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self._execute(order, order.data.datetime[0], price=popen)
 
             elif order.exectype == Order.Close:
-                self._try_exec_close(order, pclose1)
+                self._try_exec_close(order, pclose)
 
             elif order.exectype == Order.Limit:
                 self._try_exec_limit(order, popen, phigh, plow, pcreated)
@@ -244,12 +246,13 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self.pending.append(order)
 
     def _try_exec_close(self, order, pclose):
-        if order.data.datetime.time(0) != order.data.datetime.time(-1):
-            # intraday: time changes in between bars
-            self._execute(order, order.data.datetime[-1], price=pclose)
-        elif order.data.datetime.date(0) != order.data.datetime.date(-1):
-            # daily: time is equal, date changes
-            self._execute(order, order.data.datetime[-1], price=pclose)
+        if len(order.data) > order.plen:
+            if order.pannotated:
+                self._execute(order, order.data.datetime[-1], price=pannotated)
+            else:
+                self._execute(order, order.data.datetime[0], price=pclose)
+        else:
+            order.pannotated = pclose
 
     def _try_exec_limit(self, order, popen, phigh, plow, plimit):
         if order.isbuy():
