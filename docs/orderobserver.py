@@ -21,31 +21,35 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Observer
+import math
+
+import backtrader as bt
 
 
-class DrawDown(Observer):
-    lines = ('drawdown', 'maxdrawdown',)
+class OrderObserver(bt.observer.Observer):
+    lines = ('created', 'expired',)
 
-    plotinfo = dict(plot=True, subplot=True)
+    plotinfo = dict(plot=True, subplot=True, plotlinelabels=True)
 
-    plotlines = dict(maxdrawdown=dict(_plotskip='True',))
-
-    def __init__(self):
-        super(DrawDown, self).__init__()
-
-        self.maxdd = 0.0
-        self.peak = float('-inf')
+    plotlines = dict(
+        created=dict(marker='*', markersize=8.0, color='lime', fillstyle='full'),
+        expired=dict(marker='s', markersize=8.0, color='red', fillstyle='full')
+    )
 
     def next(self):
-        value = self._owner.stats.broker.value[0]
+        for order in self._owner._orderspending:
+            if order.data is not self.data:
+                continue
 
-        # update the maximum seen peak
-        if value > self.peak:
-            self.peak = value
+            if not order.isbuy():
+                continue
 
-        # calculate the current drawdown
-        self.lines.drawdown[0] = dd = 100.0 * (self.peak - value) / self.peak
+            # Only interested in "buy" orders, because the sell orders
+            # in the strategy are Market orders and will be immediately
+            # executed
 
-        # update the maxdrawdown if needed
-        self.lines.maxdrawdown[0] = self.maxdd = max(self.maxdd, dd)
+            if order.status in [bt.Order.Accepted, bt.Order.Submitted]:
+                self.lines.created[0] = order.created.price
+
+            elif order.status in [bt.Order.Expired]:
+                self.lines.expired[0] = order.created.price

@@ -21,31 +21,15 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Observer
+import backtrader as bt
+import backtrader.feeds as btfeeds
 
+if __name__ == '__main__':
+    cerebro = bt.Cerebro(stdstats=False)
+    cerebro.addstrategy(bt.Strategy)
 
-class DrawDown(Observer):
-    lines = ('drawdown', 'maxdrawdown',)
+    data = bt.feeds.BacktraderCSVData(dataname='../datas/2006-day-001.txt')
+    cerebro.adddata(data)
 
-    plotinfo = dict(plot=True, subplot=True)
-
-    plotlines = dict(maxdrawdown=dict(_plotskip='True',))
-
-    def __init__(self):
-        super(DrawDown, self).__init__()
-
-        self.maxdd = 0.0
-        self.peak = float('-inf')
-
-    def next(self):
-        value = self._owner.stats.broker.value[0]
-
-        # update the maximum seen peak
-        if value > self.peak:
-            self.peak = value
-
-        # calculate the current drawdown
-        self.lines.drawdown[0] = dd = 100.0 * (self.peak - value) / self.peak
-
-        # update the maxdrawdown if needed
-        self.lines.maxdrawdown[0] = self.maxdd = max(self.maxdd, dd)
+    cerebro.run()
+    cerebro.plot()

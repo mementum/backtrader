@@ -22,6 +22,7 @@ Contents:
    datafeed-develop-general
    induse
    inddev
+   observers-and-statistics
    commission-schemes
    order-creation-execution
    plotting
