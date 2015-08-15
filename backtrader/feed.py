@@ -94,7 +94,31 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
     def stop(self):
         pass
 
+    def _tick_nullify(self):
+        # These are the updating prices in case the new bar is "updated"
+        # and the length doesn't change like if a replay is happening or
+        # a real-time data feed is in use and 1 minutes bars are being
+        # constructed with 5 seconds updates
+        self.tick_open = None
+        self.tick_high = None
+        self.tick_low = None
+        self.tick_close = None
+        self.tick_volume = None
+        self.tick_openinterest = None
+
+    def _tick_fill(self):
+        # If nothing filled the tick_xxx attributes, the bar is the tick
+        if self.tick_open is None:
+            self.tick_open = self.lines.open[0]
+            self.tick_high = self.lines.high[0]
+            self.tick_low = self.lines.low[0]
+            self.tick_close = self.lines.close[0]
+            self.tick_volume = self.lines.volume[0]
+            self.tick_openinterest = self.lines.openinterest[0]
+
     def advance(self, datamaster=None):
+        self._tick_nullify()
+
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
         self.lines.advance()
@@ -110,9 +134,16 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
                 self.lines.rewind()
             else:
                 self.mlen.append(len(datamaster))
+                self._tick_fill()
+        elif len(self) < self.buflen():
+            # a resampler may have advance us past the last point
+            self._tick_fill()
 
     def next(self, datamaster=None):
+
         if len(self) == self.buflen():
+            self._tick_nullify()
+
             # not preloaded - request next bar
             ret = self.load()
             if not ret:
@@ -134,6 +165,10 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
                 self.rewind()
             else:
                 self.mlen.append(len(datamaster))
+                self._tick_fill()
+
+        else:
+            self._tick_fill()
 
         # tell the world there is a bar (either the new or the previous
         return True
