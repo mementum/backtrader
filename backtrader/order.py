@@ -177,6 +177,20 @@ class Order(six.with_metaclass(MetaParams, object)):
             # comparison will later be done against the raw datetime[0] value
             self.p.valid = date2num(self.p.valid)
 
+        # get next session end
+        dtime = self.data.datetime.datetime(0)
+
+        # provisional end-of-session
+        session = self.data.p.sessionend
+        h, m, s = session.hour, session.minute, session.second
+        dteos = dtime.replace(hour=h, minute=m, second=s)
+
+        if dteos < dtime:
+            # eos before current time ... no ... must be next day
+            dteos += datetime.timedelta(days=1)
+
+        self.dteos = date2num(dteos)
+
     def clone(self):
         obj = copy.copy(self)
         obj.executed = copy.deepcopy(self.executed)
