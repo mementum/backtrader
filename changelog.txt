@@ -1,3 +1,31 @@
+1.1.2.88:
+  - Generic Data Feed Development Documentation
+  - Observers Documentation
+  - Support for last tick values in data feeds (data.tick_xxx with xxx being,
+    open, high, low, close, volume, openinterest. Unless a real-time feed is
+    used or a replay is done, the values will be those of the regular bar
+  - Replayer support filling up the last used tick_xxx values
+  - Orders have new attribute with the next end of session after the order
+  - Broker uses the tick prices for order execution supporting with it the same
+    logic in replay and regular mode
+  - Fixes #11: On Market Close Orders new logic including end of session check
+    support
+  - VisualChart binary file direct support
+
+1.1.2.88:
+  - Generic Data Feed Development Documentation
+  - Observers Documentation
+  - Support for last tick values in data feeds (data.tick_xxx with xxx being,
+    open, high, low, close, volume, openinterest. Unless a real-time feed is
+    used or a replay is done, the values will be those of the regular bar
+  - Replayer support filling up the last used tick_xxx values
+  - Orders have new attribute with the next end of session after the order
+  - Broker uses the tick prices for order execution supporting with it the same
+    logic in replay and regular mode
+  - Fixes #11: On Market Close Orders new logic including end of session check
+    support
+  - VisualChart binary file direct support
+
 1.1.1.88:
   - Quickstart documentation update to use Trades
   - Issue #3 setcash before the run corrected
