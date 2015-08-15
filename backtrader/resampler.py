@@ -109,10 +109,10 @@ class BaseResampler(feed.DataBase):
         dt = self.lines.datetime.date(index)
         bardt = self.data.datetime.date(index)
 
-        cw = int(dt.strftime('%W'))
-        barcw = int(bardt.strftime('%W'))
+        iy, dtweek, iwd = dt.isocalendar()
+        iy, barweek, iwd = bardt.isocalendar()
 
-        return barcw > cw
+        return barweek > dtweek
 
     def _barisover_months(self, index):
         dt = self.lines.datetime.date(index)
