@@ -50,7 +50,7 @@ class BaseResampler(feed.DataBase):
         # self.lines.openinterest[0] = 0.0
         # self.lines.datetime[0] = 0.0
 
-    def _barupdate(self, index=0):
+    def _barupdate(self, index=0, replaying=False):
         if math.isnan(self.l.open[0]):
             self._barstart()
             self.lines.open[0] = self.data.l.open[index]
@@ -61,6 +61,14 @@ class BaseResampler(feed.DataBase):
         self.lines.volume[0] += self.data.l.volume[index]
         self.lines.openinterest[0] = self.data.l.openinterest[index]
         self.lines.datetime[0] = self.data.l.datetime[index]
+
+        if replaying:
+            self.tick_open = self.data.lines.open[index]
+            self.tick_high = self.data.lines.high[index]
+            self.tick_low = self.data.lines.low[index]
+            self.tick_close = self.data.lines.close[index]
+            self.tick_volume = self.data.lines.volume[index]
+            self.tick_openinterest = self.data.lines.openinterest[index]
 
     def _baroverlimit(self, index=0):
         if not self._havebar():
@@ -235,7 +243,7 @@ class DataReplayer(BaseResampler):
             if self._baroverlimit():
                 self.forward()
 
-            self._barupdate()
+            self._barupdate(replaying=True)
 
         else:
             self.forward()
