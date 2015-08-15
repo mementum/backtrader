@@ -214,11 +214,11 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                 self.notify(order)
                 continue
 
-            plow = order.data.low[0]
-            phigh = order.data.high[0]
-            popen = order.data.open[0]
-            pclose = order.data.close[0]
-            pclose1 = order.data.close[-1]
+            popen = order.data.tick_open or order.data.open[0]
+            phigh = order.data.tick_high or order.data.high[0]
+            plow = order.data.tick_low or order.data.low[0]
+            pclose = order.data.tick_close or order.data.close[0]
+
             pcreated = order.created.price
             plimit = order.created.pricelimit
 
