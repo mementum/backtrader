@@ -247,12 +247,23 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     def _try_exec_close(self, order, pclose):
         if len(order.data) > order.plen:
-            if order.pannotated:
-                self._execute(order, order.data.datetime[-1], price=pannotated)
-            else:
-                self._execute(order, order.data.datetime[0], price=pclose)
-        else:
-            order.pannotated = pclose
+
+            dt0 = order.data.datetime[0]
+
+            if dt0 > order.dteos:
+                if order.pannotated:
+                    execdt = order.data.datetime[-1]
+                    execprice = pannotated
+                else:
+                    execdt = dt0
+                    execprice = pclose
+
+                self._execute(order, execdt, price=execprice)
+
+                return
+
+        # If no exexcution has taken place ... annotate the closing price
+        order.pannotated = pclose
 
     def _try_exec_limit(self, order, popen, phigh, plow, plimit):
         if order.isbuy():
