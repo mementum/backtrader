@@ -21,29 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .linebuffer import *
-from .lineseries import *
-from .lineiterator import *
-from .dataseries import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
+# The modules below should/must define __all__ with the objects wishes
+# or prepend an "_" (underscore) to private classes/variables
 
-from .utils import num2date, date2num
-
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-
-__version__ = '1.1.2.88'
+from .annualreturn import *
+from .sharpe import *

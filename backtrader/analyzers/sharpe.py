@@ -21,29 +21,29 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .linebuffer import *
-from .lineseries import *
-from .lineiterator import *
-from .dataseries import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
+import operator
 
-from .utils import num2date, date2num
+from six.moves import map
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
+from backtrader import Analyzer, TimeFrame
+from backtrader.mathsupport import average, standarddev
+from backtrader.analyzers import AnnualReturn
 
-__version__ = '1.1.2.88'
+
+class SharpeRatio(Analyzer):
+
+    params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
+
+    def __init__(self):
+        super(SharpeRatio, self).__init__()
+
+        anret = AnnualReturn(self.strategy)
+
+        retfree = [self.p.riskfreerate] * len(anret.rets)
+        retavg = average(list(map(operator.sub, anret.rets, retfree)))
+        retdev = standarddev(anret.rets)
+
+        self.ratio = retavg / retdev
+
+    def get_analysis(self):
+        return dict(sharperatio=self.ratio)
