@@ -120,6 +120,19 @@ class LineBuffer(LineSingle):
         '''
         return self.array[self.idx + ago - size + 1:self.idx + ago + 1]
 
+    def getzeroval(self, idx=0):
+        ''' Returns a single value of the array relative to the real zero
+        of the buffer
+
+        Keyword Args:
+            idx (int): Where to start relative to the real start of the buffer
+            size(int): size of the slice to return
+
+        Returns:
+            A slice of the underlying buffer
+        '''
+        return self.array[idx]
+
     def getzero(self, idx=0, size=1):
         ''' Returns a slice of the array relative to the real zero of the buffer
 
