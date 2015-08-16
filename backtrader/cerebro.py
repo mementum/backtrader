@@ -49,6 +49,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.datas = list()
         self.strats = list()
         self.observers = list()
+        self.analyzers = list()
         self._broker = BrokerBack()
 
     @staticmethod
@@ -63,6 +64,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addanalyzer(self, ancls, *args, **kwargs):
+        self.analyzers.append((ancls, args, kwargs))
 
     def addobserver(self, obscls, *args, **kwargs):
         self.observers.append((False, obscls, args, kwargs))
@@ -170,7 +174,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         # loop separated for clarity
         for strat in runstrats:
-
             if self.p.stdstats:
                 strat._addobserver(False, observers.Broker)
                 strat._addobserver(False, observers.BuySell)
@@ -185,6 +188,12 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self._runonce(runstrats)
         else:
             self._runnext(runstrats)
+
+        for strat in runstrats:
+            for ancls, anargs, ankwargs in self.analyzers:
+                analyzer = ancls(strat, *anargs, **ankwargs)
+                anname = analyzer.params._name or ancls.__name__.lower()
+                strat.analyzers.addmember(anname, analyzer)
 
         for strat in runstrats:
             strat.stop()
