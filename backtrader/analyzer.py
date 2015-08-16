@@ -21,28 +21,24 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .linebuffer import *
-from .lineseries import *
-from .lineiterator import *
-from .dataseries import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
+import six
 
-from .utils import num2date, date2num
+from backtrader import MetaParams
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
 
-__version__ = '1.1.2.88'
+class MetaAnalyzer(MetaParams):
+    def donew(cls, strategy, *args, **kwargs):
+        '''
+        Intercept the strategy parameter
+        '''
+        # Create the object and set the params in place
+        _obj, args, kwargs = super(MetaAnalyzer, cls).donew(*args, **kwargs)
+
+        _obj.strategy = strategy
+
+        # Return to the normal chain
+        return _obj, args, kwargs
+
+
+class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
+    params = (('_name', None),)
