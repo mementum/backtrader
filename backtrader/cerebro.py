@@ -143,6 +143,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             pool = multiprocessing.Pool(self.p.maxcpus)
             self.runstrats = list(pool.map(self, iterstrats))
 
+        if not self._dooptimize:
+            # avoid a list of list for regular cases
+            return self.runstrats[0]
+
         return self.runstrats
 
     def runstrategies(self, iterstrat):
