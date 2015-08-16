@@ -34,7 +34,24 @@ from .trade import Trade
 
 
 class _Template(object):
-    pass
+
+    def __init__(self):
+        self.members = list()
+        self.names = list()
+
+    def __len__(self):
+        return len(self.members)
+
+    def addmember(self, name, member):
+        setattr(self, name, member)
+        self.members.append(member)
+        self.names.append(name)
+
+    def __getitem__(self, key):
+        return self.members[key]
+
+    def getitems(self):
+        return zip(self.names, self.members)
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -61,6 +78,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._tradespending = list()
 
         _obj.stats = _Template()
+        _obj.analyzers = _Template()
 
         return _obj, args, kwargs
 
@@ -130,7 +148,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if not multi:
             newargs = list(itertools.chain(self.datas, obsargs))
             obs = obscls(*newargs, **obskwargs)
-            setattr(self.stats, obsname, obs)
+            self.stats.addmember(obsname, obs)
             return
 
         setattr(self.stats, obsname, list())
