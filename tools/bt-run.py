@@ -34,6 +34,7 @@ import backtrader.feeds as btfeeds
 import backtrader.indicators as btinds
 import backtrader.observers as btobs
 import backtrader.strategies as btstrats
+import backtrader.analyzers as btanalyzers
 
 
 DATAFORMATS = dict(
@@ -76,9 +77,25 @@ def runstrat():
     for ob in obs:
         cerebro.addobserver(ob)
 
+    ans = getanalyzers(args)
+    for an in ans:
+        cerebro.addanalyzer(an)
+
     setbroker(args, cerebro)
 
-    cerebro.run()
+    runsts = cerebro.run()
+    runst = runsts[0]  # single strategy and no optimization
+    print('RUNSTRAT is', runstrat)
+
+    if runst.analyzers:
+        print('====================')
+        print('== Analyzers')
+        print('====================')
+        for name, analyzer in runst.analyzers.getitems():
+            print('## ', name)
+            analysis = analyzer.get_analysis()
+            for key, val in analysis.items():
+                print('-- ', key, ':', val)
 
     if not args.noplot:
         cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
@@ -101,6 +118,7 @@ def setbroker(args, cerebro):
     if commkwargs:
         broker.setcommission(**commkwargs)
 
+
 def getdatas(args):
     # Get the data feed class from the global dictionary
     dfcls = DATAFORMATS[args.csvformat]
@@ -115,7 +133,7 @@ def getdatas(args):
         dtsplit = args.fromdate.split('T')
         if len(dtsplit) > 1:
             fmtstr += 'T%H:%M:%S'
-        print('ARGS fromdate is', args.fromdate)
+
         fromdate = datetime.datetime.strptime(args.fromdate, fmtstr)
         dfkwargs['fromdate'] = fromdate
 
@@ -221,6 +239,39 @@ def getstrategy(args):
     return strats[0]
 
 
+def getanalyzers(args):
+    analyzers = list()
+    for anspec in args.analyzers or []:
+
+        tokens = anspec.split(':')
+
+        if len(tokens) == 1:
+            modpath = tokens[0]
+            name = None
+        else:
+            modpath, name = tokens
+
+        if modpath:
+            mod, e = loadmodule(modpath)
+
+            if not mod:
+                print('')
+                print('Failed to load module %s:' % modpath, e)
+                sys.exit(1)
+        else:
+            mod = btanalyzers
+
+        loaded = getmodclasses(mod=mod, clstype=bt.Analyzer, clsname=name)
+
+        if not loaded:
+            print('No analyzer %s / module %s' % ((str(name), modpath)))
+            sys.exit(1)
+
+        analyzers.extend(loaded)
+
+    return analyzers
+
+
 def getobservers(args):
     observers = list()
     for obspec in args.observers or []:
@@ -289,7 +340,7 @@ def parse_args():
                              ':strategy_name will load the given strategy '
                              'from the set of built-in strategies'))
 
-    # Extra observers
+    # Observers
     group = parser.add_argument_group(title='Observers and statistics')
     group.add_argument('--nostdstats', action='store_true',
                        help='Disable the standard statistics observers')
@@ -310,7 +361,25 @@ def parse_args():
                              ':observer_name will load the given strategy '
                              'from the set of built-in strategies'))
 
-    # General observers
+    # Anaylzers
+    group = parser.add_argument_group(title='Analyzers')
+    group.add_argument('--analyzer', '-an', dest='analyzers',
+                       action='append', required=False,
+                       help=('This option can be specified multiple times\n'
+                             '\n'
+                             'Module and analyzer to load with format '
+                             'module_path:analzyer_name.\n'
+                             '\n'
+                             'module_path:analyzer_name will load '
+                             'observer_name from the given module_path\n'
+                             '\n'
+                             'module_path will load the module and return '
+                             'all available analyzers in the module\n'
+                             '\n'
+                             ':anaylzer_name will load the given strategy '
+                             'from the set of built-in strategies'))
+
+    # Broker/Commissions
     group = parser.add_argument_group(title='Cash and Commission Scheme Args')
     group.add_argument('--cash', '-cash', required=False, type=float,
                        help='Cash to set to the broker')
