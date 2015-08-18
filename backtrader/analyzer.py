@@ -23,22 +23,82 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 
-from backtrader import MetaParams
+from backtrader import MetaParams, Strategy
+import backtrader.metabase as metabase
 
 
 class MetaAnalyzer(MetaParams):
-    def donew(cls, strategy, *args, **kwargs):
+    def donew(cls, *args, **kwargs):
         '''
         Intercept the strategy parameter
         '''
         # Create the object and set the params in place
         _obj, args, kwargs = super(MetaAnalyzer, cls).donew(*args, **kwargs)
 
-        _obj.strategy = strategy
+        _obj._children = list()
+
+        _obj.strategy = metabase.findowner(_obj, Strategy)
+        _obj._parent = metabase.findowner(_obj, Analyzer)
+
+        # Return to the normal chain
+        return _obj, args, kwargs
+
+    def dopostinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = \
+            super(MetaAnalyzer, cls).dopostinit(_obj, *args, **kwargs)
+
+        if _obj._parent is not None:
+            _obj._parent._register(_obj)
 
         # Return to the normal chain
         return _obj, args, kwargs
 
 
 class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
-    params = (('_name', None),)
+    def _register(self, child):
+        self._children.append(child)
+
+    def _prenext(self):
+        for child in self._children:
+            child._prenext()
+
+        self.prenext()
+
+    def _nextstart(self):
+        for child in self._children:
+            child._nextstart()
+
+        self.nextstart()
+
+    def _next(self):
+        for child in self._children:
+            child._next()
+
+        self.next()
+
+    def _start(self):
+        for child in self._children:
+            child._start()
+
+        self.start()
+
+    def _stop(self):
+        for child in self._children:
+            child._stop()
+
+        self.stop()
+
+    def next(self):
+        pass
+
+    def prenext(self):
+        self.next()
+
+    def nextstart(self):
+        self.next()
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass

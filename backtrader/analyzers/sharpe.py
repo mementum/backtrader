@@ -31,17 +31,16 @@ from backtrader.analyzers import AnnualReturn
 
 
 class SharpeRatio(Analyzer):
-
     params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
 
     def __init__(self):
         super(SharpeRatio, self).__init__()
+        self.anret = AnnualReturn()
 
-        anret = AnnualReturn(self.strategy)
-
-        retfree = [self.p.riskfreerate] * len(anret.rets)
-        retavg = average(list(map(operator.sub, anret.rets, retfree)))
-        retdev = standarddev(anret.rets)
+    def stop(self):
+        retfree = [self.p.riskfreerate] * len(self.anret.rets)
+        retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
+        retdev = standarddev(self.anret.rets)
 
         self.ratio = retavg / retdev
 

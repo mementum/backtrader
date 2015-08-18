@@ -28,9 +28,7 @@ from backtrader.utils import OrderedDict
 
 
 class AnnualReturn(Analyzer):
-    def __init__(self):
-        super(AnnualReturn, self).__init__()
-
+    def stop(self):
         # Must have stats.broker
         cur_year = None
 
