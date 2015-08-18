@@ -183,7 +183,13 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
         for observer in self._lineiterators[LineIterator.ObsType]:
             observer.advance()
-            observer.next()
+            if minperstatus < 0:
+                observer.next()
+            elif minperstatus == 0:
+                observer.nextstart()  # only called for the 1st value
+            else:
+                observer.prenext()
+
         for analyzer in self.analyzers:
             if minperstatus < 0:
                 analyzer._next()
