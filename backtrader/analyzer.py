@@ -55,6 +55,9 @@ class MetaAnalyzer(MetaParams):
 
 
 class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
+    def __len__(self):
+        return len(self.strategy)
+
     def _register(self, child):
         self._children.append(child)
 
