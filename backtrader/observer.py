@@ -30,3 +30,8 @@ class Observer(ObserverBase):
     _ltype = LineIterator.ObsType
 
     plotinfo = dict(plot=False, subplot=True)
+
+    # An Observer is ideally always observing and that' why prenext calls
+    # next. The behaviour can be overriden by subclasses
+    def prenext(self):
+        self.next()
