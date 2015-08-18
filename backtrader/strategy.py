@@ -140,6 +140,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
+    def _addanalyzer(self, ancls, *anargs, **ankwargs):
+        anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
+        analyzer = ancls(*anargs, **ankwargs)
+        self.analyzers.addmember(anname, analyzer)
+
     def _addobserver(self, multi, obscls, *obsargs, **obskwargs):
         obsname = obskwargs.pop('obsname', '')
         if not obsname:
@@ -179,11 +184,22 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         for observer in self._lineiterators[LineIterator.ObsType]:
             observer.advance()
             observer.next()
+        for analyzer in self.analyzers:
+            if minperstatus < 0:
+                analyzer._next()
+            elif minperstatus == 0:
+                analyzer._nextstart()  # only called for the 1st value
+            else:
+                analyzer._prenext()
 
         self.clear()
 
     def _next(self):
         super(Strategy, self)._next()
+
+        for analyzer in self.analyzers:
+            analyzer._next()
+
         self.clear()
 
     def _start(self):
