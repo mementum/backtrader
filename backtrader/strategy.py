@@ -186,8 +186,20 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         super(Strategy, self)._next()
         self.clear()
 
+    def _start(self):
+        for analyzer in self.analyzers:
+            analyzer._start()
+
+        self.start()
+
     def start(self):
         pass
+
+    def _stop(self):
+        for analyzer in self.analyzers:
+            analyzer._stop()
+
+        self.stop()
 
     def stop(self):
         pass
