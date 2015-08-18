@@ -182,7 +182,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             for multi, obscls, obsargs, obskwargs in self.observers:
                 strat._addobserver(multi, obscls, *obsargs, **obskwargs)
 
-            strat.start()
+            for ancls, anargs, ankwargs in self.analyzers:
+                strat._addanalyzer(ancls, *anargs, **ankwargs)
+
+            strat._start()
 
         if self.params.preload and self.params.runonce:
             self._runonce(runstrats)
@@ -190,13 +193,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self._runnext(runstrats)
 
         for strat in runstrats:
-            for ancls, anargs, ankwargs in self.analyzers:
-                analyzer = ancls(strat, *anargs, **ankwargs)
-                anname = analyzer.params._name or ancls.__name__.lower()
-                strat.analyzers.addmember(anname, analyzer)
-
-        for strat in runstrats:
-            strat.stop()
+            strat._stop()
 
         for data in self.datas:
             data.stop()
