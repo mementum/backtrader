@@ -22,16 +22,25 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from .lineiterator import LineIterator, ObserverBase, StrategyBase
+import backtrader as bt
+import backtrader.indicators as btind
 
 
-class Observer(ObserverBase):
-    _OwnerCls = StrategyBase
-    _ltype = LineIterator.ObsType
+class SMA_CrossOver(bt.Strategy):
 
-    plotinfo = dict(plot=False, subplot=True)
+    params = (('fast', 10), ('slow', 30))
 
-    # An Observer is ideally always observing and that' why prenext calls
-    # next. The behaviour can be overriden by subclasses
-    def prenext(self):
-        self.next()
+    def __init__(self):
+
+        sma_fast = btind.SMA(period=self.p.fast)
+        sma_slow = btind.SMA(period=self.p.slow)
+
+        self.buysig = btind.CrossOver(sma_fast, sma_slow)
+
+    def next(self):
+        if self.position.size:
+            if self.buysig < 0:
+                self.sell()
+
+        elif self.buysig > 0:
+            self.buy()

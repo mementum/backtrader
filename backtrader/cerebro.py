@@ -49,6 +49,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.datas = list()
         self.strats = list()
         self.observers = list()
+        self.analyzers = list()
         self._broker = BrokerBack()
 
     @staticmethod
@@ -63,6 +64,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addanalyzer(self, ancls, *args, **kwargs):
+        self.analyzers.append((ancls, args, kwargs))
 
     def addobserver(self, obscls, *args, **kwargs):
         self.observers.append((False, obscls, args, kwargs))
@@ -143,6 +147,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             pool = multiprocessing.Pool(self.p.maxcpus)
             self.runstrats = list(pool.map(self, iterstrats))
 
+        if not self._dooptimize:
+            # avoid a list of list for regular cases
+            return self.runstrats[0]
+
         return self.runstrats
 
     def runstrategies(self, iterstrat):
@@ -166,7 +174,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         # loop separated for clarity
         for strat in runstrats:
-
             if self.p.stdstats:
                 strat._addobserver(False, observers.Broker)
                 strat._addobserver(False, observers.BuySell)
@@ -175,7 +182,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             for multi, obscls, obsargs, obskwargs in self.observers:
                 strat._addobserver(multi, obscls, *obsargs, **obskwargs)
 
-            strat.start()
+            for ancls, anargs, ankwargs in self.analyzers:
+                strat._addanalyzer(ancls, *anargs, **ankwargs)
+
+            strat._start()
 
         if self.params.preload and self.params.runonce:
             self._runonce(runstrats)
@@ -183,7 +193,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self._runnext(runstrats)
 
         for strat in runstrats:
-            strat.stop()
+            strat._stop()
 
         for data in self.datas:
             data.stop()

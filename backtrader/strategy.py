@@ -34,7 +34,24 @@ from .trade import Trade
 
 
 class _Template(object):
-    pass
+
+    def __init__(self):
+        self.members = list()
+        self.names = list()
+
+    def __len__(self):
+        return len(self.members)
+
+    def addmember(self, name, member):
+        setattr(self, name, member)
+        self.members.append(member)
+        self.names.append(name)
+
+    def __getitem__(self, key):
+        return self.members[key]
+
+    def getitems(self):
+        return zip(self.names, self.members)
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -61,6 +78,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._tradespending = list()
 
         _obj.stats = _Template()
+        _obj.analyzers = _Template()
 
         return _obj, args, kwargs
 
@@ -122,6 +140,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
+    def _addanalyzer(self, ancls, *anargs, **ankwargs):
+        anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
+        analyzer = ancls(*anargs, **ankwargs)
+        self.analyzers.addmember(anname, analyzer)
+
     def _addobserver(self, multi, obscls, *obsargs, **obskwargs):
         obsname = obskwargs.pop('obsname', '')
         if not obsname:
@@ -130,7 +153,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if not multi:
             newargs = list(itertools.chain(self.datas, obsargs))
             obs = obscls(*newargs, **obskwargs)
-            setattr(self.stats, obsname, obs)
+            self.stats.addmember(obsname, obs)
             return
 
         setattr(self.stats, obsname, list())
@@ -160,16 +183,45 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
         for observer in self._lineiterators[LineIterator.ObsType]:
             observer.advance()
-            observer.next()
+            if minperstatus < 0:
+                observer.next()
+            elif minperstatus == 0:
+                observer.nextstart()  # only called for the 1st value
+            else:
+                observer.prenext()
+
+        for analyzer in self.analyzers:
+            if minperstatus < 0:
+                analyzer._next()
+            elif minperstatus == 0:
+                analyzer._nextstart()  # only called for the 1st value
+            else:
+                analyzer._prenext()
 
         self.clear()
 
     def _next(self):
         super(Strategy, self)._next()
+
+        for analyzer in self.analyzers:
+            analyzer._next()
+
         self.clear()
+
+    def _start(self):
+        for analyzer in self.analyzers:
+            analyzer._start()
+
+        self.start()
 
     def start(self):
         pass
+
+    def _stop(self):
+        for analyzer in self.analyzers:
+            analyzer._stop()
+
+        self.stop()
 
     def stop(self):
         pass
