@@ -165,9 +165,17 @@ class Order(six.with_metaclass(MetaParams, object)):
         self.status = Order.Submitted
         if not self.isbuy():
             self.params.size = -self.params.size
+
+        # Set a reference price if price is not set using
+        # the close price
+        if not self.p.price and not self.p.pricelimit:
+            price = self.data.close[0]
+        else:
+            price = self.p.price
+
         self.created = OrderData(dt=self.data.datetime[0],
                                  size=self.params.size,
-                                 price=self.params.price,
+                                 price=price,
                                  pricelimit=self.params.pricelimit)
 
         self.executed = OrderData(remsize=self.params.size)
