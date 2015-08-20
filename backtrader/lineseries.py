@@ -32,15 +32,13 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
-try:
-    from collections import OrderedDict
-except ImportError:
-    from .utils.ordereddict import OrderedDict
 import operator
 import sys
 
 import six
 from six.moves import xrange
+
+from .utils import OrderedDict
 
 from .linebuffer import LineBuffer, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple

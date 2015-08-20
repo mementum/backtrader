@@ -21,12 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from .utils.ordereddict import OrderedDict
 import itertools
 import sys
+
+from .utils import OrderedDict
 
 
 def findbases(kls, topclass):
