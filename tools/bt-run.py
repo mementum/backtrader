@@ -178,7 +178,7 @@ def loadmodule(modpath, modname=''):
         chars = string.ascii_uppercase + string.digits
         modname = ''.join(random.choice(chars) for _ in range(10))
 
-    version = (sys.version_info.major, sys.version_info.minor)
+    version = (sys.version_info[0], sys.version_info[1])
 
     if version < (3, 3):
         mod, e = loadmodule2(modpath, modname)
