@@ -29,7 +29,7 @@ from .cmp import *
 pyversion = (sys.version_info[0], sys.version_info[1])
 
 if pyversion < (2, 7):
-    from .utils import OrderedDict
+    from .ordereddict import OrderedDict
 else:
     from collections import OrderedDict
 
