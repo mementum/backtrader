@@ -23,10 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import bisect
 import collections
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ..utils.ordereddict import OrderedDict
+from ..utils.ordereddict import OrderedDict
 
 import math
 
