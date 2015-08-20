@@ -38,7 +38,7 @@ import sys
 import six
 from six.moves import xrange
 
-from .utils.ordereddict import OrderedDict
+from .utils import OrderedDict
 
 from .linebuffer import LineBuffer, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple

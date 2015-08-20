@@ -23,7 +23,6 @@ from __future__ import (absolute_import, division, print_function,
 
 import bisect
 import collections
-from ..utils.ordereddict import OrderedDict
 
 import math
 
@@ -35,6 +34,8 @@ import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
 import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
+
+from ..utils import OrderedDict
 
 from .. import AutoInfoClass, MetaParams, TimeFrame
 
