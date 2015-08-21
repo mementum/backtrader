@@ -1,3 +1,18 @@
+1.1.3.88:
+  - Automation bt-run.py script added
+  - Pandas Dataframe support
+  - Improvements to OrderedDict imports for Python 2.6 compatibility
+  - Default reference price for orders is bar closing price if not set like in
+    Market orders
+  - Analyzers added: non-lines objects offering in-run/post-run statistics
+  - Analyzers added: SharpeRatio and AnnualReturn
+  - Improved Observers which now support (like Indicators/Strategies)
+    prenext/nextstart
+  - Simplified cerebro return values for run: single list if not optimizing and
+    list of lists if optimizing
+  - Order Execution Sample script added
+  - SMA_CrosssOver Strategy included in submodule backtrader.strategies
+
 1.1.2.88:
   - Generic Data Feed Development Documentation
   - Observers Documentation

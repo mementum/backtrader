@@ -78,7 +78,7 @@ Features:
   - Indicators and the addition of any custom end-user developed one
   - Strategies
   - Data Feeds from Online Sources or CSV Files (other forms could be
-    implemented)
+    implemented) - Including ``Pandas Dataframes``
   - Data Feeds with different timeframes
   - Data Feed Resampling
   - Data Feed Replaying
