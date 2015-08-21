@@ -38,22 +38,22 @@ class PandasData(feed.DataBase):
     params = (
         # Possible values for datetime (must always be present)
         #  None : datetime is the "index" in the Pandas Dataframe
-        #  -1 : similar name (case-wise) or use itself
+        #  -1 : autodetect position or case-wise equal name
         #  >= 0 : numeric index to the colum in the pandas dataframe
         #  string : column name (as index) in the pandas dataframe
         ('datetime', None),
 
         # Possible values below:
         #  None : column not present
-        #  -1 : look for a similar name (case-wise) or use itself
+        #  -1 : autodetect position or case-wise equal name
         #  >= 0 : numeric index to the colum in the pandas dataframe
         #  string : column name (as index) in the pandas dataframe
-        ('open', 1),
-        ('high', 2),
-        ('low', 3),
-        ('close', 4),
-        ('volume', 5),
-        ('openinterest', 6),
+        ('open', -1),
+        ('high', -1),
+        ('low', -1),
+        ('close', -1),
+        ('volume', -1),
+        ('openinterest', -1),
     )
 
     datafields = [
@@ -63,40 +63,45 @@ class PandasData(feed.DataBase):
     def __init__(self):
         super(PandasData, self).__init__()
 
-        # support column names from the pandas dataframe
+        # these "colnames" can be strings or numeric types
         colnames = list(self.p.dataname.columns.values)
+        if self.p.datetime is None:
+            # datetime is expected as index col and hence not returned
+            # add fake entry for the autodetection algorithm
+            colnames.insert(0, 0)
+
+        # try to autodetect if all columns are numeric
+        cstrings = filter(lambda x: isinstance(x, six.string_types), colnames)
+        colsnumeric = not len(cstrings)
+
+        # Where each datafield find its value
         self._colmapping = dict()
 
         # Build the column mappings to internal fields in advance
-        for datafield in self.datafields:
+        for i, datafield in enumerate(self.datafields):
             defmapping = getattr(self.params, datafield)
-            self._colmapping[datafield] = defmapping
 
-            if defmapping is None:
-                continue
+            if isinstance(defmapping, six.integer_types) and defmapping < 0:
+                # autodetection requested
+                if colsnumeric:
+                    # matching names doesn't help, all indices are numeric
+                    # use current colname index
+                    self._colmapping[datafield] = colnames[i]
 
-            if isinstance(defmapping, six.string_types):
-                # specific name specified ... nothing else to do
-                continue
+                else:
+                    # name matching may be possible
+                    for colname in colnames:
+                        if isinstance(colname, six.string_types):
+                            if datafield.lower() == colname.lower():
+                                self._colmapping[datafield] = colname
+                                break
 
-            if isinstance(defmapping, six.integer_types):
-                if defmapping >= 0:
-                    # integer >= 0 ... specific colum
-                    continue
-
-                # -1 (or negative in general)
-                # remove it and look for similar name or self
-                self._colmapping.pop(datafield)
-
-                # look for a similar name
-                for colname in colnames:
-                    if datafield.lower() == colname.lower():
-                        self._colmapping[datafield] = colname
-                        break
-
-                if datafield not in self._colmapping:
-                    # not yet there ... use self
-                    self._colmapping[datafield] = datafield
+                    if datafield not in self._colmapping:
+                        # not yet there ... use current index
+                        self._colmapping[datafield] = colnames[i]
+            else:
+                # all other cases -- used given index
+                self._colmapping[datafield] = defmapping
 
     def start(self):
         # reset the length with each start
