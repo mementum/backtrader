@@ -9,7 +9,8 @@ python:
 # command to install dependencies
 install:
   - pip install six==1.9.0
+  - pip install nose-exclude
 
 # command to run tests
 # script: cd tests && nosetests -v -v --exclude-dir=backtrader/plot
-script: cd tests && nosetests -v -v
+script: nosetests -v -v
