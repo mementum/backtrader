@@ -28,3 +28,4 @@ from .vchartcsv import *
 from .vchart import *
 from .yahoo import *
 from .sierrachart import *
+from .pandafeed import *
