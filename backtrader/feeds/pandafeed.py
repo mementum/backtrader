@@ -23,8 +23,6 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 
-import pandas as pd
-
 from backtrader import date2num
 import backtrader.feed as feed
 
