@@ -29,6 +29,32 @@ from ..utils import date2num
 
 
 class GenericCSVData(feed.CSVDataBase):
+    '''
+    Parses a CSV file according to the order and field presence defined by the
+    parameters
+
+    Specific parameters (or specific meaning):
+
+      - ``dataname``: The filename to parse or a file-like object
+
+      - The lines parameters (datetime, open, high ...) take numeric values
+
+        A value of -1 indicates absence of that field in the CSV source
+
+      - If ``time`` is present (parameter time >=0) the source contains
+        separated fields for date and time, which will be combined
+
+      - ``nullvalue``
+
+        Value that will be used if a value which should be there is missing
+        (the CSV field is empty)
+
+      - ``dtformat``: Format used to parse the datetime CSV field
+
+      - ``tmformat``: Format used to parse the time CSV field if "present"
+        (the default for the "time" CSV field is not to be present)
+    '''
+
     params = (
         ('nullvalue', float('NaN')),
         ('dtformat', '%Y-%m-%d %H:%M:%S'),

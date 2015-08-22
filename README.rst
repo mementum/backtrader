@@ -117,6 +117,7 @@ cup of tea, you can always have a look at similar Python platforms:
   - `pybacktest <https://github.com/ematvey/pybacktest>`_
   - `prophet <https://github.com/Emsu/prophet>`_
   - `quant <https://github.com/maihde/quant>`_
+  - `AlephNull <https://github.com/CarterBain/AlephNull>`_
   - `bt <http://pmorissette.github.io/bt/index.html>`_
 
      ``bt`` slightly pre-dates ``backtrader`` and has a completely different

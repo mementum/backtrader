@@ -18,6 +18,7 @@ Contents:
    concepts
    operating
    advanced
+   cerebro
    datafeed
    datafeed-develop-csv
    datafeed-develop-general
@@ -28,7 +29,6 @@ Contents:
    inddev
    observers-and-statistics
    analyzers
-   analyzers-reference
    commission-schemes
    order-creation-execution
    position
@@ -36,6 +36,8 @@ Contents:
    trade
    plotting
    indautoref
+   dataautoref
+   analyzers-reference
 
 Indices and tables
 ==================

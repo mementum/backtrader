@@ -33,6 +33,25 @@ from ..utils import date2num
 
 
 class YahooFinanceCSVData(feed.CSVDataBase):
+    '''
+    Parses pre-downloaded Yahoo CSV Data Feeds (or locally generated if they
+    comply to the Yahoo format)
+
+    Specific parameters:
+
+      - ``dataname``: The filename to parse or a file-like object
+
+      - ``reverse``
+
+        It is assumed that locally stored files have already been reversed
+        during the download process
+
+      - ``adjclose``
+
+        Whether to use the dividend/split adjusted close and adjust all
+        values according to it.
+
+    '''
     params = (('adjclose', True), ('reverse', False),)
 
     def start(self):
@@ -88,6 +107,44 @@ class YahooFinanceCSV(feed.CSVFeedBase):
 
 
 class YahooFinanceData(YahooFinanceCSVData):
+    '''
+    Executes a direct download of data from Yahoo servers for the given time
+    range.
+
+    Specific parameters (or specific meaning):
+
+      - ``dataname``
+
+        The ticker to download ('YHOO' for Yahoo own stock quotes)
+
+      - ``baseurl``
+
+        The server url. Someone might decide to open a Yahoo compatible service
+        in the future.
+
+      - ``period``
+
+        The timeframe to download data in. Pass 'w' for weekly and 'm' for
+        monthly.
+
+      - ``buffered``
+
+        If True the entire socket connection wil be buffered locally before
+        parsing starts.
+
+      - ``reverse``
+
+        Yahoo returns the data with last dates first (against all industry
+        standards) and it must be reversed for it to work. Should this Yahoo
+        standard change, the parameter is available.
+
+      - ``adjclose``
+
+        Whether to use the dividend/split adjusted close and adjust all values
+        according to it.
+
+      '''
+
     params = (('baseurl', 'http://ichart.yahoo.com/table.csv?'),
               ('period', 'd'), ('buffered', True), ('reverse', True))
 
@@ -129,7 +186,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         super(YahooFinanceData, self).start()
 
 
-class YahooFinance(feed.DataBase):
+class YahooFinance(feed.CSVFeedBase):
     DataCls = YahooFinanceData
 
     params = DataCls.params._gettuple()

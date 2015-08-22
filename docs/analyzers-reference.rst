@@ -1,6 +1,6 @@
 
-Reference - Analyzers
-#####################
+Analyzers Reference
+###################
 
 .. currentmodule:: backtrader.analyzers
 

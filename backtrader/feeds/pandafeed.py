@@ -29,8 +29,19 @@ import backtrader.feed as feed
 
 class PandasDirectData(feed.DataBase):
     '''
-    The ``dataname`` parameter inherited from ``feed.DataBase``  is the pandas
-    Time Series
+    Uses a Pandas DataFrame as the feed source, iterating directly over the
+    tuples returned by "itertuples".
+
+    This means that all parameters related to lines must have numeric
+    values as indices into the tuples
+
+    Note:
+
+      - The ``dataname`` parameter is a Pandas DataFrame
+
+      - A negative value in any of the parameters for the Data lines
+        indicates it's not present in the DataFrame
+        it is
     '''
 
     params = (
@@ -91,8 +102,30 @@ class PandasDirectData(feed.DataBase):
 
 class PandasData(feed.DataBase):
     '''
-    The ``dataname`` parameter inherited from ``feed.DataBase``  is the pandas
-    Time Series
+    Uses a Pandas DataFrame as the feed source, using indices into column
+    names (which can be "numeric")
+
+
+
+
+    This means that all parameters related to lines must have numeric
+    values as indices into the tuples
+
+    Note:
+
+      - The ``dataname`` parameter is a Pandas DataFrame
+
+      - Values possible for datetime
+
+        - None: the index contains the datetime
+        - -1: no index, autodetect column
+        - >= 0 or string: specific colum identifier
+
+      - For other lines parameters
+
+        - None: column not present
+        - -1: autodetect
+        - >= 0 or string: specific colum identifier
     '''
 
     params = (

@@ -269,13 +269,27 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         pass
 
     def prenext(self):
+        '''
+        This method will be called before the minimum period of all
+        datas/indicators have been meet for the strategy to start executing
+        '''
         pass
 
     def nextstart(self):
+        '''
+        This method will be called once, exactly when the minimum period for
+        all datas/indicators have been meet. The default behavior is to call
+        next
+        '''
+
         # Called once for 1st full calculation - defaults to regular next
         self.next()
 
     def next(self):
+        '''
+        This method will be called for all remaining data points when the
+        minimum period for all datas/indicators have been meet.
+        '''
         pass
 
     def _addnotification(self, *args, **kwargs):

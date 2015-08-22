@@ -29,7 +29,7 @@ from . import feed
 from . import TimeFrame
 
 
-class BaseResampler(feed.DataBase):
+class BaseResampler(feed.AbstractDataBase):
     def __init__(self, data):
         self.data = data
         self._name = getattr(data, '_name', '')

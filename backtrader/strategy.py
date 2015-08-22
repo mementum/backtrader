@@ -135,147 +135,8 @@ class MetaStrategy(StrategyBase.__class__):
 
 
 class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
-    '''Based class to be subclassed for user defined strategies.
-
-    Strategies are ``Lines`` objects but only an unnamed line is defined to
-    ensure the strategy can be synchronized to the main data.
-
-    Logic does usually involve Indicators. Indicators are defined in:
-
-      - ``__init__``
-
-
-    The class will:
-
-      - Be notified through ``notify_order(order)`` of any status change in an
-        order
-
-      - Be notified through ``notify_trade(trade)`` of any
-        opening/updating/closing trade
-
-      - Have its methods ``prenext``, ``nextstart`` and ``next`` invoked to
-        execute the logic
-
-    Bits:
-
-      - A Strategy has a "length" which is always equal to that of the main
-        data (datas[0])
-
-        ``next`` can be called without changes in length if data is being
-        replayed or a live feed is being passed and new ticks for the same
-        point in time (length) are arriving
-
-    Member Attributes:
-
-      - ``env``: the cerebro entity in which this Strategy lives
-      - ``datas``: array of datas which have been passed to cerebro
-
-        - ``data/data0`` is an alias for datas[0]
-        - ``dataX`` is an alias for datas[X]
-
-      - ``broker``: reference to the broker associated to this strategy
-        (received from cerebro)
-
-      - stats: list/named tuple-like sequence holding the Observers created by
-        cerebro for this strategy
-
-      - analyzers: list/named tuple-like sequence holding the Analyzers created
-        by cerebro for this strategy
-
-    Member Attributes (meant for statistics/observers/analyzers):
-
-      - ``_orderspending``: list of orders which will be notified to the
-        strategy before ``next`` is called
-
-      - ``_tradespending``: list of trades which will be notified to the
-        strategy before ``next`` is called
-
-      - ``_orders``: list of order which have been already notified. An order
-        can be several times in the list with different statuses and different
-        execution bits. The list is menat to keep the history.
-
-      - ``_trades``: list of order which have been already notified. A trade
-        can be several times in the list just like an order.
-
-    User Methods (will be called):
-
-      - ``prenext``: will be called before the minimum period of all
-        datas/indicators have been meet for the strategy to start executing
-
-      - ``nextstart``: will be called once, exactly when the minimum period for
-        all datas/indicators have been meet. The default behavior is to call
-        next
-
-      - ``next``: will be called for all remaining data points when the minimum
-        period for all datas/indicators have been meet.
-
-      .. note::
-
-        The 3 methods above can be called several times for the same point in
-        time (ticks updating prices for the daily bar, when a daily timeframe
-        is in use)
-
-      - ``notify_order(order)``: receives an order whenever there has been a
-        change in one
-
-      - ``notify_trade(trade)``: receives a trade whenever there has been a
-        change in once
-
-      - ``start``: called right before the backtesting is about to be started
-
-      - ``stop``: called right before the backtesting is about to be stopped
-
-    User Methods (to be called):
-
-      - buy(self, data=None, size=None,
-            price=None, plimit=None,
-            exectype=None, valid=None)
-
-        To create a buy (long) order and send it to the broker
-
-        Returns: the submitted order
-
-      - sell(self, data=None, size=None,
-            price=None, plimit=None,
-            exectype=None, valid=None)
-
-        To create a selll (short) order and send it to the broker
-
-        Returns: the submitted order
-
-      - close(data=None, size=None, price=None, exectype=None, valid=None)
-
-        Counters a long/short position closing it
-
-        Returns: the submitted order
-
-      - broker.cancel(order)
-
-        (indirect call through broker)
-
-        Tries to cnacel an order (it may have been executed before the call
-        succeeds)
-
-        Returns: bool with status of request
-
-      - sizer/getsizer()
-
-        Returns the sizer which is in used if automatic statke calculation is
-        used
-
-      - setsizer(sizer)
-
-        Replace the default (fixed statke) sizer
-
-      - getsizing(data=None))
-
-        Return the stake calculated by the sizer instance for the current
-        situation
-
-      - position/getposition(data=None, broker=None)
-
-        Return the current position for a given data in a given broker. If both
-        are None, the main data and the default broker will be used
+    '''
+    Base class to be subclassed for user defined strategies.
     '''
 
     _ltype = LineIterator.StratType
@@ -358,6 +219,9 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.start()
 
     def start(self):
+        '''
+        Called right before the backtesting is about to be started
+        '''
         pass
 
     def _stop(self):
@@ -367,6 +231,10 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.stop()
 
     def stop(self):
+        '''
+        Called right before the backtesting is about to be stopped
+        '''
+
         pass
 
     def clear(self):
@@ -420,14 +288,25 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             self.notify_trade(trade)
 
     def notify_order(self, order):
+        '''
+        Receives an order whenever there has been a change in one
+        '''
         pass
 
     def notify_trade(self, trade):
+        '''
+        Rceives a trade whenever there has been a change in once
+        '''
         pass
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
             exectype=None, valid=None):
+        '''
+        To create a buy (long) order and send it to the broker
+
+        Returns: the submitted order
+        '''
 
         data = data or self.datas[0]
         size = size or self.getsizing(data)
@@ -440,7 +319,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def sell(self, data=None,
              size=None, price=None, plimit=None,
              exectype=None, valid=None):
+        '''
+        To create a selll (short) order and send it to the broker
 
+        Returns: the submitted order
+        '''
         data = data or self.datas[0]
         size = size or self.getsizing(data)
 
@@ -451,6 +334,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def close(self,
               data=None, size=None, price=None, exectype=None, valid=None):
+        '''
+        Counters a long/short position closing it
+
+        Returns: the submitted order
+        '''
         possize = self.getposition(data, self.broker).size
         size = abs(size or possize)
 
@@ -462,22 +350,42 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         return None
 
     def getposition(self, data=None, broker=None):
+        '''
+        Returns the current position for a given data in a given broker.
+
+        If both are None, the main data and the default broker will be used
+
+        A property ``position`` is also available
+        '''
         data = data or self.datas[0]
         return self.broker.getposition(data)
 
     position = property(getposition)
 
     def setsizer(self, sizer):
+        '''
+        Replace the default (fixed statke) sizer
+        '''
         self._sizer = sizer
         if not sizer.getbroker():
             sizer.setbroker(self.broker)
         return sizer
 
     def getsizer(self):
+        '''
+        Returns the sizer which is in used if automatic statke calculation is
+        used
+
+        Also available as ``sizer``
+        '''
         return self._sizer
 
     sizer = property(getsizer, setsizer)
 
     def getsizing(self, data=None):
+        '''
+        Return the stake calculated by the sizer instance for the current
+        situation
+        '''
         data = data or self.datas[0]
         return self._sizer.getsizing(data)

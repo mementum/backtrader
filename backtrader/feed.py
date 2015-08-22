@@ -32,10 +32,23 @@ from . import TimeFrame
 from .utils import date2num
 
 
-class MetaDataBase(dataseries.OHLCDateTime.__class__):
+class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
+    _indcol = dict()
+
+    def __init__(cls, name, bases, dct):
+        '''
+        Class has already been created ... register subclasses
+        '''
+        # Initialize the class
+        super(MetaAbstractDataBase, cls).__init__(name, bases, dct)
+
+        if not cls.aliased and \
+           name != 'DataBase' and not name.startswith('_'):
+            cls._indcol[name] = cls
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
-            super(MetaDataBase, cls).dopreinit(_obj, *args, **kwargs)
+            super(MetaAbstractDataBase, cls).dopreinit(_obj, *args, **kwargs)
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
@@ -44,7 +57,7 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
-            super(MetaDataBase, cls).dopostinit(_obj, *args, **kwargs)
+            super(MetaAbstractDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
         _obj._name = _obj.p.name
         _obj._compression = _obj.p.compression
@@ -74,9 +87,8 @@ class MetaDataBase(dataseries.OHLCDateTime.__class__):
         return _obj, args, kwargs
 
 
-class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
-    _feed = None
-
+class AbstractDataBase(six.with_metaclass(MetaAbstractDataBase,
+                                          dataseries.OHLCDateTime)):
     params = (('dataname', None),
               ('fromdate', datetime.datetime.min),
               ('todate', datetime.datetime.max),
@@ -84,6 +96,8 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
               ('compression', 1),
               ('timeframe', TimeFrame.Days),
               ('sessionend', None))
+
+    _feed = None
 
     def getfeed(self):
         return self._feed
@@ -206,6 +220,10 @@ class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
         return False
 
 
+class DataBase(AbstractDataBase):
+    pass
+
+
 class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
     params = () + DataBase.params._gettuple()
 
@@ -252,6 +270,20 @@ class MetaCSVDataBase(DataBase.__class__):
 
 
 class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
+    '''
+    Base class for classes implementing CSV DataFeeds
+
+    The class takes care of opening the file, reading the lines and
+    tokenizing them.
+
+    Subclasses do only need to override:
+
+      - _loadline(tokens)
+
+    The return value of ``_loadline`` (True/False) will be the return value
+    of ``_load`` which has been overriden by this base class
+    '''
+
     params = (('headers', True), ('separator', ','),)
 
     def start(self):
