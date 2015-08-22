@@ -31,27 +31,19 @@ from backtrader.analyzers import AnnualReturn
 
 
 class SharpeRatio(Analyzer):
-    '''
-    This analyzer calculates the SharpRatio of a strategy using a risk free
-    asset which is simply an interest rate
-
-    Params:
-
-      - riskfreerate: (default: 0.01 -> 1%)
-
-    Member Attributes:
-
-      - ``anret``: list of annual returns used for the final calculation
-
-    **get_analysis**:
-
-      - Returns a dictionary with key "sharperatio" holding the ratio
-    '''
     params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
 
     def __init__(self):
         super(SharpeRatio, self).__init__()
         self.anret = AnnualReturn()
+
+    def start(self):
+        # Not needed ... but could be used
+        pass
+
+    def next(self):
+        # Not needed ... but could be used
+        pass
 
     def stop(self):
         retfree = [self.p.riskfreerate] * len(self.anret.rets)

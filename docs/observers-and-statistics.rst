@@ -255,7 +255,6 @@ Finally the code for this strategy which applies the new **observer**
    :language: python
    :lines: 21-
 
-
 Saving/Keeping the statistics
 =============================
 
@@ -272,15 +271,14 @@ Considering the ``DrawDown`` observer, it could be done like this::
 
       def start(self):
 
-          mystats = open('mystats.csv', 'wb')
-	  mystats.write('datetime,drawdown, maxdrawdown\N')
-
+          self.mystats = open('mystats.csv', 'wb')
+	  self.mystats.write('datetime,drawdown, maxdrawdown\n')
 
       def next(self):
-          mystats.write(self.data.datetime.date(0).strptime('%Y-%m-%d'))
-          mystats.write(',%.2f' % self.stats.drawdown.drawdown[-1])
-          mystats.write(',%.2f' % self.stats.drawdown.maxdrawdown-1])
-	  mystats.write('\n')
+          self.mystats.write(self.data.datetime.date(0).strftime('%Y-%m-%d'))
+          self.mystats.write(',%.2f' % self.stats.drawdown.drawdown[-1])
+          self.mystats.write(',%.2f' % self.stats.drawdown.maxdrawdown-1])
+	  self.mystats.write('\n')
 
 To save the values of index 0, once all observers have been processed a custom
 observer which writes to a file could be added as the last observer to the

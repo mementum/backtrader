@@ -14,17 +14,26 @@ Contents:
    introduction
    installation
    quickstart
+   automated-bt-run
    concepts
    operating
    advanced
    datafeed
    datafeed-develop-csv
    datafeed-develop-general
+   extending-a-datafeed
+   pandas-datafeed
+   strategy
    induse
    inddev
    observers-and-statistics
+   analyzers
+   analyzers-reference
    commission-schemes
    order-creation-execution
+   position
+   order
+   trade
    plotting
    indautoref
 

@@ -34,21 +34,21 @@ class Trade(object):
 
     An trade is not meant to be reversed (no support in the logic for it)
 
-    Attributes:
-        size (int): current size of the trade
-        price (float): current price of the trade
-        value (float): current value of the trade
-        commission (float): current accumulated commission
-        pnl (float): current profit and loss of the trade (gross pnl)
-        pnlcomm (float): current profit and loss of the trade minus
-                         commission (net pnl)
-        isclosed (bool): records if the last update closed (set size to null
-                         the trade
-        isopen (bool): records if any update has opened the trade
-        justopened (bool): if the trade was just opened
-        baropen (int): bar in which this trade was opened
-        barclose (int): bar in which this trade was closed
-        barlen (int): number of bars this trade was open
+    Member Attributes:
+      - size (int): current size of the trade
+      - price (float): current price of the trade
+      - value (float): current value of the trade
+      - commission (float): current accumulated commission
+      - pnl (float): current profit and loss of the trade (gross pnl)
+      - pnlcomm (float):
+        current profit and loss of the trade minus commission (net pnl)
+      - isclosed (bool):
+        records if the last update closed (set size to null the trade
+      - isopen (bool): records if any update has opened the trade
+      - justopened (bool): if the trade was just opened
+      - baropen (int): bar in which this trade was opened
+      - barclose (int): bar in which this trade was closed
+      - barlen (int): number of bars this trade was open
     '''
     def __init__(self, data=None,
                  size=0, price=0.0, value=0.0, commission=0.0):

@@ -12,7 +12,7 @@ CSV Based) to let you load data from different sources.
 
   - Generic CSV support
 
-From the `Quickstart`_ guide it should be clear that you add data feeds to a
+From the :ref:`Quickstart` guide it should be clear that you add data feeds to a
 ``Cerebro`` instance. The data feeds will later be available to the different
 strategies in:
 
@@ -35,16 +35,21 @@ A quick reminder as to how the insertion works::
   cerebro.adddata(data)  # a 'name' parameter can be passed for plotting purposes
 
 
-CSV Data Feeds Common parameters
-********************************
+Data Feeds Common parameters
+****************************
 
 This data feed can download data directly from Yahoo and feed into the system.
 
 Parameters:
 
-  - ``dataname``
+  - ``dataname`` (default: None) MUST BE PROVIDED
 
     The meaning varies with the data feed type (file location, ticker, ...)
+
+  - ``name`` (default: '')
+
+    Meant for decorative purposes in plotting. If not specified it may be
+    derived from ``dataname`` (example: last part of a file path)
 
   - ``fromdate`` (default: mindate)
 
@@ -56,6 +61,118 @@ Parameters:
     Python datetime object indicating that any datetime posterior to this should
     be ignored
 
+  - ``timeframe`` (default: TimeFrame.Days)
+
+    Informative unless Data Resampling/Replaying is used. It may be changed by
+    classes upon timeframe detection
+
+  - ``compression`` (default: 1)
+
+    Number of actual bars per bar. Informative. Only effective in Data
+    Resampling/Replaying.
+
+  - ``sessionend`` (default: None)
+
+    Informative abou the session end time for the data. May be used by classes
+    freely (VChart uses it to place daily bars at the end of the day)
+
+Binary Datafeeds
+****************
+
+PandasDirectData
+================
+
+
+This class operates on iterators and tuples from Pandas DataFrames and does not
+support column names (either numeric or alphanumeric)
+
+Parameters (addtional):
+
+  - ``dataname``: Pandas DataFrame
+
+  - ``datetime`` (default: 0) column containing the date (or datetime) field
+
+    MUST BE PRESENT
+
+  - ``open`` (default: 1) , ``high`` (default: 2), ``low`` (default: 3),
+    ``close`` (default: 4), ``volume`` (default: 5), ``openinterest``
+    (default: 6)
+
+    Index of the columns containing the corresponding fields
+
+    If a negative value is passed (example: -1) it indicates the field is not
+    present in the CSV data
+
+PandasData
+==========
+
+More generic support for Pandas DataFrames with support and autodetection of
+column names (case-wise)
+
+Parameters:
+
+  - ``dataname``: Pandas DataFrame
+
+  - ``datetime`` (default: None) column containing the date (or datetime) field
+
+    None: the index contains the datetime
+    -1: no index, autodetect column
+    >= 0 or string: specific colum identifier
+
+  - ``open``, ``high``, ``low``, ``close``, ``volume``, ``openinterest``
+
+    default: -1
+
+    None: column not present
+    -1: autodetect
+    >= 0 or string: specific colum identifier
+
+Blaze
+=====
+
+
+Support for `Blaze <blaze.pydata.org>`_ ``Data`` objects.
+
+Only numeric indices to columns are supported.
+
+Parameters:
+
+  - ``dataname``: Blaze ``Data``
+
+  - ``datetime`` (default: 0) column containing the date (or datetime) field
+
+    MUST BE PRESENT and it is asusmed is a native Python ``datetime.datetime``
+    instance
+
+  - ``open``: (default: 1)
+  - ``high``: (default: 2)
+  - ``low``: (default: 3)
+  - ``close``: (default: 4)
+  - ``volume``: (default: 5)
+  - ``openinterest``: (default: 6)
+
+VChartData
+==========
+
+Support for `Visual Chart <www.visualchart.com>`_ binary on-disk files for both
+daily and intradaily formats.
+
+  - ``dataname``: path to file or open file-like object
+
+    If a file-like object is passed, the ``timeframe`` parameter will be used to
+    determine which is the actual timeframe.
+
+    Else the file extension (``.fd`` for daily and ``.min`` for intraday) will
+    be used.
+
+
+CSV Data Feeds Common parameters
+********************************
+
+This data feed can download data directly from Yahoo and feed into the system.
+
+Parameters (additional to the common ones):
+
   - ``headers`` (default: True)
 
     Indicates if the passed data has an initial headers row
@@ -65,8 +182,8 @@ Parameters:
     Separator to take into account to tokenize each of the CSV rows
 
 
-The actual CSV Data Feeds
-*************************
+CSV Data Feeds
+**************
 
 YahooFinanceData
 ================
@@ -205,6 +322,8 @@ Example::
 
   ...
 
+
+.. _generic-csv-datafeed:
 
 GenericCSVData
 ==============
