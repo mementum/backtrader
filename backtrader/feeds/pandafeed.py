@@ -27,6 +27,68 @@ from backtrader import date2num
 import backtrader.feed as feed
 
 
+class PandasDirectData(feed.DataBase):
+    '''
+    The ``dataname`` parameter inherited from ``feed.DataBase``  is the pandas
+    Time Series
+    '''
+
+    params = (
+        ('datetime', 0),
+        ('open', 1),
+        ('high', 2),
+        ('low', 3),
+        ('close', 4),
+        ('volume', 5),
+        ('openinterest', 6),
+    )
+
+    datafields = [
+        'datetime', 'open', 'high', 'low', 'close', 'volume', 'openinterest'
+    ]
+
+
+    def start(self):
+        # reset the iterator on each start
+        self._rows = self.p.dataname.itertuples()
+
+    def _load(self):
+        try:
+            row = next(self._rows)
+        except StopIteration:
+            return False
+
+        # Set the standard datafields - except for datetime
+        for datafield in self.datafields[1:]:
+            # get the column index
+            colidx = getattr(self.params, datafield)
+
+            if colidx < 0:
+                # column not present -- skip
+                continue
+
+            # get the line to be set
+            line = getattr(self.lines, datafield)
+
+            # indexing for pandas: 1st is colum, then row
+            line[0] = row[colidx]
+
+        # datetime
+        colidx = getattr(self.params, self.datafields[0])
+        tstamp = row[colidx]
+
+        # convert to float via datetime and store it
+        dt = tstamp.to_datetime()
+        dtnum = date2num(dt)
+
+        # get the line to be set
+        line = getattr(self.lines, self.datafields[0])
+        line[0] = dtnum
+
+        # Done ... return
+        return True
+
+
 class PandasData(feed.DataBase):
     '''
     The ``dataname`` parameter inherited from ``feed.DataBase``  is the pandas
