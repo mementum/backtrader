@@ -364,7 +364,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def setsizer(self, sizer):
         '''
-        Replace the default (fixed statke) sizer
+        Replace the default (fixed stake) sizer
         '''
         self._sizer = sizer
         if not sizer.getbroker():
