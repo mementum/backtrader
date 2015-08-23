@@ -190,6 +190,7 @@ class DataResampler(BaseResampler):
                     break
 
                 if self._baroverlimit():
+                    self.data.rewind()
                     break
 
                 self._barupdate()
