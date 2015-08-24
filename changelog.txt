@@ -10,18 +10,19 @@
     can load the default Strategy object if none is specified
 
 1.1.3.88:
-  - Generic Data Feed Development Documentation
-  - Observers Documentation
-  - Support for last tick values in data feeds (data.tick_xxx with xxx being,
-    open, high, low, close, volume, openinterest. Unless a real-time feed is
-    used or a replay is done, the values will be those of the regular bar
-  - Replayer support filling up the last used tick_xxx values
-  - Orders have new attribute with the next end of session after the order
-  - Broker uses the tick prices for order execution supporting with it the same
-    logic in replay and regular mode
-  - Fixes #11: On Market Close Orders new logic including end of session check
-    support
-  - VisualChart binary file direct support
+  - Automation bt-run.py script added
+  - Pandas Dataframe support
+  - Improvements to OrderedDict imports for Python 2.6 compatibility
+  - Default reference price for orders is bar closing price if not set like in
+    Market orders
+  - Analyzers added: non-lines objects offering in-run/post-run statistics
+  - Analyzers added: SharpeRatio and AnnualReturn
+  - Improved Observers which now support (like Indicators/Strategies)
+    prenext/nextstart
+  - Simplified cerebro return values for run: single list if not optimizing and
+    list of lists if optimizing
+  - Order Execution Sample script added
+  - SMA_CrosssOver Strategy included in submodule backtrader.strategies
 
 1.1.2.88:
   - Generic Data Feed Development Documentation
