@@ -85,7 +85,6 @@ def runstrat():
 
     runsts = cerebro.run()
     runst = runsts[0]  # single strategy and no optimization
-    print('RUNSTRAT is', runstrat)
 
     if runst.analyzers:
         print('====================')
@@ -95,7 +94,7 @@ def runstrat():
             print('## ', name)
             analysis = analyzer.get_analysis()
             for key, val in analysis.items():
-                print('-- ', key, ':', val)
+                print('---- ', key, ':', val)
 
     if not args.noplot:
         cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
