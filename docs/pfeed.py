@@ -29,8 +29,8 @@ import backtrader.feed as feed
 
 class PandasData(feed.DataBase):
     '''
-    The ``dataname`` parameter inherited from ``feed.DataBase``  is the pandas
-    Time Series
+    The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
+    DataFrame
     '''
 
     params = (
