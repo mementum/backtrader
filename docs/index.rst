@@ -14,19 +14,33 @@ Contents:
    introduction
    installation
    quickstart
+   automated-bt-run
    concepts
    operating
-   advanced
+   cerebro
    datafeed
    datafeed-develop-csv
    datafeed-develop-general
+   extending-a-datafeed
+   pandas-datafeed
+   data-resampling
+   data-multitimeframe
+   data-replay
+   strategy
    induse
    inddev
    observers-and-statistics
+   analyzers
    commission-schemes
    order-creation-execution
+   position
+   order
+   trade
    plotting
+   dataautoref
    indautoref
+   strategy-reference
+   analyzers-reference
 
 Indices and tables
 ==================

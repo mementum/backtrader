@@ -1,6 +1,6 @@
 
-Datafeed Development
-####################
+Binary Datafeed Development
+###########################
 
 CSV Data feed development has shown how to add new CSV based data
 feeds. The existing base class `CSVDataBase` provides the framework

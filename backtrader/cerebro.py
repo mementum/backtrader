@@ -34,11 +34,32 @@ from . import observers
 
 
 class Cerebro(six.with_metaclass(MetaParams, object)):
+    '''
+    Params:
+
+      - ``preload`` (default: True)
+
+        Whether to preload the different ``datas`` passed to cerebro for the
+        Strategies
+
+      - ``runonce`` (default: True)
+
+        Run ``Indicators`` in vectorized mode to speed up the entire system.
+        Strategies and Observers will always be run on an event based basis
+
+      - ``maxcpus`` (default: None -> all available cores)
+
+         How many cores to use simultaneously for optimization
+
+      - stdstats (default: True)
+
+        If True default Observers will be added: Broker (Cash and Value),
+        Trades and BuySell
+    '''
 
     params = (
         ('preload', True),
         ('runonce', True),
-        ('lookahead', 0),
         ('maxcpus', None),
         ('stdstats', True),
     )
@@ -54,6 +75,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
     @staticmethod
     def iterize(iterable):
+        '''
+        Handy function which turns things into things that can be iterated upon
+        including iterables
+        '''
         niterable = list()
         for elem in iterable:
             if isinstance(elem, six.string_types):
@@ -66,15 +91,29 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         return niterable
 
     def addanalyzer(self, ancls, *args, **kwargs):
+        '''
+        Adds an ``Analyzer`` class to the mix. Instantiation will be done at
+        ``run`` time
+        '''
         self.analyzers.append((ancls, args, kwargs))
 
     def addobserver(self, obscls, *args, **kwargs):
+        '''
+        Adds an ``Observer`` class to the mix. Instantiation will be done at
+        ``run`` time
+        '''
         self.observers.append((False, obscls, args, kwargs))
 
     def addobservermulti(self, obscls, *args, **kwargs):
         self.observers.append((True, obscls, args, kwargs))
 
     def adddata(self, data, name=None):
+        '''
+        Adds a ``Data Feed`` instance to the mix.
+
+        if ``name`` is not None it will be put into ``data._name`` which is
+        meant for decoration/plotting purposes.
+        '''
         if name is not None:
             data._name = name
         self.datas.append(data)
@@ -83,6 +122,37 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self.feeds.append(feed)
 
     def optstrategy(self, strategy, *args, **kwargs):
+        '''
+        Adds a ``Strategy`` class to the mix for optimization. Instantiation
+        will happen during ``run`` time.
+
+        args and kwargs MUST BE iterables which hold the values to check.
+
+        Example: if a Strategy accepts a parameter ``period``, for optimization
+        purposes the call to ``optstrategy`` looks like:
+
+          - cerebro.optstrategy(MyStrategy, period=(15, 25))
+
+        or
+
+          - cerebro.optstrategy(MyStrategy, period=xrange(15, 25))
+
+        This will execute MyStrategy with ``period`` values 15 -> 25 (25 not
+        included in the lot)
+
+        If a parameter is passed but shall not be optimized the call looks
+        like:
+
+          - cerebro.optstrategy(MyStrategy, period=(15,))
+
+        Notice that ``period`` is still passed as an iterable ... of just 1 element
+
+        ``backtrader`` will anyhow tray to identify situations like:
+
+          - cerebro.optstrategy(MyStrategy, period=15)
+
+        and will create an internal pseudo-iterable if possible
+        '''
         self._dooptimize = True
         args = self.iterize(args)
         optargs = itertools.product(*args)
@@ -101,18 +171,43 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.strats.append(it)
 
     def addstrategy(self, strategy, *args, **kwargs):
+        '''
+        Adds a ``Strategy`` class to the mix for a single pass run.
+        Instantiation will happen during ``run`` time.
+
+        args and kwargs will be passed to the strategy as they are during
+        instantiation.
+        '''
         self.strats.append([(strategy, args, kwargs)])
 
     def setbroker(self, broker):
+        '''
+        Sets a specific ``broker`` instance for this strategy, replacing the
+        one inherited from cerebro.
+        '''
         self._broker = broker
         return broker
 
     def getbroker(self):
+        '''
+        Returns the broker instance.
+
+        This is also available as a ``property`` by the name ``broker``
+        '''
         return self._broker
 
     broker = property(getbroker, setbroker)
 
     def plot(self, plotter=None, numfigs=1, **kwargs):
+        '''
+        Plots the strategies inside cerebro
+
+        If ``plotter`` is None a default ``Plot`` instance is created and
+        ``kwargs`` are passed to it during instantiation.
+
+        ``numfigs`` split the plot in the indicated number of charts reducing
+        chart density if wished
+        '''
         if not plotter:
             from . import plot
             plotter = plot.Plot(**kwargs)
@@ -124,9 +219,27 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         plotter.show()
 
     def __call__(self, iterstrat):
+        '''
+        Used during optimization to pass the cerebro over the multiprocesing
+        module without complains
+        '''
         return self.runstrategies(iterstrat)
 
     def run(self, **kwargs):
+        '''The core method to perform backtesting. Any ``kwargs`` passed to it
+        will affect the value of the standard parameters ``Cerebro`` was
+        instantiated with.
+
+        If ``cerebro`` has not datas the method will immediately bail out.
+
+        It has different return values:
+
+          - For No Optimization: a list contanining instances of the Strategy
+            classes added with ``addstrategy``
+
+          - For Optimization: a list of lists which contain instances of the
+            Strategy classes added with ``addstrategy``
+        '''
         if not self.datas:
             return
 
@@ -154,6 +267,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         return self.runstrats
 
     def runstrategies(self, iterstrat):
+        '''
+        Internal method invoked by ``run``` to run a set of strategies
+        '''
         runstrats = list()
         self._broker.start()
 
@@ -162,7 +278,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         for data in self.datas:
             data.reset()
-            data.extend(size=self.params.lookahead)
             data.start()
             if self.params.preload:
                 data.preload()
@@ -204,12 +319,20 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         return runstrats
 
     def _brokernotify(self):
+        '''
+        Internal method which kicks the broker and delivers any broker
+        notification to the strategy
+        '''
         self._broker.next()
         while self._broker.notifs:
             order = self._broker.notifs.popleft()
             order.owner._addnotification(order)
 
     def _runnext(self, runstrats):
+        '''
+        Actual implementation of run in full next mode. All objects have its
+        ``next`` method invoke on each data arrival
+        '''
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:
@@ -221,6 +344,12 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
                 strat._next()
 
     def _runonce(self, runstrats):
+        '''
+        Actual implementation of run in vector mode.
+
+        Strategies are still invoked on a pseudo-event mode in which ``next``
+        is called for each data arrival
+        '''
         for strat in runstrats:
             strat._once()
 

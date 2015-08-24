@@ -28,21 +28,24 @@ from docutils.statemachine import ViewList
 from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.nodes import nested_parse_with_titles
 
-from backtrader import Indicator, AutoInfoClass
+from backtrader import Indicator, Strategy, AutoInfoClass
+import backtrader.feed as feed
 
 
-class IndRef(nodes.General, nodes.Element):
+class BacktraderRef(nodes.General, nodes.Element):
     pass
 
 
-class IndRefDirective(Directive):
+class BacktraderRefDirective(Directive):
+    RefCls = None
+    RefPlot = True
 
     def run(self):
         indnode = []
-        for indname in sorted(Indicator._indcol.keys()):
+        for indname in sorted(self.RefCls._indcol.keys()):
             # indnode.append(nodes.section())
 
-            indcls = Indicator._indcol[indname]
+            indcls = self.RefCls._indcol[indname]
 
             # Title section (indicator name)
             indname = indcls.__name__
@@ -80,34 +83,35 @@ class IndRefDirective(Directive):
                 inddoc.append(u'Params:')
                 for pkey, pvalue in indcls.params._getitems():
                     try:
-                        if issubclass(pvalue, Indicator):
+                        if issubclass(pvalue, self.RefCls):
                             pvalue = pvalue.__name__
                     except:
                         pass
 
                     inddoc.append(u'  - %s (%s)' % (pkey, str(pvalue)))
 
-            # Plotinfo section
-            # indplotinfo = indcls.plotinfo._getpairs()
-            if len(indcls.plotinfo._getpairs()):
-                inddoc.append(u'PlotInfo:')
-                for pkey, pvalue in indcls.plotinfo._getitems():
-                    inddoc.append(u'  - %s (%s)' % (pkey, str(pvalue)))
+            if self.RefPlot:
+                # Plotinfo section
+                # indplotinfo = indcls.plotinfo._getpairs()
+                if len(indcls.plotinfo._getpairs()):
+                    inddoc.append(u'PlotInfo:')
+                    for pkey, pvalue in indcls.plotinfo._getitems():
+                        inddoc.append(u'  - %s (%s)' % (pkey, str(pvalue)))
 
-            # PlotLines Section
-            if len(indcls.plotlines._getpairs()):
-                inddoc.append(u'PlotLines:')
-                for pkey, pvalue in indcls.plotlines._getitems():
-                    if isinstance(pvalue, AutoInfoClass):
-                        inddoc.append(u'  - %s:' % pkey)
-                        for plkey, plvalue in pvalue._getitems():
-                            inddoc.append(u'    - %s (%s)' % (plkey, plvalue))
-                    elif isinstance(pvalue, (dict, OrderedDict)):
-                        inddoc.append(u'  - %s:' % pkey)
-                        for plkey, plvalue in pvalue.items():
-                            inddoc.append(u'    - %s (%s)' % (plkey, plvalue))
-                    else:
-                        inddoc.append(u'  - %s (%s):' % pkey, str(pvalue))
+                # PlotLines Section
+                if len(indcls.plotlines._getpairs()):
+                    inddoc.append(u'PlotLines:')
+                    for pkey, pvalue in indcls.plotlines._getitems():
+                        if isinstance(pvalue, AutoInfoClass):
+                            inddoc.append(u'  - %s:' % pkey)
+                            for plkey, plvalue in pvalue._getitems():
+                                inddoc.append(u'    - %s (%s)' % (plkey, plvalue))
+                        elif isinstance(pvalue, (dict, OrderedDict)):
+                            inddoc.append(u'  - %s:' % pkey)
+                            for plkey, plvalue in pvalue.items():
+                                inddoc.append(u'    - %s (%s)' % (plkey, plvalue))
+                        else:
+                            inddoc.append(u'  - %s (%s):' % pkey, str(pvalue))
 
             # create the indicator node, add it to a viewlist and parse
             indsubnode = nodes.container()
@@ -120,8 +124,41 @@ class IndRefDirective(Directive):
         return indnode
 
 
+class IndRef(BacktraderRef):
+    pass
+
+
+class IndRefDirective(BacktraderRefDirective):
+    RefCls = Indicator
+    RefPlot = True
+
+
+class DataBaseRef(BacktraderRef):
+    pass
+
+
+class DataBaseRefDirective(BacktraderRefDirective):
+    RefCls = feed.DataBase
+    RefPlot = False
+
+
+class StrategyRef(BacktraderRef):
+    pass
+
+
+class StrategyRefDirective(BacktraderRefDirective):
+    RefCls = Strategy
+    RefPlot = False
+
+
 def setup(app):
     app.add_node(IndRef)
     app.add_directive('indref', IndRefDirective)
+
+    app.add_node(DataBaseRef)
+    app.add_directive('databaseref', DataBaseRefDirective)
+
+    app.add_node(StrategyRef)
+    app.add_directive('stratref', StrategyRefDirective)
 
     return {'version': '0.1'}  # identifies the version of our extension

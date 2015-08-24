@@ -55,6 +55,8 @@ class _Template(object):
 
 
 class MetaStrategy(StrategyBase.__class__):
+    _indcol = dict()
+
     def __new__(meta, name, bases, dct):
         # Hack to support original method name for notify_order
         if 'notify' in dct:
@@ -65,6 +67,17 @@ class MetaStrategy(StrategyBase.__class__):
             dct['notify_trade'] = dct.pop('notify_operation')
 
         return super(MetaStrategy, meta).__new__(meta, name, bases, dct)
+
+    def __init__(cls, name, bases, dct):
+        '''
+        Class has already been created ... register subclasses
+        '''
+        # Initialize the class
+        super(MetaStrategy, cls).__init__(name, bases, dct)
+
+        if not cls.aliased and \
+           name != 'Strategy' and not name.startswith('_'):
+            cls._indcol[name] = cls
 
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = \
@@ -117,7 +130,8 @@ class MetaStrategy(StrategyBase.__class__):
 
         _obj._minperiods = list()
         for data in _obj.datas:
-            dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+            # dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+            dminperiod = max(_dminperiods[data] or [data._minperiod])
             _obj._minperiods.append(dminperiod)
 
         # Set the minperiod
@@ -135,6 +149,10 @@ class MetaStrategy(StrategyBase.__class__):
 
 
 class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
+    '''
+    Base class to be subclassed for user defined strategies.
+    '''
+
     _ltype = LineIterator.StratType
 
     # This unnamed line is meant to allow having "len" and "forwarding"
@@ -215,6 +233,9 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.start()
 
     def start(self):
+        '''
+        Called right before the backtesting is about to be started
+        '''
         pass
 
     def _stop(self):
@@ -224,6 +245,10 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.stop()
 
     def stop(self):
+        '''
+        Called right before the backtesting is about to be stopped
+        '''
+
         pass
 
     def clear(self):
@@ -277,14 +302,25 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             self.notify_trade(trade)
 
     def notify_order(self, order):
+        '''
+        Receives an order whenever there has been a change in one
+        '''
         pass
 
     def notify_trade(self, trade):
+        '''
+        Rceives a trade whenever there has been a change in once
+        '''
         pass
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
             exectype=None, valid=None):
+        '''
+        To create a buy (long) order and send it to the broker
+
+        Returns: the submitted order
+        '''
 
         data = data or self.datas[0]
         size = size or self.getsizing(data)
@@ -297,7 +333,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def sell(self, data=None,
              size=None, price=None, plimit=None,
              exectype=None, valid=None):
+        '''
+        To create a selll (short) order and send it to the broker
 
+        Returns: the submitted order
+        '''
         data = data or self.datas[0]
         size = size or self.getsizing(data)
 
@@ -308,6 +348,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def close(self,
               data=None, size=None, price=None, exectype=None, valid=None):
+        '''
+        Counters a long/short position closing it
+
+        Returns: the submitted order
+        '''
         possize = self.getposition(data, self.broker).size
         size = abs(size or possize)
 
@@ -319,22 +364,42 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         return None
 
     def getposition(self, data=None, broker=None):
+        '''
+        Returns the current position for a given data in a given broker.
+
+        If both are None, the main data and the default broker will be used
+
+        A property ``position`` is also available
+        '''
         data = data or self.datas[0]
         return self.broker.getposition(data)
 
     position = property(getposition)
 
     def setsizer(self, sizer):
+        '''
+        Replace the default (fixed stake) sizer
+        '''
         self._sizer = sizer
         if not sizer.getbroker():
             sizer.setbroker(self.broker)
         return sizer
 
     def getsizer(self):
+        '''
+        Returns the sizer which is in used if automatic statke calculation is
+        used
+
+        Also available as ``sizer``
+        '''
         return self._sizer
 
     sizer = property(getsizer, setsizer)
 
     def getsizing(self, data=None):
+        '''
+        Return the stake calculated by the sizer instance for the current
+        situation
+        '''
         data = data or self.datas[0]
         return self._sizer.getsizing(data)

@@ -40,7 +40,7 @@ def test_run(main=False):
     data = testcommon.getdata(0)
 
     data = bt.DataResampler(
-        data=data,
+        dataname=data,
         timeframe=bt.TimeFrame.Weeks,
         compression=1)
 

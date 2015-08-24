@@ -28,6 +28,25 @@ from backtrader.utils import OrderedDict
 
 
 class AnnualReturn(Analyzer):
+    '''
+    This analyzer calculates the AnnualReturns by looking at the beginning
+    and end of the year
+
+    Params:
+
+      - (None)
+
+    Member Attributes:
+
+      - ``rets``: list of calculated annual returns
+
+      - ``ret``: dictionary (key: year) of annual returns
+
+    **get_analysis**:
+
+      - Returns a dictionary of annual returns (key: year)
+    '''
+
     def stop(self):
         # Must have stats.broker
         cur_year = None

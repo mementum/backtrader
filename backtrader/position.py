@@ -27,12 +27,17 @@ class Position(object):
     Keeps and updates the size and price of a position. The object has no
     relationship to any asset. It only keeps size and price.
 
-    Attributes:
-        size (int): current size of the position
-        price (float): current price of the position
+    Member Attributes:
+      - size (int): current size of the position
+      - price (float): current price of the position
 
     The Position instances can be tested using len(position) to see if size
     is not null
+
+    User Methods:
+
+      - __len__: invoking len on the instance position indicates if size is
+        not null
     '''
 
     def __init__(self, size=0, price=0.0):

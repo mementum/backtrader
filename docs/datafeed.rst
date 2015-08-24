@@ -12,7 +12,7 @@ CSV Based) to let you load data from different sources.
 
   - Generic CSV support
 
-From the `Quickstart`_ guide it should be clear that you add data feeds to a
+From the :ref:`Quickstart` guide it should be clear that you add data feeds to a
 ``Cerebro`` instance. The data feeds will later be available to the different
 strategies in:
 
@@ -35,16 +35,21 @@ A quick reminder as to how the insertion works::
   cerebro.adddata(data)  # a 'name' parameter can be passed for plotting purposes
 
 
-CSV Data Feeds Common parameters
-********************************
+Data Feeds Common parameters
+****************************
 
 This data feed can download data directly from Yahoo and feed into the system.
 
 Parameters:
 
-  - ``dataname``
+  - ``dataname`` (default: None) MUST BE PROVIDED
 
     The meaning varies with the data feed type (file location, ticker, ...)
+
+  - ``name`` (default: '')
+
+    Meant for decorative purposes in plotting. If not specified it may be
+    derived from ``dataname`` (example: last part of a file path)
 
   - ``fromdate`` (default: mindate)
 
@@ -56,6 +61,29 @@ Parameters:
     Python datetime object indicating that any datetime posterior to this should
     be ignored
 
+  - ``timeframe`` (default: TimeFrame.Days)
+
+    Informative unless Data Resampling/Replaying is used. It may be changed by
+    classes upon timeframe detection
+
+  - ``compression`` (default: 1)
+
+    Number of actual bars per bar. Informative. Only effective in Data
+    Resampling/Replaying.
+
+  - ``sessionend`` (default: None)
+
+    Informative abou the session end time for the data. May be used by classes
+    freely (VChart uses it to place daily bars at the end of the day)
+
+
+CSV Data Feeds Common parameters
+********************************
+
+This data feed can download data directly from Yahoo and feed into the system.
+
+Parameters (additional to the common ones):
+
   - ``headers`` (default: True)
 
     Indicates if the passed data has an initial headers row
@@ -65,152 +93,15 @@ Parameters:
     Separator to take into account to tokenize each of the CSV rows
 
 
-The actual CSV Data Feeds
-*************************
-
-YahooFinanceData
-================
-
-Executes a direct download of data from Yahoo servers for the given time range.
-
-Specific parameters (or specific meaning):
-
-  - ``dataname``
-
-    The ticker to download ('YHOO' for Yahoo own stock quotes)
-
-  - ``baseurl`` (default: 'http://ichart.yahoo.com/table.csv?')
-
-    The server url. Someone might decide to open a Yahoo compatible service in the
-    future.
-
-  - ``period`` (default: 'd' for daily)
-
-    The timeframe to download data in. Pass 'w' for weekly and 'm' for monthly.
-
-  - ``buffered`` (default: True)
-
-    If True the entire socket connection wil be buffered locally before parsing
-    starts.
-
-  - ``reverse`` (default: True)
-
-    Yahoo returns the data with last dates first (against all industry
-    standards) and it must be reversed for it to work. Should this Yahoo
-    standard change, the parameter is available.
-
-  - ``adjclose`` (default: True)
-
-    Whether to use the dividend/split adjusted close and adjust all values
-    according to it.
-
-Example to get Yahoo quotes for 1999::
-
-  ...
-  import backtrader.feeds as btfeeds
-
-  ...
-  data = btfeeds.YahooFinanceData(
-      dataname='YHOO',
-      fromdate=datetime.datetime(1999, 1, 1),
-      todate=datetime.datetime(1999, 12, 31)
-  )
-
-  ...
-
-YahooFinanceCSVData
-===================
-
-Parses pre-downloaded Yahoo CSV Data Feeds (or locally generated if they comply
-to the Yahoo format)
-
-Specific parameters (or specific meaning):
-
-  - ``dataname``
-
-    The filename to parse or a file-like object
-
-  - ``reverse`` (default: False)
-
-    It is assumed that locally stored files have already been reversed during
-    the download process
-
-  - ``adjclose`` (default: True)
-
-    Whether to use the dividend/split adjusted close and adjust all values
-    according to it.
-
-Example to get Yahoo quotes for 1999::
-
-  ...
-  import backtrader.feeds as btfeeds
-
-  ...
-  data = btfeeds.YahooFinanceData(
-      dataname='yhoo-1995-2015-daily.csv',
-      fromdate=datetime.datetime(1999, 1, 1),
-      todate=datetime.datetime(1999, 12, 31)
-  )
-
-  ...
-
-VChartCSVData
-=============
-
-Parses a `VisualChart <http://www.visualchart.com>`_ CSV exported file.
-
-Specific parameters (or specific meaning):
-
-  - ``dataname``
-
-    The filename to parse or a file-like object
-
-Example::
-
-  ...
-  import backtrader.feeds as btfeeds
-
-  ...
-  data = btfeeds.VChartCSVData(
-      dataname='vchart-nvda-1995-2015-daily.txt',
-      fromdate=datetime.datetime(1999, 1, 1),
-      todate=datetime.datetime(1999, 12, 31)
-  )
-
-  ...
-
-
-BacktraderCSVData
-=================
-
-Parses a self-defined CSV Data used for testing.
-
-Specific parameters (or specific meaning):
-
-  - ``dataname``
-
-    The filename to parse or a file-like object
-
-Example::
-
-  ...
-  import backtrader.feeds as btfeeds
-
-  ...
-  data = btfeeds.BacktraderCSVData(
-      dataname='bt-sample-1995-2015-daily.txt',
-      fromdate=datetime.datetime(1999, 1, 1),
-      todate=datetime.datetime(1999, 12, 31)
-  )
-
-  ...
-
+.. _generic-csv-datafeed:
 
 GenericCSVData
-==============
+**************
+
+This class exposes a generic interface allowing parsing mostly every CSV file
+format out there.
 
 Parses a CSV file according to the order and field presence defined by the parameters
-
 
 Specific parameters (or specific meaning):
 

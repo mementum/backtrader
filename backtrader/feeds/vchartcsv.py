@@ -30,6 +30,14 @@ from ..utils import date2num
 
 
 class VChartCSVData(feed.CSVDataBase):
+    '''
+    Parses a `VisualChart <http://www.visualchart.com>`_ CSV exported file.
+
+    Specific parameters (or specific meaning):
+
+      - ``dataname``: The filename to parse or a file-like object
+    '''
+
     vctframes = dict(
         I=TimeFrame.Minutes,
         D=TimeFrame.Days,

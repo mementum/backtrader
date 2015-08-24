@@ -136,18 +136,6 @@ class RelativeStrengthIndex(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average and claims
-      the original from Wilder used a SimpleMovingAverage.
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
     '''
     alias = ('RSI', 'RSI_SMMA', 'RSI_Wilder',)
 

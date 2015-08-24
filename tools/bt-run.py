@@ -57,35 +57,27 @@ def runstrat():
     for data in getdatas(args):
         cerebro.adddata(data)
 
-    # Prepare a dictionary of extra args passed to push them to the strategy
+    # get and add strategies
+    strategies = getobjects(args.strategies, bt.Strategy, bt.strategies)
+    if not strategies:
+        # Add the base Strategy with no args if nothing specified
+        strategies.append((bt.Strategy, dict()))
 
-    # pack them in pairs
-    packedargs = itertools.izip_longest(*[iter(args.args)] * 2, fillvalue='')
+    for strat, kwargs in strategies:
+        cerebro.addstrategy(strat, **kwargs)
 
-    # prepare a string for evaluation, eval and store the result
-    evalargs = 'dict('
-    for key, value in packedargs:
-        evalargs += key + '=' + value + ','
-    evalargs += ')'
-    stratkwargs = eval(evalargs)
+    obs = getobjects(args.observers, bt.Observer, bt.observers)
+    for ob, kwargs in obs:
+        cerebro.addobserver(ob, **kwargs)
 
-    # Get the strategy and add it with any arguments
-    strat = getstrategy(args)
-    cerebro.addstrategy(strat, **stratkwargs)
-
-    obs = getobservers(args)
-    for ob in obs:
-        cerebro.addobserver(ob)
-
-    ans = getanalyzers(args)
-    for an in ans:
-        cerebro.addanalyzer(an)
+    ans = getobjects(args.analyzers, bt.Analyzer, bt.analyzers)
+    for an, kwargs in ans:
+        cerebro.addanalyzer(an, **kwargs)
 
     setbroker(args, cerebro)
 
     runsts = cerebro.run()
     runst = runsts[0]  # single strategy and no optimization
-    print('RUNSTRAT is', runstrat)
 
     if runst.analyzers:
         print('====================')
@@ -95,9 +87,9 @@ def runstrat():
             print('## ', name)
             analysis = analyzer.get_analysis()
             for key, val in analysis.items():
-                print('-- ', key, ':', val)
+                print('---- ', key, ':', val)
 
-    if not args.noplot:
+    if args.plot:
         cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
 
 
@@ -174,6 +166,10 @@ def getmodclasses(mod, clstype, clsname=None):
 
 def loadmodule(modpath, modname=''):
     # generate a random name for the module
+
+    if not modpath.endswith('.py'):
+        modpath += '.py'
+
     if not modname:
         chars = string.ascii_uppercase + string.digits
         modname = ''.join(random.choice(chars) for _ in range(10))
@@ -211,45 +207,26 @@ def loadmodule3(modpath, modname):
     return (mod, None)
 
 
-def getstrategy(args):
-    sttokens = args.strategy.split(':')
+def getobjects(iterable, clsbase, modbase):
+    retobjects = list()
 
-    if len(sttokens) == 1:
-        modpath = sttokens[0]
-        stname = None
-    else:
-        modpath, stname = sttokens
-
-    if modpath:
-        mod, e = loadmodule(modpath)
-
-        if not mod:
-            print('')
-            print('Failed to load module %s:' % modpath, e)
-            sys.exit(1)
-    else:
-        mod = btstrats
-
-    strats = getmodclasses(mod=mod, clstype=bt.Strategy, clsname=stname)
-
-    if not strats:
-        print('No strategy %s / module %s' % (str(stname), modpath))
-        sys.exit(1)
-
-    return strats[0]
-
-
-def getanalyzers(args):
-    analyzers = list()
-    for anspec in args.analyzers or []:
-
-        tokens = anspec.split(':')
+    for item in iterable or []:
+        tokens = item.split(':', 1)
 
         if len(tokens) == 1:
             modpath = tokens[0]
-            name = None
+            name = ''
+            kwargs = dict()
         else:
             modpath, name = tokens
+            kwtokens = name.split(':', 1)
+            if len(kwtokens) == 1:
+                # no '(' found
+                kwargs = dict()
+            else:
+                name = kwtokens[0]
+                kwtext = 'dict(' + kwtokens[1] + ')'
+                kwargs = eval(kwtext)
 
         if modpath:
             mod, e = loadmodule(modpath)
@@ -259,50 +236,17 @@ def getanalyzers(args):
                 print('Failed to load module %s:' % modpath, e)
                 sys.exit(1)
         else:
-            mod = btanalyzers
+            mod = modbase
 
-        loaded = getmodclasses(mod=mod, clstype=bt.Analyzer, clsname=name)
-
-        if not loaded:
-            print('No analyzer %s / module %s' % ((str(name), modpath)))
-            sys.exit(1)
-
-        analyzers.extend(loaded)
-
-    return analyzers
-
-
-def getobservers(args):
-    observers = list()
-    for obspec in args.observers or []:
-
-        tokens = obspec.split(':')
-
-        if len(tokens) == 1:
-            modpath = tokens[0]
-            name = None
-        else:
-            modpath, name = tokens
-
-        if modpath:
-            mod, e = loadmodule(modpath)
-
-            if not mod:
-                print('')
-                print('Failed to load module %s:' % modpath, e)
-                sys.exit(1)
-        else:
-            mod = btobs
-
-        loaded = getmodclasses(mod=mod, clstype=bt.Observer, clsname=name)
+        loaded = getmodclasses(mod=mod, clstype=clsbase, clsname=name)
 
         if not loaded:
-            print('No observer %s / module %s' % ((str(name), modpath)))
+            print('No class %s / module %s' % (str(name), modpath))
             sys.exit(1)
 
-        observers.extend(loaded)
+        retobjects.append((loaded[0], kwargs))
 
-    return observers
+    return retobjects
 
 
 def parse_args():
@@ -327,8 +271,10 @@ def parse_args():
 
     # Module where to read the strategy from
     group = parser.add_argument_group(title='Strategy options')
-    group.add_argument('--strategy', '-st', required=True,
-                       help=('Module and strategy to load with format '
+    group.add_argument('--strategy', '-st', dest='strategies',
+                       action='append', required=False,
+                       help=('This option can be specified multiple times.\n'
+                             '\n'
                              'module_path:strategy_name.\n'
                              '\n'
                              'module_path:strategy_name will load '
@@ -338,7 +284,11 @@ def parse_args():
                              'the first available strategy in the module\n'
                              '\n'
                              ':strategy_name will load the given strategy '
-                             'from the set of built-in strategies'))
+                             'from the set of built-in strategies'
+                             '\n'
+                             'To pass kwargs to the strategy do it like this'
+                             '\n'
+                             'module:strategy:name=value,name2=value2'))
 
     # Observers
     group = parser.add_argument_group(title='Observers and statistics')
@@ -347,7 +297,7 @@ def parse_args():
 
     group.add_argument('--observer', '-ob', dest='observers',
                        action='append', required=False,
-                       help=('This option can be specified multiple times\n'
+                       help=('This option can be specified multiple times.\n'
                              '\n'
                              'Module and observer to load with format '
                              'module_path:observer_name.\n'
@@ -359,13 +309,17 @@ def parse_args():
                              'all available observers in the module\n'
                              '\n'
                              ':observer_name will load the given strategy '
-                             'from the set of built-in strategies'))
+                             'from the set of built-in observers'
+                             '\n'
+                             'To pass kwargs to the observer do it like this'
+                             '\n'
+                             'module:observer:name=value,name2=value2'))
 
     # Anaylzers
     group = parser.add_argument_group(title='Analyzers')
     group.add_argument('--analyzer', '-an', dest='analyzers',
                        action='append', required=False,
-                       help=('This option can be specified multiple times\n'
+                       help=('This option can be specified multiple times.\n'
                              '\n'
                              'Module and analyzer to load with format '
                              'module_path:analzyer_name.\n'
@@ -377,7 +331,11 @@ def parse_args():
                              'all available analyzers in the module\n'
                              '\n'
                              ':anaylzer_name will load the given strategy '
-                             'from the set of built-in strategies'))
+                             'from the set of built-in strategies'
+                             '\n'
+                             'To pass kwargs to the analyzer do it like this'
+                             '\n'
+                             'module:analyzer:name=value,name2=value2'))
 
     # Broker/Commissions
     group = parser.add_argument_group(title='Cash and Commission Scheme Args')
@@ -393,8 +351,8 @@ def parse_args():
 
     # Plot options
     group = parser.add_argument_group(title='Plotting options')
-    group.add_argument('--noplot', '-np', action='store_true', required=False,
-                       help='Do not plot the read data')
+    group.add_argument('--plot', '-p', action='store_true', required=False,
+                       help='Plot the read data')
 
     group.add_argument('--plotstyle', '-ps', required=False, default='bar',
                        choices=['bar', 'line', 'candle'],
@@ -402,10 +360,6 @@ def parse_args():
 
     group.add_argument('--plotfigs', '-pn', required=False, default=1,
                        type=int, help='Plot using n figures')
-
-    # Extra arguments
-    parser.add_argument('args', nargs=argparse.REMAINDER,
-                        help='args to pass to the loaded strategy')
 
     return parser.parse_args()
 
