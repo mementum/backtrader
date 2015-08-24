@@ -46,4 +46,4 @@ from . import strategies
 from . import observers
 from . import analyzers
 
-__version__ = '1.1.2.88'
+__version__ = '1.1.4.88'
