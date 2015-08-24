@@ -1,8 +1,4 @@
 
-.. post:: Aug 25, 2015
-   :author: mementum
-   :image: 1
-
 Data - Replay
 ##########################
 
