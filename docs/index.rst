@@ -37,8 +37,9 @@ Contents:
    order
    trade
    plotting
-   indautoref
    dataautoref
+   indautoref
+   strategy-reference
    analyzers-reference
 
 Indices and tables
