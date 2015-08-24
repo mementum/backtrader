@@ -117,7 +117,8 @@ class MetaStrategy(StrategyBase.__class__):
 
         _obj._minperiods = list()
         for data in _obj.datas:
-            dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+            # dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+            dminperiod = max(_dminperiods[data] or [data._minperiod])
             _obj._minperiods.append(dminperiod)
 
         # Set the minperiod
