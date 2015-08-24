@@ -30,9 +30,9 @@ from . import TimeFrame
 
 
 class BaseResampler(feed.AbstractDataBase):
-    def __init__(self, data):
-        self.data = data
-        self._name = getattr(data, '_name', '')
+    def __init__(self):
+        self.data = self.p.dataname
+        self._name = getattr(self.data, '_name', '')
 
     def start(self):
         super(BaseResampler, self).start()
