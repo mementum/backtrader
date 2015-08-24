@@ -81,7 +81,7 @@ class TrueRange(Indicator):
     See:
       - http://en.wikipedia.org/wiki/Average_true_range
 
-    The idea is to take the previoous close into account to calculate the range
+    The idea is to take the previous close into account to calculate the range
     if it yields a larger range than the daily range (High - Low)
     '''
     alias = ('TR',)

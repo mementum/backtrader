@@ -136,17 +136,6 @@ class DirectionalIndicator(_DirectionalIndicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = ('DI',)
     lines = ('plusDI', 'minusDI',)
@@ -184,17 +173,6 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = (('PlusDI', '+DI'),)
     lines = ('plusDI',)
@@ -233,17 +211,6 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = (('MinusDI', '-DI'),)
     lines = ('minusDI',)
@@ -286,17 +253,6 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = ('ADX',)
 
@@ -344,17 +300,6 @@ class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = ('ADXR',)
 
@@ -398,17 +343,6 @@ class DirectionalMovementIndex(AverageDirectionalMovementIndex,
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = ('DMI',)
 
@@ -445,16 +379,5 @@ class DirectionalMovement(AverageDirectionalMovementIndexRating,
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
-
-    Note:
-      Wikipedia shows a version with an Exponential Moving Average
-
-      The original described in the book and implemented here used the
-      SmoothedMovingAverage like the AverageTrueRange also defined by
-      Mr. Wilder.
-
-      Stockcharts has it right.
-
-        - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx
     '''
     alias = ('DM',)
