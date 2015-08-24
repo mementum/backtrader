@@ -55,6 +55,8 @@ class _Template(object):
 
 
 class MetaStrategy(StrategyBase.__class__):
+    _indcol = dict()
+
     def __new__(meta, name, bases, dct):
         # Hack to support original method name for notify_order
         if 'notify' in dct:
@@ -65,6 +67,17 @@ class MetaStrategy(StrategyBase.__class__):
             dct['notify_trade'] = dct.pop('notify_operation')
 
         return super(MetaStrategy, meta).__new__(meta, name, bases, dct)
+
+    def __init__(cls, name, bases, dct):
+        '''
+        Class has already been created ... register subclasses
+        '''
+        # Initialize the class
+        super(MetaStrategy, cls).__init__(name, bases, dct)
+
+        if not cls.aliased and \
+           name != 'Strategy' and not name.startswith('_'):
+            cls._indcol[name] = cls
 
     def dopreinit(cls, _obj, env, *args, **kwargs):
         _obj, args, kwargs = \

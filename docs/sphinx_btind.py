@@ -28,7 +28,7 @@ from docutils.statemachine import ViewList
 from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.nodes import nested_parse_with_titles
 
-from backtrader import Indicator, AutoInfoClass
+from backtrader import Indicator, Strategy, AutoInfoClass
 import backtrader.feed as feed
 
 
@@ -37,6 +37,8 @@ class BacktraderRef(nodes.General, nodes.Element):
 
 
 class BacktraderRefDirective(Directive):
+    RefCls = None
+    RefPlot = True
 
     def run(self):
         indnode = []
@@ -140,11 +142,23 @@ class DataBaseRefDirective(BacktraderRefDirective):
     RefPlot = False
 
 
+class StrategyRef(BacktraderRef):
+    pass
+
+
+class StrategyRefDirective(BacktraderRefDirective):
+    RefCls = Strategy
+    RefPlot = False
+
+
 def setup(app):
     app.add_node(IndRef)
     app.add_directive('indref', IndRefDirective)
 
     app.add_node(DataBaseRef)
     app.add_directive('databaseref', DataBaseRefDirective)
+
+    app.add_node(StrategyRef)
+    app.add_directive('stratref', StrategyRefDirective)
 
     return {'version': '0.1'}  # identifies the version of our extension
