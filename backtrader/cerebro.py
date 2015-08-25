@@ -62,6 +62,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('runonce', True),
         ('maxcpus', None),
         ('stdstats', True),
+        ('lookahead', 0),
     )
 
     def __init__(self):
@@ -287,6 +288,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         for data in self.datas:
             data.reset()
+            data.extend(size=self.params.lookahead)
             data.start()
             if self.params.preload:
                 data.preload()
