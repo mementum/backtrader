@@ -109,13 +109,8 @@ class MetaLineIterator(LineSeries.__class__):
         # my minperiod is as large as the minperiod of my lines
         _obj._minperiod = max([x._minperiod for x in _obj.lines])
 
-        # last check in case not all lineiterators were assigned to
-        # lines (directly or indirectly after some operations)
-        # An example is Kaufman's Adaptive Moving Average
-        indicators = _obj._lineiterators[LineIterator.IndType]
-        indperiods = [ind._minperiod for ind in indicators]
-        indminperiod = max(indperiods or [_obj._minperiod])
-        _obj.updateminperiod(indminperiod)
+        # Recalc the period
+        _obj._periodrecalc()
 
         # Register (my)self as indicator to owner once
         # _minperiod has been calculated
@@ -139,6 +134,15 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
                     plotyticks=[],
                     plothlines=[],
                     plotforce=False,)
+
+    def _periodrecalc(self):
+        # last check in case not all lineiterators were assigned to
+        # lines (directly or indirectly after some operations)
+        # An example is Kaufman's Adaptive Moving Average
+        indicators = self._lineiterators[LineIterator.IndType]
+        indperiods = [ind._minperiod for ind in indicators]
+        indminperiod = max(indperiods or [self._minperiod])
+        self.updateminperiod(indminperiod)
 
     def _stage2(self):
         super(LineIterator, self)._stage2()
