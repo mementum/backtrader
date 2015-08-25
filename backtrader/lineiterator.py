@@ -150,6 +150,16 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
             for lineiterator in lineiterators:
                 lineiterator._stage2()
 
+    def _stage1(self):
+        super(LineIterator, self)._stage1()
+
+        for data in self.datas:
+            data._stage1()
+
+        for lineiterators in self._lineiterators.values():
+            for lineiterator in lineiterators:
+                lineiterator._stage1()
+
     def getindicators(self):
         return self._lineiterators[LineIterator.IndType]
 
