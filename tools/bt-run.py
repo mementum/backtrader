@@ -66,6 +66,10 @@ def runstrat():
     for strat, kwargs in strategies:
         cerebro.addstrategy(strat, **kwargs)
 
+    inds = getobjects(args.indicators, bt.Indicator, bt.indicators)
+    for ind, kwargs in inds:
+        cerebro.addindicator(ind, **kwargs)
+
     obs = getobjects(args.observers, bt.Observer, bt.observers)
     for ob, kwargs in obs:
         cerebro.addobserver(ob, **kwargs)
@@ -281,7 +285,7 @@ def parse_args():
                              'strategy_name from the given module_path\n'
                              '\n'
                              'module_path will load the module and return '
-                             'the first available strategy in the module\n'
+                             'the 1st available strategy in the module\n'
                              '\n'
                              ':strategy_name will load the given strategy '
                              'from the set of built-in strategies'
@@ -306,16 +310,16 @@ def parse_args():
                              'observer_name from the given module_path\n'
                              '\n'
                              'module_path will load the module and return '
-                             'all available observers in the module\n'
+                             'the 1st observer in the module\n'
                              '\n'
-                             ':observer_name will load the given strategy '
+                             ':observer_name will load the given observer '
                              'from the set of built-in observers'
                              '\n'
                              'To pass kwargs to the observer do it like this'
                              '\n'
                              'module:observer:name=value,name2=value2'))
 
-    # Anaylzers
+    # Analyzers
     group = parser.add_argument_group(title='Analyzers')
     group.add_argument('--analyzer', '-an', dest='analyzers',
                        action='append', required=False,
@@ -325,17 +329,42 @@ def parse_args():
                              'module_path:analzyer_name.\n'
                              '\n'
                              'module_path:analyzer_name will load '
-                             'observer_name from the given module_path\n'
+                             'analyzer_name from the given module_path\n'
                              '\n'
                              'module_path will load the module and return '
-                             'all available analyzers in the module\n'
+                             'the 1st analyzer in the module\n'
                              '\n'
-                             ':anaylzer_name will load the given strategy '
-                             'from the set of built-in strategies'
+                             ':analyzer_name will load the given analyzer '
+                             'from the set of built-in analyzers'
                              '\n'
                              'To pass kwargs to the analyzer do it like this'
                              '\n'
                              'module:analyzer:name=value,name2=value2'))
+
+    # Analyzers
+    group = parser.add_argument_group(title='Indicators')
+    group.add_argument('--indicator', '-ind', dest='indicators',
+                       action='append', required=False,
+                       help=('This option can be specified multiple times.\n'
+                             '\n'
+                             'The specified indicators will be injected in the'
+                             'loaded strategies'
+                             '\n\n'
+                             'Module and indicator to load with format '
+                             'module_path:indicator_name.\n'
+                             '\n'
+                             'module_path:indicator_name will load '
+                             'indicator_name from the given module_path\n'
+                             '\n'
+                             'module_path will load the module and return '
+                             'the 1st available indicator in the module\n'
+                             '\n'
+                             ':indicator_name will load the given indicator '
+                             'from the set of built-in indicators'
+                             '\n'
+                             'To pass kwargs to the analyzer do it like this'
+                             '\n'
+                             'module:indicators:name=value,name2=value2'))
 
     # Broker/Commissions
     group = parser.add_argument_group(title='Cash and Commission Scheme Args')
