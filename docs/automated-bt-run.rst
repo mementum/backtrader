@@ -51,7 +51,7 @@ Executing the strategy with the usual testing sample is easy:
 easy::
 
   ./bt-run.py --csvformat btcsv \
-              --data ../samples/data/sample/2006-day-001.txt \
+              --data ../samples/datas/sample/2006-day-001.txt \
               --strategy ./mymod.py
 
 The chart output
@@ -78,13 +78,16 @@ Same strategy but:
 The command line::
 
   ./bt-run.py --csvformat btcsv \
-              --data ../samples/data/sample/2006-day-001.txt \
-              --strategy ./mymod.py \
-              period 50
+              --data ../samples/datas/sample/2006-day-001.txt \
+	      --plot \
+              --strategy ./mymod.py:period=50
 
 The chart output.
 
 .. thumbnail:: ./bt-run-mymod-period-50.png
+
+.. note::
+   if no ``.py`` extension is given, bt-run will add it.
 
 Using a built-in Strategy
 =========================
@@ -113,12 +116,13 @@ The code
 Standard execution::
 
   ./bt-run.py --csvformat btcsv \
-              --data ../samples/data/sample/2006-day-001.txt \
+              --data ../samples/datas/sample/2006-day-001.txt \
+	      --plot \
               --strategy :SMA_CrossOver
 
 Notice the ':'. The standard notation (see below) to load a strategy is:
 
-  - module:stragegy
+  - module:stragegy:kwargs
 
 With the following rules:
 
@@ -131,7 +135,15 @@ With the following rules:
   - If no module is specified, "strategy" is assumed to refer to a strategy in
     the ``backtrader`` package
 
-The latter being our case.
+  - If module and/or strategy are there, if kwargs are present they will be
+    passed to the corresponding strategy
+
+.. note::
+
+   The same notation and rules apply to ``--observer``, ``--analyzer`` and
+   ``--indicator`` options
+
+   Obvioously for the corresponding objects type
 
 The output.
 
@@ -140,13 +152,13 @@ The output.
 One last example adding commission schemes, cash and changing the parameters::
 
   ./bt-run.py --csvformat btcsv \
-              --data ../samples/data/sample/2006-day-001.txt \
+              --data ../samples/datas/sample/2006-day-001.txt \
+	      --plot \
               --cash 20000 \
               --commission 2.0 \
               --mult 10 \
               --margin 2000 \
-              --strategy :SMA_CrossOver \
-              fast 5 slow 20
+              --strategy :SMA_CrossOver:fast=5,slow=20
 
 The output.
 
@@ -161,6 +173,32 @@ We have backtested the strategy:
     See the continuous variations in cash with each bar, as cash is adjusted for
     the futures-like instrument daily changes
 
+Using no Strategy
+=================
+
+This is a an over-statement. A strategy will be applied, but you can ommit any
+kind of strategy and a default backtrader.Strategy will be added.
+
+Analyzers, Observers and Indicators will be automatically injected in the strategy.
+
+An example::
+
+  ./bt-run.py --csvformat btcsv \
+              --data ../samples/datas/sample/2006-day-001.txt \
+              --cash 20000 \
+              --commission 2.0 \
+              --mult 10 \
+              --margin 2000 \
+	      --nostdstats \
+	      --observer :Broker
+
+This will do not much but serves the purpose:
+
+  - A default backtrader.Strategy is added in the background
+  - Cerebro will not instantiate the regular ``stdstats`` observers (Broker,
+    BuySell, Trades)
+  - A ``Broker`` observer is added manually
+
 Adding Analyzers
 ================
 
@@ -170,17 +208,34 @@ the strategies to choose between internal/external analyzers.
 Example with a ``SharpeRatio`` analysis for the years 2005-2006::
 
   ./bt-run.py --csvformat btcsv \
-              --data ../samples/data/sample/2005-2006-day-001.txt \
+              --data ../samples/datas/sample/2005-2006-day-001.txt \
               --strategy :SMA_CrossOver \
 	      --analyzer :SharpeRatio
 
-The output::
+The console output is **nothing**.
+
+If a printout of the ``Analyzer`` results is wished, it must be specified with:
+
+  - ``--pranalyze`` which defaults to calling the next one (unless the Analyzer
+    has overriden the proper method)
+  - ``-ppranalyzer`` which uses the ``pprint`` module to print the results
+
+Extending the example from above::
+
+  ./bt-run.py --csvformat btcsv \
+              --data ../samples/datas/sample/2005-2006-day-001.txt \
+              --strategy :SMA_CrossOver \
+	      --analyzer :SharpeRatio \
+	      --plot \
+	      --pranalyzer
 
   ====================
   == Analyzers
   ====================
-  ##  sharperatio
-  --  sharperatio : 11.6473326097
+  ##########
+  sharperatio
+  ##########
+  {'sharperatio': 11.647332609673256}
 
 Good strategy!!! (Pure luck for the example actually which also bears no
 commissions)
@@ -190,28 +245,97 @@ cannot be plotted, they aren't lines objects)
 
 .. thumbnail:: bt-run-sma-crossover-sharpe.png
 
+Adding Indicators and Observers
+===============================
+
+As with ``Strategies`` and ``Analyzers`` bt-run can also add:
+
+  - ``Indicators``
+
+and
+
+  - ``Observers``
+
+
+The syntax is exactly the same as seen above when adding a ``Broker`` observer.
+
+Let's repeat the example but adding a ``Stochastic``, the ``Broker`` and having
+a look at the plot (we'll change some parameters)::
+
+  ./bt-run.py --csvformat btcsv \
+              --data ../samples/datas/sample/2006-day-001.txt \
+	      --nostdstats \
+	      --observer :Broker \
+	      --indicator :Stochastic:period_dslow=5 \
+	      --plot
+
+The chart::
+
+.. thumbnail:: ./bt-run-observer-indicator.png
+
+Plotting Control
+================
+
+Most of the above examples have used the following option:
+
+  - ``--plot`` which has activated creating a default plot
+
+More control can be achieved by adding ``kwargs`` to the ``--plot``
+option
+
+  - ``--plot style="candle"`` for example to plot with candlesticks instead of
+    plotting with a ``LineOnClose`` style (which is the plotting default)
+
+The invocation::
+
+  ./bt-run.py --csvformat btcsv \
+              --data ../samples/datas/sample/2006-day-001.txt \
+	      --nostdstats \
+	      --observer :Broker \
+	      --indicator :Stochastic:period_dslow=5 \
+	      --plot style=\"candle\"
+
+.. note::
+
+   The quotes around ``candle`` are quoted because the example is being run in a
+   bash shell which removes that before passing the arguments to the script.
+
+   Backslash quoting is needed in this case to ensure "bar" makes it to the
+   script and can be evaluated as a string
+
+The chart::
+
+.. thumbnail:: ./bt-run-plot-candle.png
+
 Usage of the script
 ===================
 
 Directly from the script::
 
-  $ ./bt-run.py --help
+  $ ../../backtrader/tools/bt-run.py --help
   usage: bt-run.py [-h] --data DATA
                    [--csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}]
-                   [--fromdate FROMDATE] [--todate TODATE] --strategy STRATEGY
-                   [--nostdstats] [--observer OBSERVERS] [--analyzer ANALYZERS]
-                   [--cash CASH] [--commission COMMISSION] [--margin MARGIN]
-                   [--mult MULT] [--noplot] [--plotstyle {bar,line,candle}]
-                   [--plotfigs PLOTFIGS]
-                   ...
+                   [--fromdate FROMDATE] [--todate TODATE]
+                   [--strategy STRATEGIES] [--nostdstats] [--observer OBSERVERS]
+                   [--analyzer ANALYZERS] [--pranalyzer | --ppranalyzer]
+                   [--indicator module:name:kwargs] [--cash CASH]
+                   [--commission COMMISSION] [--margin MARGIN] [--mult MULT]
+                   [--plot [kwargs]]
 
   Backtrader Run Script
 
-  positional arguments:
-    args                  args to pass to the loaded strategy
-
   optional arguments:
     -h, --help            show this help message and exit
+    --pranalyzer, -pralyzer
+                          Automatically print analyzers
+    --ppranalyzer, -ppralyzer
+                          Automatically PRETTY print analyzers
+    --plot [kwargs], -p [kwargs]
+                          Plot the read data applying any kwargs passed
+
+                          For example:
+
+                            --plot style="candle" (to plot candlesticks)
 
   Data options:
     --data DATA, -d DATA  Data files to be added to the system
@@ -223,37 +347,93 @@ Directly from the script::
                           Ending date in YYYY-MM-DD[THH:MM:SS] format
 
   Strategy options:
-    --strategy STRATEGY, -st STRATEGY
-                          Module and strategy to load with format
-                          module_path:strategy_name. module_path:strategy_name
-                          will load strategy_name from the given module_path
-                          module_path will load the module and return the first
-                          available strategy in the module :strategy_name will
-                          load the given strategy from the set of built-in
-                          strategies
+    --strategy STRATEGIES, -st STRATEGIES
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - module:classname:kwargs
+
+                              Example: mymod:myclass:a=1,b=2
+
+                          kwargs is optional
+
+                          If module is omitted then class name will be sought in
+                          the built-in strategies module. Such as in:
+
+                            - :name:kwargs or :name
+
+                          If name is omitted, then the 1st strategy found in the
+                          will be used. Such as in:
+
+                            - module or module::kwargs
 
   Observers and statistics:
     --nostdstats          Disable the standard statistics observers
     --observer OBSERVERS, -ob OBSERVERS
-                          This option can be specified multiple times Module and
-                          observer to load with format
-                          module_path:observer_name. module_path:observer_name
-                          will load observer_name from the given module_path
-                          module_path will load the module and return all
-                          available observers in the module :observer_name will
-                          load the given strategy from the set of built-in
-                          strategies
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - module:classname:kwargs
+
+                              Example: mymod:myclass:a=1,b=2
+
+                          kwargs is optional
+
+                          If module is omitted then class name will be sought in
+                          the built-in observers module. Such as in:
+
+                            - :name:kwargs or :name
+
+                          If name is omitted, then the 1st observer found in the
+                          will be used. Such as in:
+
+                            - module or module::kwargs
 
   Analyzers:
     --analyzer ANALYZERS, -an ANALYZERS
-                          This option can be specified multiple times Module and
-                          analyzer to load with format
-                          module_path:analzyer_name. module_path:analyzer_name
-                          will load observer_name from the given module_path
-                          module_path will load the module and return all
-                          available analyzers in the module :anaylzer_name will
-                          load the given strategy from the set of built-in
-                          strategies
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - module:classname:kwargs
+
+                              Example: mymod:myclass:a=1,b=2
+
+                          kwargs is optional
+
+                          If module is omitted then class name will be sought in
+                          the built-in analyzers module. Such as in:
+
+                            - :name:kwargs or :name
+
+                          If name is omitted, then the 1st analyzer found in the
+                          will be used. Such as in:
+
+                            - module or module::kwargs
+
+  Indicators:
+    --indicator module:name:kwargs, -ind module:name:kwargs
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - module:classname:kwargs
+
+                              Example: mymod:myclass:a=1,b=2
+
+                          kwargs is optional
+
+                          If module is omitted then class name will be sought in
+                          the built-in analyzers module. Such as in:
+
+                            - :name:kwargs or :name
+
+                          If name is omitted, then the 1st analyzer found in the
+                          will be used. Such as in:
+
+                            - module or module::kwargs
 
   Cash and Commission Scheme Args:
     --cash CASH, -cash CASH
@@ -265,15 +445,8 @@ Directly from the script::
     --mult MULT, -mul MULT
                           Multiplier to use
 
-  Plotting options:
-    --noplot, -np         Do not plot the read data
-    --plotstyle {bar,line,candle}, -ps {bar,line,candle}
-                          Plot style for the input data
-    --plotfigs PLOTFIGS, -pn PLOTFIGS
-                          Plot using n figures
-
 And the code:
 
-.. literalinclude:: ./bt-run.py
+.. literalinclude:: ../tools/bt-run.py
    :language: python
    :lines: 21-
