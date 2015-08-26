@@ -249,12 +249,12 @@ class Lines(object):
         for line in self.lines:
             line.home()
 
-    def advance(self):
+    def advance(self, size=1):
         '''
         Proxy line operation
         '''
         for line in self.lines:
-            line.advance()
+            line.advance(size)
 
     def buflen(self, line=0):
         '''
@@ -437,19 +437,91 @@ class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
     def __call__(self, ago, line=0):
         return LineDelay(self.lines[line], ago, _ownerskip=self)
 
+    # The operations below have to be overriden to make sure subclasses can
+    # reach them using "super" which will not call __getattr__ and
+    # LineSeriesStub (see below) already uses super
+    def forward(self, value=NAN, size=1):
+        self.lines.forward(value, size)
+
+    def backwards(self, size=1):
+        self.lines.backwards(size)
+
+    def rewind(self, size=1):
+        self.lines.rewind(size)
+
+    def extend(self, value=NAN, size=0):
+        self.lines.extend(value, size)
+
+    def reset(self):
+        self.lines.reset()
+
+    def home(self):
+        self.lines.home()
+
+    def advance(self, size=1):
+        self.lines.advance(size)
+
 
 class LineSeriesStub(LineSeries):
+    '''
+    Simulates a LineMultiple object based on LineSeries from a single line
+
+    The index management operatins are overrided to take into account if the
+    line is a slave, ie:
+
+      - The line reference is a line from many in a LineMultiple object
+      - Both the LineMultiple object and the Line are managed by the same
+        object
+
+    Were slave not to be taken into account, the individual line would for
+    example be advanced twice:
+
+      - Once under when the LineMultiple object is advanced (because it
+        advances all lines it is holding
+      - Again as part of the regular management of the object holding it
+    '''
+
     extralines = 1
 
-    def __init__(self, line):
+    def __init__(self, line, slave=False):
         self.lines = self.__class__.lines(initlines=[line])
         # give a change to find the line owner (for plotting at least)
         self.owner = line._owner
         self._minperiod = line._minperiod
+        self.slave = slave
+
+    # Only execute the operations below if the object is not a slave
+    def forward(self, value=NAN, size=1):
+        if not self.slave:
+            super(LineSeriesStub, self).forward(value, size)
+
+    def backwards(self, size=1):
+        if not self.slave:
+            super(LineSeriesStub, self).backwards(size)
+
+    def rewind(self, size=1):
+        if not self.slave:
+            super(LineSeriesStub, self).rewind(size)
+
+    def extend(self, value=NAN, size=0):
+        if not self.slave:
+            super(LineSeriesStub, self).extend(value, size)
+
+    def reset(self):
+        if not self.slave:
+            super(LineSeriesStub, self).reset()
+
+    def home(self):
+        if not self.slave:
+            super(LineSeriesStub, self).home()
+
+    def advance(self, size=1):
+        if not self.slave:
+            super(LineSeriesStub, self).advance(size)
 
 
-def LineSeriesMaker(arg):
+def LineSeriesMaker(arg, slave=False):
     if isinstance(arg, LineSeries):
         return arg
 
-    return LineSeriesStub(arg)
+    return LineSeriesStub(arg, slave=slave)

@@ -376,7 +376,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for i in xrange(data0.buflen()):
             data0.advance()
             for data in datas:
-                data.advance(data0)
+                data.advance(datamaster=data0)
 
             self._brokernotify()
 

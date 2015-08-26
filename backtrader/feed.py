@@ -130,12 +130,12 @@ class AbstractDataBase(six.with_metaclass(MetaAbstractDataBase,
             self.tick_volume = self.lines.volume[0]
             self.tick_openinterest = self.lines.openinterest[0]
 
-    def advance(self, datamaster=None):
+    def advance(self, size=1, datamaster=None):
         self._tick_nullify()
 
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
-        self.lines.advance()
+        self.lines.advance(size)
 
         if datamaster:
             if len(self) > self.buflen():

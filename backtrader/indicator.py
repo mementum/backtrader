@@ -72,11 +72,8 @@ class MetaIndicator(IndicatorBase.__class__):
             else:
                 r = range(0, _obj.data.lines.extrasize())
 
-            # print('init object', _obj)
-            # print('with datas', _obj.datas)
-
             for l in r:
-                newdata = LineSeriesMaker(_obj.data.lines[l])
+                newdata = LineSeriesMaker(_obj.data.lines[l], slave=True)
                 _obj.datas.append(newdata)
 
         # return the values
@@ -87,11 +84,11 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
     _autoinit = True
     _ltype = LineIterator.IndType
 
-    def advance(self):
+    def advance(self, size=1):
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
         if len(self) < len(self._clock):
-            self.lines.advance()
+            self.lines.advance(size=size)
 
     def preonce_empty(self, start, end):
         return
