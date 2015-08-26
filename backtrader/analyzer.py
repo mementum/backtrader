@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import pprint
+
 import six
 
 from backtrader import MetaParams, Strategy
@@ -105,3 +107,12 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
 
     def stop(self):
         pass
+
+    def get_analysis(self):
+        return dict()
+
+    def print(self, *args, **kwargs):
+        self.pprint(*args, **kwargs)
+
+    def pprint(self, *args, **kwargs):
+        pprint.pprint(self.get_analysis(), *args, **kwargs)
