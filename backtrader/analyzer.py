@@ -39,8 +39,29 @@ class MetaAnalyzer(MetaParams):
 
         _obj._children = list()
 
-        _obj.strategy = metabase.findowner(_obj, Strategy)
+        _obj.strategy = strategy = metabase.findowner(_obj, Strategy)
         _obj._parent = metabase.findowner(_obj, Analyzer)
+
+        _obj.datas = strategy.datas
+
+        # For each data add aliases: for first data: data and data0
+        if _obj.datas:
+            _obj.data = data = _obj.datas[0]
+
+            for l, line in enumerate(data.lines):
+                linealias = data._getlinealias(l)
+                if linealias:
+                    setattr(_obj, 'data_%s' % linealias, line)
+                setattr(_obj, 'data_%d' % l, line)
+
+            for d, data in enumerate(_obj.datas):
+                setattr(_obj, 'data%d' % d, data)
+
+                for l, line in enumerate(data.lines):
+                    linealias = data._getlinealias(l)
+                    if linealias:
+                        setattr(_obj, 'data%d_%s' % (d, linealias), line)
+                    setattr(_obj, 'data%d_%d' % (d, l), line)
 
         # Return to the normal chain
         return _obj, args, kwargs
