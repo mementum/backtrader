@@ -66,6 +66,10 @@ def runstrat():
     for strat, kwargs in strategies:
         cerebro.addstrategy(strat, **kwargs)
 
+    inds = getobjects(args.indicators, bt.Indicator, bt.indicators)
+    for ind, kwargs in inds:
+        cerebro.addindicator(ind, **kwargs)
+
     obs = getobjects(args.observers, bt.Observer, bt.observers)
     for ob, kwargs in obs:
         cerebro.addobserver(ob, **kwargs)
@@ -79,18 +83,29 @@ def runstrat():
     runsts = cerebro.run()
     runst = runsts[0]  # single strategy and no optimization
 
-    if runst.analyzers:
-        print('====================')
-        print('== Analyzers')
-        print('====================')
-        for name, analyzer in runst.analyzers.getitems():
-            print('## ', name)
-            analysis = analyzer.get_analysis()
-            for key, val in analysis.items():
-                print('---- ', key, ':', val)
+    if args.pranalyzer or args.ppranalyzer:
+        if runst.analyzers:
+            print('====================')
+            print('== Analyzers')
+            print('====================')
+            for name, analyzer in runst.analyzers.getitems():
+                print('##########')
+                print(name)
+                print('##########')
+                if args.pranalyzer:
+                    analyzer.print()
+                elif args.ppranalyzer:
+                    analyzer.pprint()
 
     if args.plot:
-        cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
+        if args.plot is not True:
+            # evaluates to True but is not "True" - args were passed
+            pkwargs = eval('dict(' + args.plot + ')')
+        else:
+            pkwargs = dict()
+
+        # cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
+        cerebro.plot(**pkwargs)
 
 
 def setbroker(args, cerebro):
@@ -251,7 +266,9 @@ def getobjects(iterable, clsbase, modbase):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Backtrader Run Script')
+        description='Backtrader Run Script',
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     group = parser.add_argument_group(title='Data options')
     # Data options
@@ -271,71 +288,120 @@ def parse_args():
 
     # Module where to read the strategy from
     group = parser.add_argument_group(title='Strategy options')
-    group.add_argument('--strategy', '-st', dest='strategies',
-                       action='append', required=False,
-                       help=('This option can be specified multiple times.\n'
-                             '\n'
-                             'module_path:strategy_name.\n'
-                             '\n'
-                             'module_path:strategy_name will load '
-                             'strategy_name from the given module_path\n'
-                             '\n'
-                             'module_path will load the module and return '
-                             'the first available strategy in the module\n'
-                             '\n'
-                             ':strategy_name will load the given strategy '
-                             'from the set of built-in strategies'
-                             '\n'
-                             'To pass kwargs to the strategy do it like this'
-                             '\n'
-                             'module:strategy:name=value,name2=value2'))
+    group.add_argument(
+        '--strategy', '-st', dest='strategies',
+        action='append', required=False,
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - module:classname:kwargs\n'
+              '\n'
+              '    Example: mymod:myclass:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+              '\n'
+              'If module is omitted then class name will be sought in\n'
+              'the built-in strategies module. Such as in:\n'
+              '\n'
+              '  - :name:kwargs or :name\n'
+              '\n'
+              'If name is omitted, then the 1st strategy found in the\n'
+              'will be used. Such as in:\n'
+              '\n'
+              '  - module or module::kwargs')
+    )
 
     # Observers
     group = parser.add_argument_group(title='Observers and statistics')
     group.add_argument('--nostdstats', action='store_true',
                        help='Disable the standard statistics observers')
 
-    group.add_argument('--observer', '-ob', dest='observers',
-                       action='append', required=False,
-                       help=('This option can be specified multiple times.\n'
-                             '\n'
-                             'Module and observer to load with format '
-                             'module_path:observer_name.\n'
-                             '\n'
-                             'module_path:observer_name will load '
-                             'observer_name from the given module_path\n'
-                             '\n'
-                             'module_path will load the module and return '
-                             'all available observers in the module\n'
-                             '\n'
-                             ':observer_name will load the given strategy '
-                             'from the set of built-in observers'
-                             '\n'
-                             'To pass kwargs to the observer do it like this'
-                             '\n'
-                             'module:observer:name=value,name2=value2'))
-
-    # Anaylzers
+    group.add_argument(
+        '--observer', '-ob', dest='observers',
+        action='append', required=False,
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - module:classname:kwargs\n'
+              '\n'
+              '    Example: mymod:myclass:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+              '\n'
+              'If module is omitted then class name will be sought in\n'
+              'the built-in observers module. Such as in:\n'
+              '\n'
+              '  - :name:kwargs or :name\n'
+              '\n'
+              'If name is omitted, then the 1st observer found in the\n'
+              'will be used. Such as in:\n'
+              '\n'
+              '  - module or module::kwargs')
+    )
+    # Analyzers
     group = parser.add_argument_group(title='Analyzers')
-    group.add_argument('--analyzer', '-an', dest='analyzers',
-                       action='append', required=False,
-                       help=('This option can be specified multiple times.\n'
-                             '\n'
-                             'Module and analyzer to load with format '
-                             'module_path:analzyer_name.\n'
-                             '\n'
-                             'module_path:analyzer_name will load '
-                             'observer_name from the given module_path\n'
-                             '\n'
-                             'module_path will load the module and return '
-                             'all available analyzers in the module\n'
-                             '\n'
-                             ':anaylzer_name will load the given strategy '
-                             'from the set of built-in strategies'
-                             '\n'
-                             'To pass kwargs to the analyzer do it like this'
-                             '\n'
-                             'module:analyzer:name=value,name2=value2'))
+    group.add_argument(
+        '--analyzer', '-an', dest='analyzers',
+        action='append', required=False,
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - module:classname:kwargs\n'
+              '\n'
+              '    Example: mymod:myclass:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+              '\n'
+              'If module is omitted then class name will be sought in\n'
+              'the built-in analyzers module. Such as in:\n'
+              '\n'
+              '  - :name:kwargs or :name\n'
+              '\n'
+              'If name is omitted, then the 1st analyzer found in the\n'
+              'will be used. Such as in:\n'
+              '\n'
+              '  - module or module::kwargs')
+    )
+
+    # Analyzer - Print
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('--pranalyzer', '-pralyzer',
+                       required=False, action='store_true',
+                       help=('Automatically print analyzers'))
+
+    group.add_argument('--ppranalyzer', '-ppralyzer',
+                       required=False, action='store_true',
+                       help=('Automatically PRETTY print analyzers'))
+
+    # Indicators
+    group = parser.add_argument_group(title='Indicators')
+    group.add_argument(
+        '--indicator', '-ind', dest='indicators',
+        metavar='module:name:kwargs',
+        action='append', required=False,
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - module:classname:kwargs\n'
+              '\n'
+              '    Example: mymod:myclass:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+             '\n'
+              'If module is omitted then class name will be sought in\n'
+              'the built-in analyzers module. Such as in:\n'
+              '\n'
+              '  - :name:kwargs or :name\n'
+              '\n'
+              'If name is omitted, then the 1st analyzer found in the\n'
+              'will be used. Such as in:\n'
+              '\n'
+              '  - module or module::kwargs')
+    )
 
     # Broker/Commissions
     group = parser.add_argument_group(title='Cash and Commission Scheme Args')
@@ -350,16 +416,16 @@ def parse_args():
                        help='Multiplier to use')
 
     # Plot options
-    group = parser.add_argument_group(title='Plotting options')
-    group.add_argument('--plot', '-p', action='store_true', required=False,
-                       help='Plot the read data')
-
-    group.add_argument('--plotstyle', '-ps', required=False, default='bar',
-                       choices=['bar', 'line', 'candle'],
-                       help='Plot style for the input data')
-
-    group.add_argument('--plotfigs', '-pn', required=False, default=1,
-                       type=int, help='Plot using n figures')
+    parser.add_argument(
+        '--plot', '-p', nargs='?',
+        metavar='kwargs',
+        default=False, const=True, required=False,
+        help=('Plot the read data applying any kwargs passed\n'
+              '\n'
+              'For example:\n'
+              '\n'
+              '  --plot style="candle" (to plot candlesticks)\n')
+    )
 
     return parser.parse_args()
 

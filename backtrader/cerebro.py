@@ -62,6 +62,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('runonce', True),
         ('maxcpus', None),
         ('stdstats', True),
+        ('lookahead', 0),
     )
 
     def __init__(self):
@@ -71,6 +72,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.strats = list()
         self.observers = list()
         self.analyzers = list()
+        self.indicators = list()
         self._broker = BrokerBack()
 
     @staticmethod
@@ -89,6 +91,13 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addindicator(self, indcls, *args, **kwargs):
+        '''
+        Adds an ``Indicator`` class to the mix. Instantiation will be done at
+        ``run`` time in the passed strategies
+        '''
+        self.indicators.append((indcls, args, kwargs))
 
     def addanalyzer(self, ancls, *args, **kwargs):
         '''
@@ -145,7 +154,8 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
           - cerebro.optstrategy(MyStrategy, period=(15,))
 
-        Notice that ``period`` is still passed as an iterable ... of just 1 element
+        Notice that ``period`` is still passed as an iterable ... of just 1
+        element
 
         ``backtrader`` will anyhow tray to identify situations like:
 
@@ -278,6 +288,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         for data in self.datas:
             data.reset()
+            data.extend(size=self.params.lookahead)
             data.start()
             if self.params.preload:
                 data.preload()
@@ -296,6 +307,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
             for multi, obscls, obsargs, obskwargs in self.observers:
                 strat._addobserver(multi, obscls, *obsargs, **obskwargs)
+
+            for indcls, indargs, indkwargs in self.indicators:
+                strat._addindicator(indcls, *indargs, **indkwargs)
 
             for ancls, anargs, ankwargs in self.analyzers:
                 strat._addanalyzer(ancls, *anargs, **ankwargs)
@@ -362,7 +376,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for i in xrange(data0.buflen()):
             data0.advance()
             for data in datas:
-                data.advance(data0)
+                data.advance(datamaster=data0)
 
             self._brokernotify()
 

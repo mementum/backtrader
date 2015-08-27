@@ -393,13 +393,20 @@ class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
         self.oncebinding()
 
 
-class LineDelay(LineActions):
+def LineDelay(a, ago, **kwargs):
+    if ago <= 0:
+        return _LineDelay(a, ago, **kwargs)
+
+    return _LineForward(a, ago, **kwargs)
+
+
+class _LineDelay(LineActions):
     '''
     Takes a LineBuffer (or derived) object and stores the value from
     "ago" periods effectively delaying the delivery of data
     '''
     def __init__(self, a, ago):
-        super(LineDelay, self).__init__()
+        super(_LineDelay, self).__init__()
         self.a = a
         self.ago = ago
 
@@ -419,6 +426,34 @@ class LineDelay(LineActions):
 
         for i in xrange(start, end):
             dst[i] = src[i + ago]
+
+
+class _LineForward(LineActions):
+    '''
+    Takes a LineBuffer (or derived) object and stores the value from
+    "ago" periods from the future
+    '''
+    def __init__(self, a, ago):
+        super(_LineForward, self).__init__()
+        self.a = a
+        self.ago = ago
+
+        # Need to add the delay to the period. "ago" is 0 based and therefore
+        # we need to pass and extra 1 which is the minimum defined period for
+        # any data (which will be substracted inside addminperiod)
+        self.addminperiod(abs(ago) + 1)
+
+    def next(self):
+        self[-self.ago] = self.a[0]
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        src = self.a.array
+        ago = self.ago
+
+        for i in xrange(start, end):
+            dst[i - ago] = src[i]
 
 
 class LinesOperation(LineActions):

@@ -99,10 +99,27 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
-        dataids = [id(data) for data in _obj.datas]
+        if not _obj._sizer.getbroker():
+            _obj._sizer.setbroker(_obj.broker)
+
+        return _obj, args, kwargs
+
+
+class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
+    '''
+    Base class to be subclassed for user defined strategies.
+    '''
+
+    _ltype = LineIterator.StratType
+
+    # This unnamed line is meant to allow having "len" and "forwarding"
+    extralines = 1
+
+    def _periodset(self):
+        dataids = [id(data) for data in self.datas]
 
         _dminperiods = collections.defaultdict(list)
-        for lineiter in _obj._lineiterators[LineIterator.IndType]:
+        for lineiter in self._lineiterators[LineIterator.IndType]:
             # if multiple datas are used and multiple timeframes the larger
             # timeframe may place larger time constraints in calling next.
             clk = getattr(lineiter, '_clock', None)
@@ -128,35 +145,19 @@ class MetaStrategy(StrategyBase.__class__):
 
             _dminperiods[clk].append(lineiter._minperiod)
 
-        _obj._minperiods = list()
-        for data in _obj.datas:
-            # dminperiod = max(_dminperiods[data] or [_obj._minperiod])
+        self._minperiods = list()
+        for data in self.datas:
+            # dminperiod = max(_dminperiods[data] or [self._minperiod])
             dminperiod = max(_dminperiods[data] or [data._minperiod])
-            _obj._minperiods.append(dminperiod)
+            self._minperiods.append(dminperiod)
 
         # Set the minperiod
         minperiods = \
-            [x._minperiod for x in _obj._lineiterators[LineIterator.IndType]]
-        _obj._minperiod = max(minperiods or [_obj._minperiod])
+            [x._minperiod for x in self._lineiterators[LineIterator.IndType]]
+        self._minperiod = max(minperiods or [self._minperiod])
 
-        if not _obj._sizer.getbroker():
-            _obj._sizer.setbroker(_obj.broker)
-
-        # change operators to stage 2
-        _obj._stage2()
-
-        return _obj, args, kwargs
-
-
-class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
-    '''
-    Base class to be subclassed for user defined strategies.
-    '''
-
-    _ltype = LineIterator.StratType
-
-    # This unnamed line is meant to allow having "len" and "forwarding"
-    extralines = 1
+    def _addindicator(self, indcls, *indargs, **indkwargs):
+        indcls(*indargs, **indkwargs)
 
     def _addanalyzer(self, ancls, *anargs, **ankwargs):
         anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
@@ -227,6 +228,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.clear()
 
     def _start(self):
+        self._periodset()
+
+        # change operators to stage 2
+        self._stage2()
+
         for analyzer in self.analyzers:
             analyzer._start()
 
@@ -243,6 +249,9 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             analyzer._stop()
 
         self.stop()
+
+        # change operators back to stage 1
+        self._stage1()
 
     def stop(self):
         '''

@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import pprint
+
 import six
 
 from backtrader import MetaParams, Strategy
@@ -37,8 +39,29 @@ class MetaAnalyzer(MetaParams):
 
         _obj._children = list()
 
-        _obj.strategy = metabase.findowner(_obj, Strategy)
+        _obj.strategy = strategy = metabase.findowner(_obj, Strategy)
         _obj._parent = metabase.findowner(_obj, Analyzer)
+
+        _obj.datas = strategy.datas
+
+        # For each data add aliases: for first data: data and data0
+        if _obj.datas:
+            _obj.data = data = _obj.datas[0]
+
+            for l, line in enumerate(data.lines):
+                linealias = data._getlinealias(l)
+                if linealias:
+                    setattr(_obj, 'data_%s' % linealias, line)
+                setattr(_obj, 'data_%d' % l, line)
+
+            for d, data in enumerate(_obj.datas):
+                setattr(_obj, 'data%d' % d, data)
+
+                for l, line in enumerate(data.lines):
+                    linealias = data._getlinealias(l)
+                    if linealias:
+                        setattr(_obj, 'data%d_%s' % (d, linealias), line)
+                    setattr(_obj, 'data%d_%d' % (d, l), line)
 
         # Return to the normal chain
         return _obj, args, kwargs
@@ -105,3 +128,12 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
 
     def stop(self):
         pass
+
+    def get_analysis(self):
+        return dict()
+
+    def print(self, *args, **kwargs):
+        self.pprint(*args, **kwargs)
+
+    def pprint(self, *args, **kwargs):
+        pprint.pprint(self.get_analysis(), *args, **kwargs)
