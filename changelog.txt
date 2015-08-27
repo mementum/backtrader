@@ -1,3 +1,21 @@
+1.1.5.88:
+  - Added reversion to stage1 operator behavior when the strategy backtesting is
+    over
+  - Refactoring of minimum period calculation in LineIterator
+  - Refactoring of strategy minimum period calculation to allow indicator
+    injection
+  - Cerebro support for addition of indictors to inject into strategies
+  - bt-run rework to support multiple strategies (o none), observers, indicators
+    and analyzers with individual kwargs per entry
+  - bt-run rework of plotting to single argument with kwargs
+  - Corrected ill behavior when separatin multiple line objects passed as single
+    argument to an indicator which lead to multi-owner management for the 2nd
+    line and posterior
+  - Analyzer defines stubs for print pprint and get_analysis
+  - Addion of LineDelay opposite: LineForward to support positive (look/write
+    backwards) arguments in the line(period) notation
+  - Added datas and data alias in Analyzers
+
 1.1.4.88:
   - Thorough documentation rework
   - Corner case for multiple timeframe datas when the larger timeframe doesn't
