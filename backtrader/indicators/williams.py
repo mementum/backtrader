@@ -85,3 +85,5 @@ class WilliamsAD(Indicator):
         addown = If(downday, self.data.close - TrueHigh(self.data), 0.0)
 
         self.lines.ad = Accum(adup + addown)
+
+        super(WilliamsAD, self).__init__()
