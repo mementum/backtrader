@@ -34,6 +34,14 @@ class BaseResampler(feed.AbstractDataBase):
         self.data = self.p.dataname
         self._name = getattr(self.data, '_name', '')
 
+    def ringbuffer(self, maxlen=-1):
+        super(BaseResampler, self).ringbuffer(maxlen=maxlen)
+
+        # Activate it for the data under control. Becasue it could
+        # be controlled by the strategy itself, pass the default -1
+        # to let it autochoose (already set or 1)
+        self.data.ringbuffer(maxlen=-1)
+
     def start(self):
         super(BaseResampler, self).start()
         self._samplecount = 0

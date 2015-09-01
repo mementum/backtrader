@@ -115,6 +115,19 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
+    def ringbuffer(self, maxlen=-1):
+        super(Strategy, self).ringbuffer(maxlen=maxlen)
+
+        # Activate it for all sub lineiterators
+        for objtype in self._lineiterators:
+            for obj in self._lineiterators[objtype]:
+                obj.ringbuffer(maxlen=maxlen)
+
+        # Activate it for the datas with the calculated minperiods
+        # because datas have not recalculated own periods
+        for i, period in enumerate(self._minperiods):
+            self.datas[i].ringbuffer(maxlen=period)
+
     def _periodset(self):
         dataids = [id(data) for data in self.datas]
 

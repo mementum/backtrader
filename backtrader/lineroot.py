@@ -93,6 +93,12 @@ class LineRoot(six.with_metaclass(MetaLineRoot, object)):
 
         return self._operationown_stage2(operation)
 
+    def ringbuffer(self, maxlen=-1):
+        '''
+        Change the lines to implement a minimum size ringbuffer scheme
+        '''
+        raise NotImplementedError
+
     def setminperiod(self, minperiod):
         '''
         Direct minperiod manipulation. It could be used for example
@@ -306,6 +312,10 @@ class LineMultiple(LineRoot):
 
     def _makeoperationown(self, operation, _ownerskip=None):
         return self.lines[0]._makeoperationown(operation, _ownerskip)
+
+    def ringbuffer(self, maxlen=-1):
+        for line in self.lines:
+            line.ringbuffer(maxlen=maxlen)
 
 
 class LineSingle(LineRoot):

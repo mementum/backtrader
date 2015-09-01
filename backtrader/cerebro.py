@@ -347,6 +347,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
+        for strat in runstrats:
+            strat.ringbuffer()
+
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:
