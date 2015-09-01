@@ -485,7 +485,9 @@ class _LineForward(LineActions):
         # Need to add the delay to the period. "ago" is 0 based and therefore
         # we need to pass and extra 1 which is the minimum defined period for
         # any data (which will be substracted inside addminperiod)
-        self.addminperiod(abs(ago) + 1)
+        # self.addminperiod(abs(ago) + 1)
+        if ago > self.a._minperiod:
+            self.addminperiod(ago - self.a._minperiod + 1)
 
     def next(self):
         self[-self.ago] = self.a[0]
