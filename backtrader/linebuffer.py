@@ -185,7 +185,8 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to enlarge the buffer
         '''
         self.idx += size
-        for i in range(size):
+
+        for i in xrange(size):
             self.array.append(value)
 
     def backwards(self, size=1):
@@ -197,7 +198,8 @@ class LineBuffer(LineSingle):
 
         '''
         self.idx -= size
-        for i in range(size):
+
+        for i in xrange(size):
             self.array.pop()
 
     def rewind(self, size=1):
@@ -222,7 +224,7 @@ class LineBuffer(LineSingle):
         set values in the buffer "future"
         '''
         self.extension += size
-        for i in range(size):
+        for i in xrange(size):
             self.array.append(value)
 
     def addbinding(self, binding):
