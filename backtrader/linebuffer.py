@@ -32,6 +32,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import array
+import collections
+from itertools import islice
 
 import six
 from six.moves import xrange
@@ -67,29 +69,53 @@ class LineBuffer(LineSingle):
     it will also be set in the binding.
     '''
 
-    def __init__(self, typecode='d'):
+    UnBounded, RingBuffer = (0, 1)
+
+    def __init__(self):
         '''
         Keyword Args:
             typecode (str): type of data hold at each point of the line
                 'd' for double - the array will be an array.array
                 'ls' meant for datetime objects  - the array will be a list
         '''
-        self.typecode = typecode
+        self.mode = self.UnBounded
         self.bindings = list()
         self.reset()
+
+    def get_idx(self):
+        return self._idx
+
+    def set_idx(self, idx):
+        if self.mode == self.RingBuffer:
+            if self._idx < self.lenmark:
+                self._idx = idx
+        else:  # default: UnBounded
+            self._idx = idx
+
+    idx = property(get_idx, set_idx)
 
     def reset(self):
         ''' Resets the internal buffer structure and the indices
         '''
-        self.create_array()
+        if self.mode == self.RingBuffer:
+            self.array = collections.deque(maxlen=self.maxlen)
+            self.useislice = True
+        else:
+            self.array = array.array(str('d'))
+            self.useislice = False
+
+        self.lencount = 0
         self.idx = -1
         self.extension = 0
 
-    def create_array(self):
-        self.array = array.array(str(self.typecode))
+    def ringbuffer(self, maxlen=-1):
+        self.mode = self.RingBuffer
+        self.maxlen = self._minperiod if maxlen < 0 else maxlen
+        self.lenmark = maxlen - 1
+        self.reset()
 
     def __len__(self):
-        return self.idx + 1
+        return self.lencount
 
     def buflen(self):
         ''' Real data that can be currently held in the internal buffer
@@ -118,6 +144,11 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         '''
+        if self.useislice:
+            start = self.idx + ago - size + 1
+            end = self.idx + ago + 1
+            return list(islice(self.array, start, end))
+
         return self.array[self.idx + ago - size + 1:self.idx + ago + 1]
 
     def getzeroval(self, idx=0):
@@ -143,6 +174,9 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         '''
+        if self.useislice:
+            return list(islice(self.array, idx, idx + size))
+
         return self.array[idx:idx + size]
 
     def __setitem__(self, ago, value):
@@ -176,6 +210,7 @@ class LineBuffer(LineSingle):
         out with buflen
         '''
         self.idx = -1
+        self.lencount = 0
 
     def forward(self, value=NAN, size=1):
         ''' Moves the logical index foward and enlarges the buffer as much as needed
@@ -185,6 +220,7 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to enlarge the buffer
         '''
         self.idx += size
+        self.lencount += size
 
         for i in xrange(size):
             self.array.append(value)
@@ -198,12 +234,14 @@ class LineBuffer(LineSingle):
 
         '''
         self.idx -= size
+        self.lencount -= size
 
         for i in xrange(size):
             self.array.pop()
 
     def rewind(self, size=1):
         self.idx -= size
+        self.lencount -= size
 
     def advance(self, size=1):
         ''' Advances the logical index without touching the underlying buffer
@@ -212,6 +250,7 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to move forward
         '''
         self.idx += size
+        self.lencount += size
 
     def extend(self, value=NAN, size=0):
         ''' Extends the underlying array with positions that the index will not reach
@@ -256,6 +295,9 @@ class LineBuffer(LineSingle):
         return self.getzero(idx, size or len(self))
 
     def plotrange(self, start, end):
+        if self.useislice:
+            return list(islice(self.array, start, end))
+
         return self.array[start:end]
 
     def oncebinding(self):
