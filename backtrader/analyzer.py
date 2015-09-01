@@ -118,7 +118,7 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
         pass
 
     def prenext(self):
-        self.next()
+        pass
 
     def nextstart(self):
         self.next()
