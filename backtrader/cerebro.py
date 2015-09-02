@@ -63,6 +63,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('maxcpus', None),
         ('stdstats', True),
         ('lookahead', 0),
+        ('jit', False),
     )
 
     def __init__(self):
@@ -258,6 +259,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             if key in pkeys:
                 setattr(self.params, key, val)
 
+        if self.p.jit:
+            self.p.runonce = False
+            self.p.preload = False
+
         self.runstrats = list()
         iterstrats = itertools.product(*self.strats)
         if not self._dooptimize or self.p.maxcpus == 1:
@@ -347,8 +352,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
-        for strat in runstrats:
-            strat.ringbuffer()
+        if self.p.jit:
+            for strat in runstrats:
+                strat.ringbuffer()
 
         data0 = self.datas[0]
         while data0.next():
