@@ -97,7 +97,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(SMACrossOver)
 
     # Create a Data Feed
-    datapath = ('../datas/2006-day-001.txt')
+    datapath = ('../samples/datas/2006-day-001.txt')
     data = bt.feeds.BacktraderCSVData(dataname=datapath)
 
     # Add the Data Feed to Cerebro

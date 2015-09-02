@@ -61,7 +61,7 @@ def runstrat():
     )
 
     # Load the Data
-    datapath = args.dataname or '../datas/sample/2006-day-001.txt'
+    datapath = args.dataname or '../samples/datas/sample/2006-day-001.txt'
     data = btfeeds.BacktraderCSVData(
         dataname=datapath)
 

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     cerebro = bt.Cerebro(stdstats=False)
     cerebro.addstrategy(bt.Strategy)
 
-    data = bt.feeds.BacktraderCSVData(dataname='../datas/2006-day-001.txt')
+    data = bt.feeds.BacktraderCSVData(dataname='../samples/datas/2006-day-001.txt')
     cerebro.adddata(data)
 
     cerebro.run()

@@ -35,7 +35,7 @@ if __name__ == '__main__':
     cerebro.addstrategy(bt.Strategy)
 
     # Create a Data Feed
-    datapath = '../datas/goog.fd'
+    datapath = '../samples/datas/goog.fd'
     data = VChartData(
         dataname=datapath,
         fromdate=datetime.datetime(2006, 1, 1),
