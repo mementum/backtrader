@@ -217,7 +217,7 @@ def parse_args():
         description='Showcase for Order Execution Types')
 
     parser.add_argument('--infile', '-i', required=False,
-                        default='../samples/datas/2006-day-001.txt',
+                        default='../../datas/2006-day-001.txt',
                         help='File to be read in')
 
     parser.add_argument('--csvformat', '-c', required=False, default='bt',

@@ -2,6 +2,14 @@
 Binary Datafeed Development
 ###########################
 
+.. note::
+
+   The binary file used in the examples ``goog.fd`` belongs to VisualChart and
+   cannot be distributed with ``backtrader``.
+
+   `VisualChart <www.visualchart.com>`_ can be downloaded free of charge for
+   those interested in directly using the binary files.
+
 CSV Data feed development has shown how to add new CSV based data
 feeds. The existing base class `CSVDataBase` provides the framework
 taking most of the work off the subclasses which in most cases can

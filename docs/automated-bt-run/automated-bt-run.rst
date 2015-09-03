@@ -50,9 +50,9 @@ Let's consider the following strategy which:
 Executing the strategy with the usual testing sample is easy:
 easy::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-              --strategy ./mymod.py
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+            --strategy mymod.py
 
 The chart output
 
@@ -77,10 +77,10 @@ Same strategy but:
 
 The command line::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-	      --plot \
-              --strategy ./mymod.py:period=50
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+            --plot \
+            --strategy mymod.py:period=50
 
 The chart output.
 
@@ -115,10 +115,10 @@ The code
 
 Standard execution::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-	      --plot \
-              --strategy :SMA_CrossOver
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+	    --plot \
+            --strategy :SMA_CrossOver
 
 Notice the ':'. The standard notation (see below) to load a strategy is:
 
@@ -151,14 +151,14 @@ The output.
 
 One last example adding commission schemes, cash and changing the parameters::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-	      --plot \
-              --cash 20000 \
-              --commission 2.0 \
-              --mult 10 \
-              --margin 2000 \
-              --strategy :SMA_CrossOver:fast=5,slow=20
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+            --plot \
+            --cash 20000 \
+            --commission 2.0 \
+            --mult 10 \
+            --margin 2000 \
+            --strategy :SMA_CrossOver:fast=5,slow=20
 
 The output.
 
@@ -183,14 +183,14 @@ Analyzers, Observers and Indicators will be automatically injected in the strate
 
 An example::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-              --cash 20000 \
-              --commission 2.0 \
-              --mult 10 \
-              --margin 2000 \
-	      --nostdstats \
-	      --observer :Broker
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+            --cash 20000 \
+            --commission 2.0 \
+            --mult 10 \
+            --margin 2000 \
+            --nostdstats \
+	    --observer :Broker
 
 This will do not much but serves the purpose:
 
@@ -207,10 +207,10 @@ the strategies to choose between internal/external analyzers.
 
 Example with a ``SharpeRatio`` analysis for the years 2005-2006::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2005-2006-day-001.txt \
-              --strategy :SMA_CrossOver \
-	      --analyzer :SharpeRatio
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2005-2006-day-001.txt \
+            --strategy :SMA_CrossOver \
+            --analyzer :SharpeRatio
 
 The console output is **nothing**.
 
@@ -222,12 +222,12 @@ If a printout of the ``Analyzer`` results is wished, it must be specified with:
 
 Extending the example from above::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2005-2006-day-001.txt \
-              --strategy :SMA_CrossOver \
-	      --analyzer :SharpeRatio \
-	      --plot \
-	      --pranalyzer
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2005-2006-day-001.txt \
+            --strategy :SMA_CrossOver \
+	    --analyzer :SharpeRatio \
+	    --plot \
+	    --pranalyzer
 
   ====================
   == Analyzers
@@ -262,12 +262,12 @@ The syntax is exactly the same as seen above when adding a ``Broker`` observer.
 Let's repeat the example but adding a ``Stochastic``, the ``Broker`` and having
 a look at the plot (we'll change some parameters)::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-	      --nostdstats \
-	      --observer :Broker \
-	      --indicator :Stochastic:period_dslow=5 \
-	      --plot
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+	    --nostdstats \
+	    --observer :Broker \
+	    --indicator :Stochastic:period_dslow=5 \
+	    --plot
 
 The chart::
 
@@ -288,12 +288,12 @@ option
 
 The invocation::
 
-  ./bt-run.py --csvformat btcsv \
-              --data ../samples/datas/sample/2006-day-001.txt \
-	      --nostdstats \
-	      --observer :Broker \
-	      --indicator :Stochastic:period_dslow=5 \
-	      --plot style=\"candle\"
+  bt-run.py --csvformat btcsv \
+            --data ../../datas/2006-day-001.txt \
+	    --nostdstats \
+	    --observer :Broker \
+	    --indicator :Stochastic:period_dslow=5 \
+	    --plot style=\"candle\"
 
 .. note::
 
@@ -312,7 +312,7 @@ Usage of the script
 
 Directly from the script::
 
-  $ ../../backtrader/tools/bt-run.py --help
+  $ bt-run.py --help
   usage: bt-run.py [-h] --data DATA
                    [--csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}]
                    [--fromdate FROMDATE] [--todate TODATE]
@@ -447,6 +447,6 @@ Directly from the script::
 
 And the code:
 
-.. literalinclude:: ../tools/bt-run.py
+.. literalinclude:: ../../tools/bt-run.py
    :language: python
    :lines: 21-

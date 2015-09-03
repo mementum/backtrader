@@ -73,7 +73,7 @@ class MyStrategy(bt.Strategy):
 def runstrat():
     cerebro = bt.Cerebro()
 
-    data = bt.feeds.BacktraderCSVData(dataname='../samples/datas/2006-day-001.txt')
+    data = bt.feeds.BacktraderCSVData(dataname='../../datas/2006-day-001.txt')
     cerebro.adddata(data)
 
     cerebro.addobserver(bt.observers.DrawDown)

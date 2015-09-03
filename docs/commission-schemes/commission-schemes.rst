@@ -1,10 +1,6 @@
 Commissions: Stocks vs Futures
 ------------------------------
 
-.. ..post:: Jul 26, 2015
-   :author: mementum
-   :image: 1
-
 ``backtrader`` has been born out of necessity. My own ... to have the feeling I
 control my own backtesting platform and can experiment new ideas. But in doing
 so and fully open sourcing it from the very beginning it was clear it has to

@@ -39,7 +39,7 @@ def runstrat():
     cerebro.addstrategy(bt.Strategy)
 
     # Get a pandas dataframe
-    datapath = ('../samples/datas/sample/2006-day-001.txt')
+    datapath = ('../../datas/2006-day-001.txt')
 
     # Simulate the header row isn't there if noheaders requested
     skiprows = 1 if args.noheaders else 0

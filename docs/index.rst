@@ -14,25 +14,25 @@ Contents:
    introduction
    installation
    quickstart/quickstart
-   automated-bt-run
+   automated-bt-run/automated-bt-run
    concepts
    operating
    cerebro
    datafeed
    datafeed-develop-csv
-   datafeed-develop-general
+   datafeed-develop-general/datafeed-develop-general
    extending-a-datafeed
-   pandas-datafeed
-   data-resampling
-   data-multitimeframe
-   data-replay
+   pandas-datafeed/pandas-datafeed
+   data-resampling/data-resampling
+   data-multitimeframe/data-multitimeframe
+   data-replay/data-replay
    strategy
    induse
    inddev
-   observers-and-statistics
-   analyzers
-   commission-schemes
-   order-creation-execution
+   observers-and-statistics/observers-and-statistics
+   analyzers/analyzers
+   commission-schemes/commission-schemes
+   order-creation-execution/order-creation-execution
    position
    order
    trade

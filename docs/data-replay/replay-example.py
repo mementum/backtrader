@@ -48,6 +48,7 @@ class SMAStrategy(bt.Strategy):
         self.counter += 1
         print('---next len %d - counter %d' % (len(self), self.counter))
 
+
 def runstrat():
     args = parse_args()
 
@@ -61,7 +62,7 @@ def runstrat():
     )
 
     # Load the Data
-    datapath = args.dataname or '../samples/datas/sample/2006-day-001.txt'
+    datapath = args.dataname or '../../datas/2006-day-001.txt'
     data = btfeeds.BacktraderCSVData(
         dataname=datapath)
 
