@@ -68,7 +68,7 @@ Basic Setup
 
 Let's get running.
 
-.. literalinclude:: ../samples/quickstart01.py
+.. literalinclude:: ./quickstart01.py
    :language: python
    :lines: 21-
 
@@ -103,7 +103,7 @@ Setting the Cash
 In the world of finance, for sure only "losers" start with 10k. Let's change the
 cash and run the example again.
 
-.. literalinclude:: ../samples/quickstart02.py
+.. literalinclude:: ./quickstart02.py
    :language: python
    :lines: 21-
 
@@ -123,7 +123,7 @@ which we see as a *Data Feed*
 Ergo ... No *Data Feed* -> **No Fun**. Let's add one to the ever growing
 example.
 
-.. literalinclude:: ../samples/quickstart03.py
+.. literalinclude:: ./quickstart03.py
    :language: python
    :lines: 21-
 
@@ -161,7 +161,7 @@ Let's put a Strategy into the equation and print the "Close" price of each day
 access the well known OHLC (Open High Low Close) daily values. This should ease
 up the creation of our printing logic.
 
-.. literalinclude:: ../samples/quickstart04.py
+.. literalinclude:: ./quickstart04.py
    :language: python
    :lines: 21-
 
@@ -210,7 +210,7 @@ Let's try some crazy idea we had by looking at some charts
 
   - If the price has been falling 3 sessions in a row ... BUY BUY BUY!!!
 
-.. literalinclude:: ../samples/quickstart05.py
+.. literalinclude:: ./quickstart05.py
    :language: python
    :lines: 21-
 
@@ -294,7 +294,7 @@ Additionally and to simplify:
           which length in an operation took place and see if the current length
           is 5 bars away.
 
-.. literalinclude:: ../samples/quickstart06.py
+.. literalinclude:: ./quickstart06.py
    :language: python
    :lines: 21-
 
@@ -352,7 +352,7 @@ A single line will suffice for it::
 Being experienced with the platform we want to see the profit or loss after a
 buy/sell cycle, with and without commission.
 
-.. literalinclude:: ../samples/quickstart07.py
+.. literalinclude:: ./quickstart07.py
    :language: python
    :lines: 21-
 
@@ -499,7 +499,7 @@ The logic to exit gets modified::
 
 With all this in mind the example evolves to look like:
 
-.. literalinclude:: ../samples/quickstart08.py
+.. literalinclude:: ./quickstart08.py
    :language: python
    :lines: 21-
 
@@ -558,7 +558,7 @@ values. Look in the code for the logic.
 .. note:: The starting cash will be 1000 monetary units to be in line with the
           PyAlgoTrade example and no commission will be applied
 
-.. literalinclude:: ../samples/quickstart09.py
+.. literalinclude:: ./quickstart09.py
    :language: python
    :lines: 21-
 
@@ -698,7 +698,7 @@ The entire set of additions to the __init__ method of the Strategy::
 
 The example now:
 
-.. literalinclude:: ../samples/quickstart10.py
+.. literalinclude:: ./quickstart10.py
    :language: python
    :lines: 21-
 
@@ -734,7 +734,7 @@ After the execution the output is::
 
 The chart:
 
-.. thumbnail:: ../samples/images/quickstart10.png
+.. thumbnail:: ./quickstart10.png
 
 
 Let's Optimize
@@ -759,7 +759,7 @@ the sake of clarity any output with regards to Buy/Sell orders has been removed
 
 The example now:
 
-.. literalinclude:: ../samples/quickstart11.py
+.. literalinclude:: ./quickstart11.py
    :language: python
    :lines: 21-
 

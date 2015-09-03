@@ -13,7 +13,7 @@ Contents:
 
    introduction
    installation
-   quickstart
+   quickstart/quickstart
    automated-bt-run
    concepts
    operating

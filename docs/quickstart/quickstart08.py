@@ -25,8 +25,6 @@ import datetime  # For datetime objects
 import os.path  # To manage paths
 import sys  # To find out the script name (in argv[0])
 
-from six.moves import xrange
-
 # Import the backtrader platform
 import backtrader as bt
 
@@ -34,16 +32,14 @@ import backtrader as bt
 # Create a Stratey
 class TestStrategy(bt.Strategy):
     params = (
-        ('maperiod', 15),
         ('stake', 10),
-        ('printlog', False),
+        ('exitbars', 5),
     )
 
-    def log(self, txt, dt=None, doprint=False):
+    def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
-        if self.params.printlog or doprint:
-            dt = dt or self.datas[0].datetime.date(0)
-            print('%s, %s' % (dt.isoformat(), txt))
+        dt = dt or self.datas[0].datetime.date(0)
+        print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -56,10 +52,6 @@ class TestStrategy(bt.Strategy):
         self.order = None
         self.buyprice = None
         self.buycomm = None
-
-        # Add a MovingAverageSimple indicator
-        self.sma = bt.indicators.SimpleMovingAverage(
-            self.datas[0], period=self.params.maperiod)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -108,41 +100,39 @@ class TestStrategy(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.dataclose[0] > self.sma[0]:
+            if self.dataclose[0] < self.dataclose[-1]:
+                    # current close less than previous close
 
-                # BUY, BUY, BUY!!! (with all possible default parameters)
-                self.log('BUY CREATE, %.2f' % self.dataclose[0])
+                    if self.dataclose[-1] < self.dataclose[-2]:
+                        # previous close less than the previous close
 
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.buy()
+                        # BUY, BUY, BUY!!! (with default parameters)
+                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
+
+                        # Keep track of the created order to avoid a 2nd order
+                        self.order = self.buy()
 
         else:
 
-            if self.dataclose[0] < self.sma[0]:
+            # Already in the market ... we might sell
+            if len(self) >= (self.bar_executed + self.params.exitbars):
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
 
-    def stop(self):
-        self.log('(MA Period %2d) Ending Value %.2f' %
-                 (self.params.maperiod, self.broker.getvalue()), doprint=True)
-
-
 if __name__ == '__main__':
     # Create a cerebro entity
     cerebro = bt.Cerebro()
 
     # Add a strategy
-    strats = cerebro.optstrategy(
-        TestStrategy,
-        maperiod=xrange(10, 31))
+    cerebro.addstrategy(TestStrategy)
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, './datas/yahoo/orcl-1995-2014.txt')
+    datapath = os.path.join(modpath, '../../datas/orcl-1995-2014.txt')
 
     # Create a Data Feed
     data = bt.feeds.YahooFinanceCSVData(
@@ -158,10 +148,16 @@ if __name__ == '__main__':
     cerebro.adddata(data)
 
     # Set our desired cash start
-    cerebro.broker.setcash(1000.0)
+    cerebro.broker.setcash(100000.0)
 
-    # Set the commission
-    cerebro.broker.setcommission(commission=0.0)
+    # Set the commission - 0.1% ... divide by 100 to remove the %
+    cerebro.broker.setcommission(commission=0.001)
+
+    # Print out the starting conditions
+    print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
     # Run over everything
     cerebro.run()
+
+    # Print out the final result
+    print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
