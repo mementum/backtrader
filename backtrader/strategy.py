@@ -234,6 +234,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def _next(self):
         super(Strategy, self)._next()
+
+        for observer in self.observers:
+            observer._next()
+
+        # check the min period status connected to datas
         self.clear()
 
     def _start(self):

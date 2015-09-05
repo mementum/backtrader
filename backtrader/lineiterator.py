@@ -240,9 +240,6 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
             else:
                 self.prenext()
 
-        for observer in self._lineiterators[LineIterator.ObsType]:
-            observer._next()
-
     def _once(self):
         self.forward(size=self._clock.buflen())
 
