@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import pprint
+import pprint as pp
 
 import six
 
@@ -136,4 +136,4 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
         self.pprint(*args, **kwargs)
 
     def pprint(self, *args, **kwargs):
-        pprint.pprint(self.get_analysis(), *args, **kwargs)
+        pp.pprint(self.get_analysis(), *args, **kwargs)
