@@ -151,23 +151,24 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
         # if part/all of a position has been closed, then there has been
         # a profitandloss ... record it
-        pnl = comminfo.profitandloss(abclosed, oldpprice, price)
+        pnl = comminfo.profitandloss(-closed, oldpprice, price)
 
         if closed:
             # Adjust to returned value for closed items & acquired opened items
             closedvalue = comminfo.getoperationcost(abclosed, price)
             self.cash += closedvalue
+
             # Calculate and substract commission
             closedcomm = comminfo.getcomm_pricesize(abclosed, price)
             self.cash -= closedcomm
+
             # Re-adjust cash according to future-like movements
             # Restore cash which was already taken at the start of the day
-            self.cash -= comminfo.cashadjust(abclosed,
-                                             price,
-                                             order.data.close[0])
-
-            # pnl = comminfo.profitandloss(oldpsize, oldpprice, price)
-
+            # At the end of the day the price was close (therefore oldprice)
+            # and the new price is the execution price
+            self.cash += comminfo.cashadjust(-closed,
+                                             order.data.close[0],
+                                             price)
         else:
             closedvalue = closedcomm = 0.0
 
@@ -179,9 +180,10 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             self.cash -= openedcomm
 
             # Remove cash for the new opened contracts
-            self.cash += comminfo.cashadjust(abopened,
+            self.cash += comminfo.cashadjust(opened,
                                              price,
                                              order.data.close[0])
+
         else:
             openedvalue = openedcomm = 0.0
 
