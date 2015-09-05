@@ -132,6 +132,6 @@ class Trade(object):
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
             self.pnl += pnl
-            self.pnlcomm += pnl - commission
+            self.pnlcomm = self.pnl - self.commission
 
         self.value = value
