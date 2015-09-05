@@ -90,7 +90,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._trades = collections.defaultdict(list)
         _obj._tradespending = list()
 
-        _obj.stats = _Template()
+        _obj.stats = _obj.observers = _Template()
         _obj.analyzers = _Template()
 
         return _obj, args, kwargs
