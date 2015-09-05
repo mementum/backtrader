@@ -45,7 +45,7 @@ class Position(object):
         self.price = price
 
     def __len__(self):
-        return self.size
+        return self.size != 0
 
     def update(self, size, price):
         '''
