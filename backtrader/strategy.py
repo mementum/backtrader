@@ -239,6 +239,17 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             observer._next()
 
         # check the min period status connected to datas
+        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+        minperstatus = max(dlens)
+
+        for analyzer in self.analyzers:
+            if minperstatus < 0:
+                analyzer._next()
+            elif minperstatus == 0:
+                analyzer._nextstart()  # only called for the 1st value
+            else:
+                analyzer._prenext()
+
         self.clear()
 
     def _start(self):
