@@ -27,7 +27,7 @@ from . import Indicator, And
 class _CrossBase(Indicator):
     lines = ('cross',)
 
-    plotinfo = dict(plot=False, plotymargin=0.05, plotyhlines=[0.0, 1.0])
+    plotinfo = dict(plotymargin=0.05, plotyhlines=[0.0, 1.0])
 
     def __init__(self):
         if self._crossup:
