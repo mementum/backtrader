@@ -45,7 +45,13 @@ class Position(object):
         self.price = price
 
     def __len__(self):
-        return self.size
+        return self.size != 0
+
+    def clone(self):
+        return Position(size=self.size, price=self.price)
+
+    def pseudoupdate(self, size, price):
+        return self.clone().update(size, price)
 
     def update(self, size, price):
         '''

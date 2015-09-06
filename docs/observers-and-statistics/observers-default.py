@@ -21,31 +21,15 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import flushfile
+import backtrader as bt
+import backtrader.feeds as btfeeds
 
-from .linebuffer import *
-from .lineseries import *
-from .lineiterator import *
-from .dataseries import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
+if __name__ == '__main__':
+    cerebro = bt.Cerebro(stdstats=False)
+    cerebro.addstrategy(bt.Strategy)
 
-from .utils import num2date, date2num
+    data = bt.feeds.BacktraderCSVData(dataname='../../datas/2006-day-001.txt')
+    cerebro.adddata(data)
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-
-__version__ = '1.1.6.88'
+    cerebro.run()
+    cerebro.plot()

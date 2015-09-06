@@ -55,6 +55,19 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         If True default Observers will be added: Broker (Cash and Value),
         Trades and BuySell
+
+      - exactbars (default: False)
+
+        If True, the system will switch to a mode in which all "lines" objects
+        will use exactly the number of bars needed for the task. If a Simple
+        Moving Average has a period of 30, the underlying data will have always
+        a running buffer of 30 bars to allow the calculation of the Simple
+        Moving Average
+
+        Note:
+
+          - This setting will deactivate ``preload`` and ``runonce``
+          - Using this setting also deactivates plotting
     '''
 
     params = (
@@ -63,6 +76,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('maxcpus', None),
         ('stdstats', True),
         ('lookahead', 0),
+        ('exactbars', False),
     )
 
     def __init__(self):
@@ -218,6 +232,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ``numfigs`` split the plot in the indicated number of charts reducing
         chart density if wished
         '''
+        if self.p.exactbars:
+            return
+
         if not plotter:
             from . import plot
             plotter = plot.Plot(**kwargs)
@@ -258,6 +275,15 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             if key in pkeys:
                 setattr(self.params, key, val)
 
+        self._dorunonce = self.p.runonce
+        self._dopreload = self.p.preload
+
+        if self.p.exactbars:
+            # with exact bars no preload and no runonce are possible
+            # Do not modify the params, but the internal values used
+            self._dorunonce = False
+            self._dopreload = False
+
         self.runstrats = list()
         iterstrats = itertools.product(*self.strats)
         if not self._dooptimize or self.p.maxcpus == 1:
@@ -290,7 +316,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             data.reset()
             data.extend(size=self.params.lookahead)
             data.start()
-            if self.params.preload:
+            if self._dopreload:
                 data.preload()
 
         for stratcls, sargs, skwargs in iterstrat:
@@ -316,7 +342,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
             strat._start()
 
-        if self.params.preload and self.params.runonce:
+        if self._dopreload and self._dorunonce:
             self._runonce(runstrats)
         else:
             self._runnext(runstrats)
@@ -347,6 +373,10 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
+        if self.p.exactbars:
+            for strat in runstrats:
+                strat.ringbuffer()
+
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:

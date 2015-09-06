@@ -221,7 +221,7 @@ class Accum(Indicator):
         self.line[0] = self.p.seed + self.data[0]
 
     def next(self):
-        self.line[0] = self.lines[-1] + self.data[0]
+        self.line[0] = self.line[-1] + self.data[0]
 
     def oncestart(self, start, end):
         dst = self.line.array

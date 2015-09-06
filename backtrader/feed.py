@@ -155,7 +155,7 @@ class AbstractDataBase(six.with_metaclass(MetaAbstractDataBase,
 
     def next(self, datamaster=None):
 
-        if len(self) == self.buflen():
+        if len(self) >= self.buflen():
             self._tick_nullify()
 
             # not preloaded - request next bar

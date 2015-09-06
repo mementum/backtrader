@@ -21,31 +21,40 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import flushfile
+import datetime
 
-from .linebuffer import *
-from .lineseries import *
-from .lineiterator import *
-from .dataseries import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
+import backtrader as bt
+from vchart import VChartData
 
-from .utils import num2date, date2num
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
+if __name__ == '__main__':
+    # Create a cerebro entity
+    cerebro = bt.Cerebro(stdstats=False)
 
-__version__ = '1.1.6.88'
+    # Add a strategy
+    cerebro.addstrategy(bt.Strategy)
+
+    ###########################################################################
+    # Note:
+    # The goog.fd file belongs to VisualChart and cannot be distributed with
+    # backtrader
+    #
+    # VisualChart can be downloaded from www.visualchart.com
+    ###########################################################################
+    # Create a Data Feed
+    datapath = '../../datas/goog.fd'
+    data = VChartData(
+        dataname=datapath,
+        fromdate=datetime.datetime(2006, 1, 1),
+        todate=datetime.datetime(2006, 12, 31),
+        timeframe=bt.TimeFrame.Days
+    )
+
+    # Add the Data Feed to Cerebro
+    cerebro.adddata(data)
+
+    # Run over everything
+    cerebro.run()
+
+    # Plot the result
+    cerebro.plot(style='bar')

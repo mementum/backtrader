@@ -90,7 +90,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._trades = collections.defaultdict(list)
         _obj._tradespending = list()
 
-        _obj.stats = _Template()
+        _obj.stats = _obj.observers = _Template()
         _obj.analyzers = _Template()
 
         return _obj, args, kwargs
@@ -114,6 +114,19 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
+
+    def ringbuffer(self, maxlen=-1):
+        super(Strategy, self).ringbuffer(maxlen=maxlen)
+
+        # Activate it for all sub lineiterators
+        for objtype in self._lineiterators:
+            for obj in self._lineiterators[objtype]:
+                obj.ringbuffer(maxlen=maxlen)
+
+        # Activate it for the datas with the calculated minperiods
+        # because datas have not recalculated own periods
+        for i, period in enumerate(self._minperiods):
+            self.datas[i].ringbuffer(maxlen=period)
 
     def _periodset(self):
         dataids = [id(data) for data in self.datas]
@@ -222,8 +235,20 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def _next(self):
         super(Strategy, self)._next()
 
+        for observer in self.observers:
+            observer._next()
+
+        # check the min period status connected to datas
+        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+        minperstatus = max(dlens)
+
         for analyzer in self.analyzers:
-            analyzer._next()
+            if minperstatus < 0:
+                analyzer._next()
+            elif minperstatus == 0:
+                analyzer._nextstart()  # only called for the 1st value
+            else:
+                analyzer._prenext()
 
         self.clear()
 

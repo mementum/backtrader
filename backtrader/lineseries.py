@@ -40,7 +40,7 @@ from six.moves import xrange
 
 from .utils import OrderedDict
 
-from .linebuffer import LineBuffer, LinesOperation, LineDelay, NAN
+from .linebuffer import LineBuffer, LineActions, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple
 from .metabase import AutoInfoClass
 from . import metabase
@@ -74,6 +74,14 @@ class LineAlias(object):
         '''
         if isinstance(value, LineMultiple):
             value = value.lines[0]
+
+        # If the now for sure, LineBuffer 'value' is not a LineActions the
+        # binding below could kick-in too early in the chain writing the value
+        # into a not yet "forwarded" line, effectively writing the value 1
+        # index too early and breaking the functionality (all in next mode)
+        # Hence the need to transform it into a LineDelay object of null delay
+        if not isinstance(value, LineActions):
+            value = value(0)
 
         value.addbinding(obj.lines[self.line])
 

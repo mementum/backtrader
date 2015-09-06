@@ -202,11 +202,11 @@ class Order(six.with_metaclass(MetaParams, object)):
 
     Buy, Sell = range(2)
 
-    Submitted, Accepted, Partial, Completed, \
-        Canceled, Expired, Margin = range(7)
+    Created, Submitted, Accepted, Partial, Completed, \
+        Canceled, Expired, Margin = range(8)
 
     Status = [
-        'Submitted', 'Accepted', 'Partial',
+        'Created', 'Submitted', 'Accepted', 'Partial',
         'Completed', 'Canceled', 'Expired', 'Margin'
     ]
 
@@ -239,7 +239,7 @@ class Order(six.with_metaclass(MetaParams, object)):
         if self.params.exectype is None:
             self.params.exectype = Order.Market
 
-        self.status = Order.Submitted
+        self.status = Order.Created
         if not self.isbuy():
             self.params.size = -self.params.size
 
@@ -289,6 +289,9 @@ class Order(six.with_metaclass(MetaParams, object)):
 
     def issell(self):
         return isinstance(self, SellOrder)
+
+    def submit(self):
+        self.status = Order.Submitted
 
     def accept(self):
         self.status = Order.Accepted

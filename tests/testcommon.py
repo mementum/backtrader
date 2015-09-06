@@ -34,7 +34,7 @@ import backtrader.utils.flushfile
 
 
 modpath = os.path.dirname(os.path.abspath(__file__))
-dataspath = '../samples/datas/sample'
+dataspath = '../datas'
 datafiles = [
     '2006-day-001.txt',
     '2006-week-001.txt',
