@@ -33,7 +33,11 @@ from .order import Order, BuyOrder, SellOrder
 
 class BrokerBack(six.with_metaclass(MetaParams, object)):
 
-    params = (('cash', 10000.0), ('commission', CommissionInfo()),)
+    params = (
+        ('cash', 10000.0),
+        ('commission', CommissionInfo()),
+        ('checksubmit', True),
+    )
 
     def __init__(self):
         self.comminfo = dict()
@@ -50,6 +54,8 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
         self.positions = collections.defaultdict(Position)
         self.notifs = collections.deque()
+
+        self.submitted = collections.deque()
 
     def getcash(self):
         return self.cash
@@ -100,20 +106,50 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.positions[data]
 
     def submit(self, order):
-        # FIXME: When an order is submitted, a margin check
-        # requirement has to be done before it can be accepted. This implies
-        # going over the entire list of pending orders for all datas and
-        # existing positions, simulating order execution and ending up
-        # with a "cash" figure that can be used to check the margin requirement
-        # of the order. If not met, the order can be immediately rejected
+        order.submit()
+        self.submitted.append(order)
+        self.orders.append(order)
+        self.notify(order)
+        return order
+
+    def check_submitted(self):
+        cash = self.cash
+
+        positions = dict()
+
+        while self.submitted:
+            # FIXME: if the order operates on a data with an open position
+            # and this order reduces the position, the margin will be lower
+            # than needed - Find the data, make the calculation and
+            # check against that margin
+            order = self.submitted.popleft()
+            if not self.p.checksubmit:
+                self.submit_accept(order)
+                continue
+
+            comminfo = self.getcommissioninfo(order.data)
+
+            position = positions.setdefault(
+                order.data, self.positions[order.data].clone())
+
+            # pseudo-execute the order to get the remaining cash after exec
+            cash = self._execute(order,
+                                 cash=cash,
+                                 position=position)
+
+            if cash >= 0.0:
+                self.submit_accept(order)
+                continue
+
+            order.margin()
+            self.notify(order)
+
+    def submit_accept(self, order):
         order.pannotated = None
         order.plen = len(order.data)
         order.accept()
-        self.orders.append(order)
         self.pending.append(order)
         self.notify(order)
-
-        return order
 
     def buy(self, owner, data,
             size, price=None, plimit=None,
@@ -135,7 +171,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
         return self.submit(order)
 
-    def _execute(self, order, dt, price):
+    def _execute(self, order, dt=None, price=None, cash=None, position=None):
         # Orders are fully executed, get operation size
         size = order.executed.remsize
 
@@ -143,63 +179,98 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         comminfo = self.getcommissioninfo(order.data)
 
         # Adjust position with operation size
-        position = self.positions[order.data]
-        oldpprice = position.price
+        if dt is not None:
+            position = self.positions[order.data]
+            oldpprice = position.price
 
-        psize, pprice, opened, closed = position.update(size, price)
+            psize, pprice, opened, closed = position.pseudoupdate(size, price)
+
+            # if part/all of a position has been closed, then there has been
+            # a profitandloss ... record it
+            pnl = comminfo.profitandloss(-closed, oldpprice, price)
+
+            cash = self.cash
+        else:
+            price = order.created.price
+            psize, pprice, opened, closed = position.update(size, price)
+
+        # useful absolute values for comminfo calls
         abopened, abclosed = abs(opened), abs(closed)
 
-        # if part/all of a position has been closed, then there has been
-        # a profitandloss ... record it
-        pnl = comminfo.profitandloss(-closed, oldpprice, price)
-
+        # "Closing" totally or partially is possible. Cash may be re-injected
         if closed:
             # Adjust to returned value for closed items & acquired opened items
             closedvalue = comminfo.getoperationcost(abclosed, price)
-            self.cash += closedvalue
-
+            cash += closedvalue
             # Calculate and substract commission
             closedcomm = comminfo.getcomm_pricesize(abclosed, price)
-            self.cash -= closedcomm
+            cash -= closedcomm
 
             # Re-adjust cash according to future-like movements
             # Restore cash which was already taken at the start of the day
             # At the end of the day the price was close (therefore oldprice)
             # and the new price is the execution price
-            self.cash += comminfo.cashadjust(-closed,
-                                             order.data.close[0],
-                                             price)
+            if dt is not None:
+                cash += comminfo.cashadjust(-closed,
+                                            order.data.close[0],
+                                            price)
         else:
             closedvalue = closedcomm = 0.0
 
+        popened = opened
         if opened:
             openedvalue = comminfo.getoperationcost(abopened, price)
-            self.cash -= openedvalue
+            cash -= openedvalue
 
             openedcomm = comminfo.getcomm_pricesize(abopened, price)
-            self.cash -= openedcomm
+            cash -= openedcomm
 
-            # Remove cash for the new opened contracts
-            self.cash += comminfo.cashadjust(opened,
-                                             price,
-                                             order.data.close[0])
+            if cash >= 0.0:
+                # only if the cash granted opening, do the cashadjust
+                # this could actually generate a "margin call"
+                if dt is not None:
+                    cash += comminfo.cashadjust(opened,
+                                                price,
+                                                order.data.close[0])
 
+            if cash < 0.0:
+                # execution is not possible - nullify
+                opened = 0
+                openedvalue = openedcomm = 0.0
         else:
             openedvalue = openedcomm = 0.0
 
-        # Execute and notify the order
-        order.execute(dt, size, price,
-                      closed, closedvalue, closedcomm,
-                      opened, openedvalue, openedcomm,
-                      comminfo.margin, pnl,
-                      psize, pprice)
+        if dt is None:
+            # return cash from pseudo-execution
+            return cash
 
-        self.notify(order)
+        if closed or opened:
+            # update system cash only if something happened
+            self.cash = cash
+
+            # do a real position update if something was executed
+            position.update(closed + opened, price)
+
+            # Execute and notify the order
+            order.execute(dt, opened + closed, price,
+                          closed, closedvalue, closedcomm,
+                          opened, openedvalue, openedcomm,
+                          comminfo.margin, pnl,
+                          psize, pprice)
+
+            self.notify(order)
+
+        if popened and not opened:
+            # opened was not executed - not enough cash
+            order.margin()
+            self.notify(order)
 
     def notify(self, order):
         self.notifs.append(order.clone())
 
     def next(self):
+        self.check_submitted()
+
         for data, pos in self.positions.items():
             # futures change cash in the broker in every bar
             # to ensure margin requirements are met
