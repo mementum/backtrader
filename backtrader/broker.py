@@ -106,27 +106,22 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.positions[data]
 
     def submit(self, order):
-        order.submit()
-        self.submitted.append(order)
-        self.orders.append(order)
-        self.notify(order)
+        if self.p.checksubmit:
+            order.submit()
+            self.submitted.append(order)
+            self.orders.append(order)
+            self.notify(order)
+        else:
+            self.submit_accept(order)
+
         return order
 
     def check_submitted(self):
         cash = self.cash
-
         positions = dict()
 
         while self.submitted:
-            # FIXME: if the order operates on a data with an open position
-            # and this order reduces the position, the margin will be lower
-            # than needed - Find the data, make the calculation and
-            # check against that margin
             order = self.submitted.popleft()
-            if not self.p.checksubmit:
-                self.submit_accept(order)
-                continue
-
             comminfo = self.getcommissioninfo(order.data)
 
             position = positions.setdefault(
@@ -269,8 +264,6 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.notifs.append(order.clone())
 
     def next(self):
-        self.check_submitted()
-
         for data, pos in self.positions.items():
             # futures change cash in the broker in every bar
             # to ensure margin requirements are met
@@ -422,3 +415,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                     # popen > pclose
                     if plimit <= pcreated:
                         self._execute(order, dt, price=pcreated)
+        if self.p.checksubmit:
+            self.check_submitted()
+
+        # Iterate once over all elements of the pending queue
