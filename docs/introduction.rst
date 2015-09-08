@@ -1,12 +1,12 @@
 Introduction
 ############
 
-Backtrader is Python based backtesting platform for developing home cooked
+Backtrader is a Python based backtesting platform for developing home cooked
 indicators and trading strategies.
 
 Features:
 
-  - Bar by Bar (next) operation or batch mode (once) operation
+  - Bar by Bar (next) operation or batch mode (runonce) operation
   - Indicators and the addition of any custom end-user developed one
   - Strategies
   - Data Feeds from Online Sources or CSV Files (other forms could be
@@ -17,6 +17,7 @@ Features:
   - A Broker implementation supporting
     - Commision schemes for stocks and derivatives
     - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
+    - Margin checks
   - Position Sizers for the automatic determination of the stake
   - Optimization of Strategies (multicore capable)
   - Plotting
