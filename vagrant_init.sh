@@ -27,7 +27,7 @@ apt-get -y update 2>&1 >> "$VAGRANT_LOG"
 
 # Install required packages
 echo "Installing required packages..."
-apt-get -y install vim python-pip python-dev 2>&1 >> "$VAGRANT_LOG"
+apt-get -y install python-pip python-dev 2>&1 >> "$VAGRANT_LOG"
 #apt-get -y install libblas-dev liblapack-dev libatlas-base-dev gfortran  2>&1 >> "$VAGRANT_LOG" # for scipy
 apt-get -y install libfreetype6-dev libpng-dev tk tk-dev python-tk 2>&1 >> "$VAGRANT_LOG" # for matplotlib
 
@@ -37,6 +37,11 @@ pip install numpy 2>&1 >> "$VAGRANT_LOG"
 pip install python-dateutil pytz 2>&1 >> "$VAGRANT_LOG"
 pip install matplotlib 2>&1 >> "$VAGRANT_LOG" 
 #pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
+
+# vim install
+apt-get -y ctags vim git
+git clone https://github.com/amix/vimrc.git ~/.vim_runtime
+sh ~/.vim_runtime/install_awesome_vimrc.sh
 
 
 echo "Finished!"
