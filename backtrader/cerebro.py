@@ -186,10 +186,9 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         vals = self.iterize(kwargs.values())
         optvals = itertools.product(*vals)
 
-        okwargs1 = six.moves.map(
-            six.moves.zip, itertools.repeat(optkeys), optvals)
+        okwargs1 = map(zip, itertools.repeat(optkeys), optvals)
 
-        optkwargs = six.moves.map(dict, okwargs1)
+        optkwargs = map(dict, okwargs1)
 
         it = itertools.product([strategy], optargs, optkwargs)
         self.strats.append(it)
