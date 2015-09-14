@@ -50,6 +50,10 @@ class Trade(object):
       - barclose (int): bar in which this trade was closed
       - barlen (int): number of bars this trade was open
     '''
+
+    status_names = ['Created', 'Open', 'Closed']
+    Created, Open, Closed = range(3)
+
     def __init__(self, data=None,
                  size=0, price=0.0, value=0.0, commission=0.0):
 
@@ -69,6 +73,8 @@ class Trade(object):
         self.baropen = 0
         self.barclose = 0
         self.barlen = 0
+
+        self.status = self.Created
 
     def __len__(self):
         return self.size
@@ -111,7 +117,7 @@ class Trade(object):
             self.long = self.size > 0
 
         # Any size means the trade was opened
-        self.isopen = True
+        self.isopen = bool(self.size)
 
         # Update current trade length
         self.barlen = len(self.data) - self.baropen
@@ -123,6 +129,10 @@ class Trade(object):
         if self.isclosed:
             self.isopen = False
             self.barclose = len(self.data)
+
+            self.status = self.Closed
+        elif self.isopen:
+            self.status = self.Open
 
         if abs(self.size) > abs(oldsize):
             # position increased (be it positive or negative)
