@@ -31,6 +31,9 @@ from six.moves import map, xrange, zip
 from .broker import BrokerBack
 from .metabase import MetaParams
 from . import observers
+from .writer import WriterFile
+from .import num2date
+from .utils import OrderedDict
 
 
 class Cerebro(six.with_metaclass(MetaParams, object)):
@@ -77,6 +80,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         ('stdstats', True),
         ('lookahead', 0),
         ('exactbars', False),
+        ('writer', False),
     )
 
     def __init__(self):
@@ -87,6 +91,8 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         self.observers = list()
         self.analyzers = list()
         self.indicators = list()
+        self.writers = list()
+
         self._broker = BrokerBack()
 
     @staticmethod
@@ -105,6 +111,13 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addwriter(self, wrtcls, *args, **kwargs):
+        '''
+        Adds an ``Writer`` class to the mix. Instantiation will be done at
+        ``run`` time in cerebro
+        '''
+        self.writers.append((wrtcls, args, kwargs))
 
     def addindicator(self, indcls, *args, **kwargs):
         '''
@@ -171,7 +184,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         Notice that ``period`` is still passed as an iterable ... of just 1
         element
 
-        ``backtrader`` will anyhow tray to identify situations like:
+        ``backtrader`` will anyhow try to identify situations like:
 
           - cerebro.optstrategy(MyStrategy, period=15)
 
@@ -283,6 +296,21 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             self._dorunonce = False
             self._dopreload = False
 
+        self.runwriters = list()
+
+        # Add the system default writer if requested
+        if self.p.writer is True:
+            wr = WriterFile()
+            self.runwriters.append(wr)
+
+        # Instantiate any other writers
+        for wrcls, wrargs, wrkwargs in self.writers:
+            wr = wrcls(*wrargs, **wrkwargs)
+            self.runwriters.append(wr)
+
+        # Write down if any writer wants the full csv output
+        self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
+
         self.runstrats = list()
         iterstrats = itertools.product(*self.strats)
         if not self._dooptimize or self.p.maxcpus == 1:
@@ -318,6 +346,16 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             if self._dopreload:
                 data.preload()
 
+        if self.writers_csv:
+            wheaders = list()
+            for data in self.datas:
+                if data.csv:
+                    wheaders.extend(data.getwriterheaders())
+
+            for writer in self.runwriters:
+                if writer.p.csv:
+                    writer.addheaders(wheaders)
+
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
@@ -339,7 +377,14 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             for ancls, anargs, ankwargs in self.analyzers:
                 strat._addanalyzer(ancls, *anargs, **ankwargs)
 
+            for writer in self.runwriters:
+                if writer.p.csv:
+                    writer.addheaders(strat.getwriterheaders())
+
             strat._start()
+
+        for writer in self.runwriters:
+            writer.start()
 
         if self._dopreload and self._dorunonce:
             self._runonce(runstrats)
@@ -355,7 +400,27 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.stop()
 
+        self.stop_writers(runstrats)
+
         return runstrats
+
+    def stop_writers(self, runstrats):
+        cerebroinfo = OrderedDict()
+        datainfos = OrderedDict()
+        for i, data in enumerate(self.datas):
+            datainfos['Data%d' % i] = data.getwriterinfo()
+
+        cerebroinfo['Datas'] = datainfos
+
+        stratinfos = dict()
+        for strat in runstrats:
+            stname = strat.__class__.__name__
+            stratinfos[stname] = strat.getwriterinfo()
+
+        cerebroinfo['Strategies'] = stratinfos
+
+        for writer in self.runwriters:
+            writer.writedict(dict(Cerebro=cerebroinfo))
 
     def _brokernotify(self):
         '''
@@ -381,10 +446,14 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             for data in self.datas[1:]:
                 data.next(datamaster=data0)
 
+            self._next_writers(runstrats)
+
             self._brokernotify()
 
             for strat in runstrats:
                 strat._next()
+
+                self._next_writers(runstrats)
 
     def _runonce(self, runstrats):
         '''
@@ -411,3 +480,24 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
             for strat in runstrats:
                 strat._oncepost()
+
+                self._next_writers(runstrats)
+
+    def _next_writers(self, runstrats):
+        if not self.runwriters:
+            return
+
+        if self.writers_csv:
+            wvalues = list()
+            for data in self.datas:
+                if data.csv:
+                    wvalues.extend(data.getwritervalues())
+
+            for strat in runstrats:
+                wvalues.extend(strat.getwritervalues())
+
+            for writer in self.runwriters:
+                if writer.p.csv:
+                    writer.addvalues(wvalues)
+
+                    writer.next()

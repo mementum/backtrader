@@ -33,6 +33,7 @@ from .lineiterator import LineIterator, StrategyBase
 from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
+from .utils import OrderedDict
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -153,6 +154,14 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             [x._minperiod for x in self._lineiterators[LineIterator.IndType]]
         self._minperiod = max(minperiods or [self._minperiod])
 
+    def _addwriter(self, writer):
+        '''
+        Unlike the other _addxxx functions this one receives an instance
+        because the writer works at cerebro level and is only passed to the
+        strategy to simplify the logic
+        '''
+        self.writers.append(writer)
+
     def _addindicator(self, indcls, *indargs, **indkwargs):
         indcls(*indargs, **indkwargs)
 
@@ -254,11 +263,72 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def getwriterheaders(self):
+        self.indobscsv = [self]
+
+        indobs = itertools.chain(self.getindicators(), self.getobservers())
+        self.indobscsv.extend(filter(lambda x: x.csv, indobs))
+
+        headers = list()
+
+        # prepare the indicators/observers data headers
+        for iocsv in self.indobscsv:
+            headers.append(iocsv.__class__.__name__)
+            headers.append('len')
+            headers.extend(iocsv.getlinealiases())
+
+        return headers
+
+    def getwritervalues(self):
+        values = list()
+
+        for iocsv in self.indobscsv:
+            values.append(iocsv.__class__.__name__)
+            values.append(len(iocsv))
+            values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+
+        return values
+
+    def getwriterinfo(self):
+        sections = ['Params', 'Lines']
+
+        wrinfo = OrderedDict()
+        wrinfo['Params'] = self.p._getkwargs()
+
+        sections = [
+            ['Indicators', self.getindicators()],
+            ['Observers', self.getobservers()]
+        ]
+
+        for sectname, sectitems in sections:
+            sectinfo = OrderedDict()
+            for item in sectitems:
+                iteminfo = OrderedDict()
+                iteminfo['Lines'] = item.lines.getlinealiases() or None
+                iteminfo['Params'] = item.p._getkwargs() or None
+
+                sectinfo[item.__class__.__name__] = iteminfo
+
+            wrinfo[sectname] = sectinfo
+
+        aninfo = OrderedDict()
+        for analyzer in self.analyzers:
+            # aninfo[aname] = analyzer.get_analysis()
+            ainfo = OrderedDict()
+            ainfo['Params'] = item.p._getkwargs() or None
+            ainfo['Analysis'] = analyzer.get_analysis()
+
+            aninfo[analyzer.__class__.__name__] = ainfo
+
+        wrinfo['Analyzers'] = aninfo
+
+        return wrinfo
+
     def _stop(self):
+        self.stop()
+
         for analyzer in self.analyzers:
             analyzer._stop()
-
-        self.stop()
 
         # change operators back to stage 1
         self._stage1()
@@ -267,7 +337,6 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         '''
         Called right before the backtesting is about to be stopped
         '''
-
         pass
 
     def clear(self):
@@ -316,9 +385,13 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def _notify(self):
         for order in self._orderspending:
             self.notify_order(order)
+            for analyzer in self.analyzers:
+                analyzer.notify_order(order)
 
         for trade in self._tradespending:
             self.notify_trade(trade)
+            for analyzer in self.analyzers:
+                analyzer.notify_trade(trade)
 
     def notify_order(self, order):
         '''
@@ -328,7 +401,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def notify_trade(self, trade):
         '''
-        Rceives a trade whenever there has been a change in once
+        Receives a trade whenever there has been a change in one
         '''
         pass
 

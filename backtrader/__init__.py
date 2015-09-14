@@ -39,6 +39,7 @@ from .resampler import *
 from .trade import *
 from .position import *
 from .analyzer import *
+from .writer import *
 
 from .utils import num2date, date2num
 
