@@ -157,8 +157,6 @@ class Lines(object):
         if i >= len(lines):
             return ''
         linealias = lines[i]
-        if not isinstance(linealias, six.string_types):
-            linealias = linealias[0]
         return linealias
 
     def __init__(self, initlines=None):
