@@ -33,7 +33,7 @@ from .lineiterator import LineIterator, StrategyBase
 from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
-from .utils import OrderedDict
+from .utils import OrderedDict, AutoOrderedDict
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -290,9 +290,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         return values
 
     def getwriterinfo(self):
-        sections = ['Params', 'Lines']
+        wrinfo = AutoOrderedDict()
 
-        wrinfo = OrderedDict()
         wrinfo['Params'] = self.p._getkwargs()
 
         sections = [
@@ -301,26 +300,22 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         ]
 
         for sectname, sectitems in sections:
-            sectinfo = OrderedDict()
+            sinfo = wrinfo[sectname]
             for item in sectitems:
-                iteminfo = OrderedDict()
-                iteminfo['Lines'] = item.lines.getlinealiases() or None
-                iteminfo['Params'] = item.p._getkwargs() or None
+                itname = item.__class__.__name__
+                sinfo[itname].Lines = item.lines.getlinealiases() or None
+                sinfo[itname].Params = item.p._getkwargs() or None
 
-                sectinfo[item.__class__.__name__] = iteminfo
+        ainfo = wrinfo.Analyzers
 
-            wrinfo[sectname] = sectinfo
+        # Internal Value Analyzer
+        ainfo.Value.Begin = self.broker.startingcash
+        ainfo.Value.End = self.broker.getvalue()
 
-        aninfo = OrderedDict()
         for analyzer in self.analyzers:
-            # aninfo[aname] = analyzer.get_analysis()
-            ainfo = OrderedDict()
-            ainfo['Params'] = item.p._getkwargs() or None
-            ainfo['Analysis'] = analyzer.get_analysis()
-
-            aninfo[analyzer.__class__.__name__] = ainfo
-
-        wrinfo['Analyzers'] = aninfo
+            aname = analyzer.__class__.__name__
+            ainfo[aname].Params = item.p._getkwargs() or None
+            ainfo[aname].Analysis = analyzer.get_analysis()
 
         return wrinfo
 
@@ -342,7 +337,6 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def clear(self):
         self._orders.extend(self._orderspending)
         self._orderspending = list()
-
         self._tradespending = list()
 
     def _addnotification(self, order):
