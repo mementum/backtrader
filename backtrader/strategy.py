@@ -26,6 +26,7 @@ import itertools
 import operator
 
 import six
+from six.moves import filter, map, range
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
