@@ -198,6 +198,7 @@ class Order(six.with_metaclass(MetaParams, object)):
     '''
     refbasis = itertools.count(1)
 
+    OrderType = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
     Market, Close, Limit, Stop, StopLimit = range(5)
 
     Buy, Sell = range(2)
@@ -215,6 +216,9 @@ class Order(six.with_metaclass(MetaParams, object)):
         ('pricelimit', None), ('exectype', None), ('valid', None),
         ('triggered', False),
     )
+
+    def getstatusname(self, status):
+        return self.Status[status]
 
     def __getattr__(self, name):
         # dig into self.params if not found as attribute
