@@ -29,29 +29,9 @@ import six
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
+from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
-
-
-class _Template(object):
-
-    def __init__(self):
-        self.members = list()
-        self.names = list()
-
-    def __len__(self):
-        return len(self.members)
-
-    def addmember(self, name, member):
-        setattr(self, name, member)
-        self.members.append(member)
-        self.names.append(name)
-
-    def __getitem__(self, key):
-        return self.members[key]
-
-    def getitems(self):
-        return zip(self.names, self.members)
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -90,8 +70,9 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._trades = collections.defaultdict(list)
         _obj._tradespending = list()
 
-        _obj.stats = _obj.observers = _Template()
-        _obj.analyzers = _Template()
+        _obj.stats = _obj.observers = ItemCollection()
+        _obj.analyzers = ItemCollection()
+        _obj.writers = list()
 
         return _obj, args, kwargs
 
