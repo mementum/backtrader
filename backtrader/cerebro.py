@@ -26,7 +26,7 @@ import itertools
 import multiprocessing
 
 import six
-from six.moves import xrange
+from six.moves import map, xrange, zip
 
 from .broker import BrokerBack
 from .metabase import MetaParams
