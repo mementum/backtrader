@@ -47,7 +47,7 @@ List of built-in Indicators (88)
 Python 2/3 Support
 ==================
 
-  - Python 2.6/2.7
+  - Python 2.7
   - Python 3.2/3.3/3.4
 
 Compatibility is tested during development with 2.7 and 3.4
