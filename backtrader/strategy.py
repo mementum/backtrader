@@ -177,6 +177,12 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             obs = obscls(data, *obsargs, **obskwargs)
             l.append(obs)
 
+    def _getminperstatus(self):
+        # check the min period status connected to datas
+        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+        minperstatus = max(dlens)
+        return minperstatus
+
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.advance()
@@ -184,9 +190,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.advance()
         self._notify()
 
-        # check the min period status connected to datas
-        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        minperstatus = self._getminperstatus()
 
         if minperstatus < 0:
             self.next()
@@ -195,35 +199,34 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext()
 
-        for observer in self._lineiterators[LineIterator.ObsType]:
-            observer.advance()
-            if minperstatus < 0:
-                observer.next()
-            elif minperstatus == 0:
-                observer.nextstart()  # only called for the 1st value
-            else:
-                observer.prenext()
-
-        for analyzer in self.analyzers:
-            if minperstatus < 0:
-                analyzer._next()
-            elif minperstatus == 0:
-                analyzer._nextstart()  # only called for the 1st value
-            else:
-                analyzer._prenext()
+        self._next_observers(minperstatus, once=True)
+        self._next_analyzers(minperstatus, once=True)
 
         self.clear()
 
     def _next(self):
         super(Strategy, self)._next()
 
-        for observer in self.observers:
-            observer._next()
+        minperstatus = self._getminperstatus()
+        self._next_observers(minperstatus)
+        self._next_analyzers(minperstatus)
 
-        # check the min period status connected to datas
-        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        self.clear()
 
+    def _next_observers(self, minperstatus, once=False):
+        for observer in self._lineiterators[LineIterator.ObsType]:
+            if once:
+                observer.advance()
+                if minperstatus < 0:
+                    observer.next()
+                elif minperstatus == 0:
+                    observer.nextstart()  # only called for the 1st value
+                else:
+                    observer.prenext()
+            else:
+                observer._next()
+
+    def _next_analyzers(self, minperstatus, once=False):
         for analyzer in self.analyzers:
             if minperstatus < 0:
                 analyzer._next()
@@ -231,8 +234,6 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
                 analyzer._nextstart()  # only called for the 1st value
             else:
                 analyzer._prenext()
-
-        self.clear()
 
     def _start(self):
         self._periodset()
