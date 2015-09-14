@@ -21,16 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from collections import OrderedDict
 import sys
 
 from .date import *
 from .cmp import *
-
-pyversion = (sys.version_info[0], sys.version_info[1])
-
-if pyversion < (2, 7):
-    from .ordereddict import OrderedDict
-else:
-    from collections import OrderedDict
-
-OrderedDict = OrderedDict
+from .ordereddefaultdict import *
+from .autodict import *
