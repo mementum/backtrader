@@ -83,6 +83,8 @@ class MetaIndicator(IndicatorBase.__class__):
 class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
     _ltype = LineIterator.IndType
 
+    csv = False
+
     def advance(self, size=1):
         # Need intercepting this call to support datas with
         # different lengths (timeframes)

@@ -94,6 +94,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     _ltype = LineIterator.StratType
 
+    csv = True
+
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 

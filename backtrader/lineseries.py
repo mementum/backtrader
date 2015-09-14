@@ -405,6 +405,8 @@ class MetaLineSeries(LineMultiple.__class__):
 
 
 class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
+    csv = True
+
     @property
     def array(self):
         return self.lines[0].array
