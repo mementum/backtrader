@@ -39,6 +39,7 @@ from .resampler import *
 from .trade import *
 from .position import *
 from .analyzer import *
+from .writer import *
 
 from .utils import num2date, date2num
 
@@ -48,4 +49,4 @@ from . import strategies
 from . import observers
 from . import analyzers
 
-__version__ = '1.1.6.88'
+__version__ = '1.1.7.88'

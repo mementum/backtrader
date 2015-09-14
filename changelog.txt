@@ -1,3 +1,10 @@
+1.1.7.88:
+  - Drop Python 2.6 support (also removing internal OrderedDict) after adding
+    nexbars which needs collections.deque with maxlen (>= 2.7)
+  - First Writer Implemenatation for CSV Output
+  - TradeAnalyzer implementation
+  - SystemQualityNumber (SQN) implementation
+
 1.1.6.88:
   - Broker reworked to check margin/cost limits on order submission/execution
   - Broker fix to avoid having the wrong sign on short "Trades"

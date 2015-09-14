@@ -26,32 +26,14 @@ import itertools
 import operator
 
 import six
+from six.moves import filter, map, range
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
+from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
-
-
-class _Template(object):
-
-    def __init__(self):
-        self.members = list()
-        self.names = list()
-
-    def __len__(self):
-        return len(self.members)
-
-    def addmember(self, name, member):
-        setattr(self, name, member)
-        self.members.append(member)
-        self.names.append(name)
-
-    def __getitem__(self, key):
-        return self.members[key]
-
-    def getitems(self):
-        return zip(self.names, self.members)
+from .utils import OrderedDict, AutoOrderedDict
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -90,8 +72,9 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._trades = collections.defaultdict(list)
         _obj._tradespending = list()
 
-        _obj.stats = _obj.observers = _Template()
-        _obj.analyzers = _Template()
+        _obj.stats = _obj.observers = ItemCollection()
+        _obj.analyzers = ItemCollection()
+        _obj.writers = list()
 
         return _obj, args, kwargs
 
@@ -111,6 +94,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     '''
 
     _ltype = LineIterator.StratType
+
+    csv = True
 
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
@@ -169,13 +154,21 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             [x._minperiod for x in self._lineiterators[LineIterator.IndType]]
         self._minperiod = max(minperiods or [self._minperiod])
 
+    def _addwriter(self, writer):
+        '''
+        Unlike the other _addxxx functions this one receives an instance
+        because the writer works at cerebro level and is only passed to the
+        strategy to simplify the logic
+        '''
+        self.writers.append(writer)
+
     def _addindicator(self, indcls, *indargs, **indkwargs):
         indcls(*indargs, **indkwargs)
 
     def _addanalyzer(self, ancls, *anargs, **ankwargs):
         anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
         analyzer = ancls(*anargs, **ankwargs)
-        self.analyzers.addmember(anname, analyzer)
+        self.analyzers.append(analyzer, anname)
 
     def _addobserver(self, multi, obscls, *obsargs, **obskwargs):
         obsname = obskwargs.pop('obsname', '')
@@ -185,7 +178,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if not multi:
             newargs = list(itertools.chain(self.datas, obsargs))
             obs = obscls(*newargs, **obskwargs)
-            self.stats.addmember(obsname, obs)
+            self.stats.append(obs, obsname)
             return
 
         setattr(self.stats, obsname, list())
@@ -195,6 +188,12 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             obs = obscls(data, *obsargs, **obskwargs)
             l.append(obs)
 
+    def _getminperstatus(self):
+        # check the min period status connected to datas
+        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
+        minperstatus = max(dlens)
+        return minperstatus
+
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator.advance()
@@ -202,9 +201,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         self.advance()
         self._notify()
 
-        # check the min period status connected to datas
-        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        minperstatus = self._getminperstatus()
 
         if minperstatus < 0:
             self.next()
@@ -213,35 +210,34 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext()
 
-        for observer in self._lineiterators[LineIterator.ObsType]:
-            observer.advance()
-            if minperstatus < 0:
-                observer.next()
-            elif minperstatus == 0:
-                observer.nextstart()  # only called for the 1st value
-            else:
-                observer.prenext()
-
-        for analyzer in self.analyzers:
-            if minperstatus < 0:
-                analyzer._next()
-            elif minperstatus == 0:
-                analyzer._nextstart()  # only called for the 1st value
-            else:
-                analyzer._prenext()
+        self._next_observers(minperstatus, once=True)
+        self._next_analyzers(minperstatus, once=True)
 
         self.clear()
 
     def _next(self):
         super(Strategy, self)._next()
 
-        for observer in self.observers:
-            observer._next()
+        minperstatus = self._getminperstatus()
+        self._next_observers(minperstatus)
+        self._next_analyzers(minperstatus)
 
-        # check the min period status connected to datas
-        dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        self.clear()
 
+    def _next_observers(self, minperstatus, once=False):
+        for observer in self._lineiterators[LineIterator.ObsType]:
+            if once:
+                observer.advance()
+                if minperstatus < 0:
+                    observer.next()
+                elif minperstatus == 0:
+                    observer.nextstart()  # only called for the 1st value
+                else:
+                    observer.prenext()
+            else:
+                observer._next()
+
+    def _next_analyzers(self, minperstatus, once=False):
         for analyzer in self.analyzers:
             if minperstatus < 0:
                 analyzer._next()
@@ -249,8 +245,6 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
                 analyzer._nextstart()  # only called for the 1st value
             else:
                 analyzer._prenext()
-
-        self.clear()
 
     def _start(self):
         self._periodset()
@@ -269,11 +263,67 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def getwriterheaders(self):
+        self.indobscsv = [self]
+
+        indobs = itertools.chain(self.getindicators(), self.getobservers())
+        self.indobscsv.extend(filter(lambda x: x.csv, indobs))
+
+        headers = list()
+
+        # prepare the indicators/observers data headers
+        for iocsv in self.indobscsv:
+            headers.append(iocsv.__class__.__name__)
+            headers.append('len')
+            headers.extend(iocsv.getlinealiases())
+
+        return headers
+
+    def getwritervalues(self):
+        values = list()
+
+        for iocsv in self.indobscsv:
+            values.append(iocsv.__class__.__name__)
+            values.append(len(iocsv))
+            values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+
+        return values
+
+    def getwriterinfo(self):
+        wrinfo = AutoOrderedDict()
+
+        wrinfo['Params'] = self.p._getkwargs()
+
+        sections = [
+            ['Indicators', self.getindicators()],
+            ['Observers', self.getobservers()]
+        ]
+
+        for sectname, sectitems in sections:
+            sinfo = wrinfo[sectname]
+            for item in sectitems:
+                itname = item.__class__.__name__
+                sinfo[itname].Lines = item.lines.getlinealiases() or None
+                sinfo[itname].Params = item.p._getkwargs() or None
+
+        ainfo = wrinfo.Analyzers
+
+        # Internal Value Analyzer
+        ainfo.Value.Begin = self.broker.startingcash
+        ainfo.Value.End = self.broker.getvalue()
+
+        for analyzer in self.analyzers:
+            aname = analyzer.__class__.__name__
+            ainfo[aname].Params = item.p._getkwargs() or None
+            ainfo[aname].Analysis = analyzer.get_analysis()
+
+        return wrinfo
+
     def _stop(self):
+        self.stop()
+
         for analyzer in self.analyzers:
             analyzer._stop()
-
-        self.stop()
 
         # change operators back to stage 1
         self._stage1()
@@ -282,13 +332,11 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         '''
         Called right before the backtesting is about to be stopped
         '''
-
         pass
 
     def clear(self):
         self._orders.extend(self._orderspending)
         self._orderspending = list()
-
         self._tradespending = list()
 
     def _addnotification(self, order):
@@ -331,9 +379,13 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def _notify(self):
         for order in self._orderspending:
             self.notify_order(order)
+            for analyzer in self.analyzers:
+                analyzer.notify_order(order)
 
         for trade in self._tradespending:
             self.notify_trade(trade)
+            for analyzer in self.analyzers:
+                analyzer.notify_trade(trade)
 
     def notify_order(self, order):
         '''
@@ -343,7 +395,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
 
     def notify_trade(self, trade):
         '''
-        Rceives a trade whenever there has been a change in once
+        Receives a trade whenever there has been a change in one
         '''
         pass
 

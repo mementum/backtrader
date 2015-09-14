@@ -157,9 +157,14 @@ class Lines(object):
         if i >= len(lines):
             return ''
         linealias = lines[i]
-        if not isinstance(linealias, six.string_types):
-            linealias = linealias[0]
         return linealias
+
+    @classmethod
+    def getlinealiases(cls):
+        return cls._getlines()
+
+    def itersize(self):
+        return iter(self.lines[0:self.size()])
 
     def __init__(self, initlines=None):
         '''
@@ -400,6 +405,8 @@ class MetaLineSeries(LineMultiple.__class__):
 
 
 class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
+    csv = True
+
     @property
     def array(self):
         return self.lines[0].array

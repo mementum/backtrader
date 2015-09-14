@@ -21,19 +21,34 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from backtrader import Analyzer
+from backtrader.mathsupport import average, standarddev
+from backtrader.utils import AutoOrderedDict
 
-from .lineiterator import LineIterator, ObserverBase, StrategyBase
 
+class SQN(Analyzer):
+    alias = ('SystemQualityNumber',)
 
-class Observer(ObserverBase):
-    _OwnerCls = StrategyBase
-    _ltype = LineIterator.ObsType
+    def start(self):
+        self.ret = AutoOrderedDict()
+        self.pnl = list()
+        self.count = 0
 
-    csv = True
+    def notify_trade(self, trade):
+        if trade.status == trade.Closed:
+            self.pnl.append(trade.pnlcomm)
+            self.count += 1
 
-    plotinfo = dict(plot=False, subplot=True)
+    def stop(self):
+        pnl_av = average(self.pnl)
+        pnl_stddev = standarddev(self.pnl)
 
-    # An Observer is ideally always observing and that' why prenext calls
-    # next. The behaviour can be overriden by subclasses
-    def prenext(self):
-        self.next()
+        trades_sqr = pow(len(self.pnl), 0.5)
+
+        sqn = trades_sqr * pnl_av / pnl_stddev
+
+        self.ret.sqn = sqn
+        self.ret.trades = self.count
+
+    def get_analysis(self):
+        return self.ret

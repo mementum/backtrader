@@ -25,6 +25,7 @@ import collections
 import operator
 
 import six
+from six.moves import zip
 
 from .lineroot import LineRoot
 from .lineseries import LineSeries, LineSeriesMaker

@@ -78,6 +78,8 @@ class MetaAnalyzer(MetaParams):
 
 
 class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
+    csv = True
+
     def __len__(self):
         return len(self.strategy)
 
@@ -113,6 +115,12 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
             child._stop()
 
         self.stop()
+
+    def notify_order(self, order):
+        pass
+
+    def notify_trade(self, trade):
+        pass
 
     def next(self):
         pass

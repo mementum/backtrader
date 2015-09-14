@@ -106,36 +106,29 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         return self.positions[data]
 
     def submit(self, order):
-        order.submit()
-        self.submitted.append(order)
-        self.orders.append(order)
-        self.notify(order)
+        if self.p.checksubmit:
+            order.submit()
+            self.submitted.append(order)
+            self.orders.append(order)
+            self.notify(order)
+        else:
+            self.submit_accept(order)
+
         return order
 
     def check_submitted(self):
         cash = self.cash
-
         positions = dict()
 
         while self.submitted:
-            # FIXME: if the order operates on a data with an open position
-            # and this order reduces the position, the margin will be lower
-            # than needed - Find the data, make the calculation and
-            # check against that margin
             order = self.submitted.popleft()
-            if not self.p.checksubmit:
-                self.submit_accept(order)
-                continue
-
             comminfo = self.getcommissioninfo(order.data)
 
             position = positions.setdefault(
                 order.data, self.positions[order.data].clone())
 
             # pseudo-execute the order to get the remaining cash after exec
-            cash = self._execute(order,
-                                 cash=cash,
-                                 position=position)
+            cash = self._execute(order, cash=cash, position=position)
 
             if cash >= 0.0:
                 self.submit_accept(order)
@@ -180,14 +173,15 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
         # Adjust position with operation size
         if dt is not None:
+            # Real execution with date
             position = self.positions[order.data]
-            oldpprice = position.price
+            pprice_orig = position.price
 
             psize, pprice, opened, closed = position.pseudoupdate(size, price)
 
             # if part/all of a position has been closed, then there has been
             # a profitandloss ... record it
-            pnl = comminfo.profitandloss(-closed, oldpprice, price)
+            pnl = comminfo.profitandloss(-closed, pprice_orig, price)
 
             cash = self.cash
         else:
@@ -195,7 +189,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             psize, pprice, opened, closed = position.update(size, price)
 
         # useful absolute values for comminfo calls
-        abopened, abclosed = abs(opened), abs(closed)
+        abpsize, abopened, abclosed = abs(psize), abs(opened), abs(closed)
 
         # "Closing" totally or partially is possible. Cash may be re-injected
         if closed:
@@ -206,14 +200,15 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             closedcomm = comminfo.getcomm_pricesize(abclosed, price)
             cash -= closedcomm
 
-            # Re-adjust cash according to future-like movements
-            # Restore cash which was already taken at the start of the day
-            # At the end of the day the price was close (therefore oldprice)
-            # and the new price is the execution price
             if dt is not None:
+                # Cashadjust closed contracts: prev close vs exec price
+                # The operation can inject or take cash out
                 cash += comminfo.cashadjust(-closed,
-                                            order.data.close[0],
+                                            position.adjbase,
                                             price)
+
+                # Update system cash
+                self.cash = cash
         else:
             closedvalue = closedcomm = 0.0
 
@@ -225,18 +220,23 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             openedcomm = comminfo.getcomm_pricesize(abopened, price)
             cash -= openedcomm
 
-            if cash >= 0.0:
-                # only if the cash granted opening, do the cashadjust
-                # this could actually generate a "margin call"
-                if dt is not None:
-                    cash += comminfo.cashadjust(opened,
-                                                price,
-                                                order.data.close[0])
-
             if cash < 0.0:
                 # execution is not possible - nullify
                 opened = 0
                 openedvalue = openedcomm = 0.0
+
+            elif dt is not None:
+                if abpsize > abopened:
+                    # some futures were opened and cash adjustment to new
+                    # price is needed from old position price to new pos price
+                    adjsize = psize - opened
+                    cash += comminfo.cashadjust(adjsize, pprice_orig, pprice)
+
+                # recrod adjust price base for end of bar cash adjust
+                position.adjbase = pprice
+
+                # update system cash - checking if opened is still != 0
+                self.cash = cash
         else:
             openedvalue = openedcomm = 0.0
 
@@ -244,15 +244,14 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
             # return cash from pseudo-execution
             return cash
 
-        if closed or opened:
-            # update system cash only if something happened
-            self.cash = cash
+        execsize = closed + opened
 
+        if execsize:
             # do a real position update if something was executed
-            position.update(closed + opened, price)
+            position.update(execsize, price)
 
             # Execute and notify the order
-            order.execute(dt, opened + closed, price,
+            order.execute(dt, execsize, price,
                           closed, closedvalue, closedcomm,
                           opened, openedvalue, openedcomm,
                           comminfo.margin, pnl,
@@ -267,56 +266,6 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     def notify(self, order):
         self.notifs.append(order.clone())
-
-    def next(self):
-        self.check_submitted()
-
-        for data, pos in self.positions.items():
-            # futures change cash in the broker in every bar
-            # to ensure margin requirements are met
-            comminfo = self.getcommissioninfo(data)
-            self.cash += comminfo.cashadjust(pos.size,
-                                             data.close[-1],
-                                             data.close[0])
-
-        # Iterate once over all elements of the pending queue
-        for i in range(len(self.pending)):
-            order = self.pending.popleft()
-
-            if order.expire():
-                self.notify(order)
-                continue
-
-            popen = order.data.tick_open or order.data.open[0]
-            phigh = order.data.tick_high or order.data.high[0]
-            plow = order.data.tick_low or order.data.low[0]
-            pclose = order.data.tick_close or order.data.close[0]
-
-            pcreated = order.created.price
-            plimit = order.created.pricelimit
-
-            if order.exectype == Order.Market:
-                self._execute(order, order.data.datetime[0], price=popen)
-
-            elif order.exectype == Order.Close:
-                self._try_exec_close(order, pclose)
-
-            elif order.exectype == Order.Limit:
-                self._try_exec_limit(order, popen, phigh, plow, pcreated)
-
-            elif order.exectype == Order.StopLimit and order.triggered:
-                self._try_exec_limit(order, popen, phigh, plow, plimit)
-
-            elif order.exectype == Order.Stop:
-                self._try_exec_stop(order, popen, phigh, plow, pcreated)
-
-            elif order.exectype == Order.StopLimit:
-                self._try_exec_stoplimit(order,
-                                         popen, phigh, plow, pclose,
-                                         pcreated, plimit)
-
-            if order.alive():
-                self.pending.append(order)
 
     def _try_exec_close(self, order, pclose):
         if len(order.data) > order.plen:
@@ -422,3 +371,63 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
                     # popen > pclose
                     if plimit <= pcreated:
                         self._execute(order, dt, price=pcreated)
+
+    def _try_exec(self, order):
+        data = order.data
+
+        popen = data.tick_open or data.open[0]
+        phigh = data.tick_high or data.high[0]
+        plow = data.tick_low or data.low[0]
+        pclose = data.tick_close or data.close[0]
+
+        pcreated = order.created.price
+        plimit = order.created.pricelimit
+
+        if order.exectype == Order.Market:
+            self._execute(order, data.datetime[0], price=popen)
+
+        elif order.exectype == Order.Close:
+            self._try_exec_close(order, pclose)
+
+        elif order.exectype == Order.Limit:
+            self._try_exec_limit(order, popen, phigh, plow, pcreated)
+
+        elif order.exectype == Order.StopLimit and order.triggered:
+            self._try_exec_limit(order, popen, phigh, plow, plimit)
+
+        elif order.exectype == Order.Stop:
+            self._try_exec_stop(order, popen, phigh, plow, pcreated)
+
+        elif order.exectype == Order.StopLimit:
+            self._try_exec_stoplimit(order,
+                                     popen, phigh, plow, pclose,
+                                     pcreated, plimit)
+
+    def next(self):
+        if self.p.checksubmit:
+            self.check_submitted()
+
+        # Iterate once over all elements of the pending queue
+        for i in range(len(self.pending)):
+
+            order = self.pending.popleft()
+
+            if order.expire():
+                self.notify(order)
+                continue
+
+            self._try_exec(order)
+
+            if order.alive():
+                self.pending.append(order)
+
+        # Operations have been executed ... adjust cash end of bar
+        for data, pos in self.positions.items():
+            # futures change cash every bar
+            if pos:
+                comminfo = self.getcommissioninfo(data)
+                self.cash += comminfo.cashadjust(pos.size,
+                                                 pos.adjbase,
+                                                 data.close[0])
+                # record the last adjustment price
+                pos.adjbase = data.close[0]
