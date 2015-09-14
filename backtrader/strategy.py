@@ -157,7 +157,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
     def _addanalyzer(self, ancls, *anargs, **ankwargs):
         anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
         analyzer = ancls(*anargs, **ankwargs)
-        self.analyzers.addmember(anname, analyzer)
+        self.analyzers.append(analyzer, anname)
 
     def _addobserver(self, multi, obscls, *obsargs, **obskwargs):
         obsname = obskwargs.pop('obsname', '')
@@ -167,7 +167,7 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
         if not multi:
             newargs = list(itertools.chain(self.datas, obsargs))
             obs = obscls(*newargs, **obskwargs)
-            self.stats.addmember(obsname, obs)
+            self.stats.append(obs, obsname)
             return
 
         setattr(self.stats, obsname, list())
