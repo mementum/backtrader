@@ -446,8 +446,6 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
             for data in self.datas[1:]:
                 data.next(datamaster=data0)
 
-            self._next_writers(runstrats)
-
             self._brokernotify()
 
             for strat in runstrats:
