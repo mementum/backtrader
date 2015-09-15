@@ -30,6 +30,7 @@ from six.moves import map
 
 from backtrader import MetaParams, Strategy
 from backtrader.utils import OrderedDict
+from backtrader import LineSeries
 
 
 class WriterBase(six.with_metaclass(MetaParams, object)):
@@ -41,7 +42,7 @@ class WriterFile(WriterBase):
         ('out', sys.stdout),
         ('close_out', False),
 
-        ('csv', True),
+        ('csv', False),
         ('csvsep', ','),
         ('csv_filternan', True),
         ('csv_counter', True),
@@ -130,7 +131,15 @@ class WriterFile(WriterBase):
 
             kline += key + ':'
 
-            if isinstance(val, six.string_types):
+            try:
+                sclass = issubclass(val, LineSeries)
+            except TypeError:
+                sclass = False
+
+            if sclass:
+                kline += ' ' + val.__name__
+                self.writeline(kline)
+            elif isinstance(val, six.string_types):
                 kline += ' ' + val
                 self.writeline(kline)
             elif isinstance(val, six.integer_types):
