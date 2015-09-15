@@ -1,3 +1,12 @@
+1.1.8.88:
+  - Added Python 3.5 to Travis CI
+  - Refactored bt-run.py to internal function and added btrun executable to
+    installation
+  - Added cerebro parameters and writers support to btrun
+  - Fixed duplicate writers next call in "next" mode
+  - Improved LineSeries objects name printing in WriterFile and changed "csv"
+    to False
+
 1.1.7.88:
   - Drop Python 2.6 support (also removing internal OrderedDict) after adding
     nexbars which needs collections.deque with maxlen (>= 2.7)
