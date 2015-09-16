@@ -28,6 +28,31 @@ from backtrader.utils import AutoOrderedDict, AutoDict
 
 
 class TradeAnalyzer(Analyzer):
+    '''
+    Provides statistics on closed trades (keeps also the count of open ones)
+
+      - Total Open/Closed Trades
+
+      - Streak Won/Lost Current/Longest
+
+      - ProfitAndLoss Total/Average
+
+      - Won/Lost Count/ Total PNL/ Average PNL / Max PNL
+
+      - Long/Short Count/ Total PNL / Average PNL / Max PNL
+
+          - Won/Lost Count/ Total PNL/ Average PNL / Max PNL
+
+      - Length (bars in the market)
+
+        - Total/Average/Max/Min
+
+        - Won/Lost Total/Average/Max/Min
+
+        - Long/Short Total/Average/Max/Min
+
+          - Won/Lost Total/Average/Max/Min
+    '''
     def start(self):
         self.trades = AutoOrderedDict()
 
@@ -54,10 +79,9 @@ class TradeAnalyzer(Analyzer):
             trades.total.open -= 1
             trades.total.closed += 1
 
+            # Streak
             for wlname in ['won', 'lost']:
                 wl = res[wlname]
-
-                trades.total[wlname] += wl
 
                 trades.streak[wlname].current *= wl
                 trades.streak[wlname].current += wl
@@ -71,6 +95,23 @@ class TradeAnalyzer(Analyzer):
             trpnl.gross.average = trades.pnl.gross.total / trades.total.closed
             trpnl.net.total += trade.pnlcomm
             trpnl.net.average = trades.pnl.net.total / trades.total.closed
+
+            # Won/Lost statistics
+            for wlname in ['won', 'lost']:
+                wl = res[wlname]
+                trwl = trades[wlname]
+
+                trwl.total += wl  # won.total / lost.total
+
+                trwlpnl = trwl.pnl
+                pnlcomm = trade.pnlcomm * wl
+
+                trwlpnl.total += pnlcomm
+                trwlpnl.average = trwlpnl.total / (trwl.total or 1.0)
+
+                wm = trwlpnl.max or 0.0
+                func = max if wlname == 'won' else min
+                trwlpnl.max = func(wm, pnlcomm)
 
             # Long/Short statistics
             for tname in ['long', 'short']:
@@ -110,7 +151,7 @@ class TradeAnalyzer(Analyzer):
                 wl = res[wlname]
 
                 trwl.total += trade.barlen * wl
-                trwl.average = trwl.total / (trades.total[wlname] or 1.0)
+                trwl.average = trwl.total / (trades[wlname].total or 1.0)
 
                 m = trwl.max or 0
                 trwl.max = max(m, trade.barlen * wl)
