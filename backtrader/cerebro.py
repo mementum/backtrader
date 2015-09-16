@@ -320,7 +320,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
                 runstrat = self.runstrategies(iterstrat)
                 self.runstrats.append(runstrat)
         else:
-            pool = multiprocessing.Pool(self.p.maxcpus)
+            pool = multiprocessing.Pool(self.p.maxcpus or None)
             self.runstrats = list(pool.map(self, iterstrats))
 
         if not self._dooptimize:
