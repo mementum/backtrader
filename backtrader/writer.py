@@ -38,6 +38,52 @@ class WriterBase(six.with_metaclass(MetaParams, object)):
 
 
 class WriterFile(WriterBase):
+    '''
+    The system wide writer class.
+
+    It can be parametrized with:
+
+      - out (default: sys.stdout): output stream to write to
+
+        If a string is passed a filename with the content of the parameter will
+        be used
+
+      - close_out  (default: False)
+
+        If ``out`` is a stream whether it has to be explicitly closed by the
+        writer
+
+      - csv (default: False)
+
+        If a csv stream of the datas, strategies, observers and indicators has
+        to be written to the stream during execution
+
+        Which objects actually go into the csv stream can be controlled with
+        the ``csv`` attribute of each object (defaults to True for ``datas```
+        and ``observers`` / False for ``indicators``)
+
+      - csv_filternan (default: True) wehther "nan" values have to be purged
+        out of the csv stream (replaced by an empty field)
+
+      - csv_counter (default: True) if the writer shall keep and print out a
+        counter of the lines actually output
+
+      - indent (default: 2) indentation spaces for each level
+
+      - separators (default: ['=', '-', '+', '*', '.', '~', '"', '^', '#'])
+
+        Characters used for line separators across section/sub(sub)sections
+
+      - seplen (default: 79)
+
+        total length of a line separator including indentation
+
+      - rounding (default: None)
+
+        Number of decimal places to round floats down to. With None no rounding
+        is performed
+
+    '''
     params = (
         ('out', sys.stdout),
         ('close_out', False),
@@ -47,10 +93,8 @@ class WriterFile(WriterBase):
         ('csv_filternan', True),
         ('csv_counter', True),
 
-        ('preamble', False),
         ('indent', 2),
         ('separators', ['=', '-', '+', '*', '.', '~', '"', '^', '#']),
-        ('bullets', ['-', '*', '+']),
         ('seplen', 79),
         ('rounding', None),
     )
@@ -59,8 +103,6 @@ class WriterFile(WriterBase):
         self._len = itertools.count(1)
         self.headers = list()
         self.values = list()
-        self.preamble = list()
-        self.postamble = list()
 
         # open file if needed
         if isinstance(self.p.out, six.string_types):
@@ -146,7 +188,7 @@ class WriterFile(WriterBase):
                 kline += ' ' + str(val)
                 self.writeline(kline)
             elif isinstance(val, float):
-                if self.p.rounding:
+                if self.p.rounding is not None:
                     val = round(val, self.p.rounding)
                 kline += ' ' + str(val)
                 self.writeline(kline)
