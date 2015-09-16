@@ -326,7 +326,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             analyzer._stop()
 
         # change operators back to stage 1
-        self._stage1()
+        # disabled unless a use case for it is found
+        # self._stage1()
 
     def stop(self):
         '''
