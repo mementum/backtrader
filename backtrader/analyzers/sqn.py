@@ -27,6 +27,23 @@ from backtrader.utils import AutoOrderedDict
 
 
 class SQN(Analyzer):
+    '''
+    SQN or SystemQualityNumber. Defined by Van K. Tharp to categorize trading
+    systems.
+
+      - 1.6 - 1.9 Below average
+      - 2.0 - 2.4 Average
+      - 2.5 - 2.9 Good
+      - 3.0 - 5.0 Excellent
+      - 5.1 - 6.9 Superb
+      - 7.0 -     Holy Grail?
+
+    The formula:
+
+      - SquareRoot(NumberTrades) * Average(TradesProfit) / StdDev(TradesProfit)
+
+    The sqn value should be deemed reliable when the number of trades >= 30
+    '''
     alias = ('SystemQualityNumber',)
 
     def start(self):
