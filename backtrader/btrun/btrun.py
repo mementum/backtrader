@@ -279,14 +279,21 @@ def parse_args(pargs=''):
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    parser.add_argument(
+    group = parser.add_argument_group(title='Data options')
+    # Data options
+    group.add_argument('--data', '-d', action='append', required=True,
+                       help='Data files to be added to the system')
+
+    group = parser.add_argument_group(title='Cerebro options')
+    group.add_argument(
         '--cerebro', '-cer',
-        required=False, default=dict(),
+        metavar='kwargs',
+        required=False, const='', default='', nargs='?',
         help=('The argument can be specified with the following form:\n'
               '\n'
               '  - kwargs\n'
               '\n'
-              '    Example: "preload=1" which set its to True\n'
+              '    Example: "preload=True" which set its to True\n'
               '\n'
               'The passed kwargs will be passed directly to the cerebro\n'
               'instance created for the execution\n'
@@ -301,10 +308,8 @@ def parse_args(pargs=''):
               '  - writer (default False)\n')
     )
 
-    group = parser.add_argument_group(title='Data options')
-    # Data options
-    group.add_argument('--data', '-d', action='append', required=True,
-                       help='Data files to be added to the system')
+    group.add_argument('--nostdstats', action='store_true',
+                       help='Disable the standard statistics observers')
 
     datakeys = list(DATAFORMATS.keys())
     group.add_argument('--csvformat', '-c', required=False,
@@ -322,6 +327,7 @@ def parse_args(pargs=''):
     group.add_argument(
         '--strategy', '-st', dest='strategies',
         action='append', required=False,
+        metavar='module:name:kwargs',
         help=('This option can be specified multiple times.\n'
               '\n'
               'The argument can be specified with the following form:\n'
@@ -345,12 +351,10 @@ def parse_args(pargs=''):
 
     # Observers
     group = parser.add_argument_group(title='Observers and statistics')
-    group.add_argument('--nostdstats', action='store_true',
-                       help='Disable the standard statistics observers')
-
     group.add_argument(
         '--observer', '-ob', dest='observers',
         action='append', required=False,
+        metavar='module:name:kwargs',
         help=('This option can be specified multiple times.\n'
               '\n'
               'The argument can be specified with the following form:\n'
@@ -376,6 +380,7 @@ def parse_args(pargs=''):
     group.add_argument(
         '--analyzer', '-an', dest='analyzers',
         action='append', required=False,
+        metavar='module:name:kwargs',
         help=('This option can be specified multiple times.\n'
               '\n'
               'The argument can be specified with the following form:\n'
