@@ -11,23 +11,44 @@ that bactrader is a *backtesting* platform intented to check trading algorithms
 (hence is an *algotrading* platform), automating the use of backtrader was an
 obvious goal.
 
-``backtrader`` contains the ``bt-run.py`` script which automates most tasks and
-will be installed along ``backtrader`` as part of a regular package.
+When installed ``backtrader`` provides 2 entry points in the form of
+scripts/executables which which automates most tasks:
 
-``bt-run.py`` allows the end user to:
+  - ``bt-run-py`` (script)
+
+    This was the original script which now relies completely on the internal
+    ``backtrader`` call named after the executable below
+
+  - ``btrun`` (executable)
+
+    Entry point created by ``setuptools`` during packaging. The executable
+    offers advantages under Windows where in theory no errors about "path/file
+    not found" will not happen.
+
+The description below applies equally to both tools.
+
+``btrun`` allows the end user to:
 
   - Say which datas have to be loaded
   - Set the format to load the datas
   - Specify the date range for the datas
-  - Disable standard observers
+  - Pass parameters to Cerebro
+    - Disable standard observers
+
+      This was an original extra switch before the "Cerebro" parameters were
+      implemented. As such and if a parameter to cerebro with regards to
+      Standard Observers is passed, this will be ignored (parameter ``stdstats``
+      to Cerebro)
+
   - Load one or more observers (example: DrawDown) from the built-in ones or
     from a python module
   - Set the cash and commission scheme parameters for the broker (commission,
     margin, mult)
   - Enable plotting, controlling the amount of charts and style to present the
     data
+  - Add a parametrized writer to the system
 
-And finally:
+And finally what should be the core competence:
 
   - Load a strategy (a built-in one or from a Python module)
   - Pass parameters to the loaded strategy
@@ -50,9 +71,9 @@ Let's consider the following strategy which:
 Executing the strategy with the usual testing sample is easy:
 easy::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-            --strategy mymod.py
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --strategy mymod.py
 
 The chart output
 
@@ -77,10 +98,10 @@ Same strategy but:
 
 The command line::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-            --plot \
-            --strategy mymod.py:period=50
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --plot \
+        --strategy mymod.py:period=50
 
 The chart output.
 
@@ -115,10 +136,10 @@ The code
 
 Standard execution::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-	    --plot \
-            --strategy :SMA_CrossOver
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --plot \
+        --strategy :SMA_CrossOver
 
 Notice the ':'. The standard notation (see below) to load a strategy is:
 
@@ -151,14 +172,14 @@ The output.
 
 One last example adding commission schemes, cash and changing the parameters::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-            --plot \
-            --cash 20000 \
-            --commission 2.0 \
-            --mult 10 \
-            --margin 2000 \
-            --strategy :SMA_CrossOver:fast=5,slow=20
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --plot \
+        --cash 20000 \
+        --commission 2.0 \
+        --mult 10 \
+        --margin 2000 \
+        --strategy :SMA_CrossOver:fast=5,slow=20
 
 The output.
 
@@ -183,14 +204,14 @@ Analyzers, Observers and Indicators will be automatically injected in the strate
 
 An example::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-            --cash 20000 \
-            --commission 2.0 \
-            --mult 10 \
-            --margin 2000 \
-            --nostdstats \
-	    --observer :Broker
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --cash 20000 \
+        --commission 2.0 \
+        --mult 10 \
+        --margin 2000 \
+        --nostdstats \
+	--observer :Broker
 
 This will do not much but serves the purpose:
 
@@ -199,18 +220,31 @@ This will do not much but serves the purpose:
     BuySell, Trades)
   - A ``Broker`` observer is added manually
 
+As mentioned above, the ``nostdstats`` is a legacy parameter. Newer versions of
+``btrun`` can pass parameters directly to ``Cerebro``. An equivalent invocation
+would be::
+
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+        --cash 20000 \
+        --commission 2.0 \
+        --mult 10 \
+        --margin 2000 \
+        --cerebro stdstats=False \
+	--observer :Broker
+
 Adding Analyzers
 ================
 
-``bt-run.py`` also supports adding ``Analyzers`` with the same syntax used for
-the strategies to choose between internal/external analyzers.
+``btrun`` also supports adding ``Analyzers`` with the same syntax used for the
+strategies to choose between internal/external analyzers.
 
 Example with a ``SharpeRatio`` analysis for the years 2005-2006::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2005-2006-day-001.txt \
-            --strategy :SMA_CrossOver \
-            --analyzer :SharpeRatio
+  btrun --csvformat btcsv \
+        --data ../../datas/2005-2006-day-001.txt \
+        --strategy :SMA_CrossOver \
+        --analyzer :SharpeRatio
 
 The console output is **nothing**.
 
@@ -220,14 +254,20 @@ If a printout of the ``Analyzer`` results is wished, it must be specified with:
     has overriden the proper method)
   - ``-ppranalyzer`` which uses the ``pprint`` module to print the results
 
+.. note::
+
+   The two printing options were implemented before ``writers`` were part of
+   backtrader. Adding a writer without csv output will achieve the same (and the
+   output has been improved)
+
 Extending the example from above::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2005-2006-day-001.txt \
-            --strategy :SMA_CrossOver \
-	    --analyzer :SharpeRatio \
-	    --plot \
-	    --pranalyzer
+  btrun --csvformat btcsv \
+        --data ../../datas/2005-2006-day-001.txt \
+        --strategy :SMA_CrossOver \
+	--analyzer :SharpeRatio \
+	--plot \
+	--pranalyzer
 
   ====================
   == Analyzers
@@ -245,10 +285,76 @@ cannot be plotted, they aren't lines objects)
 
 .. thumbnail:: bt-run-sma-crossover-sharpe.png
 
+The same example but using a ``writer`` argument::
+
+  btrun --csvformat btcsv \
+        --data ../../datas/2005-2006-day-001.txt \
+        --strategy :SMA_CrossOver \
+	--analyzer :SharpeRatio \
+	--plot \
+	--writer
+
+  ===============================================================================
+  Cerebro:
+    -----------------------------------------------------------------------------
+    - Datas:
+      +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      - Data0:
+        - Name: 2005-2006-day-001
+        - Timeframe: Days
+        - Compression: 1
+    -----------------------------------------------------------------------------
+    - Strategies:
+      +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      - SMA_CrossOver:
+        *************************************************************************
+        - Params:
+          - fast: 10
+          - slow: 30
+          - _movav: SMA
+        *************************************************************************
+        - Indicators:
+          .......................................................................
+          - SMA:
+            - Lines: sma
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            - Params:
+              - period: 30
+          .......................................................................
+          - CrossOver:
+            - Lines: crossover
+            - Params: None
+        *************************************************************************
+        - Observers:
+          .......................................................................
+          - Broker:
+            - Lines: cash, value
+            - Params: None
+          .......................................................................
+          - BuySell:
+            - Lines: buy, sell
+            - Params: None
+          .......................................................................
+          - Trades:
+            - Lines: pnlplus, pnlminus
+            - Params: None
+        *************************************************************************
+        - Analyzers:
+          .......................................................................
+          - Value:
+            - Begin: 10000.0
+            - End: 10496.68
+          .......................................................................
+          - SharpeRatio:
+            - Params: None
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            - Analysis:
+              - sharperatio: 11.6473326097
+
 Adding Indicators and Observers
 ===============================
 
-As with ``Strategies`` and ``Analyzers`` bt-run can also add:
+As with ``Strategies`` and ``Analyzers`` btrun can also add:
 
   - ``Indicators``
 
@@ -262,12 +368,12 @@ The syntax is exactly the same as seen above when adding a ``Broker`` observer.
 Let's repeat the example but adding a ``Stochastic``, the ``Broker`` and having
 a look at the plot (we'll change some parameters)::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-	    --nostdstats \
-	    --observer :Broker \
-	    --indicator :Stochastic:period_dslow=5 \
-	    --plot
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+	--nostdstats \
+	--observer :Broker \
+	--indicator :Stochastic:period_dslow=5 \
+	--plot
 
 The chart::
 
@@ -288,12 +394,12 @@ option
 
 The invocation::
 
-  bt-run.py --csvformat btcsv \
-            --data ../../datas/2006-day-001.txt \
-	    --nostdstats \
-	    --observer :Broker \
-	    --indicator :Stochastic:period_dslow=5 \
-	    --plot style=\"candle\"
+  btrun --csvformat btcsv \
+        --data ../../datas/2006-day-001.txt \
+	--nostdstats \
+	--observer :Broker \
+	--indicator :Stochastic:period_dslow=5 \
+	--plot style=\"candle\"
 
 .. note::
 
@@ -312,20 +418,39 @@ Usage of the script
 
 Directly from the script::
 
-  $ bt-run.py --help
-  usage: bt-run.py [-h] --data DATA
-                   [--csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}]
-                   [--fromdate FROMDATE] [--todate TODATE]
-                   [--strategy STRATEGIES] [--nostdstats] [--observer OBSERVERS]
-                   [--analyzer ANALYZERS] [--pranalyzer | --ppranalyzer]
-                   [--indicator module:name:kwargs] [--cash CASH]
-                   [--commission COMMISSION] [--margin MARGIN] [--mult MULT]
-                   [--plot [kwargs]]
+  $ btrun --help
+  usage: btrun-script.py [-h] [--cerebro [CEREBRO]] --data DATA
+                         [--csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}]
+                         [--fromdate FROMDATE] [--todate TODATE]
+                         [--strategy STRATEGIES] [--nostdstats]
+                         [--observer OBSERVERS] [--analyzer ANALYZERS]
+                         [--pranalyzer | --ppranalyzer]
+                         [--indicator module:name:kwargs] [--writer [kwargs]]
+                         [--cash CASH] [--commission COMMISSION]
+                         [--margin MARGIN] [--mult MULT] [--plot [kwargs]]
 
   Backtrader Run Script
 
   optional arguments:
     -h, --help            show this help message and exit
+    --cerebro [CEREBRO], -cer [CEREBRO]
+                          The argument can be specified with the following form:
+
+                            - kwargs
+
+                              Example: "preload=1" which set its to True
+
+                          The passed kwargs will be passed directly to the cerebro
+                          instance created for the execution
+
+                          The available kwargs to cerebro are:
+                            - preload (default: True)
+                            - runonce (default: True)
+                            - maxcpus (default: None)
+                            - stdstats (default: True)
+                            - exactbars (default: )
+                            - preload (default: True)
+                            - writer (default False)
     --pranalyzer, -pralyzer
                           Automatically print analyzers
     --ppranalyzer, -ppralyzer
@@ -435,6 +560,22 @@ Directly from the script::
 
                             - module or module::kwargs
 
+  Writers:
+    --writer [kwargs], -wr [kwargs]
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - kwargs
+
+                              Example: a=1,b=2
+
+                          kwargs is optional
+
+                          It creates a system wide writer which outputs run data
+
+                          Please see the documentation for the available kwargs
+
   Cash and Commission Scheme Args:
     --cash CASH, -cash CASH
                           Cash to set to the broker
@@ -447,6 +588,6 @@ Directly from the script::
 
 And the code:
 
-.. literalinclude:: ../../tools/bt-run.py
+.. literalinclude:: ../../backtrader/btrun/btrun.py
    :language: python
    :lines: 21-
