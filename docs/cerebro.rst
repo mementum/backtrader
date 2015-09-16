@@ -45,6 +45,8 @@ Reference
 
    .. automethod:: addanalyzer
 
+   .. automethod:: addwriter
+
    .. automethod:: run
 
    .. automethod:: setbroker
