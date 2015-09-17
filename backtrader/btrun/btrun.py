@@ -213,7 +213,7 @@ def loadmodule2(modpath, modname):
 
     try:
         mod = imp.load_source(modname, modpath)
-    except Exception, e:
+    except Exception as e:
         return (None, e)
 
     return (mod, None)
@@ -225,7 +225,7 @@ def loadmodule3(modpath, modname):
     try:
         loader = importlib.machinery.SourceFileLoader(modname, modpath)
         mod = loader.load_module()
-    except Exception, e:
+    except Exception as e:
         return (None, e)
 
     return (mod, None)
