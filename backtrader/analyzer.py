@@ -25,7 +25,7 @@ import pprint as pp
 
 import six
 
-from backtrader import MetaParams, Strategy
+from backtrader import MetaParams, Strategy, WriterFile
 import backtrader.metabase as metabase
 
 
@@ -141,7 +141,12 @@ class Analyzer(six.with_metaclass(MetaAnalyzer, object)):
         return dict()
 
     def print(self, *args, **kwargs):
-        self.pprint(*args, **kwargs)
+        writer = WriterFile(*args, **kwargs)
+        writer.start()
+        pdct = dict()
+        pdct[self.__class__.__name__] = self.get_analysis()
+        writer.writedict(pdct)
+        writer.stop()
 
     def pprint(self, *args, **kwargs):
         pp.pprint(self.get_analysis(), *args, **kwargs)
