@@ -238,6 +238,7 @@ class Order(six.with_metaclass(MetaParams, object)):
         return self.ref != other.ref
 
     def __init__(self):
+        self.broker = None
         self.ref = next(self.refbasis)
 
         if self.params.exectype is None:
@@ -294,11 +295,19 @@ class Order(six.with_metaclass(MetaParams, object)):
     def issell(self):
         return isinstance(self, SellOrder)
 
-    def submit(self):
+    def submit(self, broker=None):
         self.status = Order.Submitted
+        self.broker = broker
 
-    def accept(self):
+    def accept(self, broker=None):
         self.status = Order.Accepted
+        self.broker = broker
+
+    def brokerstatus(self):
+        if broker:
+            return broker.orderstatus(self)
+
+        return self.status
 
     def cancel(self):
         self.status = Order.Canceled
