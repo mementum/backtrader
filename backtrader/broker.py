@@ -105,6 +105,14 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
     def getposition(self, data):
         return self.positions[data]
 
+    def orderstatus(self, order):
+        try:
+            o = self.orders.index(order)
+        except ValueError:
+            o = order
+
+        return o.status
+
     def submit(self, order):
         if self.p.checksubmit:
             order.submit()

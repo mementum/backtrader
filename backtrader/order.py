@@ -340,7 +340,8 @@ class Order(six.with_metaclass(MetaParams, object)):
         self.executed.dt = self.data.datetime[0]
 
     def alive(self):
-        return self.status in [Order.Partial, Order.Accepted]
+        return self.status in [Order.Created, Order.Submitted,
+                               Order.Partial, Order.Accepted]
 
 
 class BuyOrder(Order):
