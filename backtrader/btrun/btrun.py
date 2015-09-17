@@ -98,12 +98,12 @@ def btrun(pargs=''):
             print('== Analyzers')
             print('====================')
             for name, analyzer in runst.analyzers.getitems():
-                print('##########')
-                print(name)
-                print('##########')
                 if args.pranalyzer:
                     analyzer.print()
                 elif args.ppranalyzer:
+                    print('##########')
+                    print(name)
+                    print('##########')
                     analyzer.pprint()
 
     if args.plot:
