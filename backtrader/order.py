@@ -25,7 +25,7 @@ import copy
 import datetime
 import itertools
 
-import six
+from .utils.py3 import range, with_metaclass
 
 from .metabase import MetaParams
 from .utils import date2num
@@ -170,7 +170,7 @@ class OrderData(object):
         self.pprice = exbit.pprice
 
 
-class Order(six.with_metaclass(MetaParams, object)):
+class Order(with_metaclass(MetaParams, object)):
     '''
     Class which holds creation/execution data and type of oder.
 

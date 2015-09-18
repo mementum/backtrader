@@ -25,7 +25,7 @@ import argparse
 import datetime
 import time
 
-from six.moves import xrange
+from backtrader.utils.py3 import range
 
 import backtrader as bt
 import backtrader.indicators as btind
@@ -57,10 +57,10 @@ def runstrat():
     # Add a strategy
     cerebro.optstrategy(
         OptimizeStrategy,
-        smaperiod=xrange(args.ma_low, args.ma_high),
-        macdperiod1=xrange(args.m1_low, args.m1_high),
-        macdperiod2=xrange(args.m2_low, args.m2_high),
-        macdperiod3=xrange(args.m3_low, args.m3_high),
+        smaperiod=range(args.ma_low, args.ma_high),
+        macdperiod1=range(args.m1_low, args.m1_high),
+        macdperiod2=range(args.m2_low, args.m2_high),
+        macdperiod3=range(args.m3_low, args.m3_high),
     )
 
     # Get the dates from the args

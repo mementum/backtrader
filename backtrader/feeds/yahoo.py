@@ -25,8 +25,8 @@ import collections
 import datetime
 import itertools
 
-import six
-from six.moves import urllib
+from ..utils.py3 import StringIO, urlopen
+
 
 from .. import feed
 from ..utils import date2num
@@ -65,7 +65,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         for line in self.f:
             dq.appendleft(line)
 
-        f = six.StringIO()
+        f = StringIO()
         f.writelines(dq)
         self.f.close()
         self.f = f
@@ -163,7 +163,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         url += '&ignore=.csv'
 
         try:
-            datafile = urllib.request.urlopen(url)
+            datafile = urlopen(url)
         except IOError as e:
             self.error = str(e)
             # leave us empty
@@ -175,7 +175,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         if self.params.buffered:
             # buffer everything from the socket into a local buffer
-            f = six.StringIO(datafile.read())
+            f = StringIO(datafile.read())
             datafile.close()
         else:
             f = datafile

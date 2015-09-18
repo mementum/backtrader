@@ -29,6 +29,8 @@ import random
 import string
 import sys
 
+from backtrader.utils.py3 import range
+
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btinds
@@ -311,7 +313,7 @@ def parse_args(pargs=''):
     group.add_argument('--nostdstats', action='store_true',
                        help='Disable the standard statistics observers')
 
-    datakeys = list(DATAFORMATS.keys())
+    datakeys = list(DATAFORMATS)
     group.add_argument('--csvformat', '-c', required=False,
                        default='btcsv', choices=datakeys,
                        help='CSV Format')

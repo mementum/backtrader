@@ -25,8 +25,7 @@ import collections
 import itertools
 import multiprocessing
 
-import six
-from six.moves import map, xrange, zip
+from .utils.py3 import map, range, zip, with_metaclass, string_types
 
 from .broker import BrokerBack
 from .metabase import MetaParams
@@ -36,7 +35,7 @@ from .import num2date
 from .utils import OrderedDict
 
 
-class Cerebro(six.with_metaclass(MetaParams, object)):
+class Cerebro(with_metaclass(MetaParams, object)):
     '''
     Params:
 
@@ -103,7 +102,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         '''
         niterable = list()
         for elem in iterable:
-            if isinstance(elem, six.string_types):
+            if isinstance(elem, string_types):
                 elem = (elem,)
             elif not isinstance(elem, collections.Iterable):
                 elem = (elem,)
@@ -171,7 +170,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
 
         or
 
-          - cerebro.optstrategy(MyStrategy, period=xrange(15, 25))
+          - cerebro.optstrategy(MyStrategy, period=range(15, 25))
 
         This will execute MyStrategy with ``period`` values 15 -> 25 (25 not
         included in the lot)
@@ -194,7 +193,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         args = self.iterize(args)
         optargs = itertools.product(*args)
 
-        optkeys = list(kwargs.keys())  # py2/3
+        optkeys = list(kwargs)
 
         vals = self.iterize(kwargs.values())
         optvals = itertools.product(*vals)
@@ -469,7 +468,7 @@ class Cerebro(six.with_metaclass(MetaParams, object)):
         # here again, because pointers are at 0
         data0 = self.datas[0]
         datas = self.datas[1:]
-        for i in xrange(data0.buflen()):
+        for i in range(data0.buflen()):
             data0.advance()
             for data in datas:
                 data.advance(datamaster=data0)

@@ -24,6 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 import math
 import operator
 
+from .utils.py3 import map
+
 
 def average(x):
     return math.fsum(x) / len(x)

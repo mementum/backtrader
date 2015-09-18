@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import datetime
 import os.path
 
-import six
+from .utils.py3 import with_metaclass, bytes
 
 from . import dataseries
 from . import metabase
@@ -87,8 +87,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         return _obj, args, kwargs
 
 
-class AbstractDataBase(six.with_metaclass(MetaAbstractDataBase,
-                                          dataseries.OHLCDateTime)):
+class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
+                                      dataseries.OHLCDateTime)):
     params = (('dataname', None),
               ('fromdate', datetime.datetime.min),
               ('todate', datetime.datetime.max),
@@ -224,7 +224,7 @@ class DataBase(AbstractDataBase):
     pass
 
 
-class FeedBase(six.with_metaclass(metabase.MetaParams, object)):
+class FeedBase(with_metaclass(metabase.MetaParams, object)):
     params = () + DataBase.params._gettuple()
 
     def __init__(self):
@@ -269,7 +269,7 @@ class MetaCSVDataBase(DataBase.__class__):
         return _obj, args, kwargs
 
 
-class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
+class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
     '''
     Base class for classes implementing CSV DataFeeds
 
@@ -296,6 +296,8 @@ class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
         if self.p.headers:
             self.f.readline()  # skip the headers
 
+        self.separator = bytes(self.p.separator)
+
     def stop(self):
         if self.f is not None:
             self.f.close()
@@ -311,8 +313,8 @@ class CSVDataBase(six.with_metaclass(MetaCSVDataBase, DataBase)):
         if not line:
             return False
 
-        line = line.rstrip(six.b('\r\n'))
-        linetokens = line.split(six.b(self.p.separator))
+        line = line.rstrip(b'\r\n')
+        linetokens = line.split(self.separator)
         return self._loadline(linetokens)
 
 

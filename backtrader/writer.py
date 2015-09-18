@@ -25,15 +25,14 @@ import collections
 import itertools
 import sys
 
-import six
-from six.moves import map
+from .utils.py3 import map, with_metaclass, string_types, integer_types
 
 from backtrader import MetaParams, Strategy
 from backtrader.utils import OrderedDict
 from backtrader import LineSeries
 
 
-class WriterBase(six.with_metaclass(MetaParams, object)):
+class WriterBase(with_metaclass(MetaParams, object)):
     pass
 
 
@@ -105,7 +104,7 @@ class WriterFile(WriterBase):
         self.values = list()
 
         # open file if needed
-        if isinstance(self.p.out, six.string_types):
+        if isinstance(self.p.out, py3.string_types):
             self.out = open(self.p.out, 'wb')
             self.close_out = True
         else:
@@ -166,7 +165,7 @@ class WriterFile(WriterBase):
             self.writelineseparator(level)
 
         indent0 = level * self.p.indent
-        for key, val in six.iteritems(dct):
+        for key, val in dct.items():
             kline = ' ' * indent0
             if recurse:
                 kline += '- '
@@ -181,10 +180,10 @@ class WriterFile(WriterBase):
             if sclass:
                 kline += ' ' + val.__name__
                 self.writeline(kline)
-            elif isinstance(val, six.string_types):
+            elif isinstance(val, string_types):
                 kline += ' ' + val
                 self.writeline(kline)
-            elif isinstance(val, six.integer_types):
+            elif isinstance(val, integer_types):
                 kline += ' ' + str(val)
                 self.writeline(kline)
             elif isinstance(val, float):

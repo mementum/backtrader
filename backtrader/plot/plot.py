@@ -26,8 +26,7 @@ import collections
 
 import math
 
-import six
-from six.moves import xrange
+from ..utils.py3 import range, with_metaclass
 
 import matplotlib.dates as mdates
 import matplotlib.font_manager as mfontmgr
@@ -90,7 +89,7 @@ class PInfo(object):
         return self.zorder[ax]
 
 
-class Plot(six.with_metaclass(MetaParams, object)):
+class Plot(with_metaclass(MetaParams, object)):
     params = (('scheme', PlotScheme()),)
 
     def __init__(self, **kwargs):
@@ -120,7 +119,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
         slen = len(strategy)
         d, m = divmod(slen, numfigs)
         pranges = list()
-        for i in xrange(numfigs):
+        for i in range(numfigs):
             a = d * i
             if i == (numfigs - 1):
                 d += m  # add remainder to last stint
@@ -128,7 +127,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
 
             pranges.append([a, b, d])
 
-        for numfig in xrange(numfigs):
+        for numfig in range(numfigs):
             # prepare a figure
             fig = self.pinf.newfig(numfig)
 
@@ -140,7 +139,7 @@ class Plot(six.with_metaclass(MetaParams, object)):
             self.pinf.xreal = strategy._clock.datetime.plot(
                 self.pinf.pstart, self.pinf.psize)
             self.pinf.xlen = len(self.pinf.xreal)
-            self.pinf.x = list(xrange(self.pinf.xlen))
+            self.pinf.x = list(range(self.pinf.xlen))
 
             # Do the plotting
             # Things that go always at the top (observers)

@@ -20,7 +20,7 @@
 ###############################################################################
 from collections import OrderedDict
 
-import six
+import sys
 
 from docutils import nodes
 from docutils.parsers.rst import Directive
@@ -30,6 +30,15 @@ from sphinx.util.nodes import nested_parse_with_titles
 
 from backtrader import Indicator, Strategy, AutoInfoClass
 import backtrader.feed as feed
+
+
+PY2 = sys.version_info.major == 2
+
+if PY2:
+    string_types = str, unicode
+else:
+    string_types = str,
+
 
 
 class BacktraderRef(nodes.General, nodes.Element):
@@ -63,7 +72,7 @@ class BacktraderRefDirective(Directive):
                 inddoc.insert(0, u'Alias:')
                 purgedaliases = []
                 for indalias in indaliases:
-                    if not isinstance(indalias, six.string_types):
+                    if not isinstance(indalias, string_types):
                         indalias = indalias[0]
                     purgedaliases.append(indalias)
                 aliastxt = u'  - %s' % ', '.join(purgedaliases)

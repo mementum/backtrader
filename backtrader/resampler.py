@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import math
 
-from six.moves import xrange
+from .utils.py3 import range
 
 from . import feed
 from . import TimeFrame
@@ -207,7 +207,7 @@ class DataResampler(BaseResampler):
             distance = len(self.data) - self.lastbar
             if distance:
                 # someone has moved the pointer ...
-                for i in xrange(-distance, 1):
+                for i in range(-distance, 1):
                     if self._baroverlimit(i):
                         return self._havebar()
 
