@@ -8,10 +8,7 @@ python:
 
 # command to install dependencies
 # install:
-#  - pip install nose-exclude
+#  - pip install your_package
 
 # command to run tests
-# script: cd tests && nosetests -v -v
-# script: nosetests -v -v --exclude-dir=backtrader/plot
-# script: cd tests && nosetests -v -v --exclude-dir=backtrader/plot
 script: cd tests && nosetests -v -v
