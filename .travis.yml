@@ -7,9 +7,10 @@ python:
   - "3.5"
 
 # command to install dependencies
-install:
-  - pip install nose-exclude
+# install:
+#  - pip install nose-exclude
 
 # command to run tests
 # script: cd tests && nosetests -v -v
-script: nosetests -v -v --exclude-dir=backtrader/plot
+# script: nosetests -v -v --exclude-dir=backtrader/plot
+script: cd tests && nosetests -v -v --exclude-dir=backtrader/plot
