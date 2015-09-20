@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from six.moves import xrange, zip
+from ..utils.py3 import range, zip
 
 import matplotlib.collections as mcol
 import matplotlib.colors as mcolors
@@ -105,7 +105,7 @@ class CandlestickPlotHandler(object):
         height = handlebox.height
 
         # Generate the x axis coordinates (handlebox based)
-        xs = [x0 + width * (i + 0.5) for i in xrange(len(self.legend_opens))]
+        xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_opens))]
 
         barcol, tickcol = self.barcollection(
             xs,
@@ -285,7 +285,7 @@ class VolumePlotHandler(object):
         height = handlebox.height
 
         # Generate the x axis coordinates (handlebox based)
-        xs = [x0 + width * (i + 0.5) for i in xrange(len(self.legend_vols))]
+        xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_vols))]
 
         barcol = self.barcollection(
             xs, self.legend_opens, self.legend_closes, self.legend_vols,
@@ -400,7 +400,7 @@ class OHLCPlotHandler(object):
         height = handlebox.height
 
         # Generate the x axis coordinates (handlebox based)
-        xs = [x0 + width * (i + 0.5) for i in xrange(len(self.legend_opens))]
+        xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_opens))]
 
         barcol, opencol, closecol = self.barcollection(
             xs,
@@ -537,7 +537,7 @@ class LineOnClosePlotHandler(object):
         height = handlebox.height
 
         # Generate the x axis coordinates (handlebox based)
-        xs = [x0 + width * (i + 0.5) for i in xrange(len(self.legend_closes))]
+        xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_closes))]
 
         linecol, = self.barcollection(
             xs, self.legend_closes,

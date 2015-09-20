@@ -21,10 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from collections import OrderedDict
 import itertools
 import sys
 
-from .utils import OrderedDict
+from .utils.py3 import zip
 
 
 def findbases(kls, topclass):
@@ -244,9 +245,6 @@ class ItemCollection(object):
 
     def __getitem__(self, key):
         return self._items[key]
-
-    def getitems(self):
-        return self._items
 
     def getnames(self):
         return self._names

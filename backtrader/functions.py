@@ -24,10 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 import functools
 import math
 
-from six.moves import xrange
-
 from .linebuffer import LineActions
-from .utils import cmp
+from .utils.py3 import cmp, range
 
 
 class Logic(LineActions):
@@ -51,7 +49,7 @@ class Cmp(Logic):
         srca = self.a.array
         srcb = self.b.array
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = cmp(srca[i], srcb[i])
 
 
@@ -72,7 +70,7 @@ class If(Logic):
         srcb = self.b.array
         cond = self.cond.array
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = srca[i] if cond[i] else srcb[i]
 
 
@@ -86,7 +84,7 @@ class MultiLogic(Logic):
         arrays = [arg.array for arg in self.args]
         flogic = self.flogic
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = flogic([arr[i] for arr in arrays])
 
 

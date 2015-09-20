@@ -80,12 +80,12 @@ setuptools.setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
 
         # Operating Systems on which it runs
         'Operating System :: OS Independent',
@@ -104,7 +104,7 @@ setuptools.setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['six'],
+    # install_requires=['six'],
 
     # List additional groups of dependencies here
     # (e.g. development dependencies).
@@ -129,5 +129,7 @@ setuptools.setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     # entry_points={'console_scripts': ['sample=sample:main',],},
+    entry_points={'console_scripts': ['btrun=backtrader.btrun:btrun']},
+
     scripts=['tools/bt-run.py'],
 )

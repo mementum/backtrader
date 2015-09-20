@@ -24,10 +24,10 @@ from __future__ import (absolute_import, division, print_function,
 import itertools
 import time
 
-from six.moves import xrange
 
 import testcommon
 
+from backtrader.utils.py3 import range
 import backtrader as bt
 import backtrader.indicators as btind
 
@@ -116,7 +116,7 @@ def test_run(main=False):
     testcommon.runtest(datas,
                        TestStrategy,
                        optimize=True,
-                       period=xrange(5, 45),
+                       period=range(5, 45),
                        printdata=main,
                        printops=main,
                        plot=False)

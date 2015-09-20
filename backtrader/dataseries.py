@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from six.moves import xrange
+from .utils.py3 import range
 
 from .lineseries import LineSeries
 from .import num2date
@@ -69,7 +69,7 @@ class DataSeries(LineSeries):
         for line in self.LineOrder[1:]:
             values.append(self.lines[line][0])
 
-        for i in xrange(len(self.LineOrder), self.lines.size()):
+        for i in range(len(self.LineOrder), self.lines.size()):
             values.append(self.lines[i][0])
 
         return values

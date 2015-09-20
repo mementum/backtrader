@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import six
+from ..utils.py3 import with_metaclass
 
 from . import Indicator
 
@@ -86,6 +86,6 @@ class MetaMovAvBase(Indicator.__class__):
         return cls
 
 
-class MovingAverageBase(six.with_metaclass(MetaMovAvBase, Indicator)):
+class MovingAverageBase(with_metaclass(MetaMovAvBase, Indicator)):
     params = (('period', 30),)
     plotinfo = dict(subplot=False)

@@ -21,13 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-
-import six
-
+from .utils.py3 import with_metaclass
 from .metabase import MetaParams
 
 
-class CommissionInfo(six.with_metaclass(MetaParams)):
+class CommissionInfo(with_metaclass(MetaParams)):
     '''CommissionInfo
 
     This class tries to cover commision schemes for elements which have a cost

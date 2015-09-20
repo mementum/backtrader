@@ -31,14 +31,9 @@ lines at once.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import collections
-import operator
 import sys
 
-import six
-from six.moves import xrange
-
-from .utils import OrderedDict
+from .utils.py3 import map, range, string_types, with_metaclass
 
 from .linebuffer import LineBuffer, LineActions, LinesOperation, LineDelay, NAN
 from .lineroot import LineSingle, LineMultiple
@@ -140,7 +135,7 @@ class Lines(object):
 
         l2add = enumerate(lines2add, start=len(cls._getlines()))
         for line, linealias in l2add:
-            if not isinstance(linealias, six.string_types):
+            if not isinstance(linealias, string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
 
@@ -174,10 +169,6 @@ class Lines(object):
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
-            if not isinstance(linealias, six.string_types):
-                # a tuple and not just a string - typecode is additional arg
-                kwargs['typecode'] = linealias[1]
-
             self.lines.append(LineBuffer(**kwargs))
 
         # Add the required extralines
@@ -338,8 +329,6 @@ class MetaLineSeries(LineMultiple.__class__):
         # Before doing plotline newlines have been added and no plotlineinfo
         # is there add a default
         for line in newlines:
-            if not isinstance(line, six.string_types):
-                line = line[0]
             newplotlines.setdefault(line, dict())
 
         morebasesplotlines = \
@@ -353,7 +342,7 @@ class MetaLineSeries(LineMultiple.__class__):
                       '__module__': cls.__module__,
                       'aliased': cls.__name__}
 
-            if not isinstance(alias, six.string_types):
+            if not isinstance(alias, string_types):
                 # a tuple or list was passed, 1st is name, 2nd plotname
                 aliasplotname = alias[1]
                 alias = alias[0]
@@ -404,7 +393,7 @@ class MetaLineSeries(LineMultiple.__class__):
         return _obj, args, kwargs
 
 
-class LineSeries(six.with_metaclass(MetaLineSeries, LineMultiple)):
+class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     csv = True
 
     @property

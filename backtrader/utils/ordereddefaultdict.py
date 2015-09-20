@@ -25,6 +25,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from collections import OrderedDict
 
+from .py3 import iteritems
+
 
 class OrderedDefaultdict(OrderedDict):
     def __init__(self, *args, **kwargs):
@@ -45,4 +47,4 @@ class OrderedDefaultdict(OrderedDict):
 
     def __reduce__(self):  # optional, for pickle support
         args = (self.default_factory,) if self.default_factory else ()
-        return self.__class__, args, None, None, self.iteritems()
+        return self.__class__, args, None, None, iteritems(self)

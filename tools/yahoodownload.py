@@ -30,8 +30,16 @@ import logging
 import sys
 
 
-import six
-from six.moves import urllib
+PY2 = sys.version_info.major == 2
+if PY2:
+    from urllib2 import urlopen
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+else:
+    from urllib.request import urlopen
+    from io import StringIO
 
 
 logging.basicConfig(
@@ -65,7 +73,7 @@ class YahooDownload(object):
         self.headers = self.datafile.readline()  # skip the headers
 
         # buffer everything from the socket into a local buffer
-        f = six.StringIO(self.datafile.read())
+        f = StringIO(self.datafile.read())
         self.datafile.close()
         self.datafile = f
 
@@ -75,7 +83,7 @@ class YahooDownload(object):
             for line in self.datafile:
                 dq.appendleft(line)
 
-            f = six.StringIO()
+            f = StringIO()
             f.writelines(dq)
 
             self.datafile.close()

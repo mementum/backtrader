@@ -21,12 +21,12 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import six
+from .utils.py3 import with_metaclass
 
 from .metabase import MetaParams
 
 
-class SizerBase(six.with_metaclass(MetaParams, object)):
+class SizerBase(with_metaclass(MetaParams, object)):
 
     params = (('broker', None,),)
 

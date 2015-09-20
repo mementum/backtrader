@@ -111,7 +111,7 @@ class Position(object):
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size > 0:  # reduced position
-                opened, closed = 0, -size
+                opened, closed = 0, size
                 # self.price = self.price
 
             else:  # self.size < 0 # reversed position form plus to minus
@@ -125,7 +125,7 @@ class Position(object):
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size < 0:  # reduced position
-                opened, closed = 0, -size
+                opened, closed = 0, size
                 # self.price = self.price
 
             else:  # self.size > 0 - reversed position from minus to plus

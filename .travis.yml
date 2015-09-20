@@ -4,12 +4,11 @@ python:
   - "3.2"
   - "3.3"
   - "3.4"
+  - "3.5"
 
 # command to install dependencies
-install:
-  - pip install six==1.9.0
-  - pip install nose-exclude
+# install:
+#  - pip install your_package
 
 # command to run tests
-# script: cd tests && nosetests -v -v
-script: nosetests -v -v --exclude-dir=backtrader/plot
+script: cd tests && nosetests -v -v

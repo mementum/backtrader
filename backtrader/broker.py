@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 
-import six
+from .utils.py3 import with_metaclass
 
 from .comminfo import CommissionInfo
 from .position import Position
@@ -31,7 +31,7 @@ from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
 
 
-class BrokerBack(six.with_metaclass(MetaParams, object)):
+class BrokerBack(with_metaclass(MetaParams, object)):
 
     params = (
         ('cash', 10000.0),
@@ -44,7 +44,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
         self.init()
 
     def init(self):
-        if None not in self.comminfo.keys():
+        if None not in self.comminfo:
             self.comminfo = dict({None: self.p.commission})
 
         self.startingcash = self.cash = self.p.cash
@@ -95,7 +95,7 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     def getvalue(self, datas=None):
         pos_value = 0.0
-        for data in datas or self.positions.keys():
+        for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
             pos_value += comminfo.getvalue(position, data.close[0])
@@ -104,6 +104,14 @@ class BrokerBack(six.with_metaclass(MetaParams, object)):
 
     def getposition(self, data):
         return self.positions[data]
+
+    def orderstatus(self, order):
+        try:
+            o = self.orders.index(order)
+        except ValueError:
+            o = order
+
+        return o.status
 
     def submit(self, order):
         if self.p.checksubmit:

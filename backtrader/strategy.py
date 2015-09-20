@@ -25,8 +25,7 @@ import collections
 import itertools
 import operator
 
-import six
-from six.moves import filter, map, range
+from .utils.py3 import filter, map, with_metaclass
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
@@ -88,7 +87,7 @@ class MetaStrategy(StrategyBase.__class__):
         return _obj, args, kwargs
 
 
-class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
+class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     '''
     Base class to be subclassed for user defined strategies.
     '''
@@ -326,7 +325,8 @@ class Strategy(six.with_metaclass(MetaStrategy, StrategyBase)):
             analyzer._stop()
 
         # change operators back to stage 1
-        self._stage1()
+        # disabled unless a use case for it is found
+        # self._stage1()
 
     def stop(self):
         '''

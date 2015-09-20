@@ -65,11 +65,11 @@ From pypi:
 
     If `matplotlib` is not installed and you wish to do some plotting
 
+.. note:: The minimum matplotlib version is 1.4.1
+
 From source:
 
   - Place the *backtrader* directory found in the sources inside your project
-
-    One dependency exists: ``six``
 
 Features:
 =========

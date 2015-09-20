@@ -22,8 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-import six
-from six.moves import xrange
+from .utils.py3 import range, with_metaclass
 
 from .lineiterator import LineIterator, IndicatorBase
 from .lineseries import LineSeriesMaker
@@ -80,7 +79,7 @@ class MetaIndicator(IndicatorBase.__class__):
         return _obj, args, kwargs
 
 
-class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
+class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     _ltype = LineIterator.IndType
 
     csv = False
@@ -96,7 +95,7 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
 
     def preonce(self, start, end):
         # generic implementation
-        for i in xrange(start, end):
+        for i in range(start, end):
             for data in self.datas:
                 data.advance()
 
@@ -111,7 +110,7 @@ class Indicator(six.with_metaclass(MetaIndicator, IndicatorBase)):
 
     def once(self, start, end):
         # generic implementation
-        for i in xrange(start, end):
+        for i in range(start, end):
             for data in self.datas:
                 data.advance()
 

@@ -25,31 +25,75 @@ import collections
 import itertools
 import sys
 
-import six
-from six.moves import map
+from .utils.py3 import map, with_metaclass, string_types, integer_types
 
 from backtrader import MetaParams, Strategy
 from backtrader.utils import OrderedDict
+from backtrader import LineSeries
 
 
-class WriterBase(six.with_metaclass(MetaParams, object)):
+class WriterBase(with_metaclass(MetaParams, object)):
     pass
 
 
 class WriterFile(WriterBase):
+    '''
+    The system wide writer class.
+
+    It can be parametrized with:
+
+      - out (default: sys.stdout): output stream to write to
+
+        If a string is passed a filename with the content of the parameter will
+        be used
+
+      - close_out  (default: False)
+
+        If ``out`` is a stream whether it has to be explicitly closed by the
+        writer
+
+      - csv (default: False)
+
+        If a csv stream of the datas, strategies, observers and indicators has
+        to be written to the stream during execution
+
+        Which objects actually go into the csv stream can be controlled with
+        the ``csv`` attribute of each object (defaults to True for ``datas```
+        and ``observers`` / False for ``indicators``)
+
+      - csv_filternan (default: True) wehther "nan" values have to be purged
+        out of the csv stream (replaced by an empty field)
+
+      - csv_counter (default: True) if the writer shall keep and print out a
+        counter of the lines actually output
+
+      - indent (default: 2) indentation spaces for each level
+
+      - separators (default: ['=', '-', '+', '*', '.', '~', '"', '^', '#'])
+
+        Characters used for line separators across section/sub(sub)sections
+
+      - seplen (default: 79)
+
+        total length of a line separator including indentation
+
+      - rounding (default: None)
+
+        Number of decimal places to round floats down to. With None no rounding
+        is performed
+
+    '''
     params = (
         ('out', sys.stdout),
         ('close_out', False),
 
-        ('csv', True),
+        ('csv', False),
         ('csvsep', ','),
         ('csv_filternan', True),
         ('csv_counter', True),
 
-        ('preamble', False),
         ('indent', 2),
         ('separators', ['=', '-', '+', '*', '.', '~', '"', '^', '#']),
-        ('bullets', ['-', '*', '+']),
         ('seplen', 79),
         ('rounding', None),
     )
@@ -58,11 +102,9 @@ class WriterFile(WriterBase):
         self._len = itertools.count(1)
         self.headers = list()
         self.values = list()
-        self.preamble = list()
-        self.postamble = list()
 
         # open file if needed
-        if isinstance(self.p.out, six.string_types):
+        if isinstance(self.p.out, py3.string_types):
             self.out = open(self.p.out, 'wb')
             self.close_out = True
         else:
@@ -123,21 +165,29 @@ class WriterFile(WriterBase):
             self.writelineseparator(level)
 
         indent0 = level * self.p.indent
-        for key, val in six.iteritems(dct):
+        for key, val in dct.items():
             kline = ' ' * indent0
             if recurse:
                 kline += '- '
 
             kline += key + ':'
 
-            if isinstance(val, six.string_types):
+            try:
+                sclass = issubclass(val, LineSeries)
+            except TypeError:
+                sclass = False
+
+            if sclass:
+                kline += ' ' + val.__name__
+                self.writeline(kline)
+            elif isinstance(val, string_types):
                 kline += ' ' + val
                 self.writeline(kline)
-            elif isinstance(val, six.integer_types):
+            elif isinstance(val, integer_types):
                 kline += ' ' + str(val)
                 self.writeline(kline)
             elif isinstance(val, float):
-                if self.p.rounding:
+                if self.p.rounding is not None:
                     val = round(val, self.p.rounding)
                 kline += ' ' + str(val)
                 self.writeline(kline)

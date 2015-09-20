@@ -7,11 +7,7 @@ Requirements and versions
 Basic requirements are:
 
   - Python 2.7
-  - Python 3.2/3.3/3.4
-
-And the Python 2/3 compatibility package:
-
-  - six
+  - Python 3.2/3.3/3.4/3.5
 
 Additional requirements if plotting is wished:
 
@@ -72,5 +68,5 @@ Unix-like OS for example::
   cd backtrader
   cp -r backtrader project_directory
 
-Remember that you would then need to manually install ``six`` (and
-``matplotlib`` for plotting)
+Remember that you would then need to manually install ``matplotlib`` for
+plotting.

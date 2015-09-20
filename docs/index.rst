@@ -31,10 +31,11 @@ Contents:
    inddev
    observers-and-statistics/observers-and-statistics
    analyzers/analyzers
+   writer
    commission-schemes/commission-schemes
    order-creation-execution/order-creation-execution
-   position
    order
+   position
    trade
    plotting
    dataautoref

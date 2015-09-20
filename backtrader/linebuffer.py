@@ -35,8 +35,7 @@ import array
 import collections
 from itertools import islice
 
-import six
-from six.moves import xrange
+from .utils.py3 import range, with_metaclass, string_types
 
 from .lineroot import LineRoot, LineSingle
 from . import metabase
@@ -222,7 +221,7 @@ class LineBuffer(LineSingle):
         self.idx += size
         self.lencount += size
 
-        for i in xrange(size):
+        for i in range(size):
             self.array.append(value)
 
     def backwards(self, size=1):
@@ -236,7 +235,7 @@ class LineBuffer(LineSingle):
         self.idx -= size
         self.lencount -= size
 
-        for i in xrange(size):
+        for i in range(size):
             self.array.pop()
 
     def rewind(self, size=1):
@@ -263,7 +262,7 @@ class LineBuffer(LineSingle):
         set values in the buffer "future"
         '''
         self.extension += size
-        for i in xrange(size):
+        for i in range(size):
             self.array.append(value)
 
     def addbinding(self, binding):
@@ -313,7 +312,7 @@ class LineBuffer(LineSingle):
         '''
         Stores a binding to another line. "binding" can be an index or a name
         '''
-        if isinstance(binding, six.string_types):
+        if isinstance(binding, string_types):
             line = getattr(self._owner.lines, binding)
         else:
             line = self._owner.lines[binding]
@@ -392,7 +391,7 @@ class PseudoArray(object):
         return self
 
 
-class LineActions(six.with_metaclass(MetaLineActions, LineBuffer)):
+class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
     '''
     Base class derived from LineBuffer intented to defined the
     minimum interface to make it compatible with a LineIterator by
@@ -468,7 +467,7 @@ class _LineDelay(LineActions):
         src = self.a.array
         ago = self.ago
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = src[i + ago]
 
 
@@ -498,7 +497,7 @@ class _LineForward(LineActions):
         src = self.a.array
         ago = self.ago
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i - ago] = src[i]
 
 
@@ -558,7 +557,7 @@ class LinesOperation(LineActions):
         srcb = self.b.array
         op = self.operation
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = op(srca[i], srcb[i])
 
     def _once_val_op(self, start, end):
@@ -568,7 +567,7 @@ class LinesOperation(LineActions):
         srcb = self.b
         op = self.operation
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = op(srca[i], srcb)
 
     def _once_val_op_r(self, start, end):
@@ -578,7 +577,7 @@ class LinesOperation(LineActions):
         srcb = self.b.array
         op = self.operation
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = op(srca, srcb[i])
 
 
@@ -604,5 +603,5 @@ class LineOwnOperation(LineActions):
         srca = self.a.array
         op = self.operation
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = op(srca[i])
