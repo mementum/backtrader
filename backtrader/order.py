@@ -176,25 +176,31 @@ class Order(with_metaclass(MetaParams, object)):
 
     The order may have the following status:
 
-      - Submitted : sent to the broker and awaiting confirmation
-      - Accepted : accepted by the broker
-      - Partial : partially executed
+      - Submitted: sent to the broker and awaiting confirmation
+      - Accepted: accepted by the broker
+      - Partial: partially executed
       - Completed: fully exexcuted
-      - Canceled : canceled by the user
-      - Expired : expired
-      - Margin : the order met a margin call
+      - Canceled: canceled by the user
+      - Expired: expired
+      - Margin: not enough cash to execute the order.
+
+        This can happen during order submission (and therefore the order will
+        not reach the Accepted status) or before execution with each new bar
+        price because cash has been drawn by other sources (future-like
+        instruments may have reduced the cash or orders orders may have been
+        executed)
 
     Member Attributes:
 
-      - ref : unique order identifier
-      - created : OrderData holding creation data
-      - executed : OrderData holding execution data
+      - ref: unique order identifier
+      - created: OrderData holding creation data
+      - executed: OrderData holding execution data
 
     User Methods:
 
-      - isbuy() : returns bool indicating if the order buys
-      - issell() : returns bool indicating if the order sells
-      - alive() : returns bool if order is in status Partial or Accepted
+      - isbuy(): returns bool indicating if the order buys
+      - issell(): returns bool indicating if the order sells
+      - alive(): returns bool if order is in status Partial or Accepted
     '''
     refbasis = itertools.count(1)
 
