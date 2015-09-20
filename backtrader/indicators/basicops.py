@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import math
 import operator
 
-from six.moves import xrange
+from ..utils.py3 import map, range
 
 from . import Indicator
 
@@ -65,7 +65,7 @@ class OperationN(PeriodN):
         period = self.p.period
         func = self.func
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = func(src[i - period + 1: i + 1])
 
 
@@ -228,7 +228,7 @@ class Accum(Indicator):
         src = self.data.array
         prev = self.p.seed
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = prev = prev + src[i]
 
     def once(self, start, end):
@@ -236,7 +236,7 @@ class Accum(Indicator):
         src = self.data.array
         prev = dst[start - 1]
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = prev = prev + src[i]
 
 
@@ -262,7 +262,7 @@ class Average(PeriodN):
         dst = self.line.array
         period = self.p.period
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
 
 
@@ -306,7 +306,7 @@ class ExponentialSmoothing(Average):
 
         # Seed value from SMA calculated with the call to oncestart
         prev = larray[start - 1]
-        for i in xrange(start, end):
+        for i in range(start, end):
             larray[i] = prev = prev * alpha1 + darray[i] * alpha
 
 
@@ -349,7 +349,7 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
 
         # Seed value from SMA calculated with the call to oncestart
         prev = larray[start - 1]
-        for i in xrange(start, end):
+        for i in range(start, end):
             larray[i] = prev = prev * alpha1[i] + darray[i] * alpha[i]
 
 
@@ -389,6 +389,6 @@ class WeightedAverage(PeriodN):
         coef = self.p.coef
         weights = self.p.weights
 
-        for i in xrange(start, end):
+        for i in range(start, end):
             data = darray[i - period + 1: i + 1]
             larray[i] = coef * math.fsum(map(operator.mul, data, weights))

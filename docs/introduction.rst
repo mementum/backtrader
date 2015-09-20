@@ -9,14 +9,15 @@ Features:
   - Bar by Bar (next) operation or batch mode (once) operation
   - Indicators and the addition of any custom end-user developed one
   - Strategies
-  - Data Feeds from Online Sources or CSV Files (other forms could be
-    implemented)
+  - Data Feeds from Online Sources, CSV Files, binary sources, Panda DataFrames,
+    Blaze iterators
   - Data Feeds with different timeframes
   - Data Feed Resampling
   - Data Feed Replaying
   - A Broker implementation supporting
-    - Commision schemes for stocks and derivatives
-    - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
+    - Margin checks
+    - Commision schemes for stock-like and futures-like instruments
+    - Orders: Close, Market, Limit, Stop, StopLimit
   - Position Sizers for the automatic determination of the stake
   - Optimization of Strategies (multicore capable)
   - Plotting
@@ -31,7 +32,7 @@ Loosely based on the Karate (Kid) rules by Mr. Miyagi.
 Some focus has been put into *speed* but without direct usage of `numpy` (for
 example) the limits without creating spaghetti code have been reached.
 
-The basics or running this library are outlined below.
+The basics of running this library are outlined below.
 
   - Create a Strategy
 

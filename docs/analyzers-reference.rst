@@ -14,3 +14,15 @@ SharpeRatio
 ***********
 
 .. autoclass:: SharpeRatio
+
+
+SQN
+***
+
+.. autoclass:: SQN
+
+
+TradeAnalyzer
+*************
+
+.. autoclass:: TradeAnalyzer

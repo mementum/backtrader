@@ -21,7 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from .utils.py3 import range
+
 from .lineseries import LineSeries
+from .import num2date
+from .utils import OrderedDict
 
 
 class TimeFrame(object):
@@ -42,6 +46,42 @@ class DataSeries(LineSeries):
     _timeframe = TimeFrame.Days
 
     Close, Low, High, Open, Volume, OpenInterest, DateTime = range(7)
+
+    LineOrder = [DateTime, Open, High, Low, Close, Volume, OpenInterest]
+
+    def getwriterheaders(self):
+        headers = [self._name, 'len']
+
+        for lo in self.LineOrder:
+            headers.append(self._getlinealias(lo))
+
+        morelines = self.getlinealiases()[len(self.LineOrder):]
+        headers.extend(morelines)
+
+        return headers
+
+    def getwritervalues(self):
+        values = [self._name, len(self)]
+
+        dtstr = num2date(self.datetime[0])
+        values.append(dtstr)
+
+        for line in self.LineOrder[1:]:
+            values.append(self.lines[line][0])
+
+        for i in range(len(self.LineOrder), self.lines.size()):
+            values.append(self.lines[i][0])
+
+        return values
+
+    def getwriterinfo(self):
+        # returns dictionary with information
+        info = OrderedDict()
+        info['Name'] = self._name
+        info['Timeframe'] = TimeFrame.names[self._timeframe]
+        info['Compression'] = self._compression
+
+        return info
 
 
 class OHLC(DataSeries):

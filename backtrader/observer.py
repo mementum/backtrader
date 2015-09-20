@@ -29,6 +29,8 @@ class Observer(ObserverBase):
     _OwnerCls = StrategyBase
     _ltype = LineIterator.ObsType
 
+    csv = True
+
     plotinfo = dict(plot=False, subplot=True)
 
     # An Observer is ideally always observing and that' why prenext calls

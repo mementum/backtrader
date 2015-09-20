@@ -21,10 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from collections import OrderedDict
 import itertools
 import sys
 
-from .utils import OrderedDict
+from .utils.py3 import zip
 
 
 def findbases(kls, topclass):
@@ -220,3 +221,37 @@ class MetaParams(MetaBase):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
+
+
+class ItemCollection(object):
+    '''
+    Holds a collection of items that can be reached by
+
+      - Index
+      - Name (if set in the append operation)
+    '''
+    def __init__(self):
+        self._items = list()
+        self._names = list()
+
+    def __len__(self):
+        return len(self._items)
+
+    def append(self, item, name=None):
+        setattr(self, name, item)
+        self._items.append(item)
+        if name:
+            self._names.append(name)
+
+    def __getitem__(self, key):
+        return self._items[key]
+
+    def getnames(self):
+        return self._names
+
+    def getitems(self):
+        return zip(self._names, self._items)
+
+    def getbyname(self, name):
+        idx = self._names.index(name)
+        return self._items[idx]

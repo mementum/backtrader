@@ -26,3 +26,5 @@ from __future__ import (absolute_import, division, print_function,
 
 from .annualreturn import *
 from .sharpe import *
+from .tradeanalyzer import *
+from .sqn import *

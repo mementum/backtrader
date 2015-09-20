@@ -44,7 +44,12 @@ Things to do:
 
 Let's the parameters already provided by ``backtrader.feed.DataBase``::
 
-  class DataBase(six.with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
+  from backtrader.utils.py3 import with_metaclass
+
+  ...
+  ...
+
+  class DataBase(with_metaclass(MetaDataBase, dataseries.OHLCDateTime)):
 
       params = (('dataname', None),
           ('fromdate', datetime.datetime.min),

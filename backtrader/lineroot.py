@@ -33,7 +33,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import operator
 
-import six
+from .utils.py3 import range, with_metaclass
 
 from . import metabase
 
@@ -58,7 +58,7 @@ class MetaLineRoot(metabase.MetaParams):
         return _obj, args, kwargs
 
 
-class LineRoot(six.with_metaclass(MetaLineRoot, object)):
+class LineRoot(with_metaclass(MetaLineRoot, object)):
     '''
     Defines a common base and interfaces for Single and Multiple
     LineXXX instances

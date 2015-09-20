@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import collections
 import operator
 
-import six
+from .utils.py3 import map, range, zip, with_metaclass, string_types
 
 from .lineroot import LineRoot
 from .lineseries import LineSeries, LineSeriesMaker
@@ -120,7 +120,7 @@ class MetaLineIterator(LineSeries.__class__):
         return _obj, args, kwargs
 
 
-class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
+class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     _ltype = LineSeries.IndType
 
     plotinfo = dict(plot=True,
@@ -178,7 +178,7 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         if not owner:
             owner = 0
 
-        if isinstance(owner, six.string_types):
+        if isinstance(owner, string_types):
             owner = [owner]
         elif not isinstance(owner, collections.Iterable):
             owner = [owner]
@@ -186,18 +186,18 @@ class LineIterator(six.with_metaclass(MetaLineIterator, LineSeries)):
         if not own:
             own = range(len(owner))
 
-        if isinstance(own, six.string_types):
+        if isinstance(own, string_types):
             own = [own]
         elif not isinstance(own, collections.Iterable):
             own = [own]
 
         for lineowner, lineown in zip(owner, own):
-            if isinstance(lineowner, six.string_types):
+            if isinstance(lineowner, string_types):
                 lownerref = getattr(self._owner.lines, lineowner)
             else:
                 lownerref = self._owner.lines[lineowner]
 
-            if isinstance(lineown, six.string_types):
+            if isinstance(lineown, string_types):
                 lownref = getattr(self.lines, lineown)
             else:
                 lownref = self.lines[lineown]

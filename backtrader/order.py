@@ -25,7 +25,7 @@ import copy
 import datetime
 import itertools
 
-import six
+from .utils.py3 import range, with_metaclass
 
 from .metabase import MetaParams
 from .utils import date2num
@@ -170,34 +170,41 @@ class OrderData(object):
         self.pprice = exbit.pprice
 
 
-class Order(six.with_metaclass(MetaParams, object)):
+class Order(with_metaclass(MetaParams, object)):
     '''
     Class which holds creation/execution data and type of oder.
 
     The order may have the following status:
 
-      - Submitted : sent to the broker and awaiting confirmation
-      - Accepted : accepted by the broker
-      - Partial : partially executed
+      - Submitted: sent to the broker and awaiting confirmation
+      - Accepted: accepted by the broker
+      - Partial: partially executed
       - Completed: fully exexcuted
-      - Canceled : canceled by the user
-      - Expired : expired
-      - Margin : the order met a margin call
+      - Canceled: canceled by the user
+      - Expired: expired
+      - Margin: not enough cash to execute the order.
+
+        This can happen during order submission (and therefore the order will
+        not reach the Accepted status) or before execution with each new bar
+        price because cash has been drawn by other sources (future-like
+        instruments may have reduced the cash or orders orders may have been
+        executed)
 
     Member Attributes:
 
-      - ref : unique order identifier
-      - created : OrderData holding creation data
-      - executed : OrderData holding execution data
+      - ref: unique order identifier
+      - created: OrderData holding creation data
+      - executed: OrderData holding execution data
 
     User Methods:
 
-      - isbuy() : returns bool indicating if the order buys
-      - issell() : returns bool indicating if the order sells
-      - alive() : returns bool if order is in status Partial or Accepted
+      - isbuy(): returns bool indicating if the order buys
+      - issell(): returns bool indicating if the order sells
+      - alive(): returns bool if order is in status Partial or Accepted
     '''
     refbasis = itertools.count(1)
 
+    OrderType = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
     Market, Close, Limit, Stop, StopLimit = range(5)
 
     Buy, Sell = range(2)
@@ -215,6 +222,9 @@ class Order(six.with_metaclass(MetaParams, object)):
         ('pricelimit', None), ('exectype', None), ('valid', None),
         ('triggered', False),
     )
+
+    def getstatusname(self, status):
+        return self.Status[status]
 
     def __getattr__(self, name):
         # dig into self.params if not found as attribute
@@ -234,6 +244,7 @@ class Order(six.with_metaclass(MetaParams, object)):
         return self.ref != other.ref
 
     def __init__(self):
+        self.broker = None
         self.ref = next(self.refbasis)
 
         if self.params.exectype is None:
@@ -290,11 +301,19 @@ class Order(six.with_metaclass(MetaParams, object)):
     def issell(self):
         return isinstance(self, SellOrder)
 
-    def submit(self):
+    def submit(self, broker=None):
         self.status = Order.Submitted
+        self.broker = broker
 
-    def accept(self):
+    def accept(self, broker=None):
         self.status = Order.Accepted
+        self.broker = broker
+
+    def brokerstatus(self):
+        if broker:
+            return broker.orderstatus(self)
+
+        return self.status
 
     def cancel(self):
         self.status = Order.Canceled
@@ -336,7 +355,8 @@ class Order(six.with_metaclass(MetaParams, object)):
         self.executed.dt = self.data.datetime[0]
 
     def alive(self):
-        return self.status in [Order.Partial, Order.Accepted]
+        return self.status in [Order.Created, Order.Submitted,
+                               Order.Partial, Order.Accepted]
 
 
 class BuyOrder(Order):

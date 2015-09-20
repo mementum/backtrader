@@ -67,7 +67,7 @@ def test_run(main=False):
     assert pos.price == price
     assert pos.price == nprice
     assert not opened
-    assert closed == -upsize  # the closed ones were "positive"
+    assert closed == upsize  # the closed must have the sign of "update" size
 
     size = pos.size
     price = pos.price
