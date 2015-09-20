@@ -1,11 +1,20 @@
 1.1.8.88:
   - Added Python 3.5 to Travis CI
+  - Removed 2.6 and added 3.5 from setup.py
   - Refactored bt-run.py to internal function and added btrun executable to
     installation
   - Added cerebro parameters and writers support to btrun
   - Fixed duplicate writers next call in "next" mode
   - Improved LineSeries objects name printing in WriterFile and changed "csv"
     to False
+  - Correct sign of "closed" if a long/short position if a position is reduced:
+    closes #18
+  - Removed six dependency through small internal Py2/Py3 module and updated
+    docs and setup.py
+  - Removed nose-exclude from test requirements
+  - Implement current order status in broker
+  - 0 can be passed as number of maxcpus for optimization (same as None)
+  - SQN and TradeAnalyzer documented
 
 1.1.7.88:
   - Drop Python 2.6 support (also removing internal OrderedDict) after adding
