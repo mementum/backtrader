@@ -59,6 +59,7 @@ def getdata(index, fromdate=FROMDATE, todate=TODATE):
 
 def runtest(datas, strategy,
             runonce=True, preload=True, plot=False, optimize=False, maxcpus=1,
+            writer=None,
             **kwargs):
 
     cerebro = bt.Cerebro(runonce=runonce, preload=preload, maxcpus=maxcpus)
@@ -70,12 +71,19 @@ def runtest(datas, strategy,
 
     if not optimize:
         cerebro.addstrategy(strategy, **kwargs)
+
+        if writer:
+            wr = writer[0]
+            wrkwargs = writer[1]
+            cerebro.addwriter(wr, **wrkwargs)
     else:
         cerebro.optstrategy(strategy, **kwargs)
 
     cerebro.run()
     if plot:
         cerebro.plot()
+
+    return cerebro
 
 
 class TestStrategy(bt.Strategy):

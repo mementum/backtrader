@@ -420,6 +420,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for writer in self.runwriters:
             writer.writedict(dict(Cerebro=cerebroinfo))
+            writer.stop()
 
     def _brokernotify(self):
         '''
