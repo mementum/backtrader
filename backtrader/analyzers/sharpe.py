@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import operator
 
-from six.moves import map
+from backtrader.utils.py3 import map
 
 from backtrader import Analyzer, TimeFrame
 from backtrader.mathsupport import average, standarddev

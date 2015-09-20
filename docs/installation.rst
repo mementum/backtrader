@@ -6,12 +6,8 @@ Requirements and versions
 
 Basic requirements are:
 
-  - Python 2.6/2.7
-  - Python 3.2/3.3/3.4
-
-And the Python 2/3 compatibility package:
-
-  - six
+  - Python 2.7
+  - Python 3.2/3.3/3.4/3.5
 
 Additional requirements if plotting is wished:
 
@@ -26,7 +22,7 @@ Python 2.x/3.x compatibility
 Development takes place under Python 2.7 and sometimes under 3.4. Tests are run
 locally with both version.
 
-Compatibility with 2.6/3.2/3.3 is checked with continuous integration under
+Compatibility with 3.2/3.3/3.5 is checked with continuous integration under
 Travis
 
 Install from pypi
@@ -72,5 +68,5 @@ Unix-like OS for example::
   cd backtrader
   cp -r backtrader project_directory
 
-Remember that you would then need to manually install ``six`` (and
-``matplotlib`` for plotting)
+Remember that you would then need to manually install ``matplotlib`` for
+plotting.

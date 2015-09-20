@@ -47,8 +47,8 @@ List of built-in Indicators (88)
 Python 2/3 Support
 ==================
 
-  - Python 2.6/2.7
-  - Python 3.2/3.3/3.4
+  - Python 2.7
+  - Python 3.2/3.3/3.4/3.5
 
 Compatibility is tested during development with 2.7 and 3.4
 
@@ -65,11 +65,11 @@ From pypi:
 
     If `matplotlib` is not installed and you wish to do some plotting
 
+.. note:: The minimum matplotlib version is 1.4.1
+
 From source:
 
   - Place the *backtrader* directory found in the sources inside your project
-
-    One dependency exists: ``six``
 
 Features:
 =========

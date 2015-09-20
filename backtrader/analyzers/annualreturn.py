@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from six.moves import xrange
+from backtrader.utils.py3 import range
 
 from backtrader import Analyzer, num2date
 from backtrader.utils import OrderedDict
@@ -58,7 +58,7 @@ class AnnualReturn(Analyzer):
         self.rets = list()
         self.ret = OrderedDict()
 
-        for i in xrange(len(self.strategy.data)):
+        for i in range(len(self.strategy.data)):
             dt = num2date(self.strategy.data.datetime.getzeroval(i))
 
             value_cur = self.strategy.stats.broker.value.getzeroval(i)

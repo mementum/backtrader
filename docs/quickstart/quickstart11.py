@@ -25,7 +25,6 @@ import datetime  # For datetime objects
 import os.path  # To manage paths
 import sys  # To find out the script name (in argv[0])
 
-from six.moves import xrange
 
 # Import the backtrader platform
 import backtrader as bt
@@ -137,7 +136,7 @@ if __name__ == '__main__':
     # Add a strategy
     strats = cerebro.optstrategy(
         TestStrategy,
-        maperiod=xrange(10, 31))
+        maperiod=range(10, 31))
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere

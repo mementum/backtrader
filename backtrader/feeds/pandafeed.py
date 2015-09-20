@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import six
+from backtrader.utils.py3 import filter, string_types, integer_types
 
 from backtrader import date2num
 import backtrader.feed as feed
@@ -164,7 +164,7 @@ class PandasData(feed.DataBase):
             colnames.insert(0, 0)
 
         # try to autodetect if all columns are numeric
-        cstrings = filter(lambda x: isinstance(x, six.string_types), colnames)
+        cstrings = filter(lambda x: isinstance(x, string_types), colnames)
         colsnumeric = not len(cstrings)
 
         # Where each datafield find its value
@@ -174,7 +174,7 @@ class PandasData(feed.DataBase):
         for i, datafield in enumerate(self.datafields):
             defmapping = getattr(self.params, datafield)
 
-            if isinstance(defmapping, six.integer_types) and defmapping < 0:
+            if isinstance(defmapping, integer_types) and defmapping < 0:
                 # autodetection requested
                 if colsnumeric:
                     # matching names doesn't help, all indices are numeric
@@ -184,7 +184,7 @@ class PandasData(feed.DataBase):
                 else:
                     # name matching may be possible
                     for colname in colnames:
-                        if isinstance(colname, six.string_types):
+                        if isinstance(colname, string_types):
                             if datafield.lower() == colname.lower():
                                 self._colmapping[datafield] = colname
                                 break

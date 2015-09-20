@@ -44,6 +44,8 @@ class Position(object):
         self.size = size
         self.price = price
 
+        self.adjbase = None
+
     def __len__(self):
         return self.size != 0
 
@@ -51,12 +53,12 @@ class Position(object):
         return Position(size=self.size, price=self.price)
 
     def pseudoupdate(self, size, price):
-        return self.clone().update(size, price)
+        return Position(self.size, self.price).update(size, price)
 
     def update(self, size, price):
         '''
-        Updates the current position and returns the updated size, price
-        and units used to open/
+        Updates the current position and returns the updated size, price and
+        units used to open/close a position
 
         Args:
             size (int): amount to update the position size
@@ -78,13 +80,14 @@ class Position(object):
                    If a position is closed the price is nullified
                    If a position is reversed the price is the price given as
                    argument
-               opened - amount of contracts from argument "size" that were
-                   used to open/increase a position. A position can be opened
-                   from 0 or can be a reversal. If a reversal is performed
-                   then opened is less than "size", because part os "size" will
-                   have been used to close the existing position
-               closed - amount of units from arguments "size" that were
-                   used to close/reduce a position
+               opened - amount of contracts from argument "size" that were used
+                   to open/increase a position.
+                   A position can be opened from 0 or can be a reversal.
+                   If a reversal is performed then opened is less than "size",
+                   because part of "size" will have been used to close the
+                   existing position
+               closed - amount of units from arguments "size" that were used to
+                   close/reduce a position
 
             Both opened and closed carry the same sign as the "size" argument
             because they refer to a part of the "size" argument
@@ -108,7 +111,7 @@ class Position(object):
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size > 0:  # reduced position
-                opened, closed = 0, -size
+                opened, closed = 0, size
                 # self.price = self.price
 
             else:  # self.size < 0 # reversed position form plus to minus
@@ -122,7 +125,7 @@ class Position(object):
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size < 0:  # reduced position
-                opened, closed = 0, -size
+                opened, closed = 0, size
                 # self.price = self.price
 
             else:  # self.size > 0 - reversed position from minus to plus
