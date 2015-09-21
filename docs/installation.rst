@@ -25,7 +25,7 @@ Python 2.x/3.x compatibility
 Development takes place under Python 2.7 and sometimes under 3.4. Tests are run
 locally with both version.
 
-Compatibility with 3.2/3.3 is checked with continuous integration under
+Compatibility with 3.2/3.3/3.5 is checked with continuous integration under
 Travis
 
 Install from pypi

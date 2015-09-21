@@ -25,7 +25,8 @@ import collections
 import itertools
 import sys
 
-from .utils.py3 import map, with_metaclass, string_types, integer_types
+from .utils.py3 import (map, with_metaclass, string_types, integer_types,
+                        StringIO)
 
 from backtrader import MetaParams, Strategy
 from backtrader.utils import OrderedDict
@@ -104,7 +105,7 @@ class WriterFile(WriterBase):
         self.values = list()
 
         # open file if needed
-        if isinstance(self.p.out, py3.string_types):
+        if isinstance(self.p.out, string_types):
             self.out = open(self.p.out, 'wb')
             self.close_out = True
         else:
@@ -202,3 +203,12 @@ class WriterFile(WriterBase):
             else:
                 kline += ' ' + str(val)
                 self.writeline(kline)
+
+
+class WriterStringIO(WriterFile):
+    params = (('out', StringIO()),)
+
+    def stop(self):
+        super(WriterStringIO, self).stop()
+        # Leave the file positioned at the beginning
+        self.p.out.seek(0)

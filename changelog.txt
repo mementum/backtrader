@@ -1,3 +1,8 @@
+1.1.9.88:
+  - Doc/Readme additions for 3.5
+  - Removed dangling py3 in writer from six transition
+  - Added writer testcase
+
 1.1.8.88:
   - Added Python 3.5 to Travis CI
   - Removed 2.6 and added 3.5 from setup.py

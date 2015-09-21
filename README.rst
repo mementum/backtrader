@@ -48,7 +48,7 @@ Python 2/3 Support
 ==================
 
   - Python 2.7
-  - Python 3.2/3.3/3.4
+  - Python 3.2/3.3/3.4/3.5
 
 Compatibility is tested during development with 2.7 and 3.4
 
@@ -81,7 +81,7 @@ Features:
   - Indicators and the addition of any custom end-user developed one
   - Strategies
   - Data Feeds from Online Sources or CSV Files (other forms could be
-    implemented)
+    implemented) - Including ``Pandas Dataframes``
   - Data Feeds with different timeframes
   - Data Feed Resampling
   - Data Feed Replaying
