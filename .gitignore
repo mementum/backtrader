@@ -60,3 +60,10 @@ target/
 *#
 *.swp
 *.swo
+
+# ignore PyCharm and IntelliJ project metadata
+.idea/
+
+# Vagrant temp folder
+.vagrant/
+
