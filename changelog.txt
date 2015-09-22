@@ -1,3 +1,8 @@
+1.1.10.88:
+  - Small documentation updates
+  - Indicators can be plotted on/over other indicators
+  - Sample of plot-on-same-axis added
+
 1.1.9.88:
   - Doc/Readme additions for 3.5
   - Removed dangling py3 in writer from six transition
