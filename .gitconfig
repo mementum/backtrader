@@ -1,0 +1,3 @@
+[remote "upstream"]
+    url = https://github.com/mementum/backtrader.git
+    fetch = +refs/heads/*:refs/remotes/origin/*
