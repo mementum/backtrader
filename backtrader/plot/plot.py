@@ -651,7 +651,10 @@ class Plot(with_metaclass(MetaParams, object)):
                         else:
                             break
 
-            if x.plotinfo.subplot:
+            if x.plotinfo.plotmaster:
+                key = x.plotinfo.plotmaster
+
+            if x.plotinfo.subplot and not x.plotinfo.plotmaster:
                 if x.plotinfo.plotabove:
                     self.dplotsup[key].append(x)
                 else:

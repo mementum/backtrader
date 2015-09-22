@@ -57,6 +57,9 @@ The other versions are tested automatically with Travis.
 Installation
 ============
 
+``backtrader`` is self-contained with no external dependencies (except if you
+want to plot)
+
 From pypi:
 
   - pip install backtrader
