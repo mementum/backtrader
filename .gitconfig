@@ -1,3 +1,9 @@
 [remote "upstream"]
-    url = https://github.com/mementum/backtrader.git
-    fetch = +refs/heads/*:refs/remotes/origin/*
+  url = https://github.com/mementum/backtrader.git
+  fetch = +refs/heads/*:refs/remotes/origin/*
+
+[alias]
+  pu = !"git fetch origin -v; git fetch upstream -v; git merge upstream/master"
+  puup = !"git pull upstream master"
+
+
