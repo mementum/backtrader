@@ -39,6 +39,8 @@ class PlotStrategy(bt.Strategy):
         nomacdplot=False,
         rsioverstoc=False,
         rsioversma=False,
+        stocrsi=False,
+        stocrsilabels=False,
     )
 
     def __init__(self):
@@ -49,14 +51,15 @@ class PlotStrategy(bt.Strategy):
         # attribute is changed - same effect
         macd.plotinfo.plot = not self.params.nomacdplot
 
-        # Let's put if requested a RSI over a Stochastic
+        # Let's put rsi on stochastic/sma or the other way round
         stoc = btind.Stochastic()
         rsi = btind.RSI()
-        # Rsi can be (according to param) plotted over Stochastic
-        if self.params.rsioverstoc:
+        if self.params.stocrsi:
+            stoc.plotinfo.plotmaster = rsi
+            stoc.plotinfo.plotlinelabels = self.p.stocrsilabels
+        elif self.params.rsioverstoc:
             rsi.plotinfo.plotmaster = stoc
         elif self.params.rsioversma:
-            # sma.plotinfo.subplot = True
             rsi.plotinfo.plotmaster = sma
 
 
@@ -84,7 +87,9 @@ def runstrategy():
                         smasubplot=args.smasubplot,
                         nomacdplot=args.nomacdplot,
                         rsioverstoc=args.rsioverstoc,
-                        rsioversma=args.rsioversma)
+                        rsioversma=args.rsioversma,
+                        stocrsi=args.stocrsi,
+                        stocrsilabels=args.stocrsilabels)
 
     # And run it
     cerebro.run(stdstats=args.stdstats)
@@ -124,6 +129,12 @@ def parse_args():
 
     group.add_argument('--rsioversma', '-rom', action='store_true',
                        help='Plot the RSI indicator on the SMA axis')
+
+    group.add_argument('--stocrsi', '-strsi', action='store_true',
+                       help='Plot the Stochastic indicator on the RSI axis')
+
+    parser.add_argument('--stocrsilabels', action='store_true',
+                        help='Plot line names instead of indicator name')
 
     parser.add_argument('--numfigs', '-n', default=1,
                         help='Plot using numfigs figures')
