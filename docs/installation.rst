@@ -4,6 +4,9 @@ Installation
 Requirements and versions
 *************************
 
+``backtrader`` is self-contained with no external dependencies (except if you
+want to plot)
+
 Basic requirements are:
 
   - Python 2.7
