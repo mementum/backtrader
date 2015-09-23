@@ -28,15 +28,16 @@ apt-get -y update 2>&1 >> "$VAGRANT_LOG"
 # Install required packages
 echo "Installing required packages..."
 apt-get -y install python-pip python-dev 2>&1 >> "$VAGRANT_LOG"
-#apt-get -y install libblas-dev liblapack-dev libatlas-base-dev gfortran  2>&1 >> "$VAGRANT_LOG" # for scipy
+apt-get -y install libblas-dev liblapack-dev libatlas-base-dev gfortran  2>&1 >> "$VAGRANT_LOG" # for scipy
 apt-get -y install libfreetype6-dev libpng-dev tk tk-dev python-tk 2>&1 >> "$VAGRANT_LOG" # for matplotlib
 
 # do pip install
 pip install -U setuptools distribute 2>&1 >> "$VAGRANT_LOG" 
-pip install numpy 2>&1 >> "$VAGRANT_LOG" 
+pip install scipy statsmodels numpy 2>&1 >> "$VAGRANT_LOG" 
 pip install python-dateutil pytz 2>&1 >> "$VAGRANT_LOG"
 pip install matplotlib 2>&1 >> "$VAGRANT_LOG" 
-pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
+#pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
+#pip install numpy 2>&1 >> "$VAGRANT_LOG" 
 
 # vim install
 apt-get -y ctags vim git
