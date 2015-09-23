@@ -36,7 +36,7 @@ pip install -U setuptools distribute 2>&1 >> "$VAGRANT_LOG"
 pip install numpy 2>&1 >> "$VAGRANT_LOG" 
 pip install python-dateutil pytz 2>&1 >> "$VAGRANT_LOG"
 pip install matplotlib 2>&1 >> "$VAGRANT_LOG" 
-#pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
+pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
 
 # vim install
 apt-get -y ctags vim git
