@@ -231,11 +231,23 @@ class Plot(with_metaclass(MetaParams, object)):
             fmtminor = '%d'
             fmtdata = '%Y-%m-%d'
         elif tframe == TimeFrame.Minutes:
-            fmtmajor = '%d %b'
+            fmtmajor = '%H:%M'
             fmtminor = '%H:%M'
             fmtdata = '%Y-%m-%d %H:%M'
+        elif tframe == TimeFrame.Seconds:
+            fmtmajor = '%M:%S'
+            fmtminor = '%M:%S'
+            fmtdata = '%M:%S'
+        elif tframe == TimeFrame.MicroSeconds:
+            fmtmajor = '%M:%S'
+            fmtminor = '%S.%f'
+            fmtdata = '%M:%S.%f'
+        elif tframe == TimeFrame.Ticks:
+            fmtmajor = '%M:%S'
+            fmtminor = '%S.%f'
+            fmtdata = '%M:%S.%f'
 
-        fordata = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtdata)
+        fordata = MyDateFormatter(self.pinf.xreal, fmt=fmtdata)
         for dax in self.pinf.daxis.values():
             dax.fmt_xdata = fordata
 
@@ -245,11 +257,10 @@ class Plot(with_metaclass(MetaParams, object)):
         ax.xaxis.set_minor_locator(locminor)
         ax.xaxis.set_major_locator(locmajor)
 
-        formajor = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtmajor)
-        forminor = mdates.IndexDateFormatter(self.pinf.xreal, fmt=fmtminor)
-
-        ax.xaxis.set_minor_formatter(forminor)
+        formajor = MyDateFormatter(self.pinf.xreal, fmt=fmtmajor)
+        forminor = MyDateFormatter(self.pinf.xreal, fmt=fmtminor)
         ax.xaxis.set_major_formatter(formajor)
+        ax.xaxis.set_minor_formatter(forminor)
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
