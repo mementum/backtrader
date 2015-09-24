@@ -58,6 +58,8 @@ Python 2/3 Support
   - Python 2.7
   - Python 3.2/3.3/3.4/3.5
 
+  - It also works with pypy and pypy3 (no plotting - matplotlib is not supported under pypy)
+
 Compatibility is tested during development with 2.7 and 3.4
 
 The other versions are tested automatically with Travis.
