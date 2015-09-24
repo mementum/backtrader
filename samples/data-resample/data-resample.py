@@ -65,7 +65,7 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Pandas test script')
+        description='Resample down to minutes')
 
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')
