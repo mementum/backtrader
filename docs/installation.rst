@@ -11,6 +11,7 @@ Basic requirements are:
 
   - Python 2.7
   - Python 3.2/3.3/3.4/3.5
+  - pypy/pypy3
 
 Additional requirements if plotting is wished:
 
@@ -19,14 +20,17 @@ Additional requirements if plotting is wished:
     It may work with previous versions, but this the one used for
     development
 
+.. note::
+   At the time of writing Matplotlib is not supported under pypy/pypy3
+
 Python 2.x/3.x compatibility
 ============================
 
 Development takes place under Python 2.7 and sometimes under 3.4. Tests are run
 locally with both version.
 
-Compatibility with 3.2/3.3/3.5 is checked with continuous integration under
-Travis
+Compatibility with 3.2/3.3/3.5 and pypy/pyp3 is checked with continuous
+integration under Travis
 
 Install from pypi
 *****************

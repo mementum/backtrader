@@ -29,8 +29,11 @@ from .utils import OrderedDict
 
 
 class TimeFrame(object):
-    Minutes, Days, Weeks, Months, Years = range(5)
-    names = ['Minutes', 'Days', 'Weeks', 'Months', 'Years']
+    Ticks, MicroSeconds, Seconds, \
+        Minutes, Days, Weeks, Months, Years = range(8)
+
+    names = ['Ticks', 'MicroSeconds', 'Seconds',
+             'Minutes', 'Days', 'Weeks', 'Months', 'Years']
 
     @classmethod
     def getname(cls, tframe, compression):
