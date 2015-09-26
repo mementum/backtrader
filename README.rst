@@ -2,10 +2,6 @@
 backtrader
 ==========
 
-.. image:: https://img.shields.io/github/tag/mementum/backtrader.svg
-   :alt: GitHub Release
-   :scale: 100%
-   :target: https://github.com/mementum/backtrader/releases
 .. image:: https://img.shields.io/pypi/v/backtrader.svg
    :alt: PyPi Version
    :scale: 100%
