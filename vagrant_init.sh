@@ -40,7 +40,7 @@ pip install matplotlib 2>&1 >> "$VAGRANT_LOG"
 #pip install numpy 2>&1 >> "$VAGRANT_LOG" 
 
 # vim install
-apt-get -y ctags vim git
+apt-get -y install ctags vim git
 git clone https://github.com/amix/vimrc.git ~/.vim_runtime
 sh ~/.vim_runtime/install_awesome_vimrc.sh
 
