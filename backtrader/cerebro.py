@@ -33,6 +33,7 @@ from . import observers
 from .writer import WriterFile
 from .import num2date
 from .utils import OrderedDict
+from .resampler import DataResampler, DataReplayer
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -155,6 +156,32 @@ class Cerebro(with_metaclass(MetaParams, object)):
         feed = data.getfeed()
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
+
+    def replaydata(self, data, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be replayed by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataReplayer``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``DataReplayer`` will be passed transparently
+        '''
+        datareplayer = DataReplayer(dataname=data, **kwargs)
+        self.adddata(data=datareplayer)
+
+    def resampledata(self, data, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be resample by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataResampler``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``DataResampler`` will be passed transparently
+        '''
+        dataresampler = DataResampler(dataname=data, **kwargs)
+        self.adddata(data=dataresampler)
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''
