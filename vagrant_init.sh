@@ -27,22 +27,33 @@ apt-get -y update 2>&1 >> "$VAGRANT_LOG"
 
 # Install required packages
 echo "Installing required packages..."
+echo "Installing python-pip ..."
 apt-get -y install python-pip python-dev 2>&1 >> "$VAGRANT_LOG"
+echo "Installing lib for scipy..."
 apt-get -y install libblas-dev liblapack-dev libatlas-base-dev gfortran  2>&1 >> "$VAGRANT_LOG" # for scipy
+echo "Installing lib for matplotlib..."
 apt-get -y install libfreetype6-dev libpng-dev tk tk-dev python-tk 2>&1 >> "$VAGRANT_LOG" # for matplotlib
 
 # do pip install
+echo "Installing pip packages: setuptools ..."
 pip install -U setuptools distribute 2>&1 >> "$VAGRANT_LOG" 
+echo "Installing pip packages: scipy/numpy ..."
 pip install scipy statsmodels numpy 2>&1 >> "$VAGRANT_LOG" 
-pip install python-dateutil pytz 2>&1 >> "$VAGRANT_LOG"
+echo "Installing pip packages: pytz ..."
+pip install python-dateutil pytz ipython 2>&1 >> "$VAGRANT_LOG"
+echo "Installing pip packages: matplotlib ..."
 pip install matplotlib 2>&1 >> "$VAGRANT_LOG" 
 #pip install scipy statsmodels 2>&1 >> "$VAGRANT_LOG" 
 #pip install numpy 2>&1 >> "$VAGRANT_LOG" 
 
 # vim install
+echo "Installing vim and git..."
 apt-get -y install ctags vim git
 git clone https://github.com/amix/vimrc.git ~/.vim_runtime
 sh ~/.vim_runtime/install_awesome_vimrc.sh
 
+cd /vagrant
+echo "installing local backtrader ..."
+pip install -e . 2>&1 >> "$VAGRANT_LOG"
 
 echo "Finished!"
