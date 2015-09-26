@@ -2,7 +2,7 @@
 backtrader
 ==========
 
-.. image:: https://img.shields.io/github/release/mementum/backtrader.svg
+.. image:: https://img.shields.io/github/tag/mementum/backtrader.svg
    :alt: GitHub Release
    :scale: 100%
    :target: https://github.com/mementum/backtrader/releases
