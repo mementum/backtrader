@@ -1,3 +1,10 @@
+1.1.12.88:
+  - Refactoring of minute/seconds/microseconds bar compression scheme to allow
+    time adjusted bars
+  - Added tick_last to datas - alias of tick_close
+  - resampledata and replaydata methods added to cerebro
+  - Added tick_last to datas - alias of tick_close
+
 1.1.11.88:
   - Added TimeFrame for Ticks, MicroSeconds and Seconds
   - Plot support for new Ticks, MicroSeconds and Seconds TimeFrames
