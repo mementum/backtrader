@@ -116,7 +116,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.tick_open = None
         self.tick_high = None
         self.tick_low = None
-        self.tick_close = None
+        self.tick_close = self.tick_last = None
         self.tick_volume = None
         self.tick_openinterest = None
 
@@ -126,7 +126,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self.tick_open = self.lines.open[0]
             self.tick_high = self.lines.high[0]
             self.tick_low = self.lines.low[0]
-            self.tick_close = self.lines.close[0]
+            self.tick_close = self.tick_last = self.lines.close[0]
             self.tick_volume = self.lines.volume[0]
             self.tick_openinterest = self.lines.openinterest[0]
 

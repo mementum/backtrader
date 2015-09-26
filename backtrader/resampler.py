@@ -74,7 +74,7 @@ class BaseResampler(feed.AbstractDataBase):
             self.tick_open = self.data.lines.open[index]
             self.tick_high = self.data.lines.high[index]
             self.tick_low = self.data.lines.low[index]
-            self.tick_close = self.data.lines.close[index]
+            self.tick_close = self.tick_last = self.data.lines.close[index]
             self.tick_volume = self.data.lines.volume[index]
             self.tick_openinterest = self.data.lines.openinterest[index]
 
