@@ -37,24 +37,35 @@ def runstrat():
     cerebro.addstrategy(bt.Strategy)
 
     # Load the Data
-    datapath = args.dataname or '../../datas/2006-day-001.txt'
-    data = btfeeds.BacktraderCSVData(
-        dataname=datapath)
+    datapath = args.dataname or '../../datas/ticksample.csv'
+
+    data = btfeeds.GenericCSVData(
+        dataname=datapath,
+        dtformat='%Y-%m-%dT%H:%M:%S.%f',
+    )
 
     # Handy dictionary for the argument timeframe conversion
     tframes = dict(
+        none=None,
+        ticks=bt.TimeFrame.Ticks,
+        microseconds=bt.TimeFrame.MicroSeconds,
+        seconds=bt.TimeFrame.Seconds,
+        minutes=bt.TimeFrame.Minutes,
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Resample the data
-    data_resampled = bt.DataResampler(
-        dataname=data,
-        timeframe=tframes[args.timeframe],
-        compression=args.compression)
+    timeframe = tframes[args.timeframe]
+
+    if timeframe is not None:
+        # Resample the data
+        data = bt.DataResampler(
+            dataname=data,
+            timeframe=timeframe,
+            compression=args.compression)
 
     # Add the resample data instead of the original
-    cerebro.adddata(data_resampled)
+    cerebro.adddata(data)
 
     # Run over everything
     cerebro.run()
@@ -65,17 +76,19 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Resample down to minutes')
+        description='Resampling script down to tick data')
 
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')
 
-    parser.add_argument('--timeframe', default='weekly', required=False,
-                        choices=['daily', 'weekly', 'monthly'],
+    parser.add_argument('--timeframe', default='none', required=False,
+                        choices=['none', 'ticks', 'microseconds', 'seconds',
+                                 'minutes', 'daily', 'weekly', 'monthly'],
                         help='Timeframe to resample to')
 
     parser.add_argument('--compression', default=1, required=False, type=int,
-                        help='Compress n bars into 1')
+                        help=('Compress n bars into 1'
+                              ' (not applicable if timeframe is "none")'))
 
     return parser.parse_args()
 

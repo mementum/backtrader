@@ -59,8 +59,11 @@ class MyDateFormatter(mplticker.Formatter):
     def __call__(self, x, pos=0):
         '''Return the label for time x at position pos'''
         ind = int(round(x))
-        if ind >= self.lendates or ind < 0:
-            return ''
+        if ind >= self.lendates:
+            ind = self.lendates - 1
+
+        if ind < 0:
+            ind = 0
 
         return num2date(self.dates[ind]).strftime(self.fmt)
 

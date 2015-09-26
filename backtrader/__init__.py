@@ -21,8 +21,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import flushfile
-
 from .linebuffer import *
 from .lineseries import *
 from .lineiterator import *
@@ -49,4 +47,4 @@ from . import strategies
 from . import observers
 from . import analyzers
 
-__version__ = '1.1.10.88'
+__version__ = '1.1.11.88'

@@ -1,3 +1,14 @@
+1.1.11.88:
+  - Added TimeFrame for Ticks, MicroSeconds and Seconds
+  - Plot support for new Ticks, MicroSeconds and Seconds TimeFrames
+  - Removed flushing of sys.stdout on Win32 platforms to avoid interactions with
+    ipython (fixes #20)
+  - Reworked Resampling for TimeFrame Minutes (closes #19) and added Resampling
+    for Seconds, MicroSeconds and TickData
+  - Sample of plot-on-same-axis added
+  - Added pypy/pypy3 tests to Travis and added to to documentation
+  - Added sample which resamples tickdata
+
 1.1.10.88:
   - Small documentation updates
   - Indicators can be plotted on/over other indicators

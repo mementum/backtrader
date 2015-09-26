@@ -83,13 +83,20 @@ class BaseResampler(feed.AbstractDataBase):
             # bar has not been kickstarted - can't be over the limit
             return False
 
-        if self._timeframe > TimeFrame.Minutes:
-            return self._barisover_calendar(index)
+        if self._timeframe == TimeFrame.Ticks:
+            # Ticks is already the lowest level
+            ret = True
 
-        return self._barisover_minutes(index)
+        elif self._timeframe == TimeFrame.MicroSeconds:
+            ret = self._barisover_microseconds(index)
 
-    def _barisover_calendar(self, index):
-        if self._timeframe == TimeFrame.Weeks:
+        elif self._timeframe == TimeFrame.Seconds:
+            ret = self._barisover_seconds(index)
+
+        elif self._timeframe == TimeFrame.Minutes:
+            ret = self._barisover_minutes(index)
+
+        elif self._timeframe == TimeFrame.Weeks:
             ret = self._barisover_weeks(index)
 
         elif self._timeframe == TimeFrame.Months:
@@ -153,17 +160,50 @@ class BaseResampler(feed.AbstractDataBase):
             # TODO: Sessions and not only dates/days should be considered
             return True
 
-        tmpoint = tm.hour * 60 + tm.minute
-        tmmul, tmrem = divmod(tmpoint, self.p.compression)
-        bartmpoint = bartm.hour * 60 + bartm.minute
-        bartmmul, bartmrem = divmod(bartmpoint, self.p.compression)
+        minute = tm.hour * 60 + tm.minute
+        barminute = bartm.hour * 60 + bartm.minute
 
-        if bartmmul > tmmul and bartmrem:
-            # bar pt (point) is at next multiple of minute compression
-            # and is alreaady inside the range, nor right at the edge
+        if barminute > minute:
             return True
 
-        elif not tmrem:
+        return False
+
+    def _barisover_seconds(self, index):
+        dt = self.lines.datetime.date(index)
+        bardt = self.data.datetime.date(index)
+
+        tm = self.lines.datetime.time(index)
+        bartm = self.data.datetime.time(index)
+
+        if bardt > dt:
+            # TODO: Sessions and not only dates/days should be considered
+            return True
+
+        second = tm.hour * 3600 + tm.minute * 60 + tm.second
+        barsecond = bartm.hour * 3600 + bartm.minute * 60 + bartm.second
+
+        if barsecond > second:
+            return True
+
+        return False
+
+    def _barisover_microseconds(self, index):
+        dt = self.lines.datetime.date(index)
+        bardt = self.data.datetime.date(index)
+
+        tm = self.lines.datetime.time(index)
+        bartm = self.data.datetime.time(index)
+
+        if bardt > dt:
+            # TODO: Sessions and not only dates/days should be considered
+            return True
+
+        usecond = tm.microsecond + \
+            (tm.hour * 3600 + tm.minute * 60 + tm.second) * 1000000
+        barusecond = bartm.microsecond + \
+            (bartm.hour * 3600 + bartm.minute * 60 + bartm.second) * 1000000
+
+        if barusecond > usecond:
             return True
 
         return False
