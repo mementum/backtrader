@@ -127,6 +127,12 @@ cup of tea, you can always have a look at similar Python platforms:
   - `prophet <https://github.com/Emsu/prophet>`_
   - `quant <https://github.com/maihde/quant>`_
   - `AlephNull <https://github.com/CarterBain/AlephNull>`_
+  - `Trading with Python <http://www.tradingwithpython.com/>`_
+  - `visualize-wealth <https://github.com/benjaminmgross/visualize-wealth>`_
+  - `tia: Toolkit for integration and analysis
+    <https://github.com/bpsmith/tiaa>`_
+  - `QuantSoftware Toolkit
+    <http://wiki.quantsoftware.org/index.php?title=QuantSoftware_ToolKit>`_
   - `bt <http://pmorissette.github.io/bt/index.html>`_
 
      ``bt`` slightly pre-dates ``backtrader`` and has a completely different
