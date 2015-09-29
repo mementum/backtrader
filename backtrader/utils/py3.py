@@ -52,6 +52,9 @@ if PY2:
     def itervalues(d): return d.itervalues()
 
     def iteritems(d): returnd.iteritems()
+
+    import Queue as queue
+
 else:
     string_types = str,
     integer_types = int,
@@ -74,6 +77,8 @@ else:
     def itervalues(d): return iter(d.values())
 
     def iteritems(d): return iter(d.items())
+
+    import queue as queue
 
 
 # This is from Armin Ronacher from Flash simplified later by six
