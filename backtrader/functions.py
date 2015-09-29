@@ -105,7 +105,7 @@ class And(MultiLogicReduce):
 
 
 def _orlogic(x, y):
-    return x and y
+    return x or y
 
 
 class Or(MultiLogicReduce):
