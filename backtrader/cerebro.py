@@ -363,13 +363,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.start()
 
-        for data in self.datas:
-            data.reset()
-            data.extend(size=self.params.lookahead)
-            data.start()
-            if self._dopreload:
-                data.preload()
-
         if self.writers_csv:
             wheaders = list()
             for data in self.datas:
@@ -406,6 +399,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     writer.addheaders(strat.getwriterheaders())
 
             strat._start()
+
+        if self.p.exactbars:
+            for strat in runstrats:
+                strat.ringbuffer()
+
+        for data in self.datas:
+            data.reset()
+            if not self.p.exactbars:
+                data.extend(size=self.params.lookahead)
+            data.start()
+            if self._dopreload:
+                data.preload()
 
         for writer in self.runwriters:
             writer.start()
@@ -462,10 +467,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
-        if self.p.exactbars:
-            for strat in runstrats:
-                strat.ringbuffer()
-
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:
