@@ -22,7 +22,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import datetime
-import itertools
 
 from .. import feed
 from .. import TimeFrame
@@ -45,20 +44,21 @@ class VChartCSVData(feed.CSVDataBase):
         M=TimeFrame.Months)
 
     def _loadline(self, linetokens):
-        i = itertools.count(0)
-        ticker = linetokens[next(i)]  # skip ticker name
+        itokens = iter(linetokens)
+
+        ticker = next(itokens)  # skip ticker name
         if not self._name:
             self._name = ticker
 
         # day/intraday indication
-        timeframe = linetokens[next(i)]
+        timeframe = next(itokens)
 
         self._timeframe = self.vctframes[timeframe]
 
-        dttxt = linetokens[next(i)]
+        dttxt = next(itokens)
         y, m, d = int(dttxt[0:4]), int(dttxt[4:6]), int(dttxt[6:8])
 
-        tmtxt = linetokens[next(i)]
+        tmtxt = next(itokens)
         if timeframe == 'I':
             # use the provided time
             hh, mmss = divmod(int(tmtxt), 10000)
@@ -73,12 +73,12 @@ class VChartCSVData(feed.CSVDataBase):
         dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
 
         self.lines.datetime[0] = dtnum
-        self.lines.open[0] = float(linetokens[next(i)])
-        self.lines.high[0] = float(linetokens[next(i)])
-        self.lines.low[0] = float(linetokens[next(i)])
-        self.lines.close[0] = float(linetokens[next(i)])
-        self.lines.volume[0] = float(linetokens[next(i)])
-        self.lines.openinterest[0] = float(linetokens[next(i)])
+        self.lines.open[0] = float(next(itokens))
+        self.lines.high[0] = float(next(itokens))
+        self.lines.low[0] = float(next(itokens))
+        self.lines.close[0] = float(next(itokens))
+        self.lines.volume[0] = float(next(itokens))
+        self.lines.openinterest[0] = float(next(itokens))
 
         return True
 
