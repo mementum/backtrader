@@ -21,7 +21,17 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+
+
+def Tree():
+    return defaultdict(Tree)
+
+
+class AutoDictList(dict):
+    def __missing__(self, key):
+        value = self[key] = list()
+        return value
 
 
 class AutoDict(dict):
