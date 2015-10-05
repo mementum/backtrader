@@ -22,7 +22,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import datetime
-import itertools
 
 from .. import feed
 from ..utils import date2num
@@ -38,16 +37,16 @@ class BacktraderCSVData(feed.CSVDataBase):
     '''
 
     def _loadline(self, linetokens):
-        i = itertools.count(0)
+        itoken = iter(linetokens)
 
-        dttxt = linetokens[next(i)]
+        dttxt = next(itoken)
         # Format is YYYY-MM-DD
         y = int(dttxt[0:4])
         m = int(dttxt[5:7])
         d = int(dttxt[8:10])
 
         if len(linetokens) == 8:
-            tmtxt = linetokens[next(i)]
+            tmtxt = next(itoken)
 
             # Format if present HH:MM:SS
             hh = int(tmtxt[0:2])
@@ -63,12 +62,12 @@ class BacktraderCSVData(feed.CSVDataBase):
         dtnum = date2num(dt)
 
         self.lines.datetime[0] = dtnum
-        self.lines.open[0] = float(linetokens[next(i)])
-        self.lines.high[0] = float(linetokens[next(i)])
-        self.lines.low[0] = float(linetokens[next(i)])
-        self.lines.close[0] = float(linetokens[next(i)])
-        self.lines.volume[0] = float(linetokens[next(i)])
-        self.lines.openinterest[0] = float(linetokens[next(i)])
+        self.lines.open[0] = float(next(itoken))
+        self.lines.high[0] = float(next(itoken))
+        self.lines.low[0] = float(next(itoken))
+        self.lines.close[0] = float(next(itoken))
+        self.lines.volume[0] = float(next(itoken))
+        self.lines.openinterest[0] = float(next(itoken))
 
         return True
 

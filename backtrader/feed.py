@@ -69,8 +69,10 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.fromdate = datetime.datetime.combine(
-                _obj.p.fromdate, _obj.p.sessionend)
+            _obj.p.fromdate = datetime.datetime(
+                year=_obj.p.fromdate.year,
+                month=_obj.p.fromdate.month,
+                day=_obj.p.fromdate.day)
 
         if isinstance(_obj.p.todate, datetime.date):
             # push it to the end of the day, or else intraday
@@ -116,7 +118,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.tick_open = None
         self.tick_high = None
         self.tick_low = None
-        self.tick_close = None
+        self.tick_close = self.tick_last = None
         self.tick_volume = None
         self.tick_openinterest = None
 
@@ -126,7 +128,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self.tick_open = self.lines.open[0]
             self.tick_high = self.lines.high[0]
             self.tick_low = self.lines.low[0]
-            self.tick_close = self.lines.close[0]
+            self.tick_close = self.tick_last = self.lines.close[0]
             self.tick_volume = self.lines.volume[0]
             self.tick_openinterest = self.lines.openinterest[0]
 

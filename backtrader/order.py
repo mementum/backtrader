@@ -220,7 +220,7 @@ class Order(with_metaclass(MetaParams, object)):
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('exectype', None), ('valid', None),
-        ('triggered', False),
+        ('triggered', False), ('tradeid', 0),
     )
 
     def getstatusname(self, status):

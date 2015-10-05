@@ -32,7 +32,7 @@ from .lineiterator import LineIterator, StrategyBase
 from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
-from .utils import OrderedDict, AutoOrderedDict
+from .utils import OrderedDict, AutoOrderedDict, AutoDictList
 
 
 class MetaStrategy(StrategyBase.__class__):
@@ -68,7 +68,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj._sizer = SizerFix()
         _obj._orders = list()
         _obj._orderspending = list()
-        _obj._trades = collections.defaultdict(list)
+        _obj._trades = collections.defaultdict(AutoDictList)
         _obj._tradespending = list()
 
         _obj.stats = _obj.observers = ItemCollection()
@@ -346,9 +346,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             return
 
         tradedata = order.data
-        datatrades = self._trades[tradedata]
+        datatrades = self._trades[tradedata][order.tradeid]
         if not datatrades:
-            datatrades.append(Trade(data=tradedata))
+            datatrades.append(Trade(data=tradedata, tradeid=order.tradeid))
 
         trade = datatrades[-1]
 
@@ -363,7 +363,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 self._tradespending.append(trade)
 
                 # Open the next trade
-                trade = Trade(data=tradedata)
+                trade = Trade(data=tradedata, tradeid=order.tradeid)
                 datatrades.append(trade)
 
             # Update it if needed
@@ -401,7 +401,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
-            exectype=None, valid=None):
+            exectype=None, valid=None, tradeid=0):
         '''
         To create a buy (long) order and send it to the broker
 
@@ -414,11 +414,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.buy(
             self, data,
             size=size, price=price, plimit=plimit,
-            exectype=exectype, valid=valid)
+            exectype=exectype, valid=valid, tradeid=tradeid)
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
-             exectype=None, valid=None):
+             exectype=None, valid=None, tradeid=0):
         '''
         To create a selll (short) order and send it to the broker
 
@@ -430,10 +430,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.sell(
             self, data,
             size=size, price=price, plimit=plimit,
-            exectype=exectype, valid=valid)
+            exectype=exectype, valid=valid, tradeid=tradeid)
 
     def close(self,
-              data=None, size=None, price=None, exectype=None, valid=None):
+              data=None, size=None, price=None, exectype=None, valid=None,
+              tradeid=0):
         '''
         Counters a long/short position closing it
 
@@ -443,9 +444,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size or possize)
 
         if possize > 0:
-            return self.sell(data, size, price, exectype, valid)
+            return self.sell(data, size, price, exectype, valid,
+                             tradeid=tradeid)
         elif possize < 0:
-            return self.buy(data, size, price, exectype, valid)
+            return self.buy(data, size, price, exectype, valid,
+                            tradeid=tradeid)
 
         return None
 

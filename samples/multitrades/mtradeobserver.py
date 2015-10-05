@@ -21,18 +21,29 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+import math
 
-from .dateintern import _num2date, _date2num, time2num, num2time
+import backtrader as bt
 
-__all__ = ('num2date', 'date2num', 'time2num', 'num2time')
 
-try:
-    import matplotlib.dates as mdates
+class MTradeObserver(bt.observer.Observer):
+    lines = ('Id_0', 'Id_1', 'Id_2')
 
-except ImportError:
-    num2date = _num2date
-    date2num = _date2num
-else:
-    num2date = mdates.num2date
-    date2num = mdates.date2num
+    plotinfo = dict(plot=True, subplot=True, plotlinelabels=True)
+
+    plotlines = dict(
+        Id_0=dict(marker='*', markersize=8.0, color='lime', fillstyle='full'),
+        Id_1=dict(marker='o', markersize=8.0, color='red', fillstyle='full'),
+        Id_2=dict(marker='s', markersize=8.0, color='blue', fillstyle='full')
+    )
+
+    def next(self):
+        for trade in self._owner._tradespending:
+
+            if trade.data is not self.data:
+                continue
+
+            if not trade.isclosed:
+                continue
+
+            self.lines[trade.tradeid][0] = trade.pnlcomm

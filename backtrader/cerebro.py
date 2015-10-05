@@ -33,6 +33,7 @@ from . import observers
 from .writer import WriterFile
 from .import num2date
 from .utils import OrderedDict
+from .resampler import DataResampler, DataReplayer
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -155,6 +156,30 @@ class Cerebro(with_metaclass(MetaParams, object)):
         feed = data.getfeed()
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
+
+    def replaydata(self, dataname, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be replayed by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataReplayer``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``DataReplayer`` will be passed transparently
+        '''
+        self.adddata(data=DataReplayer(dataname=dataname, **kwargs))
+
+    def resampledata(self, dataname, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be resample by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataResampler``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``DataResampler`` will be passed transparently
+        '''
+        self.adddata(data=DataResampler(dataname=dataname, **kwargs))
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''
@@ -338,13 +363,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.start()
 
-        for data in self.datas:
-            data.reset()
-            data.extend(size=self.params.lookahead)
-            data.start()
-            if self._dopreload:
-                data.preload()
-
         if self.writers_csv:
             wheaders = list()
             for data in self.datas:
@@ -381,6 +399,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     writer.addheaders(strat.getwriterheaders())
 
             strat._start()
+
+        if self.p.exactbars:
+            for strat in runstrats:
+                strat.ringbuffer()
+
+        for data in self.datas:
+            data.reset()
+            if not self.p.exactbars:
+                data.extend(size=self.params.lookahead)
+            data.start()
+            if self._dopreload:
+                data.preload()
 
         for writer in self.runwriters:
             writer.start()
@@ -437,10 +467,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
-        if self.p.exactbars:
-            for strat in runstrats:
-                strat.ringbuffer()
-
         data0 = self.datas[0]
         while data0.next():
             for data in self.datas[1:]:

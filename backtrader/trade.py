@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from .utils.py3 import range
 
+
 class Trade(object):
     '''
     Keeps track of the life of an trade: size, price,
@@ -55,10 +56,11 @@ class Trade(object):
     status_names = ['Created', 'Open', 'Closed']
     Created, Open, Closed = range(3)
 
-    def __init__(self, data=None,
+    def __init__(self, data=None, tradeid=0,
                  size=0, price=0.0, value=0.0, commission=0.0):
 
         self.data = data
+        self.tradeid = tradeid
         self.size = size
         self.price = price
         self.value = value

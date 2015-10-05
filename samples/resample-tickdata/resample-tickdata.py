@@ -46,7 +46,6 @@ def runstrat():
 
     # Handy dictionary for the argument timeframe conversion
     tframes = dict(
-        none=None,
         ticks=bt.TimeFrame.Ticks,
         microseconds=bt.TimeFrame.MicroSeconds,
         seconds=bt.TimeFrame.Seconds,
@@ -55,17 +54,10 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    timeframe = tframes[args.timeframe]
-
-    if timeframe is not None:
-        # Resample the data
-        data = bt.DataResampler(
-            dataname=data,
-            timeframe=timeframe,
-            compression=args.compression)
-
-    # Add the resample data instead of the original
-    cerebro.adddata(data)
+    # Resample the data
+    data = cerebro.resampledata(data=data,
+                                timeframe=tframes[args.timeframe],
+                                compression=args.compression)
 
     # Run over everything
     cerebro.run()
@@ -81,14 +73,13 @@ def parse_args():
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')
 
-    parser.add_argument('--timeframe', default='none', required=False,
-                        choices=['none', 'ticks', 'microseconds', 'seconds',
+    parser.add_argument('--timeframe', default='ticks', required=False,
+                        choices=['ticks', 'microseconds', 'seconds',
                                  'minutes', 'daily', 'weekly', 'monthly'],
                         help='Timeframe to resample to')
 
     parser.add_argument('--compression', default=1, required=False, type=int,
-                        help=('Compress n bars into 1'
-                              ' (not applicable if timeframe is "none")'))
+                        help=('Compress n bars into 1'))
 
     return parser.parse_args()
 

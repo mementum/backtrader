@@ -27,9 +27,16 @@ from .utils.py3 import range
 
 from . import feed
 from . import TimeFrame
+from backtrader import date2num
 
 
 class BaseResampler(feed.AbstractDataBase):
+    params = (
+        ('timelimits', True),
+        ('adjtimelimits', True),
+        ('limitpast', False),
+    )
+
     def __init__(self):
         self.data = self.p.dataname
         self._name = getattr(self.data, '_name', '')
@@ -74,7 +81,7 @@ class BaseResampler(feed.AbstractDataBase):
             self.tick_open = self.data.lines.open[index]
             self.tick_high = self.data.lines.high[index]
             self.tick_low = self.data.lines.low[index]
-            self.tick_close = self.data.lines.close[index]
+            self.tick_close = self.tick_last = self.data.lines.close[index]
             self.tick_volume = self.data.lines.volume[index]
             self.tick_openinterest = self.data.lines.openinterest[index]
 
@@ -88,13 +95,13 @@ class BaseResampler(feed.AbstractDataBase):
             ret = True
 
         elif self._timeframe == TimeFrame.MicroSeconds:
-            ret = self._barisover_microseconds(index)
+            ret = self._barisover_minutes_sub(index, TimeFrame.MicroSeconds)
 
         elif self._timeframe == TimeFrame.Seconds:
-            ret = self._barisover_seconds(index)
+            ret = self._barisover_minutes_sub(index, TimeFrame.Seconds)
 
         elif self._timeframe == TimeFrame.Minutes:
-            ret = self._barisover_minutes(index)
+            ret = self._barisover_minutes_sub(index, TimeFrame.Minutes)
 
         elif self._timeframe == TimeFrame.Weeks:
             ret = self._barisover_weeks(index)
@@ -112,12 +119,20 @@ class BaseResampler(feed.AbstractDataBase):
             # if not over say so to have the chance to accum more
             return False
 
-        # count next finished bar datetime-wise
-        self._samplecount += 1
+        if self.p.timelimits and \
+           self._timeframe in [TimeFrame.MicroSeconds,
+                               TimeFrame.Seconds,
+                               TimeFrame.Minutes]:
 
-        if self._samplecount % self.p.compression:
-            # compression level not reached yet, not over limit
-            return False
+            # Compression limit already calculated by the methods
+            pass
+        else:
+            # count next number of bars
+            self._samplecount += 1
+
+            if self._samplecount % self.p.compression:
+                # compression level not reached yet, not over limit
+                return False
 
         # datewise over and compression reached ... over the limit
         return True
@@ -149,7 +164,7 @@ class BaseResampler(feed.AbstractDataBase):
 
         return bardt.year > dt.year
 
-    def _barisover_minutes(self, index):
+    def _barisover_minutes_sub(self, index, tframe):
         dt = self.lines.datetime.date(index)
         bardt = self.data.datetime.date(index)
 
@@ -160,53 +175,57 @@ class BaseResampler(feed.AbstractDataBase):
             # TODO: Sessions and not only dates/days should be considered
             return True
 
-        minute = tm.hour * 60 + tm.minute
-        barminute = bartm.hour * 60 + bartm.minute
+        if tframe == TimeFrame.Minutes:
+            point = tm.hour * 60 + tm.minute
+            barpoint = bartm.hour * 60 + bartm.minute
+        elif tframe == TimeFrame.Seconds:
+            point = tm.hour * 3600 + tm.minute * 60 + tm.second
+            barpoint = bartm.hour * 3600 + bartm.minute * 60 + bartm.second
+        elif tframe == TimeFrame.MicroSeconds:
+            point = tm.microsecond + \
+                (tm.hour * 3600 + tm.minute * 60 + tm.second) * 1000000
+            barpoint = bartm.microsecond + \
+                (bartm.hour * 3600 + bartm.minute * 60 + bartm.second) * 1000000
 
-        if barminute > minute:
-            return True
+        ret = False
+        if barpoint > point:
+            # The data bar has surpassed the internal bar
+            if not self.p.timelimits:
+                # Compression to be checked outside
+                ret = True
 
-        return False
+            if self.p.compression == 1:
+                # no bar compression requested -> internal bar done
+                ret = True
 
-    def _barisover_seconds(self, index):
-        dt = self.lines.datetime.date(index)
-        bardt = self.data.datetime.date(index)
+            p_major, p_minor = divmod(point, self.p.compression)
+            bp_major, bp_minor = divmod(barpoint, self.p.compression)
 
-        tm = self.lines.datetime.time(index)
-        bartm = self.data.datetime.time(index)
+            if bp_major > p_major:
+                ret = True
 
-        if bardt > dt:
-            # TODO: Sessions and not only dates/days should be considered
-            return True
+            if ret and self.p.adjtimelimits:
+                p_major = ((point // self.p.compression) + self.p.limitpast)
+                p_major *= self.p.compression
 
-        second = tm.hour * 3600 + tm.minute * 60 + tm.second
-        barsecond = bartm.hour * 3600 + bartm.minute * 60 + bartm.second
+                if tframe == TimeFrame.Minutes:
+                    ph, pm = divmod(p_major, 60)
+                    ps = 0
+                    pus = 0
+                elif tframe == TimeFrame.Seconds:
+                    ph, pmin = divmod(p_major, 3600)
+                    pm, ps = divmod(pmin, 60)
+                    pus = 0
+                elif tframe == TimeFrame.MicroSeconds:
+                    ph, pmin = divmod(p_major, 36000 * 1000000)
+                    pm, psec = divmod(pmin, 60 * 1000000)
+                    ps, pus = divmod(psec, 1000000)
 
-        if barsecond > second:
-            return True
+                dt = self.lines.datetime.datetime(index)
+                dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+                self.lines.datetime[0] = date2num(dt)
 
-        return False
-
-    def _barisover_microseconds(self, index):
-        dt = self.lines.datetime.date(index)
-        bardt = self.data.datetime.date(index)
-
-        tm = self.lines.datetime.time(index)
-        bartm = self.data.datetime.time(index)
-
-        if bardt > dt:
-            # TODO: Sessions and not only dates/days should be considered
-            return True
-
-        usecond = tm.microsecond + \
-            (tm.hour * 3600 + tm.minute * 60 + tm.second) * 1000000
-        barusecond = bartm.microsecond + \
-            (bartm.hour * 3600 + bartm.minute * 60 + bartm.second) * 1000000
-
-        if barusecond > usecond:
-            return True
-
-        return False
+        return ret
 
 
 class DataResampler(BaseResampler):

@@ -37,6 +37,10 @@ Reference
 
    .. automethod:: adddata
 
+   .. automethod:: resampledata
+
+   .. automethod:: replaydata
+
    .. automethod:: addstrategy
 
    .. automethod:: optstrategy

@@ -111,3 +111,36 @@ def _date2num(dt):
                  dt.microsecond / MUSECONDS_PER_DAY
                  )
     return base
+
+
+def time2num(tm):
+    """
+    Convert :mod:`time` to the to the preserving hours, minutes, seconds
+    and microseconds.  Return value is a :func:`float`.
+    """
+    num = (tm.hour / HOURS_PER_DAY +
+           tm.minute / MINUTES_PER_DAY +
+           tm.second / SECONDS_PER_DAY +
+           tm.microsecond / MUSECONDS_PER_DAY)
+
+    return num
+
+
+def num2time(num):
+    hour, remainder = divmod(HOURS_PER_DAY * num, 1)
+    minute, remainder = divmod(MINUTES_PER_HOUR * remainder, 1)
+    second, remainder = divmod(SECONDS_PER_MINUTE * remainder, 1)
+    microsecond = int(MUSECONDS_PER_SECOND * remainder)
+    if microsecond < 10:
+        microsecond = 0  # compensate for rounding errors
+
+    # If not tz has been passed return a non-timezoned dt
+    dt = datetime.datetime.min.replace(hour=int(hour),
+                                       minute=int(minute),
+                                       second=int(second),
+                                       microsecond=microsecond)
+
+    if microsecond > 999990:  # compensate for rounding errors
+        dt += datetime.timedelta(microseconds=1e6 - microsecond)
+
+    return dt.time()

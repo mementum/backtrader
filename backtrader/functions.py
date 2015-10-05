@@ -97,7 +97,7 @@ class MultiLogicReduce(MultiLogic):
 # The _xxxlogic functions are defined at module scope to make them
 # pickable and therefore compatible with multiprocessing
 def _andlogic(x, y):
-    return x and y
+    return bool(x and y)
 
 
 class And(MultiLogicReduce):
@@ -105,7 +105,7 @@ class And(MultiLogicReduce):
 
 
 def _orlogic(x, y):
-    return x and y
+    return bool(x or y)
 
 
 class Or(MultiLogicReduce):

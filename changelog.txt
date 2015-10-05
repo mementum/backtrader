@@ -1,3 +1,26 @@
+1.1.12.88:
+  - Refactoring of minute/seconds/microseconds bar compression scheme to allow
+    time adjusted bars
+  - Added tick_last to datas - alias of tick_close
+  - resampledata and replaydata methods added to cerebro
+  - Added tick_last to datas - alias of tick_close
+  - Added multitrade support and sample
+  - Added helper time2num and num2time to complement date2num and num2date
+  - RelativeVolumeByBar Sample
+  - Corrected fromdate being set at the end of session
+  - Refactor some data feeds to use iterators and discard itertools.count
+  - Add dm/tm methods to LineBuffer to get numeric parts (int/fraction) of
+    numeric datetime representation
+  - Added sample datas with volume
+  - Corrected _orlogic for "Or" function and bool'ized And and Or
+  - Refactored starting points in running strategies
+  - Added queue/Queue to py3 compatibility
+  - Further rework of minute (and sub-minute) Data Resampling/Replaying
+  - Added tia/visualize-wealth/QSTK/TradingWithPython to README
+  - Added tick_last to set of tick variables (open/high/low/close)
+  - Added resampledata and replaydata to cerebro to avoid having to instantiate
+    DataReplayer/DataResampler
+
 1.1.11.88:
   - Added TimeFrame for Ticks, MicroSeconds and Seconds
   - Plot support for new Ticks, MicroSeconds and Seconds TimeFrames
