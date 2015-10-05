@@ -34,6 +34,7 @@ from __future__ import (absolute_import, division, print_function,
 import array
 import collections
 from itertools import islice
+import math
 
 from .utils.py3 import range, with_metaclass, string_types
 
@@ -344,6 +345,18 @@ class LineBuffer(LineSingle):
 
     def time(self, ago=0):
         return self.datetime(ago).time()
+
+    def dt(self, ago=0):
+        '''
+        return numeric date part of datetimefloat
+        '''
+        return math.trunc(self.array[self.idx + ago])
+
+    def tm(self, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        return math.modf(self.array[self.idx + ago])[0]
 
 
 class MetaLineActions(LineBuffer.__class__):
