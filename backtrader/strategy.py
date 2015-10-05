@@ -433,7 +433,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             exectype=exectype, valid=valid, tradeid=tradeid)
 
     def close(self,
-              data=None, size=None, price=None, exectype=None, valid=None):
+              data=None, size=None, price=None, exectype=None, valid=None,
+              tradeid=0):
         '''
         Counters a long/short position closing it
 
@@ -443,9 +444,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size or possize)
 
         if possize > 0:
-            return self.sell(data, size, price, exectype, valid)
+            return self.sell(data, size, price, exectype, valid,
+                             tradeid=tradeid)
         elif possize < 0:
-            return self.buy(data, size, price, exectype, valid)
+            return self.buy(data, size, price, exectype, valid,
+                            tradeid=tradeid)
 
         return None
 
