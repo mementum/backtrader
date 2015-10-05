@@ -69,8 +69,10 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.fromdate = datetime.datetime.combine(
-                _obj.p.fromdate, _obj.p.sessionend)
+            _obj.p.fromdate = datetime.datetime(
+                year=_obj.p.fromdate.year,
+                month=_obj.p.fromdate.month,
+                day=_obj.p.fromdate.day)
 
         if isinstance(_obj.p.todate, datetime.date):
             # push it to the end of the day, or else intraday
