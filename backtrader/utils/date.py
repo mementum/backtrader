@@ -23,9 +23,9 @@ from __future__ import (absolute_import, division, print_function,
 
 import datetime
 
-from .dateintern import _num2date, _date2num
+from .dateintern import _num2date, _date2num, time2num, num2time
 
-__all__ = ('num2date', 'date2num')
+__all__ = ('num2date', 'date2num', 'time2num', 'num2time')
 
 try:
     import matplotlib.dates as mdates
