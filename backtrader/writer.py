@@ -171,7 +171,7 @@ class WriterFile(WriterBase):
             if recurse:
                 kline += '- '
 
-            kline += key + ':'
+            kline += str(key) + ':'
 
             try:
                 sclass = issubclass(val, LineSeries)
