@@ -59,6 +59,10 @@ def runstrat():
                                 timeframe=tframes[args.timeframe],
                                 compression=args.compression)
 
+    if args.writer:
+        # add a writer
+        cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
+
     # Run over everything
     cerebro.run()
 
@@ -80,6 +84,12 @@ def parse_args():
 
     parser.add_argument('--compression', default=1, required=False, type=int,
                         help=('Compress n bars into 1'))
+
+    parser.add_argument('--writer', required=False, action='store_true',
+                        help=('Add a Writer'))
+
+    parser.add_argument('--wrcsv', required=False, action='store_true',
+                        help=('Add CSV to the Writer'))
 
     return parser.parse_args()
 
