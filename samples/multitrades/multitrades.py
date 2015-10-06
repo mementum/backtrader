@@ -165,7 +165,7 @@ def runstrategy():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MultiData Strategy')
+    parser = argparse.ArgumentParser(description='MultiTrades')
 
     parser.add_argument('--data', '-d',
                         default='../../datas/2006-day-001.txt',
