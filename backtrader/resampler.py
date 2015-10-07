@@ -32,9 +32,9 @@ from backtrader import date2num
 
 class BaseResampler(feed.AbstractDataBase):
     params = (
-        ('timelimits', True),
-        ('adjtimelimits', True),
-        ('limitpast', False),
+        ('bar2edge', True),
+        ('adjbartime', True),
+        ('rightedge', False),
     )
 
     def __init__(self):
@@ -85,6 +85,11 @@ class BaseResampler(feed.AbstractDataBase):
             self.tick_volume = self.data.lines.volume[index]
             self.tick_openinterest = self.data.lines.openinterest[index]
 
+        if TimeFrame.Ticks < self._timeframe < TimeFrame.Days:
+            # Adjust resampled to the time limit for micro/seconds/minutes
+            if self.p.bar2edge and self.p.adjbartime:
+                self._adjusttime(index)
+
     def _baroverlimit(self, index=0):
         if not self._havebar():
             # bar has not been kickstarted - can't be over the limit
@@ -94,14 +99,8 @@ class BaseResampler(feed.AbstractDataBase):
             # Ticks is already the lowest level
             ret = True
 
-        elif self._timeframe == TimeFrame.MicroSeconds:
-            ret = self._barisover_minutes_sub(index, TimeFrame.MicroSeconds)
-
-        elif self._timeframe == TimeFrame.Seconds:
-            ret = self._barisover_minutes_sub(index, TimeFrame.Seconds)
-
-        elif self._timeframe == TimeFrame.Minutes:
-            ret = self._barisover_minutes_sub(index, TimeFrame.Minutes)
+        elif self._timeframe < TimeFrame.Days:
+            ret = self._barisover_minutes_sub(index)
 
         elif self._timeframe == TimeFrame.Weeks:
             ret = self._barisover_weeks(index)
@@ -119,7 +118,7 @@ class BaseResampler(feed.AbstractDataBase):
             # if not over say so to have the chance to accum more
             return False
 
-        if self.p.timelimits and \
+        if self.p.bar2edge and \
            self._timeframe in [TimeFrame.MicroSeconds,
                                TimeFrame.Seconds,
                                TimeFrame.Minutes]:
@@ -164,7 +163,7 @@ class BaseResampler(feed.AbstractDataBase):
 
         return bardt.year > dt.year
 
-    def _barisover_minutes_sub(self, index, tframe):
+    def _barisover_minutes_sub(self, index):
         dt = self.lines.datetime.date(index)
         bardt = self.data.datetime.date(index)
 
@@ -175,60 +174,132 @@ class BaseResampler(feed.AbstractDataBase):
             # TODO: Sessions and not only dates/days should be considered
             return True
 
-        if tframe == TimeFrame.Minutes:
-            point = tm.hour * 60 + tm.minute
-            barpoint = bartm.hour * 60 + bartm.minute
-        elif tframe == TimeFrame.Seconds:
-            point = tm.hour * 3600 + tm.minute * 60 + tm.second
-            barpoint = bartm.hour * 3600 + bartm.minute * 60 + bartm.second
-        elif tframe == TimeFrame.MicroSeconds:
-            point = tm.microsecond + \
-                (tm.hour * 3600 + tm.minute * 60 + tm.second) * 1000000
-            barpoint = bartm.microsecond + \
-                (bartm.hour * 3600 + bartm.minute * 60 + bartm.second) * 1000000
+        point = self._gettmpoint(tm)
+        barpoint = self._gettmpoint(bartm)
 
         ret = False
         if barpoint > point:
             # The data bar has surpassed the internal bar
-            if not self.p.timelimits:
-                # Compression to be checked outside
+            if not self.p.bar2edge:
+                # Compression to be ochecked outside
                 ret = True
+            elif self.p.compression == 1:
+                    # no bar compression requested -> internal bar done
+                    ret = True
+            else:
+                point_comp = point // self.p.compression
+                barpoint_comp = barpoint // self.p.compression
 
-            if self.p.compression == 1:
-                # no bar compression requested -> internal bar done
-                ret = True
-
-            p_major, p_minor = divmod(point, self.p.compression)
-            bp_major, bp_minor = divmod(barpoint, self.p.compression)
-
-            if bp_major > p_major:
-                ret = True
-
-            if ret and self.p.adjtimelimits:
-                p_major = ((point // self.p.compression) + self.p.limitpast)
-                p_major *= self.p.compression
-
-                if tframe == TimeFrame.Minutes:
-                    ph, pm = divmod(p_major, 60)
-                    ps = 0
-                    pus = 0
-                elif tframe == TimeFrame.Seconds:
-                    ph, pmin = divmod(p_major, 3600)
-                    pm, ps = divmod(pmin, 60)
-                    pus = 0
-                elif tframe == TimeFrame.MicroSeconds:
-                    ph, pmin = divmod(p_major, 36000 * 1000000)
-                    pm, psec = divmod(pmin, 60 * 1000000)
-                    ps, pus = divmod(psec, 1000000)
-
-                dt = self.lines.datetime.datetime(index)
-                dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
-                self.lines.datetime[0] = date2num(dt)
+                # Went over boundary including compression
+                if barpoint_comp > point_comp:
+                    ret = True
 
         return ret
 
+    def _gettmpoint(self, tm):
+        '''
+        Returns the point of time intraday for a given time according to the
+        timeframe
+
+          - Ex 1: 00:05:00 in minutes -> point = 5
+          - Ex 2: 00:05:20 in seconds -> point = 5 * 60 + 20 = 320
+        '''
+        point = tm.hour * 60 + tm.minute
+
+        if self._timeframe < TimeFrame.Minutes:
+            point = point * 60 + tm.second
+
+        if self._timeframe < TimeFrame.Seconds:
+            point = point * 1e6 + tm.microsecond
+
+        return point
+
+    def _adjusttime(self, index=0):
+        '''
+        Adjusts the time of calculated bar (from underlying data source) by
+        using the timeframe to the appropriate boundary taken int account
+        compression
+
+        Depending on param ``rightedge`` uses the starting boundary or the
+        ending one
+        '''
+        # Get current time
+        tm = self.lines.datetime.time(0)
+        # Get the point of the day in the time frame unit (ex: minute 200)
+        point = self._gettmpoint(tm)
+
+        # Apply compression to update the point position (comp 5 -> 200 // 5)
+        point = (point // self.p.compression)
+        # If rightedge (end of boundary is activated) add it
+        if point % self.p.compression:
+            point += self.p.rightedge
+
+        # Restore point to the timeframe units by de-applying compression
+        point *= self.p.compression
+
+        # Get hours, minutes, seconds and microseconds
+        if self._timeframe == TimeFrame.Minutes:
+            ph, pm = divmod(point, 60)
+            ps = 0
+            pus = 0
+        elif self._timeframe == TimeFrame.Seconds:
+            ph, pm = divmod(point, 60 * 60)
+            pm, ps = divmod(pm, 60)
+            pus = 0
+        elif self._timeframe == TimeFrame.MicroSeconds:
+            ph, pm = divmod(point, 60 * 60 * 1e6)
+            pm, psec = divmod(pm, 60 * 1e6)
+            ps, pus = divmod(psec, 1e6)
+
+        # Get current datetime value which was taken from data
+        dt = self.lines.datetime.datetime(index)
+        # Replace intraday parts with the calculated ones and update it
+        dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+        self.lines.datetime[0] = date2num(dt)
+
 
 class DataResampler(BaseResampler):
+    '''This class resamples data of a given timeframe to a larger timeframe.
+
+    Params
+
+      - bar2edge (default: True)
+
+        resamples using time boundaries as the target. For example with a
+        "ticks -> 5 seconds" the resulting 5 seconds bars will be aligned to
+        xx:00, xx:05, xx:10 ...
+
+      - adjbartime (default: True)
+
+        Use the time at the boundary to adjust the time of the delivered
+        resampled bar instead of the last seen timestamp. If resampling to "5
+        seconds" the time of the bar will be adjusted for example to xx:05 even
+        if the last seen timestamp was xx:04.33
+
+        .. note::
+
+           Time will only be adjusted if "bar2ege" is True. It wouldn't make
+           sense to adjust the time if the bar has not been aligned to a
+           boundary
+
+      - rightedge (default: False)
+
+        Use the right edge of the time boundaries to set the time.
+
+        If False and compressing to 5 seconds the time of a resampled bar for
+        seconds between xx:xx:00 and xx:xx:04 will be xx:xx:00 (the starting
+        boundary
+
+        If True the used boundary for the time will be xx:xx:05 (the ending
+        boundary)
+    '''
+
+    params = (
+        ('bar2edge', True),
+        ('adjbartime', True),
+        ('rightedge', False),
+    )
+
     def start(self):
         super(DataResampler, self).start()
         self._preloading = False
@@ -247,7 +318,6 @@ class DataResampler(BaseResampler):
         self._preloading = False
 
     def _load(self):
-        # if data.buflen() > len(data):
         if self._preloading:
             # data is preloaded, we are preloading too, can move
             # forward until have full bar or data source is exhausted
@@ -290,6 +360,12 @@ class DataResampler(BaseResampler):
 
 
 class DataReplayer(BaseResampler):
+    params = (
+        ('bar2edge', False),  # changed
+        ('adjbartime', False),  # changed
+        ('rightedge', False),
+    )
+
     def start(self):
         super(DataReplayer, self).start()
         self._firstbar = True
