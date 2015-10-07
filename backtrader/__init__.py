@@ -38,8 +38,10 @@ from .trade import *
 from .position import *
 from .analyzer import *
 from .writer import *
+from .feed import *
+from .datafilter import *
 
-from .utils import num2date, date2num
+from .utils import num2date, date2num, time2num, num2time
 
 from . import feeds
 from . import indicators
