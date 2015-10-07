@@ -55,9 +55,13 @@ def runstrat():
         monthly=bt.TimeFrame.Months)
 
     # Resample the data
-    data = cerebro.resampledata(data,
-                                timeframe=tframes[args.timeframe],
-                                compression=args.compression)
+    data = cerebro.resampledata(
+        data,
+        timeframe=tframes[args.timeframe],
+        compression=args.compression,
+        bar2edge=not args.nobar2edge,
+        adjbartime=not args.noadjbartime,
+        rightedge=args.rightedge)
 
     if args.writer:
         # add a writer
@@ -84,6 +88,16 @@ def parse_args():
 
     parser.add_argument('--compression', default=1, required=False, type=int,
                         help=('Compress n bars into 1'))
+
+    parser.add_argument('--nobar2edge', required=False, action='store_true',
+                        help=('Do not Resample IntraDay Timed Bars to edges'))
+
+    parser.add_argument('--noadjbartime', required=False,
+                        action='store_true',
+                        help=('Do not adjust the time bar to meet the edges'))
+
+    parser.add_argument('--rightedge', required=False, action='store_true',
+                        help=('Resample to right edge of boundary'))
 
     parser.add_argument('--writer', required=False, action='store_true',
                         help=('Add a Writer'))
