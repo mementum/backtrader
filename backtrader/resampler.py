@@ -23,14 +23,33 @@ from __future__ import (absolute_import, division, print_function,
 
 import math
 
-from .utils.py3 import range
-
-from . import feed
-from . import TimeFrame
-from backtrader import date2num
+from backtrader import date2num, AbstractDataBase, TimeFrame
+from backtrader.utils.py3 import with_metaclass
 
 
-class BaseResampler(feed.AbstractDataBase):
+class MetaBaseResampler(AbstractDataBase.__class__):
+    '''
+    Inserted as metaclass for BaseResampler to make the 1.1.12.88 parameter
+    names compatible with later releases
+    '''
+    def donew(cls, *args, **kwargs):
+        # Translate parameter names from 1.1.12.88 to names given after
+        _translate = dict(timelimits='bar2edge',
+                          adjtimelimits='adjbartime', limitpast='rightedge')
+
+        for name, newname in _translate.items():
+            if name in kwargs:
+                kwargs[newname] = kwargs.pop(name)
+
+        # Create the object and set the params in place
+        _obj, args, kwargs = \
+            super(MetaBaseResampler, cls).donew(*args, **kwargs)
+
+        # Parameter values have now been set before __init__
+        return _obj, args, kwargs
+
+
+class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
     params = (
         ('bar2edge', True),
         ('adjbartime', True),
@@ -164,15 +183,15 @@ class BaseResampler(feed.AbstractDataBase):
         return bardt.year > dt.year
 
     def _barisover_minutes_sub(self, index):
-        dt = self.lines.datetime.date(index)
-        bardt = self.data.datetime.date(index)
+        dtnum = self.data.datetime.dt(index)  # day (integer)
+        dtnum += self.sessionend  # add fractional part to day
+
+        if self.data.datetime[index] > dtnum:
+            # Next session is on (defaults to next day)
+            return True
 
         tm = self.lines.datetime.time(index)
         bartm = self.data.datetime.time(index)
-
-        if bardt > dt:
-            # TODO: Sessions and not only dates/days should be considered
-            return True
 
         point = self._gettmpoint(tm)
         barpoint = self._gettmpoint(bartm)
