@@ -1,3 +1,14 @@
+1.1.13.88
+  - Further refactoring of resampling (keeping previous parameter names
+    compatible) killing corner case for last bar still having the sub-bar
+    timestamp - Close #25
+  - Added sessionstart parameter to DataBase to complement sessionend
+  - Some module import refactoring to refer to main module
+  - Added DataFilter class
+  - Close #24 by enabling writer to handle Analyzer dictionaries which carry
+    non-string as keys
+  - Correct/enhance some of the samples
+
 1.1.12.88:
   - Refactoring of minute/seconds/microseconds bar compression scheme to allow
     time adjusted bars
