@@ -273,12 +273,12 @@ class DataResampler(BaseResampler):
 
         Use the time at the boundary to adjust the time of the delivered
         resampled bar instead of the last seen timestamp. If resampling to "5
-        seconds" the time of the bar will be adjusted for example to xx:05 even
-        if the last seen timestamp was xx:04.33
+        seconds" the time of the bar will be adjusted for example to hh:mm:05
+        even if the last seen timestamp was hh:mm:04.33
 
         .. note::
 
-           Time will only be adjusted if "bar2ege" is True. It wouldn't make
+           Time will only be adjusted if "bar2edge" is True. It wouldn't make
            sense to adjust the time if the bar has not been aligned to a
            boundary
 
@@ -287,11 +287,12 @@ class DataResampler(BaseResampler):
         Use the right edge of the time boundaries to set the time.
 
         If False and compressing to 5 seconds the time of a resampled bar for
-        seconds between xx:xx:00 and xx:xx:04 will be xx:xx:00 (the starting
+        seconds between hh:mm:00 and hh:mm:04 will be hh:mm:00 (the starting
         boundary
 
-        If True the used boundary for the time will be xx:xx:05 (the ending
+        If True the used boundary for the time will be hh:mm:05 (the ending
         boundary)
+
     '''
 
     params = (
