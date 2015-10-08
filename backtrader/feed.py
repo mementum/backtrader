@@ -24,12 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 import datetime
 import os.path
 
-from .utils.py3 import with_metaclass, bytes
-
-from . import dataseries
-from . import metabase
-from . import TimeFrame
-from .utils import date2num
+from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
+from backtrader.utils.py3 import with_metaclass, bytes
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
@@ -63,16 +59,17 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
+        if _obj.p.sessionstart is None:
+            _obj.p.sessionstart = datetime.time(0, 0, 0)
+
         if _obj.p.sessionend is None:
             _obj.p.sessionend = datetime.time(23, 59, 59)
 
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.fromdate = datetime.datetime(
-                year=_obj.p.fromdate.year,
-                month=_obj.p.fromdate.month,
-                day=_obj.p.fromdate.day)
+            _obj.p.fromdate = datetime.datetime.combine(
+                _obj.p.fromdate, _obj.p.sessionstart)
 
         if isinstance(_obj.p.todate, datetime.date):
             # push it to the end of the day, or else intraday
@@ -82,6 +79,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
         _obj.fromdate = date2num(_obj.p.fromdate)
         _obj.todate = date2num(_obj.p.todate)
+        _obj.sessionstart = time2num(_obj.p.sessionstart)
+        _obj.sessionend = time2num(_obj.p.sessionend)
 
         # hold datamaster points corresponding to own
         _obj.mlen = list()
@@ -97,6 +96,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('name', ''),
               ('compression', 1),
               ('timeframe', TimeFrame.Days),
+              ('sessionstart', None),
               ('sessionend', None))
 
     _feed = None
