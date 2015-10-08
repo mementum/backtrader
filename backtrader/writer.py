@@ -25,15 +25,12 @@ import collections
 import itertools
 import sys
 
-from .utils.py3 import (map, with_metaclass, string_types, integer_types,
-                        StringIO)
-
-from backtrader import MetaParams
-from backtrader.utils import OrderedDict
-from backtrader import LineSeries
+import backtrader as bt
+from backtrader.utils.py3 import (map, with_metaclass, string_types,
+                                  integer_types, StringIO)
 
 
-class WriterBase(with_metaclass(MetaParams, object)):
+class WriterBase(with_metaclass(bt.MetaParams, object)):
     pass
 
 
@@ -174,7 +171,7 @@ class WriterFile(WriterBase):
             kline += str(key) + ':'
 
             try:
-                sclass = issubclass(val, LineSeries)
+                sclass = issubclass(val, bt.LineSeries)
             except TypeError:
                 sclass = False
 
