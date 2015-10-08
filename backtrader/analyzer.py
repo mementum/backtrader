@@ -23,13 +23,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import pprint as pp
 
-from .utils.py3 import with_metaclass
-
-from backtrader import MetaParams, Strategy, WriterFile
-import backtrader.metabase as metabase
+import backtrader as bt
+from backtrader.utils.py3 import with_metaclass
 
 
-class MetaAnalyzer(MetaParams):
+class MetaAnalyzer(bt.MetaParams):
     def donew(cls, *args, **kwargs):
         '''
         Intercept the strategy parameter
@@ -39,8 +37,8 @@ class MetaAnalyzer(MetaParams):
 
         _obj._children = list()
 
-        _obj.strategy = strategy = metabase.findowner(_obj, Strategy)
-        _obj._parent = metabase.findowner(_obj, Analyzer)
+        _obj.strategy = strategy = bt.metabase.findowner(_obj, bt.Strategy)
+        _obj._parent = bt.metabase.findowner(_obj, Analyzer)
 
         _obj.datas = strategy.datas
 
@@ -141,7 +139,7 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         return dict()
 
     def print(self, *args, **kwargs):
-        writer = WriterFile(*args, **kwargs)
+        writer = bt.WriterFile(*args, **kwargs)
         writer.start()
         pdct = dict()
         pdct[self.__class__.__name__] = self.get_analysis()

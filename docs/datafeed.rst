@@ -71,10 +71,15 @@ Parameters:
     Number of actual bars per bar. Informative. Only effective in Data
     Resampling/Replaying.
 
+  - ``sessionstart`` (default: None)
+
+    Indication of session starting time for the data. May be used by classes for
+    purposes like resampling
+
   - ``sessionend`` (default: None)
 
-    Informative abou the session end time for the data. May be used by classes
-    freely (VChart uses it to place daily bars at the end of the day)
+    Indication of session ending time for the data. May be used by classes for
+    purposes like resampling
 
 
 CSV Data Feeds Common parameters

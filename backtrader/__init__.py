@@ -21,25 +21,34 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from .utils import num2date, date2num, time2num, num2time
+
 from .linebuffer import *
+from .functions import *
+
+from .order import *
+from .comminfo import *
+from .trade import *
+from .position import *
+
+from .broker import *
+
 from .lineseries import *
-from .lineiterator import *
+
 from .dataseries import *
+from .feed import *
+from .resampler import *
+from .datafilter import *
+
+from .lineiterator import *
 from .indicator import *
 from .observer import *
 from .strategy import *
-from .order import *
-from .comminfo import *
-from .broker import *
-from .cerebro import *
-from .functions import *
-from .resampler import *
-from .trade import *
-from .position import *
-from .analyzer import *
-from .writer import *
 
-from .utils import num2date, date2num
+from .writer import *
+from .analyzer import *
+
+from .cerebro import *
 
 from . import feeds
 from . import indicators
@@ -47,4 +56,4 @@ from . import strategies
 from . import observers
 from . import analyzers
 
-__version__ = '1.1.12.88'
+__version__ = '1.1.13.88'

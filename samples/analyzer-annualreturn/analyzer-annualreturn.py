@@ -23,17 +23,15 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import datetime
-import itertools
 
 # The above could be sent to an independent module
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
+from backtrader.analyzers import SQN, AnnualReturn
 
-import mtradeobserver
 
-
-class MultiTradeStrategy(bt.Strategy):
+class LongShortStrategy(bt.Strategy):
     '''This strategy buys/sells upong the close price crossing
     upwards/downwards a Simple Moving Average.
 
@@ -44,8 +42,14 @@ class MultiTradeStrategy(bt.Strategy):
         stake=1,
         printout=False,
         onlylong=False,
-        mtrade=False,
+        csvcross=False,
     )
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 
     def log(self, txt, dt=None):
         if self.p.printout:
@@ -55,41 +59,34 @@ class MultiTradeStrategy(bt.Strategy):
 
     def __init__(self):
         # To control operation entries
-        self.order = None
+        self.orderid = None
 
         # Create SMA on 2nd data
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
         # Create a CrossOver Signal from close an moving average
         self.signal = btind.CrossOver(self.data.close, sma)
-
-        # To alternate amongst different tradeids
-        if self.p.mtrade:
-            self.tradeid = itertools.cycle([0, 1, 2])
-        else:
-            self.tradeid = itertools.cycle([0])
+        self.signal.csv = self.p.csvcross
 
     def next(self):
-        if self.order:
+        if self.orderid:
             return  # if an order is active, no new orders are allowed
 
         if self.signal > 0.0:  # cross upwards
             if self.position:
                 self.log('CLOSE SHORT , %.2f' % self.data.close[0])
-                self.close(tradeid=self.curtradeid)
+                self.close()
 
             self.log('BUY CREATE , %.2f' % self.data.close[0])
-            self.curtradeid = next(self.tradeid)
-            self.buy(size=self.p.stake, tradeid=self.curtradeid)
+            self.buy(size=self.p.stake)
 
         elif self.signal < 0.0:
             if self.position:
                 self.log('CLOSE LONG , %.2f' % self.data.close[0])
-                self.close(tradeid=self.curtradeid)
+                self.close()
 
             if not self.p.onlylong:
                 self.log('SELL CREATE , %.2f' % self.data.close[0])
-                self.curtradeid = next(self.tradeid)
-                self.sell(size=self.p.stake, tradeid=self.curtradeid)
+                self.sell(size=self.p.stake)
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -108,7 +105,7 @@ class MultiTradeStrategy(bt.Strategy):
             pass  # Simply log
 
         # Allow new orders
-        self.order = None
+        self.orderid = None
 
     def notify_trade(self, trade):
         if trade.isclosed:
@@ -139,11 +136,11 @@ def runstrategy():
     cerebro.adddata(data)
 
     # Add the strategy
-    cerebro.addstrategy(MultiTradeStrategy,
+    cerebro.addstrategy(LongShortStrategy,
                         period=args.period,
                         onlylong=args.onlylong,
-                        stake=args.stake,
-                        mtrade=args.mtrade)
+                        csvcross=args.csvcross,
+                        stake=args.stake)
 
     # Add the commission - only stocks like a for each operation
     cerebro.broker.setcash(args.cash)
@@ -153,8 +150,11 @@ def runstrategy():
                                  mult=args.mult,
                                  margin=args.margin)
 
-    # Add the MultiTradeObserver
-    cerebro.addobserver(mtradeobserver.MTradeObserver)
+    # Add the Analyzers
+    cerebro.addanalyzer(SQN)
+    cerebro.addanalyzer(AnnualReturn)
+
+    cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=2)
 
     # And run it
     cerebro.run()
@@ -165,28 +165,31 @@ def runstrategy():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MultiTrades')
+    parser = argparse.ArgumentParser(description='MultiData Strategy')
 
     parser.add_argument('--data', '-d',
-                        default='../../datas/2006-day-001.txt',
+                        default='../../datas/2005-2006-day-001.txt',
                         help='data to add to the system')
 
     parser.add_argument('--fromdate', '-f',
-                        default='2006-01-01',
+                        default='2005-01-01',
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--todate', '-t',
                         default='2006-12-31',
                         help='Starting date in YYYY-MM-DD format')
 
-    parser.add_argument('--mtrade', action='store_true',
-                        help='Activate MultiTrade Ids')
-
     parser.add_argument('--period', default=15, type=int,
                         help='Period to apply to the Simple Moving Average')
 
     parser.add_argument('--onlylong', '-ol', action='store_true',
                         help='Do only long operations')
+
+    parser.add_argument('--writercsv', '-wcsv', action='store_true',
+                        help='Tell the writer to produce a csv stream')
+
+    parser.add_argument('--csvcross', action='store_true',
+                        help='Output the CrossOver signals to CSV')
 
     parser.add_argument('--cash', default=100000, type=int,
                         help='Starting Cash')

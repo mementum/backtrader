@@ -49,7 +49,7 @@ class AnnualReturn(Analyzer):
 
     def stop(self):
         # Must have stats.broker
-        cur_year = None
+        cur_year = -1
 
         value_start = 0.0
         value_cur = 0.0
@@ -65,7 +65,7 @@ class AnnualReturn(Analyzer):
 
             if dt.year > cur_year:
 
-                if cur_year is not None:
+                if cur_year >= 0:
                     annualret = (value_end / value_start) - 1.0
                     self.rets.append(annualret)
                     self.ret[cur_year] = annualret
