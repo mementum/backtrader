@@ -28,7 +28,7 @@ import sys
 from .utils.py3 import (map, with_metaclass, string_types, integer_types,
                         StringIO)
 
-from backtrader import MetaParams, Strategy
+from backtrader import MetaParams
 from backtrader.utils import OrderedDict
 from backtrader import LineSeries
 
