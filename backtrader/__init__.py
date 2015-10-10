@@ -39,6 +39,7 @@ from .dataseries import *
 from .feed import *
 from .resampler import *
 from .datafilter import *
+from .datafiller import *
 
 from .lineiterator import *
 from .indicator import *
