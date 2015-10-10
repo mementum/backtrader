@@ -30,6 +30,7 @@ import backtrader.feeds as btfeeds
 
 from relvolbybar import RelativeVolumeByBar
 
+
 def runstrategy():
     args = parse_args()
 
