@@ -22,6 +22,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import backtrader as bt
+from .utils.py3 import with_metaclass
+from . import metabase
 
 
 class DataFilter(bt.AbstractDataBase):
@@ -71,3 +73,12 @@ class DataFilter(bt.AbstractDataBase):
             return True
 
         return False  # no more data from underlying source
+
+
+class SessionFilter(with_metaclass(metabase.MetaParams, object)):
+    def __init__(self, data):
+        pass
+
+    def __call__(self, data):
+        # Both ends of the comparison are in the session
+        return data.sessionstart <= data.datetime.tm(0) <= data.sessionend
