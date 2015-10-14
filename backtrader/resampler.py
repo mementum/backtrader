@@ -183,10 +183,10 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         return bardt.year > dt.year
 
     def _barisover_minutes_sub(self, index):
-        dtnum = self.data.datetime.dt(index)  # day (integer)
-        dtnum += self.sessionend  # add fractional part to day
+        # Put session end in context of current datetime
+        sessend = self.data.datetime.tm2dtime(self.sessionend)
 
-        if self.data.datetime[index] > dtnum:
+        if self.data.datetime[index] > sessend:
             # Next session is on (defaults to next day)
             return True
 
