@@ -25,6 +25,8 @@ import collections
 import datetime
 
 from backtrader import AbstractDataBase, TimeFrame, date2num, num2date
+from backtrader.utils.py3 import with_metaclass
+from . import metabase
 
 
 class DataFiller(AbstractDataBase):
@@ -34,11 +36,28 @@ class DataFiller(AbstractDataBase):
       - timeframe and compression to dimension the output bars
 
       - sessionstart and sessionend
+
+    If a data feed has missing bars in between 10:31 and 10:34 and the
+    timeframe is minutes, the output will be filled with bars for minutes
+    10:32 and 10:33 using the closing price of the last bar (10:31)
+
+    Bars can be missinga amongst other things because
+
+    Params:
+      - ``fill_price`` (def: None): if None (or evaluates to False),the
+        closing price will be used, else the passed value (which can be
+        for example 'NaN' to have a missing bar in terms of evaluation but
+        present in terms of time
+
+      - ``fill_vol`` (def: NaN): used to fill the volume of missing bars
+
+      - ``fill_oi`` (def: NaN): used to fill the openinterest of missing bars
     '''
 
     params = (
-        ('fill_vol', 0.0),
-        ('fill_oi', 0.0),
+        ('fill_price', None),
+        ('fill_vol', float('NaN')),
+        ('fill_oi', float('NaN')),
         )
 
     def start(self):
@@ -70,6 +89,8 @@ class DataFiller(AbstractDataBase):
 
     def _frombars(self):
         dtime, price = self._fillbars.popleft()
+
+        price = self.p.fill_price or price
 
         self.lines.datetime[0] = date2num(dtime)
         self.lines.open[0] = price
@@ -123,9 +144,7 @@ class DataFiller(AbstractDataBase):
         dtime_cur = self.p.dataname.datetime.datetime(0)
 
         # Calculate session end for previous bar
-        dtnum_prev = self.lines.datetime.dt(-1)
-        send_num = dtnum_prev + self.sessionend
-        send = num2date(send_num)
+        send = self.lines.datetime.tm2datetime(self.sessionend, ago=-1)
 
         if dtime_cur > send:  # if jumped boundary
             # 1. check for missing bars until boundary (end)
@@ -135,9 +154,7 @@ class DataFiller(AbstractDataBase):
                 dtime_prev += self._tdunit
 
             # Calculate session start for new bar
-            dtnum_cur = self.p.dataname.datetime.dt(0)
-            sstart_num = dtnum_cur + self.sessionstart
-            sstart = num2date(sstart_num)
+            sstart = self.p.dataname.datetime.tm2datetime(self.sessionstart)
 
             # 2. check for missing bars from new boundary (start)
             # check gap from new sessionstart
@@ -158,3 +175,108 @@ class DataFiller(AbstractDataBase):
             return self._frombars()
 
         return self._copyfromdata()
+
+
+class SessionFiller(with_metaclass(metabase.MetaParams, object)):
+    '''
+    Bar Filler for a Data Source inside the declared session start/end times.
+
+    The fill bars are constructed using the declared Data Source ``timeframe``
+    and ``compression`` (used to calculate the intervening missing times)
+
+    Params:
+
+      - fill_price (def: None):
+
+        If None is passed, the closing price of the previous bar will be
+        used. To end up with a bar which for example takes time but it is not
+        displayed in a plot ... use float('Nan')
+
+      - fill_vol (def: float('NaN')):
+
+        Value to use to fill the missing volume
+
+      - fill_oi (def: float('NaN')):
+
+        Value to use to fill the missing Open Interest
+    '''
+    params = (('fill_price', None),
+              ('fill_vol', float('NaN')),
+              ('fill_oi', float('NaN')),)
+
+    # Minimum delta unit in between bars
+    _tdeltas = {
+        TimeFrame.Minutes: datetime.timedelta(seconds=60),
+        TimeFrame.Seconds: datetime.timedelta(seconds=1),
+        TimeFrame.MicroSeconds: datetime.timedelta(microseconds=1),
+    }
+
+    def __init__(self, data):
+        # Calculate and save timedelta for timeframe
+        self._tdunit = self._tdeltas[data._timeframe]
+        self._tdunit *= data._compression
+
+    def __call__(self, data):
+        if len(data) < 2:
+            return False  # not enough data to look backwards
+
+        # Control flag - bars added to the stack
+        self._dirty = False
+
+        # Get time of previous (already delivered) bar
+        dtime_prev = data.datetime.datetime(-1)
+        # Get time of current (from data source) bar
+        dtime_cur = data.datetime.datetime()
+
+        # Calculate adjusted session end
+        send = data.datetime.tm2datetime(data.sessionend, ago=-1)
+
+        if dtime_cur > send:  # if jumped boundary
+            # 1. check for missing bars until boundary (end)
+            dtime_prev += self._tdunit
+            while dtime_prev <= send:
+                self._fillbars(data, dtime_prev)
+                dtime_prev += self._tdunit
+
+            # Calculate session start for new bar
+            sstart = data.datetime.tm2datetime(data.sessionstart)
+
+            # 2. check for missing bars from new boundary (start)
+            # check gap from new sessionstart
+            while sstart < dtime_cur:
+                self._fillbars(data, sstart)
+                sstart += self._tdunit
+        else:
+            # no boundary jumped - check gap until current time
+            dtime_prev += self._tdunit
+            while dtime_prev < dtime_cur:
+                self._fillbars(data, dtime_prev)
+                dtime_prev += self._tdunit
+
+        return self._dirty
+
+    def _fillbars(self, data, dtime):
+
+        # Prepare an array of the needed size
+        bar = [float('Nan')] * data.size()
+
+        # Fill datetime
+        bar[data.DateTime] = date2num(dtime)
+
+        # Fill the prices
+        price = self.p.fill_price or data.close[-1]
+        for pricetype in [data.Open, data.High, data.Low, data.Close]:
+            bar[pricetype] = price
+
+        # Fill volume and open interest
+        bar[data.Volume] = self.p.fill_vol
+        bar[data.OpenInterest] = self.p.fill_oi
+
+        # Fill extra lines the data feed may have defined beyond DateTime
+        for i in range(data.DateTime + 1, data.size()):
+            bar[i] = data.lines[i][0]
+
+        # Add tot he stack of bars to save
+        data._add2stack(bar)
+
+        self._dirty = True  # indicate the curernt data bar must be save
