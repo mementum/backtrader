@@ -203,8 +203,8 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
                 # Compression to be ochecked outside
                 ret = True
             elif self.p.compression == 1:
-                    # no bar compression requested -> internal bar done
-                    ret = True
+                # no bar compression requested -> internal bar done
+                ret = True
             else:
                 point_comp = point // self.p.compression
                 barpoint_comp = barpoint // self.p.compression
