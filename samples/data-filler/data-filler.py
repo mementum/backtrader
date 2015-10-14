@@ -23,10 +23,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import datetime
+import math
 
 # The above could be sent to an independent module
 import backtrader as bt
 import backtrader.feeds as btfeeds
+
+from relativevolume import RelativeVolume
 
 
 def runstrategy():
@@ -39,49 +42,45 @@ def runstrategy():
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
+    # Get the session times to pass them to the indicator
+    # datetime.time has no strptime ...
+    dtstart = datetime.datetime.strptime(args.tstart, '%H:%M')
+    dtend = datetime.datetime.strptime(args.tend, '%H:%M')
+
     # Create the 1st data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate,
         timeframe=bt.TimeFrame.Minutes,
-        compression=1
+        compression=1,
+        sessionstart=dtstart,  # internally just the "time" part will be used
+        sessionend=dtend,
     )
 
-    # Filter the data
-    dstart = bt.time2num(datetime.time(9, 30))
-    dend = bt.time2num(datetime.time(17, 15, 59))
+    if args.filter:
+        data.addfilter(bt.SessionFilter)
 
-    def ff(data):
-        # dstart / dend seen as closures
-        return dstart < data.datetime.tm(0) < dend
+    if args.filler:
+        data.addprocessor(bt.SessionFiller, fill_vol=args.fvol)
 
-    data = bt.DataFilter(dataname=data, funcfilter=ff)
-
-    # Fill the missing data
-    sstart = datetime.time(9, 30)
-    send = datetime.time(17, 15, 59)
-    data = bt.DataFiller(dataname=data,
-                         sessionstart=sstart,
-                         sessionend=send)
-
-    # Add the 1st data to cerebro
+    # Add the data to cerebro
     cerebro.adddata(data)
+
+    if args.relvol:
+        # Calculate backward period - tend tstart are in same day
+        # + 1 to include last moment of the session
+        td = ((dtend - dtstart).seconds // 60) + 1
+        cerebro.addindicator(RelativeVolume, period=td)
 
     # Add an empty strategy
     cerebro.addstrategy(bt.Strategy)
-
-    if False:
-        # Get the session times to pass them to the indicator
-        prestart = datetime.datetime.strptime(args.prestart, '%H:%M')
-        start = datetime.datetime.strptime(args.start, '%H:%M')
-        end = datetime.datetime.strptime(args.end, '%H:%M')
 
     # Add a writer with CSV
     if args.writer:
         cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
 
-    # And run it
+    # And run it - no trading - disable stdstats
     cerebro.run(stdstats=False)
 
     # Plot if requested
@@ -90,23 +89,36 @@ def runstrategy():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MultiData Strategy')
+    parser = argparse.ArgumentParser(
+        description='DataFilter/DataFiller Sample')
 
     parser.add_argument('--data', '-d',
                         default='../../datas/2006-01-02-volume-min-001.txt',
                         help='data to add to the system')
 
-    parser.add_argument('--prestart',
-                        default='08:00',
-                        help='Start time for the Session Filter')
+    parser.add_argument('--filter', '-ft', action='store_true',
+                        help='Filter using session start/end times')
 
-    parser.add_argument('--start',
+    parser.add_argument('--filler', '-fl', action='store_true',
+                        help='Fill missing bars inside start/end times')
+
+    parser.add_argument('--fvol', required=False, default=float('NaN'),
+                        help='Use as fill volume for missing bar (def: NaN)')
+
+    parser.add_argument('--tstart', '-ts',
+                        # default='09:14:59',
+                        # help='Start time for the Session Filter (%H:%M:%S)')
                         default='09:15',
-                        help='Start time for the Session Filter')
+                        help='Start time for the Session Filter (%H:%M)')
 
-    parser.add_argument('--end', '-te',
+    parser.add_argument('--tend', '-te',
+                        # default='17:15:59',
+                        # help='End time for the Session Filter (%H:%M:%S)')
                         default='17:15',
-                        help='End time for the Session Filter')
+                        help='End time for the Session Filter (%H:%M)')
+
+    parser.add_argument('--relvol', '-rv', action='store_true',
+                        help='Add relative volume indicator')
 
     parser.add_argument('--fromdate', '-f',
                         default='2006-01-01',
