@@ -21,11 +21,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
 import datetime
+import inspect
 import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, bytes
+from backtrader.utils.py3 import with_metaclass, bytes, map, zip
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
@@ -59,8 +61,14 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
+        if isinstance(_obj.p.sessionstart, datetime.datetime):
+            _obj.p.sessionstart = _obj.p.sessionstart.time()
+
         if _obj.p.sessionstart is None:
             _obj.p.sessionstart = datetime.time(0, 0, 0)
+
+        if isinstance(_obj.p.sessionend, datetime.datetime):
+            _obj.p.sessionend = _obj.p.sessionend.time()
 
         if _obj.p.sessionend is None:
             _obj.p.sessionend = datetime.time(23, 59, 59)
@@ -85,6 +93,21 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         # hold datamaster points corresponding to own
         _obj.mlen = list()
 
+        _obj.funcfilters = list()
+        for ff in _obj.p.funcfilters:
+            if inspect.isclass(ff):
+                ff = ff(_obj)
+
+            _obj.funcfilters.append([ff])
+
+        _obj.funcprocessors = list()
+        for fp in _obj.p.funcprocessors:
+            # print('Got fp', fp)
+            if inspect.isclass(fp):
+                fp = fp(_obj)
+
+            _obj.funcprocessors.append([fp])
+
         return _obj, args, kwargs
 
 
@@ -97,7 +120,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('compression', 1),
               ('timeframe', TimeFrame.Days),
               ('sessionstart', None),
-              ('sessionend', None))
+              ('sessionend', None),
+              ('funcfilters', []),
+              ('funcprocessors', []))
 
     _feed = None
 
@@ -105,10 +130,24 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return self._feed
 
     def start(self):
-        pass
+        self._barstack = collections.deque()
 
     def stop(self):
         pass
+
+    def addfilter(self, f, *args, **kwargs):
+        if inspect.isclass(f):
+            fobj = f(self, *args, **kwargs)
+            self.funcfilters.append((fobj, [], {}))
+        else:
+            self.funcfilters.append((f, args, kwargs))
+
+    def addprocessor(self, p, *args, **kwargs):
+        if inspect.isclass(p):
+            pobj = p(self, *args, **kwargs)
+            self.funcprocessors.append((pobj, [], {}))
+        else:
+            self.funcprocessors.append((p, args, kwargs))
 
     def _tick_nullify(self):
         # These are the updating prices in case the new bar is "updated"
@@ -199,6 +238,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         while True:
             # move data pointer forward for new bar
             self.forward()
+
+            if self._fromstack():
+                return True
+
             if not self._load():
                 # no bar - undo data pointer
                 self.backwards()
@@ -214,11 +257,47 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 self.backwards()
                 break
 
+            # Check filters passed to the data
+            if any(map(lambda x: not x[0](self, *x[1], **x[2]), self.funcfilters)):
+                # if any filter returns False ... discard bar
+                self.backwards()
+                continue
+
+            # Pass through processors - if any returns True ... loop again
+            if any(map(lambda x: x[0](self, *x[1], **x[2]), self.funcprocessors)):
+                self._save2stack()
+                self.backwards()
+                continue
+
+            # Checks let the bar through ... notify it
             return True
 
+        # Out of the loop ... no more bars or past todate
         return False
 
     def _load(self):
+        return False
+
+    def _add2stack(self, bar):
+        '''Saves current bar to the bar stack for later retrieval'''
+        self._barstack.append(bar)
+
+    def _save2stack(self):
+        '''Saves current bar to the bar stack for later retrieval'''
+        bar = [line[0] for line in self.itersize()]
+        self._barstack.append(bar)
+
+    def _fromstack(self):
+        '''Load a value from the stack onto the lines to form the new bar
+
+        Returns True if values are present, False otherwise
+        '''
+        if self._barstack:
+            for line, val in zip(self.itersize(), self._barstack.popleft()):
+                line[0] = val
+
+            return True
+
         return False
 
 
@@ -289,6 +368,8 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
     params = (('headers', True), ('separator', ','),)
 
     def start(self):
+        super(CSVDataBase, self).start()
+
         if hasattr(self.p.dataname, 'readline'):
             self.f = self.p.dataname
         else:
