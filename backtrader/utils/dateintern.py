@@ -127,7 +127,10 @@ def time2num(tm):
 
 
 def num2time(num):
-    hour, remainder = divmod(HOURS_PER_DAY * num, 1)
+    ix = int(num)
+    remainder = float(num) - ix
+
+    hour, remainder = divmod(HOURS_PER_DAY * remainder, 1)
     minute, remainder = divmod(MINUTES_PER_HOUR * remainder, 1)
     second, remainder = divmod(SECONDS_PER_MINUTE * remainder, 1)
     microsecond = int(MUSECONDS_PER_SECOND * remainder)
