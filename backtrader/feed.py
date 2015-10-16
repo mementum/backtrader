@@ -27,7 +27,8 @@ import inspect
 import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, bytes, map, zip
+from backtrader.utils.py3 import with_metaclass, bytes, zip
+from .dataseries import FilterProcessor
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
@@ -94,19 +95,14 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj.mlen = list()
 
         _obj.funcfilters = list()
-        for ff in _obj.p.funcfilters:
-            if inspect.isclass(ff):
-                ff = ff(_obj)
-
-            _obj.funcfilters.append([ff])
-
-        _obj.funcprocessors = list()
-        for fp in _obj.p.funcprocessors:
-            # print('Got fp', fp)
+        _obj.ffilters = list()
+        for fp in _obj.p.funcfilters:
             if inspect.isclass(fp):
                 fp = fp(_obj)
+                if hasattr(fp, 'last'):
+                    _obj.ffilters.append((fp, [], {}))
 
-            _obj.funcprocessors.append([fp])
+            _obj.funcfilters.append((fp, [], {}))
 
         return _obj, args, kwargs
 
@@ -121,8 +117,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('timeframe', TimeFrame.Days),
               ('sessionstart', None),
               ('sessionend', None),
-              ('funcfilters', []),
-              ('funcprocessors', []))
+              ('funcfilters', []),)
 
     _feed = None
 
@@ -136,18 +131,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         pass
 
     def addfilter(self, f, *args, **kwargs):
-        if inspect.isclass(f):
-            fobj = f(self, *args, **kwargs)
-            self.funcfilters.append((fobj, [], {}))
-        else:
-            self.funcfilters.append((f, args, kwargs))
+        fp = FilterProcessor(self, f, *args, **kwargs)
+        self.funcfilters.append((fp, fp.args, fp.kwargs))
 
     def addprocessor(self, p, *args, **kwargs):
         if inspect.isclass(p):
             pobj = p(self, *args, **kwargs)
-            self.funcprocessors.append((pobj, [], {}))
+            self.funcfilters.append((pobj, [], {}))
+
+            if hasattr(pobj, 'last'):
+                self.ffilters.append((pobj, [], {}))
+
         else:
-            self.funcprocessors.append((p, args, kwargs))
+            self.funcfilters.append((p, args, kwargs))
 
     def _tick_nullify(self):
         # These are the updating prices in case the new bar is "updated"
@@ -239,14 +235,23 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             # move data pointer forward for new bar
             self.forward()
 
-            if self._fromstack():
+            if self._fromstack():  # bar is available
                 return True
 
-            if not self._load():
-                # no bar - undo data pointer
-                self.backwards()
-                break
+            if not self._load():  # no bar
+                self.backwards()  # undo data pointer
 
+                # Last chance for processors to deliver something
+                for ff, fargs, fkwargs in self.ffilters:
+                    ff.last(self, *fargs, **fkwargs)
+
+                while self._fromstack(forward=True):
+                    # consume bar(s) produced by "last"s - adding room
+                    pass
+
+                break  # finally no bar available from stack or _load
+
+            # Check standard date from/to filters
             dt = self.lines.datetime[0]
             if dt < self.fromdate:
                 # discard loaded bar and carry on
@@ -257,17 +262,22 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 self.backwards()
                 break
 
-            # Check filters passed to the data
-            if any(map(lambda x: not x[0](self, *x[1], **x[2]), self.funcfilters)):
-                # if any filter returns False ... discard bar
-                self.backwards()
-                continue
+            # Pass through processors
+            retff = False
+            for ff, fargs, fkwargs in self.funcfilters:
+                # previous processor may have put things onto the stack
+                if self._barstack:
+                    for i in range(len(self._barstack)):
+                        self._fromstack(forward=True)
+                        retff = ff(self, *fargs, **fkwargs)
+                else:
+                    retff = ff(self, *fargs, **fkwargs)
 
-            # Pass through processors - if any returns True ... loop again
-            if any(map(lambda x: x[0](self, *x[1], **x[2]), self.funcprocessors)):
-                self._save2stack()
-                self.backwards()
-                continue
+                if retff:  # bar removed from systemn
+                    break  # out of the inner loop
+
+            if retff:  # bar removed from system - loop to get new bar
+                continue  # in the greater loop
 
             # Checks let the bar through ... notify it
             return True
@@ -279,20 +289,29 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return False
 
     def _add2stack(self, bar):
-        '''Saves current bar to the bar stack for later retrieval'''
+        '''Saves given bar (list of values) to the stack for later retrieval'''
         self._barstack.append(bar)
 
-    def _save2stack(self):
-        '''Saves current bar to the bar stack for later retrieval'''
+    def _save2stack(self, erase=False):
+        '''Saves current bar to the bar stack for later retrieval
+
+        Parameter ``erase`` determines whether to remove it or delete it
+        '''
         bar = [line[0] for line in self.itersize()]
         self._barstack.append(bar)
 
-    def _fromstack(self):
+        if erase:  # remove bar if requested
+            self.backwards()
+
+    def _fromstack(self, forward=False):
         '''Load a value from the stack onto the lines to form the new bar
 
         Returns True if values are present, False otherwise
         '''
         if self._barstack:
+            if forward:
+                self.forward()
+
             for line, val in zip(self.itersize(), self._barstack.popleft()):
                 line[0] = val
 
@@ -382,6 +401,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         self.separator = bytes(self.p.separator)
 
     def stop(self):
+        super(CSVDataBase, self).stop()
         if self.f is not None:
             self.f.close()
             self.f = None
