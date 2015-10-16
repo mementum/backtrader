@@ -28,6 +28,7 @@ import math
 # The above could be sent to an independent module
 import backtrader as bt
 import backtrader.feeds as btfeeds
+from backtrader.rs import ResamplerDaily, ResamplerWeekly, ResamplerMonthly
 
 from relativevolume import RelativeVolume
 
@@ -60,9 +61,15 @@ def runstrategy():
 
     if args.filter:
         data.addfilter(bt.SessionFilter)
+        # data.addprocessor(bt.SessionFilter)
+        pass
 
     if args.filler:
-        data.addprocessor(bt.SessionFiller, fill_vol=args.fvol)
+        # data.addprocessor(bt.SessionFiller, fill_vol=args.fvol)
+        data.addprocessor(bt.SessionFiller, fill_vol=0)
+        data.addprocessor(ResamplerDaily, compression=1)
+        # data.addprocessor(ResamplerWeekly, compression=1)
+        # data.addprocessor(ResamplerMonthly, compression=1)
 
     # Add the data to cerebro
     cerebro.adddata(data)
