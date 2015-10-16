@@ -81,4 +81,4 @@ class SessionFilter(with_metaclass(metabase.MetaParams, object)):
 
     def __call__(self, data):
         # Both ends of the comparison are in the session
-        return data.sessionstart <= data.datetime.tm(0) <= data.sessionend
+        return not data.sessionstart <= data.datetime.tm(0) <= data.sessionend
