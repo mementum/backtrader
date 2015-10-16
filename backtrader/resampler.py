@@ -57,6 +57,7 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
     )
 
     def __init__(self):
+        super(BaseResampler, self).__init__()
         self.data = self.p.dataname
         self._name = getattr(self.data, '_name', '')
 
