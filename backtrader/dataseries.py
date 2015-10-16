@@ -21,8 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils.py3 import range
+import inspect
 
+from .utils.py3 import with_metaclass
 from .lineseries import LineSeries
 from .import num2date
 from .utils import OrderedDict
@@ -93,3 +94,22 @@ class OHLC(DataSeries):
 
 class OHLCDateTime(OHLC):
     lines = (('datetime'),)
+
+
+class FilterProcessor(object):
+    def __init__(self, data, ffilter, *args, **kwargs):
+        if inspect.isclass(ffilter):
+            ffilter = ffilter(data, *args, **kwargs)
+            args = []
+            kwargs = {}
+
+        self.ffilter = ffilter
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, data):
+        if self.ffilter(data, *self.args, **self.kwargs):
+            data.backwards()
+            return True
+
+        return False
