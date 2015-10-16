@@ -215,48 +215,47 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
         # Calculate and save timedelta for timeframe
         self._tdunit = self._tdeltas[data._timeframe]
         self._tdunit *= data._compression
+        self.dtime_prev = None
 
     def __call__(self, data):
-        if len(data) < 2:
+        if self.dtime_prev is None:
+            self.dtime_prev = data.datetime.datetime()
+            self.sessend = data.datetime.tm2datetime(data.sessionend)
             return False  # not enough data to look backwards
 
         # Control flag - bars added to the stack
         self._dirty = False
 
-        # Get time of previous (already delivered) bar
-        dtime_prev = data.datetime.datetime(-1)
+        # Time of previous (delivered) bar ... advanced to next point
+        dtime_prev = self.dtime_prev + self._tdunit
         # Get time of current (from data source) bar
-        dtime_cur = data.datetime.datetime()
+        self.dtime_prev = dtime_cur = data.datetime.datetime()
 
-        # Calculate adjusted session end
-        send = data.datetime.tm2datetime(data.sessionend, ago=-1)
-
-        if dtime_cur > send:  # if jumped boundary
+        if dtime_cur > self.sessend:  # if jumped boundary
             # 1. check for missing bars until boundary (end)
-            dtime_prev += self._tdunit
-            while dtime_prev <= send:
+            while dtime_prev <= self.sessend:
                 self._fillbars(data, dtime_prev)
                 dtime_prev += self._tdunit
 
-            # Calculate session start for new bar
-            sstart = data.datetime.tm2datetime(data.sessionstart)
+            # Update session end
+            self.sessend = data.datetime.tm2datetime(data.sessionend)
 
-            # 2. check for missing bars from new boundary (start)
-            # check gap from new sessionstart
-            while sstart < dtime_cur:
-                self._fillbars(data, sstart)
-                sstart += self._tdunit
-        else:
-            # no boundary jumped - check gap until current time
+            # jump to next boundary - session start
+            dtime_prev = data.datetime.tm2datetime(data.sessionstart)
+
+        # check gap until current time
+        while dtime_prev < dtime_cur:
+            self._fillbars(data, dtime_prev)
             dtime_prev += self._tdunit
-            while dtime_prev < dtime_cur:
-                self._fillbars(data, dtime_prev)
-                dtime_prev += self._tdunit
 
-        return self._dirty
+        if self._dirty:
+            # Save data bar to the stack - delivered after the above insertions
+            data._save2stack(erase=True)
+
+        # bars not removed from system (added/saved to stack)
+        return False
 
     def _fillbars(self, data, dtime):
-
         # Prepare an array of the needed size
         bar = [float('Nan')] * data.size()
 
