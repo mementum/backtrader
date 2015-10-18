@@ -113,7 +113,7 @@ class Trade(object):
         self.size += size  # size will carry the opposite sign if reducing
 
         # Check if it has been currently opened
-        self.justopened = not oldsize and size
+        self.justopened = bool(not oldsize and size)
 
         if self.justopened:
             self.baropen = len(self.data)
