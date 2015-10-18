@@ -56,10 +56,13 @@ class TestStrategy(bt.Strategy):
         ('printops', True),
     )
 
-    def log(self, txt, dt=None):
-        dt = dt or self.data.datetime[0]
-        dt = bt.num2date(dt)
-        print('%s, %s' % (dt.isoformat(), txt))
+    def log(self, txt, dt=None, nodate=False):
+        if not nodate:
+            dt = dt or self.data.datetime[0]
+            dt = bt.num2date(dt)
+            print('%s, %s' % (dt.isoformat(), txt))
+        else:
+            print('---------- %s' % (txt))
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -97,8 +100,9 @@ class TestStrategy(bt.Strategy):
     def start(self):
         self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
         if self.p.printdata:
-            self.log('-------------------------')
-            self.log('Starting portfolio value: %.2f' % self.broker.getvalue())
+            self.log('-------------------------', nodate=True)
+            self.log('Starting portfolio value: %.2f' % self.broker.getvalue(),
+                     nodate=True)
 
         self.tstart = time.clock()
 
@@ -112,6 +116,7 @@ class TestStrategy(bt.Strategy):
         if self.p.printdata:
             self.log('Time used: %s' % str(tused))
             self.log('Final portfolio value: %.2f' % self.broker.getvalue())
+            self.log('Final cash value: %.2f' % self.broker.getcash())
             self.log('-------------------------')
 
             print('buycreate')
@@ -123,12 +128,13 @@ class TestStrategy(bt.Strategy):
             print('sellexec')
             print(self.sellexec)
 
-        assert '%.2f' % self.broker.getvalue() == '12795.00'
-        assert '%.2f' % self.broker.getcash() == '11795.00'
-        assert self.buycreate == BUYCREATE
-        assert self.sellcreate == SELLCREATE
-        assert self.buyexec == BUYEXEC
-        assert self.sellexec == SELLEXEC
+        else:
+            assert '%.2f' % self.broker.getvalue() == '12795.00'
+            assert '%.2f' % self.broker.getcash() == '11795.00'
+            assert self.buycreate == BUYCREATE
+            assert self.sellcreate == SELLCREATE
+            assert self.buyexec == BUYEXEC
+            assert self.sellexec == SELLEXEC
 
     def next(self):
         if self.p.printdata:
