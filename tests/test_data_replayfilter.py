@@ -21,20 +21,41 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+import testcommon
 
-from .dateintern import _num2date, _date2num, time2num, num2time
+import backtrader as bt
+import backtrader.indicators as btind
 
-__all__ = ('num2date', 'date2num', 'time2num', 'num2time')
+chkdatas = 1
+chknext = 113
+chkvals = [
+    ['3836.453333', '3703.962333', '3741.802000'],
+]
 
-try:
-    import matplotlib.dates as mdates
+chkmin = 30  # period will be in weeks
+chkind = [btind.SMA]
+chkargs = dict()
 
-except ImportError:
-    num2date = _num2date
-    date2num = _date2num
-else:
-    num2date = _num2date
-    date2num = _date2num
-    # num2date = mdates.num2date
-    # date2num = mdates.date2num
+
+def test_run(main=False):
+    data = testcommon.getdata(0)
+
+    data.replay(
+        timeframe=bt.TimeFrame.Weeks,
+        compression=1)
+
+    datas = [data]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals,
+                       chknext=chknext,
+                       chkargs=chkargs,
+                       runonce=False, preload=False)
+
+
+if __name__ == '__main__':
+    test_run(main=True)

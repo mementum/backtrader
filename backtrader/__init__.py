@@ -38,6 +38,7 @@ from .lineseries import *
 from .dataseries import *
 from .feed import *
 from .resampler import *
+from .resamplerfilter import *
 from .datafilter import *
 from .datafiller import *
 

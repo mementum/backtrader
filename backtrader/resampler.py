@@ -167,15 +167,15 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         bardt = self.data.datetime.date(index)
 
         iy, dtweek, iwd = dt.isocalendar()
-        iy, barweek, iwd = bardt.isocalendar()
+        biy, barweek, biwd = bardt.isocalendar()
 
-        return barweek > dtweek
+        return (biy * 100 + barweek) > (iy * 100 + dtweek)
 
     def _barisover_months(self, index):
         dt = self.lines.datetime.date(index)
         bardt = self.data.datetime.date(index)
 
-        return bardt.month > dt.month
+        return (bardt.year * 100 + bardt.month) > (dt.year * 100 + dt.month)
 
     def _barisover_years(self, index):
         dt = self.lines.datetime.date(index)

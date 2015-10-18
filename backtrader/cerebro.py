@@ -157,7 +157,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
-    def replaydata(self, dataname, **kwargs):
+    def replaydata_old(self, dataname, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
 
@@ -169,7 +169,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         self.adddata(data=DataReplayer(dataname=dataname, **kwargs))
 
-    def resampledata(self, dataname, **kwargs):
+    def resampledata_old(self, dataname, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
 
@@ -180,6 +180,32 @@ class Cerebro(with_metaclass(MetaParams, object)):
         are supported by ``DataResampler`` will be passed transparently
         '''
         self.adddata(data=DataResampler(dataname=dataname, **kwargs))
+
+    def replaydata(self, dataname, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be replayed by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataReplayer``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``Replayer`` will be passed transparently
+        '''
+        dataname.replay(**kwargs)
+        self.adddata(dataname)
+
+    def resampledata(self, dataname, **kwargs):
+        '''
+        Adds a ``Data Feed`` to be resample by the system
+
+        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
+        ``DataResampler``
+
+        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
+        are supported by ``Resampler`` will be passed transparently
+        '''
+        dataname.resample(**kwargs)
+        self.adddata(dataname)
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''
@@ -468,9 +494,20 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``next`` method invoke on each data arrival
         '''
         data0 = self.datas[0]
-        while data0.next():
-            for data in self.datas[1:]:
-                data.next(datamaster=data0)
+        d0ret = True
+        while d0ret:
+            d0ret = data0.next()
+            if d0ret:
+                for data in self.datas[1:]:
+                    data.next(datamaster=data0)
+            else:
+                lastret = data0._last()
+                for data in self.datas[1:]:
+                    lastret += data._last(datamaster=data0)
+
+                if not lastret:
+                    # Only go extra round if something was changed by "lasts"
+                    break
 
             self._brokernotify()
 
