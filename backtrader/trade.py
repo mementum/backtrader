@@ -82,7 +82,7 @@ class Trade(object):
     def __len__(self):
         return self.size
 
-    def update(self, size, price, value, commission, pnl):
+    def update(self, size, price, value, commission, pnl, comminfo=None):
         '''
         Updates the current trade. The logic does not check if the
         trade is reversed, which is not conceptually supported by the
@@ -144,6 +144,9 @@ class Trade(object):
 
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
+            if True and comminfo:
+                pnl = comminfo.profitandloss(-size, self.price, price)
+
             self.pnl += pnl
             self.pnlcomm = self.pnl - self.commission
 

@@ -357,7 +357,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                          exbit.price,
                          exbit.closedvalue,
                          exbit.closedcomm,
-                         exbit.pnl)
+                         exbit.pnl,
+                         comminfo=order.comminfo)
 
             if trade.isclosed:
                 self._tradespending.append(trade)

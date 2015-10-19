@@ -31,12 +31,6 @@ from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
 
 
-class AutoDictDefaultPosition(dict):
-    def __missing__(self, key):
-        value = self[key] = collections.defaultdict(Position)
-        return value
-
-
 class BrokerBack(with_metaclass(MetaParams, object)):
 
     params = (
@@ -271,6 +265,8 @@ class BrokerBack(with_metaclass(MetaParams, object)):
                           opened, openedvalue, openedcomm,
                           comminfo.margin, pnl,
                           psize, pprice)
+
+            order.addcomminfo(comminfo)
 
             self.notify(order)
 
