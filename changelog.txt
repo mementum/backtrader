@@ -1,3 +1,16 @@
+1.1.14.88
+  - Comminfo passed down to trades for multitrade profit and loss calculation
+    for issue #226
+  - Addition of filters/processors (naming not final) to data sources
+  - (Re)Implementation of Resampling/Replaying as Processors - Old
+    Implementation still available
+  - Changed X axis formatting for Weeks/Months/Years
+  - DataFilter/DataFiller implemented as DataSources and also as
+    Filters/Processors
+  - DataFilter/DataFiller sample
+  - Time management improvement to address precision issues when isolating time
+    from coded datetime with new functions in LineBuffer
+
 1.1.13.88
   - Further refactoring of resampling (keeping previous parameter names
     compatible) killing corner case for last bar still having the sub-bar
