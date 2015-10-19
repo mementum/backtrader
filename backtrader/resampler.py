@@ -57,6 +57,7 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
     )
 
     def __init__(self):
+        super(BaseResampler, self).__init__()
         self.data = self.p.dataname
         self._name = getattr(self.data, '_name', '')
 
@@ -166,15 +167,15 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         bardt = self.data.datetime.date(index)
 
         iy, dtweek, iwd = dt.isocalendar()
-        iy, barweek, iwd = bardt.isocalendar()
+        biy, barweek, biwd = bardt.isocalendar()
 
-        return barweek > dtweek
+        return (biy * 100 + barweek) > (iy * 100 + dtweek)
 
     def _barisover_months(self, index):
         dt = self.lines.datetime.date(index)
         bardt = self.data.datetime.date(index)
 
-        return bardt.month > dt.month
+        return (bardt.year * 100 + bardt.month) > (dt.year * 100 + dt.month)
 
     def _barisover_years(self, index):
         dt = self.lines.datetime.date(index)
@@ -183,10 +184,10 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         return bardt.year > dt.year
 
     def _barisover_minutes_sub(self, index):
-        dtnum = self.data.datetime.dt(index)  # day (integer)
-        dtnum += self.sessionend  # add fractional part to day
+        # Put session end in context of current datetime
+        sessend = self.data.datetime.tm2dtime(self.sessionend)
 
-        if self.data.datetime[index] > dtnum:
+        if self.data.datetime[index] > sessend:
             # Next session is on (defaults to next day)
             return True
 
@@ -203,8 +204,8 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
                 # Compression to be ochecked outside
                 ret = True
             elif self.p.compression == 1:
-                    # no bar compression requested -> internal bar done
-                    ret = True
+                # no bar compression requested -> internal bar done
+                ret = True
             else:
                 point_comp = point // self.p.compression
                 barpoint_comp = barpoint // self.p.compression

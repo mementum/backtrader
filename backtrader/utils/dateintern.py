@@ -77,6 +77,7 @@ def _num2date(x, tz=None):
         microsecond = 0  # compensate for rounding errors
 
     if tz is not None:
+        print('HERE')
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
             microsecond, tzinfo=UTC).astimezone(tz)
@@ -127,7 +128,10 @@ def time2num(tm):
 
 
 def num2time(num):
-    hour, remainder = divmod(HOURS_PER_DAY * num, 1)
+    ix = int(num)
+    remainder = float(num) - ix
+
+    hour, remainder = divmod(HOURS_PER_DAY * remainder, 1)
     minute, remainder = divmod(MINUTES_PER_HOUR * remainder, 1)
     second, remainder = divmod(SECONDS_PER_MINUTE * remainder, 1)
     microsecond = int(MUSECONDS_PER_SECOND * remainder)

@@ -40,7 +40,7 @@ from .utils.py3 import range, with_metaclass, string_types
 
 from .lineroot import LineRoot, LineSingle
 from . import metabase
-from .utils import num2date
+from .utils import num2date, time2num
 
 
 NAN = float('NaN')
@@ -72,12 +72,6 @@ class LineBuffer(LineSingle):
     UnBounded, RingBuffer = (0, 1)
 
     def __init__(self):
-        '''
-        Keyword Args:
-            typecode (str): type of data hold at each point of the line
-                'd' for double - the array will be an array.array
-                'ls' meant for datetime objects  - the array will be a list
-        '''
         self.mode = self.UnBounded
         self.bindings = list()
         self.reset()
@@ -341,10 +335,10 @@ class LineBuffer(LineSingle):
         return num2date(self.array[self.idx + ago])
 
     def date(self, ago=0):
-        return self.datetime(ago).date()
+        return num2date(self.array[self.idx + ago]).date()
 
     def time(self, ago=0):
-        return self.datetime(ago).time()
+        return num2date(self.array[self.idx + ago]).time()
 
     def dt(self, ago=0):
         '''
@@ -352,11 +346,99 @@ class LineBuffer(LineSingle):
         '''
         return math.trunc(self.array[self.idx + ago])
 
+    def tm_raw(self, ago=0):
+        '''
+        return raw numeric time part of datetimefloat
+        '''
+        # This function is named raw because it retrieves the fractional part
+        # without transforming it to time to avoid the influence of the day
+        # count (integer part of coding)
+        return math.modf(self.array[self.idx + ago])[0]
+
     def tm(self, ago=0):
         '''
         return numeric time part of datetimefloat
         '''
-        return math.modf(self.array[self.idx + ago])[0]
+        # To avoid precision errors, this returns the fractional part after
+        # having converted it to a datetime.time object to avoid precision
+        # errors in comparisons
+        return time2num(num2date(self.array[self.idx + ago]).time())
+
+    def tm_lt(self, other, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        # To compare a raw "tm" part (fractional part of coded datetime)
+        # with the tm of the current datetime, the raw "tm" has to be
+        # brought in sync with the current "day" count (integer part) to avoid
+        dtime = self.array[self.idx + ago]
+        tm, dt = math.modf(dtime)
+
+        return dtime < (dt + other)
+
+    def tm_le(self, other, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        # To compare a raw "tm" part (fractional part of coded datetime)
+        # with the tm of the current datetime, the raw "tm" has to be
+        # brought in sync with the current "day" count (integer part) to avoid
+        dtime = self.array[self.idx + ago]
+        tm, dt = math.modf(dtime)
+
+        return dtime <= (dt + other)
+
+    def tm_eq(self, other, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        # To compare a raw "tm" part (fractional part of coded datetime)
+        # with the tm of the current datetime, the raw "tm" has to be
+        # brought in sync with the current "day" count (integer part) to avoid
+        dtime = self.array[self.idx + ago]
+        tm, dt = math.modf(dtime)
+
+        return dtime == (dt + other)
+
+    def tm_gt(self, other, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        # To compare a raw "tm" part (fractional part of coded datetime)
+        # with the tm of the current datetime, the raw "tm" has to be
+        # brought in sync with the current "day" count (integer part) to avoid
+        dtime = self.array[self.idx + ago]
+        tm, dt = math.modf(dtime)
+
+        return dtime > (dt + other)
+
+    def tm_ge(self, other, ago=0):
+        '''
+        return numeric time part of datetimefloat
+        '''
+        # To compare a raw "tm" part (fractional part of coded datetime)
+        # with the tm of the current datetime, the raw "tm" has to be
+        # brought in sync with the current "day" count (integer part) to avoid
+        dtime = self.array[self.idx + ago]
+        tm, dt = math.modf(dtime)
+
+        return dtime >= (dt + other)
+
+    def tm2dtime(self, tm, ago=0):
+        '''
+        Returns the given ``tm`` in the frame of the (ago bars) datatime.
+
+        Useful for external comparisons to avoid precision errors
+        '''
+        return int(self.array[self.idx + ago]) + tm
+
+    def tm2datetime(self, tm, ago=0):
+        '''
+        Returns the given ``tm`` in the frame of the (ago bars) datatime.
+
+        Useful for external comparisons to avoid precision errors
+        '''
+        return num2date(int(self.array[self.idx + ago]) + tm)
 
 
 class MetaLineActions(LineBuffer.__class__):

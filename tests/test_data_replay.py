@@ -40,10 +40,15 @@ chkargs = dict()
 def test_run(main=False):
     data = testcommon.getdata(0)
 
-    data = bt.DataReplayer(
-        dataname=data,
-        timeframe=bt.TimeFrame.Weeks,
-        compression=1)
+    if False:
+        data = bt.DataReplayer(
+            dataname=data,
+            timeframe=bt.TimeFrame.Weeks,
+            compression=1)
+    else:
+        data.addprocessor(bt.Replayer,
+                          timeframe=bt.TimeFrame.Weeks,
+                          compression=1)
 
     datas = [data]
     testcommon.runtest(datas,

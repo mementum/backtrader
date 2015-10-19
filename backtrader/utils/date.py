@@ -34,5 +34,7 @@ except ImportError:
     num2date = _num2date
     date2num = _date2num
 else:
-    num2date = mdates.num2date
-    date2num = mdates.date2num
+    num2date = _num2date
+    date2num = _date2num
+    # num2date = mdates.num2date
+    # date2num = mdates.date2num

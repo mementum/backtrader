@@ -221,11 +221,11 @@ class Plot(with_metaclass(MetaParams, object)):
         elif tframe == TimeFrame.Months:
             fmtmajor = '%Y'
             fmtminor = '%b'
-            fmtdata = '%b'
+            fmtdata = '%Y-%m'
         elif tframe == TimeFrame.Weeks:
             fmtmajor = '%b'
             fmtminor = '%d'
-            fmtdata = '%d'
+            fmtdata = '%Y-%m-%d'
         elif tframe == TimeFrame.Days:
             fmtmajor = '%b'
             fmtminor = '%d'

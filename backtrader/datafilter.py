@@ -21,10 +21,12 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import backtrader.feed as btfeed
+import backtrader as bt
+from .utils.py3 import with_metaclass
+from . import metabase
 
 
-class DataFilter(btfeed.DataBase):
+class DataFilter(bt.AbstractDataBase):
     '''
     This class filters out bars from a given data source. In addition to the
     standard parameters of a DataBase it takes a ``funcfilter`` parameter which
@@ -55,6 +57,9 @@ class DataFilter(btfeed.DataBase):
         super(DataFilter, self).preload()
 
     def _load(self):
+        if not len(self.p.dataname):
+            self.p.dataname.start()  # start data if not done somewhere else
+
         # Tell underlying source to get next data
         while self.p.dataname.next():
             # Try to load the data from the underlying source
@@ -65,4 +70,15 @@ class DataFilter(btfeed.DataBase):
             for i in range(self.p.dataname.size()):
                 self.lines[i][0] = self.p.dataname.lines[i][0]
 
+            return True
+
         return False  # no more data from underlying source
+
+
+class SessionFilter(with_metaclass(metabase.MetaParams, object)):
+    def __init__(self, data):
+        pass
+
+    def __call__(self, data):
+        # Both ends of the comparison are in the session
+        return not data.sessionstart <= data.datetime.tm(0) <= data.sessionend

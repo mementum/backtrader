@@ -339,6 +339,11 @@ class Order(with_metaclass(MetaParams, object)):
         else:
             self.status = Order.Completed
 
+        self.comminfo = None
+
+    def addcomminfo(self, comminfo):
+        self.comminfo = comminfo
+
     def expire(self):
         if self.params.exectype == Order.Market:
             return False  # will be executed yes or yes

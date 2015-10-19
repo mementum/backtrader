@@ -68,6 +68,9 @@ class CommissionInfo(with_metaclass(MetaParams)):
         '''Calculates if cash is enough to execute an operation'''
         return cash >= (size * (self.margin or price))
 
+    def stocklike(self):
+        return not self.margin
+
     def getoperationcost(self, size, price):
         '''Returns the needed amount of cash an operation would cost'''
         return size * (self.margin or price)

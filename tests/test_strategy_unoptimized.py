@@ -54,12 +54,16 @@ class TestStrategy(bt.Strategy):
         ('period', 15),
         ('printdata', True),
         ('printops', True),
+        ('stocklike', True),
     )
 
-    def log(self, txt, dt=None):
-        dt = dt or self.data.datetime[0]
-        dt = bt.num2date(dt)
-        print('%s, %s' % (dt.isoformat(), txt))
+    def log(self, txt, dt=None, nodate=False):
+        if not nodate:
+            dt = dt or self.data.datetime[0]
+            dt = bt.num2date(dt)
+            print('%s, %s' % (dt.isoformat(), txt))
+        else:
+            print('---------- %s' % (txt))
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -95,10 +99,13 @@ class TestStrategy(bt.Strategy):
         self.cross = btind.CrossOver(self.data.close, self.sma, plot=True)
 
     def start(self):
-        self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
+        if not self.p.stocklike:
+            self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
+
         if self.p.printdata:
-            self.log('-------------------------')
-            self.log('Starting portfolio value: %.2f' % self.broker.getvalue())
+            self.log('-------------------------', nodate=True)
+            self.log('Starting portfolio value: %.2f' % self.broker.getvalue(),
+                     nodate=True)
 
         self.tstart = time.clock()
 
@@ -112,6 +119,7 @@ class TestStrategy(bt.Strategy):
         if self.p.printdata:
             self.log('Time used: %s' % str(tused))
             self.log('Final portfolio value: %.2f' % self.broker.getvalue())
+            self.log('Final cash value: %.2f' % self.broker.getcash())
             self.log('-------------------------')
 
             print('buycreate')
@@ -123,12 +131,18 @@ class TestStrategy(bt.Strategy):
             print('sellexec')
             print(self.sellexec)
 
-        assert '%.2f' % self.broker.getvalue() == '12795.00'
-        assert '%.2f' % self.broker.getcash() == '11795.00'
-        assert self.buycreate == BUYCREATE
-        assert self.sellcreate == SELLCREATE
-        assert self.buyexec == BUYEXEC
-        assert self.sellexec == SELLEXEC
+        else:
+            if not self.p.stocklike:
+                assert '%.2f' % self.broker.getvalue() == '12795.00'
+                assert '%.2f' % self.broker.getcash() == '11795.00'
+            else:
+                assert '%.2f' % self.broker.getvalue() == '10284.10'
+                assert '%.2f' % self.broker.getcash() == '6164.16'
+
+            assert self.buycreate == BUYCREATE
+            assert self.sellcreate == SELLCREATE
+            assert self.buyexec == BUYEXEC
+            assert self.sellexec == SELLEXEC
 
     def next(self):
         if self.p.printdata:
@@ -166,12 +180,18 @@ chkdatas = 1
 
 
 def test_run(main=False):
-    datas = [testcommon.getdata(i) for i in range(chkdatas)]
-    testcommon.runtest(datas,
-                       TestStrategy,
-                       printdata=main,
-                       printops=main,
-                       plot=main)
+    for ronce in [True, False]:
+        for pload in [True, False]:
+            for stlike in [True, False]:
+                datas = [testcommon.getdata(i) for i in range(chkdatas)]
+                testcommon.runtest(datas,
+                                   TestStrategy,
+                                   runonce=ronce,
+                                   preload=pload,
+                                   printdata=main,
+                                   printops=main,
+                                   stocklike=stlike,
+                                   plot=main)
 
 
 if __name__ == '__main__':

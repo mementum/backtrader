@@ -26,6 +26,9 @@ import argparse
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
+from backtrader import ResamplerDaily, ResamplerWeekly, ResamplerMonthly
+from backtrader import ReplayerDaily, ReplayerWeekly, ReplayerMonthly
+from backtrader.utils import flushfile
 
 
 class SMAStrategy(bt.Strategy):
@@ -51,7 +54,7 @@ def runstrat():
     args = parse_args()
 
     # Create a cerebro entity
-    cerebro = bt.Cerebro(stdstats=False)
+    cerebro = bt.Cerebro()
 
     # Add a strategy
     if not args.indicators:
@@ -82,10 +85,34 @@ def runstrat():
         data2 = btfeeds.BacktraderCSVData(
             dataname=datapath)
     else:
-        data2 = bt.DataResampler(
-            dataname=data,
-            timeframe=tframes[args.timeframe],
-            compression=args.compression)
+        if args.oldrs:
+            if args.replay:
+                data2 = bt.DataReplayer(
+                    dataname=data,
+                    timeframe=tframes[args.timeframe],
+                    compression=args.compression)
+            else:
+                data2 = bt.DataResampler(
+                    dataname=data,
+                    timeframe=tframes[args.timeframe],
+                    compression=args.compression)
+
+        else:
+            data2 = bt.DataClone(dataname=data)
+            if args.replay:
+                if args.timeframe == 'daily':
+                    data2.addprocessor(ReplayerDaily)
+                elif args.timeframe == 'weekly':
+                    data2.addprocessor(ReplayerWeekly)
+                elif args.timeframe == 'monthly':
+                    data2.addprocessor(ReplayerMonthly)
+            else:
+                if args.timeframe == 'daily':
+                    data2.addprocessor(ResamplerDaily)
+                elif args.timeframe == 'weekly':
+                    data2.addprocessor(ResamplerWeekly)
+                elif args.timeframe == 'monthly':
+                    data2.addprocessor(ResamplerMonthly)
 
     # First add the original data - smaller timeframe
     cerebro.adddata(data)
@@ -94,7 +121,9 @@ def runstrat():
     cerebro.adddata(data2)
 
     # Run over everything
-    cerebro.run()
+    cerebro.run(runonce=not args.runnext,
+                preload=not args.nopreload,
+                stdstats=False)
 
     # Plot the result
     cerebro.plot(style='bar')
@@ -110,11 +139,23 @@ def parse_args():
     parser.add_argument('--dataname2', default='', required=False,
                         help='Larger timeframe file to load')
 
+    parser.add_argument('--runnext', action='store_true',
+                        help='Use next by next instead of runonce')
+
+    parser.add_argument('--nopreload', action='store_true',
+                        help='Do not preload the data')
+
+    parser.add_argument('--oldrs', action='store_true',
+                        help='Use old resampler')
+
+    parser.add_argument('--replay', action='store_true',
+                        help='Replay instead of resample')
+
     parser.add_argument('--noresample', action='store_true',
                         help='Do not resample, rather load larger timeframe')
 
     parser.add_argument('--timeframe', default='weekly', required=False,
-                        choices=['daily', 'weekly', 'monhtly'],
+                        choices=['daily', 'weekly', 'monthly'],
                         help='Timeframe to resample to')
 
     parser.add_argument('--compression', default=1, required=False, type=int,

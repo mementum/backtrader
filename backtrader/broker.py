@@ -95,6 +95,7 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     def getvalue(self, datas=None):
         pos_value = 0.0
+
         for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
@@ -190,10 +191,10 @@ class BrokerBack(with_metaclass(MetaParams, object)):
             # if part/all of a position has been closed, then there has been
             # a profitandloss ... record it
             pnl = comminfo.profitandloss(-closed, pprice_orig, price)
-
             cash = self.cash
         else:
-            price = order.created.price
+            pnl = 0
+            price = pprice_orig = order.created.price
             psize, pprice, opened, closed = position.update(size, price)
 
         # useful absolute values for comminfo calls
@@ -202,8 +203,8 @@ class BrokerBack(with_metaclass(MetaParams, object)):
         # "Closing" totally or partially is possible. Cash may be re-injected
         if closed:
             # Adjust to returned value for closed items & acquired opened items
-            closedvalue = comminfo.getoperationcost(abclosed, price)
-            cash += closedvalue
+            closedvalue = comminfo.getoperationcost(abclosed, pprice_orig)
+            cash += closedvalue + pnl * comminfo.stocklike()
             # Calculate and substract commission
             closedcomm = comminfo.getcomm_pricesize(abclosed, price)
             cash -= closedcomm
@@ -264,6 +265,8 @@ class BrokerBack(with_metaclass(MetaParams, object)):
                           opened, openedvalue, openedcomm,
                           comminfo.margin, pnl,
                           psize, pprice)
+
+            order.addcomminfo(comminfo)
 
             self.notify(order)
 

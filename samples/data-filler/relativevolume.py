@@ -21,41 +21,17 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import num2date, date2num, time2num, num2time
 
-from .linebuffer import *
-from .functions import *
+import backtrader as bt
+import backtrader.indicators as btind
 
-from .order import *
-from .comminfo import *
-from .trade import *
-from .position import *
 
-from .broker import *
+class RelativeVolume(bt.Indicator):
+    csv = True  # show up in csv output (default for indicators is False)
 
-from .lineseries import *
+    lines = ('relvol',)
+    params = (('period', 20),)
 
-from .dataseries import *
-from .feed import *
-from .resampler import *
-from .resamplerfilter import *
-from .datafilter import *
-from .datafiller import *
-
-from .lineiterator import *
-from .indicator import *
-from .observer import *
-from .strategy import *
-
-from .writer import *
-from .analyzer import *
-
-from .cerebro import *
-
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-
-__version__ = '1.1.14.88'
+    def __init__(self):
+        self.lines.relvol = self.data.volume(-self.p.period) / self.data.volume
+        super(RelativeVolume, self).__init__()

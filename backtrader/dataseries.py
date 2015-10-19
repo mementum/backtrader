@@ -21,11 +21,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils.py3 import range
+import datetime
+import inspect
 
+from .utils.py3 import with_metaclass
 from .lineseries import LineSeries
 from .import num2date
-from .utils import OrderedDict
+from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
 class TimeFrame(object):
@@ -93,3 +95,98 @@ class OHLC(DataSeries):
 
 class OHLCDateTime(OHLC):
     lines = (('datetime'),)
+
+
+class Filter2Processor(object):
+    '''Wrapper for filters added via .addfilter to turn them
+    into processors.
+
+    Filters are callables which
+
+      - Take a ``data`` as an argument
+      - Return False if the current bar has not triggered the filter
+      - Return True if the current bar must be filtered
+
+    The wrapper takes the return value and executes the bar removal
+    if needed be
+    '''
+    def __init__(self, data, ffilter, *args, **kwargs):
+        if inspect.isclass(ffilter):
+            ffilter = ffilter(data, *args, **kwargs)
+            args = []
+            kwargs = {}
+
+        self.ffilter = ffilter
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, data):
+        if self.ffilter(data, *self.args, **self.kwargs):
+            data.backwards()
+            return True
+
+        return False
+
+
+class _Bar(AutoOrderedDict):
+    '''
+    This class is a placeholder for the values of the standard lines of a
+    DataBase class (from OHLCDateTime)
+
+    It inherits from AutoOrderedDict to be able to easily return the values as
+    an iterable and address the keys as attributes
+
+    Order of definition is important and must match that of the lines
+    definition in DataBase (which directly inherits from OHLCDateTime)
+    '''
+    replaying = False
+
+    def __init__(self, maxdate=False):
+        super(_Bar, self).__init__()
+        self.bstart(maxdate=maxdate)
+
+    def bstart(self, maxdate=False):
+        '''Initializes a bar to the default not-updated vaues'''
+        # Order is important: defined in DataSeries/OHLC/OHLCDateTime
+        self.close = float('NaN')
+        self.low = float('inf')
+        self.high = float('-inf')
+        self.open = float('NaN')
+        self.volume = 0.0
+        self.openinterest = 0.0
+        if maxdate:
+            # Without - 1 ... fromordinal (inside num2date) will not work
+            self.datetime = date2num(datetime.datetime.max) - 1
+        else:
+            self.datetime = None
+
+    def isopen(self):
+        '''Returns if a bar has already been updated
+
+        Uses the fact that NaN is the value which is not equal to itself
+        and ``open`` is initialized to NaN
+        '''
+        o = self.open
+        return o == o  # False if NaN, True in other cases
+
+    def bupdate(self, data):
+        '''Updates a bar with the values from data
+
+        Returns True if the update was the 1st on a bar (just opened)
+
+        Returns False otherwise
+        '''
+        self.datetime = data.datetime[0]
+
+        self.high = max(self.high, data.high[0])
+        self.low = min(self.low, data.low[0])
+        self.close = data.close[0]
+
+        self.volume += data.volume[0]
+        self.openinterest = data.openinterest[0]
+
+        if not self.isopen():
+            self.open = data.open[0]
+            return True  # just opened the bar
+
+        return False

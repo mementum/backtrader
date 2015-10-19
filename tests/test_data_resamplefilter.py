@@ -21,41 +21,38 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import num2date, date2num, time2num, num2time
+import testcommon
 
-from .linebuffer import *
-from .functions import *
+import backtrader as bt
+import backtrader.indicators as btind
 
-from .order import *
-from .comminfo import *
-from .trade import *
-from .position import *
+chkdatas = 1
+chkvals = [
+    ['3836.453333', '3703.962333', '3741.802000'],
+]
 
-from .broker import *
+chkmin = 30  # period will be in weeks
+chkind = [btind.SMA]
+chkargs = dict()
 
-from .lineseries import *
 
-from .dataseries import *
-from .feed import *
-from .resampler import *
-from .resamplerfilter import *
-from .datafilter import *
-from .datafiller import *
+def test_run(main=False):
+    data = testcommon.getdata(0)
 
-from .lineiterator import *
-from .indicator import *
-from .observer import *
-from .strategy import *
+    data.resample(
+        timeframe=bt.TimeFrame.Weeks,
+        compression=1)
 
-from .writer import *
-from .analyzer import *
+    datas = [data]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals,
+                       chkargs=chkargs)
 
-from .cerebro import *
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-
-__version__ = '1.1.14.88'
+if __name__ == '__main__':
+    test_run(main=True)
