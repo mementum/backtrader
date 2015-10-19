@@ -54,6 +54,7 @@ class TestStrategy(bt.Strategy):
         ('period', 15),
         ('printdata', True),
         ('printops', True),
+        ('stocklike', True),
     )
 
     def log(self, txt, dt=None, nodate=False):
@@ -98,7 +99,9 @@ class TestStrategy(bt.Strategy):
         self.cross = btind.CrossOver(self.data.close, self.sma, plot=True)
 
     def start(self):
-        self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
+        if not self.p.stocklike:
+            self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
+
         if self.p.printdata:
             self.log('-------------------------', nodate=True)
             self.log('Starting portfolio value: %.2f' % self.broker.getvalue(),
@@ -129,8 +132,13 @@ class TestStrategy(bt.Strategy):
             print(self.sellexec)
 
         else:
-            assert '%.2f' % self.broker.getvalue() == '12795.00'
-            assert '%.2f' % self.broker.getcash() == '11795.00'
+            if not self.p.stocklike:
+                assert '%.2f' % self.broker.getvalue() == '12795.00'
+                assert '%.2f' % self.broker.getcash() == '11795.00'
+            else:
+                assert '%.2f' % self.broker.getvalue() == '10284.10'
+                assert '%.2f' % self.broker.getcash() == '6164.16'
+
             assert self.buycreate == BUYCREATE
             assert self.sellcreate == SELLCREATE
             assert self.buyexec == BUYEXEC
@@ -172,12 +180,18 @@ chkdatas = 1
 
 
 def test_run(main=False):
-    datas = [testcommon.getdata(i) for i in range(chkdatas)]
-    testcommon.runtest(datas,
-                       TestStrategy,
-                       printdata=main,
-                       printops=main,
-                       plot=main)
+    for ronce in [True, False]:
+        for pload in [True, False]:
+            for stlike in [True, False]:
+                datas = [testcommon.getdata(i) for i in range(chkdatas)]
+                testcommon.runtest(datas,
+                                   TestStrategy,
+                                   runonce=ronce,
+                                   preload=pload,
+                                   printdata=main,
+                                   printops=main,
+                                   stocklike=stlike,
+                                   plot=main)
 
 
 if __name__ == '__main__':
