@@ -324,9 +324,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for analyzer in self.analyzers:
             analyzer._stop()
 
-        # change operators back to stage 1
-        # disabled unless a use case for it is found
-        # self._stage1()
+        # change operators back to stage 1 - allows reuse of datas
+        self._stage1()
 
     def stop(self):
         '''
