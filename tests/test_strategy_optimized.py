@@ -82,6 +82,9 @@ class TestStrategy(bt.Strategy):
         self.buy_create_idx = itertools.count()
 
     def stop(self):
+        global _chkvalues
+        global _chkcash
+
         tused = time.clock() - self.tstart
         if self.p.printdata:
             self.log(('Time used: %s  - Period % d - '
@@ -112,22 +115,42 @@ chkdatas = 1
 
 
 def test_run(main=False):
-    datas = [testcommon.getdata(i) for i in range(chkdatas)]
-    testcommon.runtest(datas,
-                       TestStrategy,
-                       optimize=True,
-                       period=range(5, 45),
-                       printdata=main,
-                       printops=main,
-                       plot=False)
+    global _chkvalues
+    global _chkcash
 
-    if not main:
-        assert CHKVALUES == _chkvalues
-        assert CHKCASH == _chkcash
+    for runonce in [True, False]:
+        for preload in [True, False]:
+            _chkvalues = list()
+            _chkcash = list()
 
-    else:
-        print(_chkvalues)
-        print(_chkcash)
+            datas = [testcommon.getdata(i) for i in range(chkdatas)]
+            testcommon.runtest(datas,
+                               TestStrategy,
+                               runonce=runonce,
+                               preload=preload,
+                               optimize=True,
+                               period=range(5, 45),
+                               printdata=main,
+                               printops=main,
+                               plot=False)
+
+            if not main:
+                assert CHKVALUES == _chkvalues
+                assert CHKCASH == _chkcash
+
+            else:
+                print('*' * 50)
+                print(CHKVALUES == _chkvalues)
+                print('-' * 50)
+                print(CHKVALUES)
+                print('-' * 50)
+                print(_chkvalues)
+                print('*' * 50)
+                print(CHKCASH == _chkcash)
+                print('-' * 50)
+                print(CHKCASH)
+                print('-' * 50)
+                print(_chkcash)
 
 
 if __name__ == '__main__':

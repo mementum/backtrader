@@ -180,18 +180,14 @@ chkdatas = 1
 
 
 def test_run(main=False):
-    for ronce in [True, False]:
-        for pload in [True, False]:
-            for stlike in [True, False]:
-                datas = [testcommon.getdata(i) for i in range(chkdatas)]
-                testcommon.runtest(datas,
-                                   TestStrategy,
-                                   runonce=ronce,
-                                   preload=pload,
-                                   printdata=main,
-                                   printops=main,
-                                   stocklike=stlike,
-                                   plot=main)
+    for stlike in [True, False]:
+        datas = [testcommon.getdata(i) for i in range(chkdatas)]
+        testcommon.runtest(datas,
+                           TestStrategy,
+                           printdata=main,
+                           printops=main,
+                           stocklike=stlike,
+                           plot=main)
 
 
 if __name__ == '__main__':

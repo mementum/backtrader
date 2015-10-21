@@ -38,29 +38,30 @@ chkargs = dict()
 
 
 def test_run(main=False):
-    data = testcommon.getdata(0)
+    for i in [True, False]:
+        data = testcommon.getdata(0)
 
-    if False:
-        data = bt.DataReplayer(
-            dataname=data,
-            timeframe=bt.TimeFrame.Weeks,
-            compression=1)
-    else:
-        data.addprocessor(bt.Replayer,
-                          timeframe=bt.TimeFrame.Weeks,
-                          compression=1)
+        if i:
+            data = bt.DataReplayer(
+                dataname=data,
+                timeframe=bt.TimeFrame.Weeks,
+                compression=1)
+        else:
+            data.replay(
+                timeframe=bt.TimeFrame.Weeks,
+                compression=1)
 
-    datas = [data]
-    testcommon.runtest(datas,
-                       testcommon.TestStrategy,
-                       main=main,
-                       plot=main,
-                       chkind=chkind,
-                       chkmin=chkmin,
-                       chkvals=chkvals,
-                       chknext=chknext,
-                       chkargs=chkargs,
-                       runonce=False, preload=False)
+        datas = [data]
+        testcommon.runtest(datas,
+                           testcommon.TestStrategy,
+                           main=main,
+                           plot=main,
+                           chkind=chkind,
+                           chkmin=chkmin,
+                           chkvals=chkvals,
+                           chknext=chknext,
+                           chkargs=chkargs,
+                           runonce=False, preload=False)
 
 
 if __name__ == '__main__':
