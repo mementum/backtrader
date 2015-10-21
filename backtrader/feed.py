@@ -28,7 +28,7 @@ import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
 from backtrader.utils.py3 import with_metaclass, bytes, zip, range
-from .dataseries import Filter2Processor
+from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
 
@@ -95,15 +95,15 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         # hold datamaster points corresponding to own
         _obj.mlen = list()
 
-        _obj.funcfilters = list()
-        _obj.ffilters = list()
-        for fp in _obj.p.funcfilters:
+        _obj._filters = list()
+        _obj._ffilters = list()
+        for fp in _obj.p.filters:
             if inspect.isclass(fp):
                 fp = fp(_obj)
                 if hasattr(fp, 'last'):
-                    _obj.ffilters.append((fp, [], {}))
+                    _obj._ffilters.append((fp, [], {}))
 
-            _obj.funcfilters.append((fp, [], {}))
+            _obj._filters.append((fp, [], {}))
 
         return _obj, args, kwargs
 
@@ -118,7 +118,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('timeframe', TimeFrame.Days),
               ('sessionstart', None),
               ('sessionend', None),
-              ('funcfilters', []),)
+              ('filters', []),)
 
     _feed = None
 
@@ -134,20 +134,20 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def clone(self, **kwargs):
         return DataClone(dataname=self, **kwargs)
 
-    def addfilter(self, f, *args, **kwargs):
-        fp = Filter2Processor(self, f, *args, **kwargs)
-        self.funcfilters.append((fp, fp.args, fp.kwargs))
+    def addfilter_simple(self, f, *args, **kwargs):
+        fp = SimpleFilterWrapper(self, f, *args, **kwargs)
+        self._filters.append((fp, fp.args, fp.kwargs))
 
-    def addprocessor(self, p, *args, **kwargs):
+    def addfilter(self, p, *args, **kwargs):
         if inspect.isclass(p):
             pobj = p(self, *args, **kwargs)
-            self.funcfilters.append((pobj, [], {}))
+            self._filters.append((pobj, [], {}))
 
             if hasattr(pobj, 'last'):
-                self.ffilters.append((pobj, [], {}))
+                self._ffilters.append((pobj, [], {}))
 
         else:
-            self.funcfilters.append((p, args, kwargs))
+            self._filters.append((p, args, kwargs))
 
     def _tick_nullify(self):
         # These are the updating prices in case the new bar is "updated"
@@ -236,9 +236,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.home()
 
     def _last(self, datamaster=None):
-        # Last chance for processors to deliver something
+        # Last chance for filters to deliver something
         ret = 0
-        for ff, fargs, fkwargs in self.ffilters:
+        for ff, fargs, fkwargs in self._ffilters:
             ret += ff.last(self, *fargs, **fkwargs)
 
         if datamaster and self._barstack:
@@ -275,10 +275,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 self.backwards()
                 break
 
-            # Pass through processors
+            # Pass through filters
             retff = False
-            for ff, fargs, fkwargs in self.funcfilters:
-                # previous processor may have put things onto the stack
+            for ff, fargs, fkwargs in self._filters:
+                # previous filter may have put things onto the stack
                 if self._barstack:
                     for i in range(len(self._barstack)):
                         self._fromstack(forward=True)
@@ -344,10 +344,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return False
 
     def resample(self, **kwargs):
-        self.addprocessor(Resampler, **kwargs)
+        self.addfilter(Resampler, **kwargs)
 
     def replay(self, **kwargs):
-        self.addprocessor(Replayer, **kwargs)
+        self.addfilter(Replayer, **kwargs)
 
 
 class DataBase(AbstractDataBase):
