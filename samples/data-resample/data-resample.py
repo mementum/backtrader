@@ -48,13 +48,18 @@ def runstrat():
         monthly=bt.TimeFrame.Months)
 
     # Resample the data
-    data_resampled = bt.DataResampler(
-        dataname=data,
-        timeframe=tframes[args.timeframe],
-        compression=args.compression)
+    if args.oldrs:
+        data = bt.DataResampler(
+            dataname=data,
+            timeframe=tframes[args.timeframe],
+            compression=args.compression)
+    else:
+        data.resample(
+            timeframe=tframes[args.timeframe],
+            compression=args.compression)
 
     # Add the resample data instead of the original
-    cerebro.adddata(data_resampled)
+    cerebro.adddata(data)
 
     # Run over everything
     cerebro.run()
@@ -69,6 +74,9 @@ def parse_args():
 
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')
+
+    parser.add_argument('--oldrs', required=False, action='store_true',
+                        help='Use deprecated DataResampler')
 
     parser.add_argument('--timeframe', default='weekly', required=False,
                         choices=['daily', 'weekly', 'monthly'],

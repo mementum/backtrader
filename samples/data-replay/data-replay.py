@@ -73,13 +73,18 @@ def runstrat():
 
     # Handy dictionary for the argument timeframe conversion
     # Resample the data
-    data_replayed = bt.DataReplayer(
-        dataname=data,
-        timeframe=tframes[args.timeframe],
-        compression=args.compression)
+    if args.oldrp:
+        data = bt.DataReplayer(
+            dataname=data,
+            timeframe=tframes[args.timeframe],
+            compression=args.compression)
+    else:
+        data.replay(
+            timeframe=tframes[args.timeframe],
+            compression=args.compression)
 
     # First add the original data - smaller timeframe
-    cerebro.adddata(data_replayed)
+    cerebro.adddata(data)
 
     # Run over everything
     cerebro.run(preload=False)
@@ -95,8 +100,11 @@ def parse_args():
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')
 
+    parser.add_argument('--oldrp', required=False, action='store_true',
+                        help='Use deprecated DataReplayer')
+
     parser.add_argument('--timeframe', default='weekly', required=False,
-                        choices=['daily', 'weekly', 'monhtly'],
+                        choices=['daily', 'weekly', 'monthly'],
                         help='Timeframe to resample to')
 
     parser.add_argument('--compression', default=1, required=False, type=int,

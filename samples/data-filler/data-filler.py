@@ -28,7 +28,7 @@ import math
 # The above could be sent to an independent module
 import backtrader as bt
 import backtrader.feeds as btfeeds
-from backtrader.rs import ResamplerDaily, ResamplerWeekly, ResamplerMonthly
+import backtrader.utils.flushfile
 
 from relativevolume import RelativeVolume
 
@@ -56,29 +56,25 @@ def runstrategy():
         timeframe=bt.TimeFrame.Minutes,
         compression=1,
         sessionstart=dtstart,  # internally just the "time" part will be used
-        sessionend=dtend,
+        sessionend=dtend,  # internally just the "time" part will be used
     )
 
     if args.filter:
         data.addfilter(bt.SessionFilter)
-        # data.addprocessor(bt.SessionFilter)
-        pass
 
     if args.filler:
-        # data.addprocessor(bt.SessionFiller, fill_vol=args.fvol)
-        data.addprocessor(bt.SessionFiller, fill_vol=0)
-        data.addprocessor(ResamplerDaily, compression=1)
-        # data.addprocessor(ResamplerWeekly, compression=1)
-        # data.addprocessor(ResamplerMonthly, compression=1)
+        data.addfilter(bt.SessionFiller, fill_vol=args.fvol)
 
     # Add the data to cerebro
     cerebro.adddata(data)
 
     if args.relvol:
         # Calculate backward period - tend tstart are in same day
-        # + 1 to include last moment of the session
+        # + 1 to include last moment of the interval dstart <-> dtend
         td = ((dtend - dtstart).seconds // 60) + 1
-        cerebro.addindicator(RelativeVolume, period=td)
+        cerebro.addindicator(RelativeVolume,
+                             period=td,
+                             volisnan=math.isnan(args.fvol))
 
     # Add an empty strategy
     cerebro.addstrategy(bt.Strategy)
@@ -109,20 +105,21 @@ def parse_args():
     parser.add_argument('--filler', '-fl', action='store_true',
                         help='Fill missing bars inside start/end times')
 
-    parser.add_argument('--fvol', required=False, default=float('NaN'),
-                        help='Use as fill volume for missing bar (def: NaN)')
+    parser.add_argument('--fvol', required=False, default=0.0,
+                        type=float,
+                        help='Use as fill volume for missing bar (def: 0.0)')
 
     parser.add_argument('--tstart', '-ts',
                         # default='09:14:59',
                         # help='Start time for the Session Filter (%H:%M:%S)')
                         default='09:15',
-                        help='Start time for the Session Filter (%H:%M)')
+                        help='Start time for the Session Filter (HH:MM)')
 
     parser.add_argument('--tend', '-te',
                         # default='17:15:59',
                         # help='End time for the Session Filter (%H:%M:%S)')
                         default='17:15',
-                        help='End time for the Session Filter (%H:%M)')
+                        help='End time for the Session Filter (HH:MM)')
 
     parser.add_argument('--relvol', '-rv', action='store_true',
                         help='Add relative volume indicator')

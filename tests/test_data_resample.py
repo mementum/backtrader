@@ -37,22 +37,36 @@ chkargs = dict()
 
 
 def test_run(main=False):
-    data = testcommon.getdata(0)
+    # for i in [True, False]:
+    for rstype in [True, False]:
+        if rstype:
+            runonces = [True]
+        else:
+            runonces = [True, False]
 
-    data = bt.DataResampler(
-        dataname=data,
-        timeframe=bt.TimeFrame.Weeks,
-        compression=1)
+        for runonce in runonces:
+            data = testcommon.getdata(0)
 
-    datas = [data]
-    testcommon.runtest(datas,
-                       testcommon.TestStrategy,
-                       main=main,
-                       plot=main,
-                       chkind=chkind,
-                       chkmin=chkmin,
-                       chkvals=chkvals,
-                       chkargs=chkargs)
+            if rstype:
+                data = bt.DataResampler(
+                    dataname=data,
+                    timeframe=bt.TimeFrame.Weeks,
+                    compression=1)
+            else:
+                data.resample(
+                    timeframe=bt.TimeFrame.Weeks,
+                    compression=1)
+
+            datas = [data]
+            testcommon.runtest(datas,
+                               testcommon.TestStrategy,
+                               main=main,
+                               runonce=runonce,
+                               plot=main,
+                               chkind=chkind,
+                               chkmin=chkmin,
+                               chkvals=chkvals,
+                               chkargs=chkargs)
 
 
 if __name__ == '__main__':

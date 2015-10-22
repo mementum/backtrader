@@ -144,11 +144,11 @@ class WriterFile(WriterBase):
         self.writeline(line)
 
     def writeline(self, line):
-        self.p.out.write(line + '\n')
+        self.out.write(line + '\n')
 
     def writelines(self, lines):
         for l in lines:
-            self.p.out.write(line + '\n')
+            self.out.write(line + '\n')
 
     def writelineseparator(self, level=0):
         sepnum = level % len(self.p.separators)
@@ -203,9 +203,13 @@ class WriterFile(WriterBase):
 
 
 class WriterStringIO(WriterFile):
-    params = (('out', StringIO()),)
+    params = (('out', StringIO),)
+
+    def __init__(self):
+        super(WriterStringIO, self).__init__()
+        self.out = self.out()
 
     def stop(self):
         super(WriterStringIO, self).stop()
         # Leave the file positioned at the beginning
-        self.p.out.seek(0)
+        self.out.seek(0)

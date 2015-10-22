@@ -1,3 +1,15 @@
+1.1.15.88
+  - DivByZero function included to perform division without triggering
+    exceptions
+  - SessionFiller completed as data filter
+  - Corrections to WriterStringIO
+  - Final renaming of data filter API
+  - Reset of operators to stage1 to be able to run over same data again withoug
+    re-init
+  - Update data-replay/resample samples to use new filter API
+  - Rework of testcaes to use new filter API and run all combinations of
+    runonce/preload
+
 1.1.14.88
   - Comminfo passed down to trades for multitrade profit and loss calculation
     for issue #226

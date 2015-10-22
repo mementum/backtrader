@@ -28,6 +28,8 @@ from backtrader import AbstractDataBase, TimeFrame, date2num, num2date
 from backtrader.utils.py3 import with_metaclass
 from . import metabase
 
+MAXDATE = datetime.datetime.max
+
 
 class DataFiller(AbstractDataBase):
     '''This class will fill gaps in the source data using the following
@@ -199,10 +201,16 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
       - fill_oi (def: float('NaN')):
 
         Value to use to fill the missing Open Interest
+
+      - skip_first_fill (def: True):
+
+        Upon seeing the 1st valid bar do not fill from the sessionstart up to
+        that bar
     '''
     params = (('fill_price', None),
               ('fill_vol', float('NaN')),
-              ('fill_oi', float('NaN')),)
+              ('fill_oi', float('NaN')),
+              ('skip_first_fill', True))
 
     # Minimum delta unit in between bars
     _tdeltas = {
@@ -213,49 +221,82 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
     def __init__(self, data):
         # Calculate and save timedelta for timeframe
-        self._tdunit = self._tdeltas[data._timeframe]
-        self._tdunit *= data._compression
-        self.dtime_prev = None
+        self._tdunit = self._tdeltas[data._timeframe] * data._compression
+
+        self.seenbar = False  # control if at least one bar has been seen
+        self.sessend = MAXDATE  # maxdate is the control for bar in session
 
     def __call__(self, data):
-        if self.dtime_prev is None:
-            self.dtime_prev = data.datetime.datetime()
-            self.sessend = data.datetime.tm2datetime(data.sessionend)
-            return False  # not enough data to look backwards
+        '''
+        Params:
+          - data: the data source to filter/process
 
-        # Control flag - bars added to the stack
-        self._dirty = False
+        Returns:
+          - False (always) because this filter does not remove bars from the
+        stream
 
-        # Time of previous (delivered) bar ... advanced to next point
-        dtime_prev = self.dtime_prev + self._tdunit
+        The logic (starting with a session end control flag of MAXDATE)
+
+          - If new bar is over session end (never true for 1st bar)
+
+            Fill up to session end. Reset sessionend to MAXDATE & fall through
+
+          - If session end is flagged as MAXDATE
+
+            Recalculate session limits and check whether the bar is within them
+
+            if so, fill up and record the last seen tim
+
+          - Else ... the incoming bar is in the session, fill up to it
+        '''
         # Get time of current (from data source) bar
-        self.dtime_prev = dtime_cur = data.datetime.datetime()
+        dtime_cur = data.datetime.datetime()
 
-        if dtime_cur > self.sessend:  # if jumped boundary
-            # 1. check for missing bars until boundary (end)
-            while dtime_prev <= self.sessend:
-                self._fillbars(data, dtime_prev)
-                dtime_prev += self._tdunit
+        if dtime_cur > self.sessend:
+            # bar over session end - fill up and invalidate
+            self._fillbars(data, self.dtime_prev, self.sessend + self._tdunit)
+            self.sessend = MAXDATE
 
-            # Update session end
-            self.sessend = data.datetime.tm2datetime(data.sessionend)
+        # Fall through from previous check ... the bar which is over the
+        # session could already be in a new session and within the limits
+        if self.sessend == MAXDATE:
+            # No bar seen yet or one went over previous session limit
+            sessstart = data.datetime.tm2datetime(data.sessionstart)
+            self.sessend = sessend = data.datetime.tm2datetime(data.sessionend)
 
-            # jump to next boundary - session start
-            dtime_prev = data.datetime.tm2datetime(data.sessionstart)
+            if sessstart <= dtime_cur <= sessend:
+                # 1st bar from session in the session - fill from session start
+                if self.seenbar or not self.p.skip_first_fill:
+                    self._fillbars(data, sessstart - self._tdunit, dtime_cur)
 
-        # check gap until current time
-        while dtime_prev < dtime_cur:
-            self._fillbars(data, dtime_prev)
-            dtime_prev += self._tdunit
+            self.seenbar = True
+            self.dtime_prev = dtime_cur
 
-        if self._dirty:
-            # Save data bar to the stack - delivered after the above insertions
-            data._save2stack(erase=True)
+        else:
+            # Seen a previous bar and this is in the session - fill up to it
+            self._fillbars(data, self.dtime_prev, dtime_cur)
+            self.dtime_prev = dtime_cur
 
-        # bars not removed from system (added/saved to stack)
         return False
 
-    def _fillbars(self, data, dtime):
+    def _fillbars(self, data, time_start, time_end, forcedirty=False):
+        '''
+        Fills one by one bars as needed from time_start to time_end
+
+        Invalidates the control dtime_prev if requested
+        '''
+        # Control flag - bars added to the stack
+        dirty = False
+
+        time_start += self._tdunit
+        while time_start < time_end:
+            dirty = self._fillbar(data, time_start)
+            time_start += self._tdunit
+
+        if dirty or forcedirty:
+            data._save2stack(erase=True)
+
+    def _fillbar(self, data, dtime):
         # Prepare an array of the needed size
         bar = [float('Nan')] * data.size()
 
@@ -278,4 +319,4 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
         # Add tot he stack of bars to save
         data._add2stack(bar)
 
-        self._dirty = True  # indicate the curernt data bar must be save
+        return True

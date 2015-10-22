@@ -57,33 +57,45 @@ def getdata(index, fromdate=FROMDATE, todate=TODATE):
     return data
 
 
-def runtest(datas, strategy,
-            runonce=True, preload=True, plot=False, optimize=False, maxcpus=1,
+def runtest(datas,
+            strategy,
+            runonce=None,
+            preload=None,
+            plot=False,
+            optimize=False,
+            maxcpus=1,
             writer=None,
             **kwargs):
 
-    cerebro = bt.Cerebro(runonce=runonce, preload=preload, maxcpus=maxcpus)
+    runonces = [True, False] if runonce is None else [runonce]
+    preloads = [True, False] if preload is None else [preload]
 
-    if isinstance(datas, bt.LineSeries):
-        datas = [datas]
-    for data in datas:
-        cerebro.adddata(data)
+    cerebros = list()
+    for ronce in runonces:
+        cerebro = bt.Cerebro(runonce=ronce, preload=preload, maxcpus=maxcpus)
 
-    if not optimize:
-        cerebro.addstrategy(strategy, **kwargs)
+        if isinstance(datas, bt.LineSeries):
+            datas = [datas]
+        for data in datas:
+            cerebro.adddata(data)
 
-        if writer:
-            wr = writer[0]
-            wrkwargs = writer[1]
-            cerebro.addwriter(wr, **wrkwargs)
-    else:
-        cerebro.optstrategy(strategy, **kwargs)
+        if not optimize:
+            cerebro.addstrategy(strategy, **kwargs)
 
-    cerebro.run()
-    if plot:
-        cerebro.plot()
+            if writer:
+                wr = writer[0]
+                wrkwargs = writer[1]
+                cerebro.addwriter(wr, **wrkwargs)
+        else:
+            cerebro.optstrategy(strategy, **kwargs)
 
-    return cerebro
+        cerebro.run()
+        if plot:
+            cerebro.plot()
+
+        cerebros.append(cerebro)
+
+    return cerebros
 
 
 class TestStrategy(bt.Strategy):

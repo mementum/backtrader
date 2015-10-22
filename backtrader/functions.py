@@ -34,6 +34,39 @@ class Logic(LineActions):
         self.args = [self.arrayize(arg) for arg in args]
 
 
+class DivByZero(Logic):
+    '''This operation is a Lines object and fills it values by executing a
+    division on the numerator / denominator arguments and avoiding a division
+    by zero exception by checking the denominator
+
+    Params:
+      - a: numerator (numeric or iterable object ... mostly a Lines object)
+      - b: denominator (numeric or iterable object ... mostly a Lines object)
+      - zero (def: 0.0): value to apply if division by zero would be raised
+
+    '''
+    def __init__(self, a, b, zero=0.0):
+        super(DivByZero, self).__init__(a, b)
+        self.a = self.args[0]
+        self.b = self.args[1]
+        self.zero = zero
+
+    def next(self):
+        b = self.b[0]
+        self[0] = self.a[0] / b if b else self.zero
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        zero = self.zero
+
+        for i in range(start, end):
+            b = srcb[i]
+            dst[i] = srca[i] / b if b else zero
+
+
 class Cmp(Logic):
     def __init__(self, a, b):
         super(Cmp, self).__init__(a, b)

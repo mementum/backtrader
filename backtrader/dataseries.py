@@ -97,7 +97,7 @@ class OHLCDateTime(OHLC):
     lines = (('datetime'),)
 
 
-class Filter2Processor(object):
+class SimpleFilterWrapper(object):
     '''Wrapper for filters added via .addfilter to turn them
     into processors.
 
