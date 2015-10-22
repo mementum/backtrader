@@ -56,11 +56,11 @@ def runstrategy():
         timeframe=bt.TimeFrame.Minutes,
         compression=1,
         sessionstart=dtstart,  # internally just the "time" part will be used
-        sessionend=dtend,
+        sessionend=dtend,  # internally just the "time" part will be used
     )
 
     if args.filter:
-        data.addfilter_simple(bt.SessionFilter)
+        data.addfilter(bt.SessionFilter)
 
     if args.filler:
         data.addfilter(bt.SessionFiller, fill_vol=args.fvol)
@@ -72,7 +72,9 @@ def runstrategy():
         # Calculate backward period - tend tstart are in same day
         # + 1 to include last moment of the interval dstart <-> dtend
         td = ((dtend - dtstart).seconds // 60) + 1
-        cerebro.addindicator(RelativeVolume, period=td)
+        cerebro.addindicator(RelativeVolume,
+                             period=td,
+                             volisnan=math.isnan(args.fvol))
 
     # Add an empty strategy
     cerebro.addstrategy(bt.Strategy)
@@ -103,9 +105,9 @@ def parse_args():
     parser.add_argument('--filler', '-fl', action='store_true',
                         help='Fill missing bars inside start/end times')
 
-    parser.add_argument('--fvol', required=False, default=float('NaN'),
+    parser.add_argument('--fvol', required=False, default=0.0,
                         type=float,
-                        help='Use as fill volume for missing bar (def: NaN)')
+                        help='Use as fill volume for missing bar (def: 0.0)')
 
     parser.add_argument('--tstart', '-ts',
                         # default='09:14:59',
