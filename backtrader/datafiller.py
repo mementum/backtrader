@@ -28,6 +28,8 @@ from backtrader import AbstractDataBase, TimeFrame, date2num, num2date
 from backtrader.utils.py3 import with_metaclass
 from . import metabase
 
+MAXDATE = datetime.datetime.max
+
 
 class DataFiller(AbstractDataBase):
     '''This class will fill gaps in the source data using the following
@@ -219,10 +221,10 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
     def __init__(self, data):
         # Calculate and save timedelta for timeframe
-        self._tdunit = self._tdeltas[data._timeframe] * data_compression
+        self._tdunit = self._tdeltas[data._timeframe] * data._compression
 
         self.seenbar = False  # control if at least one bar has been seen
-        self.dtime_prev = None  # control for bars in session seen/unseen
+        self.sessend = MAXDATE  # maxdate is the control for bar in session
 
     def __call__(self, data):
         '''
@@ -233,41 +235,42 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
           - False (always) because this filter does not remove bars from the
         stream
 
-        The logic:
+        The logic (starting with a session end control flag of MAXDATE)
 
-          - If no self.dtime_prev ... no bar within the sesssion has been seen
+          - If new bar is over session end (never true for 1st bar)
 
-            The latest bar is checked to see if it's in the session and if so a
-            fill is done from the session start until the bar
+            Fill up to session end. Reset sessionend to MAXDATE & fall through
 
-          - If a bar has been seen but the latest bar goes over the session
-            limit
+          - If session end is flagged as MAXDATE
 
-            fill up to the session limit and invalidate dtime_prev
+            Recalculate session limits and check whether the bar is within them
 
-          - Else ... the latest bar is for sure in the session and filling
-            happens up to the bar
+            if so, fill up and record the last seen tim
+
+          - Else ... the incoming bar is in the session, fill up to it
         '''
         # Get time of current (from data source) bar
         dtime_cur = data.datetime.datetime()
 
-        if self.dtime_prev is None:
+        if dtime_cur > self.sessend:
+            # bar over session end - fill up and invalidate
+            self._fillbars(data, self.dtime_prev, self.sessend + self._tdunit)
+            self.sessend = MAXDATE
+
+        # Fall through from previous check ... the bar which is over the
+        # session could already be in a new session and within the limits
+        if self.sessend == MAXDATE:
             # No bar seen yet or one went over previous session limit
             sessstart = data.datetime.tm2datetime(data.sessionstart)
-            self.sessend = data.datetime.tm2datetime(data.sessionend)
+            self.sessend = sessend = data.datetime.tm2datetime(data.sessionend)
 
-            if sessstart <= dtime_cur <= self.sessend:
+            if sessstart <= dtime_cur <= sessend:
                 # 1st bar from session in the session - fill from session start
                 if self.seenbar or not self.p.skip_first_fill:
                     self._fillbars(data, sessstart - self._tdunit, dtime_cur)
 
-                self.seenbar = True
-                self.dtime_prev = dtime_cur
-
-        elif dtime_cur > self.sessend:
-            # new bar goes over the session limit - fill up to session end
-            self._fillbars(data, self.dtime_prev, self.sessend + self._tdunit)
-            self.dtime_prev = None
+            self.seenbar = True
+            self.dtime_prev = dtime_cur
 
         else:
             # Seen a previous bar and this is in the session - fill up to it
@@ -276,7 +279,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
         return False
 
-    def _fillbars(self, data, time_start, time_end):
+    def _fillbars(self, data, time_start, time_end, forcedirty=False):
         '''
         Fills one by one bars as needed from time_start to time_end
 
@@ -290,7 +293,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
             dirty = self._fillbar(data, time_start)
             time_start += self._tdunit
 
-        if dirty:
+        if dirty or forcedirty:
             data._save2stack(erase=True)
 
     def _fillbar(self, data, dtime):
