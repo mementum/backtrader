@@ -47,6 +47,7 @@ class VChartData(feed.DataBase):
     '''
 
     def start(self):
+        super(VChartData, self).start()
 
         # Not yet known if a extension is needed
         self.ext = ''

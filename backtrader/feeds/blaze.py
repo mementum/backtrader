@@ -57,6 +57,8 @@ class BlazeData(feed.DataBase):
     ]
 
     def start(self):
+        super(BlazeData, self).start()
+
         # reset the iterator on each start
         self._rows = iter(self.p.dataname)
 
