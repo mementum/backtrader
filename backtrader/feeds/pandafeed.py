@@ -58,8 +58,9 @@ class PandasDirectData(feed.DataBase):
         'datetime', 'open', 'high', 'low', 'close', 'volume', 'openinterest'
     ]
 
-
     def start(self):
+        super(PandasDirectData, self).start()
+
         # reset the iterator on each start
         self._rows = self.p.dataname.itertuples()
 
@@ -104,9 +105,6 @@ class PandasData(feed.DataBase):
     '''
     Uses a Pandas DataFrame as the feed source, using indices into column
     names (which can be "numeric")
-
-
-
 
     This means that all parameters related to lines must have numeric
     values as indices into the tuples
@@ -197,6 +195,8 @@ class PandasData(feed.DataBase):
                 self._colmapping[datafield] = defmapping
 
     def start(self):
+        super(PandasData, self).start()
+
         # reset the length with each start
         self._idx = -1
 
