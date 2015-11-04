@@ -21,42 +21,44 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .version import __version__
+from ..comminfo import *
 
-from .utils import num2date, date2num, time2num, num2time
 
-from .linebuffer import *
-from .functions import *
+class CommInfo(CommInfoBase):
+    pass  # clone of CommissionInfo but with xx% instead of 0.xx
 
-from .order import *
-from .comminfo import *
-from .trade import *
-from .position import *
 
-from .broker import *
+class CommInfo_Futures(CommInfoBase):
+    params = (
+        ('margincheck', True),
+    )
 
-from .lineseries import *
 
-from .dataseries import *
-from .feed import *
-from .resampler import *
-from .resamplerfilter import *
-from .datafilter import *
-from .datafiller import *
+class CommInfo_Futures_Perc(CommInfo_Futures):
+    params = (
+        ('commtype', CommInfoBase.COMM_PERC),
+    )
 
-from .lineiterator import *
-from .indicator import *
-from .observer import *
-from .strategy import *
 
-from .writer import *
-from .analyzer import *
+class CommInfo_Futures_Fix(CommInfo_Futures):
+    params = (
+        ('commtype', CommInfoBase.COMM_FIX),
+    )
 
-from .cerebro import *
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-from . import commissions
+class CommInfo_Stocks(CommInfoBase):
+    params = (
+        ('margincheck', False),
+    )
+
+
+class CommInfo_Stocks_Perc(CommInfoBase):
+    params = (
+        ('commtype', CommInfoBase.COMM_PERC),
+    )
+
+
+class CommInfo_Stocks_Fix(CommInfoBase):
+    params = (
+        ('commtype', CommInfoBase.COMM_FIX),
+    )
