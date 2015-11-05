@@ -22,8 +22,6 @@ import os.path
 import codecs  # To use a consistent encoding
 import setuptools
 
-import backtrader
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 # Get the long description from the relevant file
@@ -31,7 +29,8 @@ with codecs.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 pname = 'backtrader'
-pversion = backtrader.__version__
+execfile(os.path.join(pname, 'version.py'))
+pversion = __version__
 gurl = 'https://github.com/mementum/' + pname
 gdurl = gurl + '/tarball/' + pversion
 

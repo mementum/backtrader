@@ -25,87 +25,92 @@ from .utils.py3 import with_metaclass
 from .metabase import MetaParams
 
 
-class CommissionInfo(with_metaclass(MetaParams)):
-    '''CommissionInfo
+class CommInfoBase(with_metaclass(MetaParams)):
+    COMM_PERC, COMM_FIXED = range(2)
 
-    This class tries to cover commision schemes for elements which have a cost
-    based on price * size (ex: acquiring stocks and later selling them) and
-    other things like futures in which the cost of an operation is determined
-    by the needed cash margin.
+    params = (
+        ('commission', 0.0), ('mult', 1.0), ('margin', None),
+        ('commtype', None),
+        ('percabs', False),
+        # True -> margin must be set, False must no be set, None: no check
+        ('stocklike', False),
+    )
 
-    It also calculates the cash adjustment which is performed on a daily basis
-    with futures.
+    def __init__(self):
+        super(CommInfoBase, self).__init__()
 
-    Params:
-      - commission: % of fixed per element commission in monetary units
-      - mult: multiplier for futures-like operations
-      - margin: amount of cash needed for each futures like contracts
+        self._stocklike = self.p.stocklike
+        self._commtype = self.p.commtype
 
-    Note:
-      `margin` is the key parameter to decide if a commision is calculate for a
-      futures-like object or for a stocks like.
+        # The intial block checks for the behavior of the original
+        # CommissionInfo in which the commission scheme (perc/fixed) was
+        # determined by parameter margin evaluating to False/True
+        # If the parameter "commtype" is None, this behavior is emulated
+        # else, the parameter values are used
 
-      If margin evaluates to "False" (0, 0.0, None, ...) commissions will be
-      calculated for stock like objects.
+        if self._commtype is None:  # original CommissionInfo behavior applies
+            if self.p.margin:
+                self._stocklike = False
+                self._commtype = self.COMM_FIXED
+            else:
+                self._stocklike = True
+                self._commtype = self.COMM_PERC
 
-      Otherwise the calculated commissions and cash adjustments will be done
-      for futures-like objects
-    '''
+        if self._commtype == self.COMM_PERC and not self.p.percabs:
+            self.p.commission /= 100.0
 
-    params = (('commission', 0.0), ('mult', 1.0), ('margin', None),)
+    @property
+    def margin(self):
+        return self.p.margin
 
-    def __getattr__(self, name):
-        # dig into self.params if not attribute, mostly for external access
-        return getattr(self.params, name)
-
-    def __setattribute__(self, name, value):
-        if hasattr(self.params, name):
-            raise AttributeError
-
-        super(CommissionInfo, self).__setattribute__(name, value)
-
-    def checkmargin(self, size, price, cash):
-        '''Calculates if cash is enough to execute an operation'''
-        return cash >= (size * (self.margin or price))
-
+    @property
     def stocklike(self):
-        return not self.margin
+        return self._stocklike
 
     def getoperationcost(self, size, price):
         '''Returns the needed amount of cash an operation would cost'''
-        return size * (self.margin or price)
+        if not self._stocklike:
+            return abs(size) * self.p.margin
+
+        return abs(size) * price
 
     def getvalue(self, position, price):
         '''Returns the value of a position given a price. For future-like
         objects it is fixed at size * margin'''
-        if self.margin:
-            return abs(position.size) * self.margin
+        if not self._stocklike:
+            return abs(position.size) * self.p.margin
 
         return position.size * price
 
-    def getcomm_pricesize(self, size, price):
+    def _getcommission(self, size, price, pseudoexec):
         '''Calculates the commission of an operation at a given price
-        For future-liek objects the price plays no role'''
-        price = price if not self.margin else 1.0
-        return size * self.commission * price
 
-    def getcommission(self, order):
-        '''Given an order return the actual commission cost'''
-        price = order.price if not self.margin else 1.0
-        return order.size * self.commission * price
+        pseudoexec: if True the operation has not yet been executed
+        '''
+        if self._commtype == self.COMM_PERC:
+            return abs(size) * self.p.commission * price
+
+        return abs(size) * self.p.commission
+
+    def getcommission(self, size, price):
+        return self._getcommission(size, price, pseudoexec=True)
+
+    def confirmexec(self, size, price):
+        return self._getcommission(size, price, pseudoexec=False)
 
     def profitandloss(self, size, price, newprice):
         '''Return actual profit and loss a position has'''
-        return size * (newprice - price) * self.mult
-
-    def mustcheckmargin(self):
-        return not self.margin
+        return size * (newprice - price) * self.p.mult
 
     def cashadjust(self, size, price, newprice):
-        '''Calculates the adjustment in cash for a given price difference for
-        future-like objects'''
-        if not self.margin:
-            # No margin, no need to adjust -> stock like assume
-            return 0.0
+        '''Calculates cash adjustment for a given price difference'''
+        if not self._stocklike:
+            return size * (newprice - price) * self.p.mult
 
-        return size * (newprice - price) * self.mult
+        return 0.0
+
+
+class CommissionInfo(CommInfoBase):
+    params = (
+        ('percabs', True),  # Original CommissionInfo took 0.xx for percentages
+    )

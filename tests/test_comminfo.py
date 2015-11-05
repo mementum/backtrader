@@ -31,17 +31,9 @@ def check_stocks():
     commission = 0.5
     comm = bt.CommissionInfo(commission=commission)
 
-    size = 10.0
     price = 10.0
-    cash = 1.0
-
-    marginok = comm.checkmargin(size=size, price=price, cash=cash)
-    assert not marginok
-
     cash = 10000.0
     size = 100.0
-    marginok = comm.checkmargin(size=size, price=price, cash=cash)
-    assert marginok
 
     opcost = comm.getoperationcost(size=size, price=price)
     assert opcost == size * price
@@ -50,7 +42,7 @@ def check_stocks():
     value = comm.getvalue(pos, price)
     assert value == size * price
 
-    commcost = comm.getcomm_pricesize(size, price)
+    commcost = comm.getcommission(size, price)
     assert commcost == size * price * commission
 
     newprice = 5.0
@@ -67,17 +59,9 @@ def check_futures():
     mult = 10.0
     comm = bt.CommissionInfo(commission=commission, mult=mult, margin=margin)
 
-    size = 10.0
     price = 10.0
-    cash = 1.0
-
-    marginok = comm.checkmargin(size=size, price=price, cash=cash)
-    assert not marginok
-
     cash = 10000.0
     size = 100.0
-    marginok = comm.checkmargin(size=size, price=price, cash=cash)
-    assert marginok
 
     opcost = comm.getoperationcost(size=size, price=price)
     assert opcost == size * margin
@@ -86,7 +70,7 @@ def check_futures():
     value = comm.getvalue(pos, price)
     assert value == size * margin
 
-    commcost = comm.getcomm_pricesize(size, price)
+    commcost = comm.getcommission(size, price)
     assert commcost == size * commission
 
     newprice = 5.0

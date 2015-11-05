@@ -25,7 +25,7 @@ import collections
 
 from .utils.py3 import with_metaclass
 
-from .comminfo import CommissionInfo
+from .comminfo import CommInfoBase
 from .position import Position
 from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
@@ -35,7 +35,7 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     params = (
         ('cash', 10000.0),
-        ('commission', CommissionInfo()),
+        ('commission', CommInfoBase(percabs=True)),
         ('checksubmit', True),
     )
 
@@ -69,8 +69,14 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
         return self.comminfo[None]
 
-    def setcommission(self, commission=0.0, margin=None, mult=1.0, name=None):
-        comm = CommissionInfo(commission=commission, margin=margin, mult=mult)
+    def setcommission(self,
+                      commission=0.0, margin=None, mult=1.0,
+                      commtype=None, percabs=True, stocklike=False,
+                      name=None):
+
+        comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
+                            commtype=commtype, stocklike=stocklike,
+                            percabs=percabs)
         self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
@@ -197,16 +203,13 @@ class BrokerBack(with_metaclass(MetaParams, object)):
             price = pprice_orig = order.created.price
             psize, pprice, opened, closed = position.update(size, price)
 
-        # useful absolute values for comminfo calls
-        abpsize, abopened, abclosed = abs(psize), abs(opened), abs(closed)
-
         # "Closing" totally or partially is possible. Cash may be re-injected
         if closed:
             # Adjust to returned value for closed items & acquired opened items
-            closedvalue = comminfo.getoperationcost(abclosed, pprice_orig)
-            cash += closedvalue + pnl * comminfo.stocklike()
+            closedvalue = comminfo.getoperationcost(closed, pprice_orig)
+            cash += closedvalue + pnl * comminfo.stocklike
             # Calculate and substract commission
-            closedcomm = comminfo.getcomm_pricesize(abclosed, price)
+            closedcomm = comminfo.getcommission(closed, price)
             cash -= closedcomm
 
             if dt is not None:
@@ -223,10 +226,10 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
         popened = opened
         if opened:
-            openedvalue = comminfo.getoperationcost(abopened, price)
+            openedvalue = comminfo.getoperationcost(opened, price)
             cash -= openedvalue
 
-            openedcomm = comminfo.getcomm_pricesize(abopened, price)
+            openedcomm = comminfo.getcommission(opened, price)
             cash -= openedcomm
 
             if cash < 0.0:
@@ -234,8 +237,8 @@ class BrokerBack(with_metaclass(MetaParams, object)):
                 opened = 0
                 openedvalue = openedcomm = 0.0
 
-            elif dt is not None:
-                if abpsize > abopened:
+            elif dt is not None:  # real execution
+                if abs(psize) > abs(opened):
                     # some futures were opened and cash adjustment to new
                     # price is needed from old position price to new pos price
                     adjsize = psize - opened
@@ -256,6 +259,9 @@ class BrokerBack(with_metaclass(MetaParams, object)):
         execsize = closed + opened
 
         if execsize:
+            # Confimrm the operation to the comminfo object
+            comminfo.confirmexec(execsize, price)
+
             # do a real position update if something was executed
             position.update(execsize, price)
 
