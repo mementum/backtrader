@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from ..comminfo import *
+from ..comminfo import CommInfoBase
 
 
 class CommInfo(CommInfoBase):
@@ -30,7 +30,7 @@ class CommInfo(CommInfoBase):
 
 class CommInfo_Futures(CommInfoBase):
     params = (
-        ('margincheck', True),
+        ('stocklike', False),
     )
 
 
@@ -40,25 +40,25 @@ class CommInfo_Futures_Perc(CommInfo_Futures):
     )
 
 
-class CommInfo_Futures_Fix(CommInfo_Futures):
+class CommInfo_Futures_Fixed(CommInfo_Futures):
     params = (
-        ('commtype', CommInfoBase.COMM_FIX),
+        ('commtype', CommInfoBase.COMM_FIXED),
     )
 
 
 class CommInfo_Stocks(CommInfoBase):
     params = (
-        ('margincheck', False),
+        ('stocklike', True),
     )
 
 
-class CommInfo_Stocks_Perc(CommInfoBase):
+class CommInfo_Stocks_Perc(CommInfo_Stocks):
     params = (
         ('commtype', CommInfoBase.COMM_PERC),
     )
 
 
-class CommInfo_Stocks_Fix(CommInfoBase):
+class CommInfo_Stocks_Fixed(CommInfo_Stocks):
     params = (
-        ('commtype', CommInfoBase.COMM_FIX),
+        ('commtype', CommInfoBase.COMM_FIXED),
     )

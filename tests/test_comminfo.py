@@ -42,7 +42,7 @@ def check_stocks():
     value = comm.getvalue(pos, price)
     assert value == size * price
 
-    commcost = comm.getcomm_pricesize(size, price)
+    commcost = comm.getcommission(size, price)
     assert commcost == size * price * commission
 
     newprice = 5.0
@@ -70,7 +70,7 @@ def check_futures():
     value = comm.getvalue(pos, price)
     assert value == size * margin
 
-    commcost = comm.getcomm_pricesize(size, price)
+    commcost = comm.getcommission(size, price)
     assert commcost == size * commission
 
     newprice = 5.0

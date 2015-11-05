@@ -180,7 +180,7 @@ chkdatas = 1
 
 
 def test_run(main=False):
-    for stlike in [True, False]:
+    for stlike in [False, True]:
         datas = [testcommon.getdata(i) for i in range(chkdatas)]
         testcommon.runtest(datas,
                            TestStrategy,
