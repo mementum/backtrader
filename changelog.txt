@@ -1,3 +1,8 @@
+1.1.17.88
+  - #29 extend commissions to support additional schemes
+  - #27 convert iterable in pandas datasource to list before checking len
+  - Packaging reordering to suppor introduction of dependencies
+
 1.1.16.88
   - Correct missing super in start some Data Feeds. Closes #27
 
