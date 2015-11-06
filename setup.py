@@ -28,11 +28,17 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Package name
 pname = 'backtrader'
-execfile(os.path.join(pname, 'version.py'))
-pversion = __version__
+
+# Get the version ... execfile is only on Py2 ... use exec + compile + open
+vname = 'version.py'
+with open(os.path.join(pname, vname)) as f:
+    exec(compile(f.read(), vname, 'exec'))
+
+# Generate linkes
 gurl = 'https://github.com/mementum/' + pname
-gdurl = gurl + '/tarball/' + pversion
+gdurl = gurl + '/tarball/' + __version__
 
 setuptools.setup(
     name=pname,
@@ -40,7 +46,7 @@ setuptools.setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=pversion,
+    version=__version__,
 
     description='BackTesting Engine',
     long_description=long_description,
