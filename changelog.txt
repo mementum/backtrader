@@ -1,3 +1,6 @@
+1.1.18.88
+  - Fixes #30 - Packaging issue under Python 3.x introduced in 1.1.17.88
+
 1.1.17.88
   - #29 extend commissions to support additional schemes
   - #27 convert iterable in pandas datasource to list before checking len
