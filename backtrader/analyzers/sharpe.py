@@ -21,13 +21,14 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import itertools
 import operator
 
-from backtrader.utils.py3 import map
+from backtrader.utils.py3 import map, itervalues
 
 from backtrader import Analyzer, TimeFrame
 from backtrader.mathsupport import average, standarddev
-from backtrader.analyzers import AnnualReturn
+from backtrader.analyzers import TimeReturn, AnnualReturn
 
 
 class SharpeRatio(Analyzer):
@@ -47,18 +48,38 @@ class SharpeRatio(Analyzer):
 
       - Returns a dictionary with key "sharperatio" holding the ratio
     '''
-    params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
+    params = (
+        ('riskfreerate', 0.01),
+        ('timeframe', TimeFrame.Years),
+        ('compression', 1),
+        ('legacyannual', False),
+    )
 
     def __init__(self):
         super(SharpeRatio, self).__init__()
-        self.anret = AnnualReturn()
+        if self.p.legacyannual:
+            self.anret = AnnualReturn()
+        else:
+            self.timereturn = TimeReturn(
+                timeframe=self.p.timeframe,
+                compression=self.p.compression)
 
     def stop(self):
-        retfree = [self.p.riskfreerate] * len(self.anret.rets)
-        retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
-        retdev = standarddev(self.anret.rets)
+        if self.p.legacyannual:
+            retfree = [self.p.riskfreerate] * len(self.anret.rets)
+            retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
+            retdev = standarddev(self.anret.rets)
 
-        self.ratio = retavg / retdev
+            self.ratio = retavg / retdev
+        else:
+            returns = list(itervalues(self.timereturn.get_analysis()))
+            retfree = itertools.repeat(self.p.riskfreerate)
+
+            ret_free = map(operator.sub, returns, retfree)
+            ret_free_avg = average(list(ret_free))
+            retdev = standarddev(returns)
+
+            self.ratio = ret_free_avg / retdev
 
     def get_analysis(self):
         return dict(sharperatio=self.ratio)
