@@ -21,10 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader.utils.py3 import range
+from collections import OrderedDict
 
+from backtrader.utils.py3 import range
 from backtrader import Analyzer, num2date
-from backtrader.utils import OrderedDict
 
 
 class AnnualReturn(Analyzer):
