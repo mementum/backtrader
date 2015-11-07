@@ -28,7 +28,7 @@ import datetime
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
-from backtrader.analyzers import SQN, AnnualReturn
+from backtrader.analyzers import SQN, AnnualReturn, TimeReturn, SharpeRatio
 
 
 class LongShortStrategy(bt.Strategy):
@@ -150,11 +150,22 @@ def runstrategy():
                                  mult=args.mult,
                                  margin=args.margin)
 
+    tframes = dict(
+        days=bt.TimeFrame.Days,
+        weeks=bt.TimeFrame.Weeks,
+        months=bt.TimeFrame.Months,
+        years=bt.TimeFrame.Years)
+
     # Add the Analyzers
     cerebro.addanalyzer(SQN)
-    cerebro.addanalyzer(AnnualReturn)
+    if args.legacyannual:
+        cerebro.addanalyzer(AnnualReturn)
+        cerebro.addanalyzer(SharpeRatio, legacyannual=True)
+    else:
+        cerebro.addanalyzer(TimeReturn, timeframe=tframes[args.tframe])
+        cerebro.addanalyzer(SharpeRatio, timeframe=tframes[args.tframe])
 
-    cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=2)
+    cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
 
     # And run it
     cerebro.run()
@@ -165,7 +176,7 @@ def runstrategy():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MultiData Strategy')
+    parser = argparse.ArgumentParser(description='TimeReturn')
 
     parser.add_argument('--data', '-d',
                         default='../../datas/2005-2006-day-001.txt',
@@ -190,6 +201,14 @@ def parse_args():
 
     parser.add_argument('--csvcross', action='store_true',
                         help='Output the CrossOver signals to CSV')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--tframe', default='years', required=False,
+                       choices=['days', 'weeks', 'months', 'years'],
+                       help='TimeFrame for the returns/Sharpe calculations')
+
+    group.add_argument('--legacyannual', action='store_true',
+                       help='Use legacy annual return analyzer')
 
     parser.add_argument('--cash', default=100000, type=int,
                         help='Starting Cash')
