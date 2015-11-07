@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import itertools
+import math
 import operator
 
 from backtrader.utils.py3 import map, itervalues
@@ -53,7 +54,15 @@ class SharpeRatio(Analyzer):
         ('timeframe', TimeFrame.Years),
         ('compression', 1),
         ('legacyannual', False),
+        ('convertrate', True),
+        ('daysfactor', 256),
     )
+
+    RATEFACTORS = {
+        TimeFrame.Weeks: 52,
+        TimeFrame.Months: 12,
+        TimeFrame.Years: 1,
+    }
 
     def __init__(self):
         super(SharpeRatio, self).__init__()
@@ -72,8 +81,20 @@ class SharpeRatio(Analyzer):
 
             self.ratio = retavg / retdev
         else:
+            rate = self.p.riskfreerate
+            if self.p.convertrate:
+                factor = None
+                if self.p.timeframe in self.RATEFACTORS:
+                    # rate provided on an annual basis ... downgrade it
+                    factor = self.RATEFACTORS[self.p.timeframe]
+                elif self.p.timeframe == TimeFrame.Days:
+                    factor = self.p.daysfactor
+
+                if factor is not None:
+                    rate = math.pow(1.0 + rate, 1.0 / factor) - 1.0
+
             returns = list(itervalues(self.timereturn.get_analysis()))
-            retfree = itertools.repeat(self.p.riskfreerate)
+            retfree = itertools.repeat(rate)
 
             ret_free = map(operator.sub, returns, retfree)
             ret_free_avg = average(list(ret_free))
