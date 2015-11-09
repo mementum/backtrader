@@ -239,13 +239,18 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
             elif dt is not None:  # real execution
                 if abs(psize) > abs(opened):
-                    # some futures were opened and cash adjustment to new
-                    # price is needed from old position price to new pos price
+                    # some futures were opened - adjust the cash of the
+                    # previously existing futures to the operation price and
+                    # use that as new adjustment base, because it already is
+                    # for the new futures At the end of the cycle the
+                    # adjustment to the close price will be done for all open
+                    # futures from a common base price with regards to the
+                    # close price
                     adjsize = psize - opened
-                    cash += comminfo.cashadjust(adjsize, pprice_orig, pprice)
+                    cash += comminfo.cashadjust(adjsize, pos.adjbase, price)
 
-                # recrod adjust price base for end of bar cash adjust
-                position.adjbase = pprice
+                # record adjust price base for end of bar cash adjustment
+                position.adjbase = price
 
                 # update system cash - checking if opened is still != 0
                 self.cash = cash
