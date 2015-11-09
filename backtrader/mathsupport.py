@@ -28,12 +28,34 @@ from .utils.py3 import map
 
 
 def average(x):
+    '''
+    Args:
+      x: iterable with len
+
+    Returns:
+      A float with the average of the elements of x
+    '''
     return math.fsum(x) / len(x)
 
 
 def variance(x):
-    return list(map(lambda y: (y - average(x)) ** 2, x))
+    '''
+    Args:
+      x: iterable with len
+
+    Returns:
+      A list with the variance for each element of x
+    '''
+    avgx = average(x)
+    return list(map(lambda y: (y - avgx) ** 2, x))
 
 
 def standarddev(x):
+    '''
+    Args:
+      x: iterable with len
+
+    Returns:
+      A float with the standard deviation of the elements of x
+    '''
     return math.sqrt(average(variance(x)))

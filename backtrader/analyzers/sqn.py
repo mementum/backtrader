@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import math
+
 from backtrader import Analyzer
 from backtrader.mathsupport import average, standarddev
 from backtrader.utils import AutoOrderedDict
@@ -43,6 +45,14 @@ class SQN(Analyzer):
       - SquareRoot(NumberTrades) * Average(TradesProfit) / StdDev(TradesProfit)
 
     The sqn value should be deemed reliable when the number of trades >= 30
+
+    Methods:
+
+      - get_analysis
+
+        Returns a dictionary with keys "sqn" and "trades" (number of
+        considered trades)
+
     '''
     alias = ('SystemQualityNumber',)
 
@@ -60,7 +70,7 @@ class SQN(Analyzer):
         pnl_av = average(self.pnl)
         pnl_stddev = standarddev(self.pnl)
 
-        trades_sqr = pow(len(self.pnl), 0.5)
+        trades_sqr = math.sqrt(len(self.pnl))
 
         sqn = trades_sqr * pnl_av / pnl_stddev
 

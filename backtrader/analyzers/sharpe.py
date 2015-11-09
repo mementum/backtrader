@@ -21,44 +21,113 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import itertools
+import math
 import operator
 
-from backtrader.utils.py3 import map
+from backtrader.utils.py3 import map, itervalues
 
 from backtrader import Analyzer, TimeFrame
 from backtrader.mathsupport import average, standarddev
-from backtrader.analyzers import AnnualReturn
+from backtrader.analyzers import TimeReturn, AnnualReturn
 
 
 class SharpeRatio(Analyzer):
     '''
-    This analyzer calculates the SharpRatio of a strategy using a risk free
+    This analyzer calculates the SharpeRatio of a strategy using a risk free
     asset which is simply an interest rate
+
+    See also:
+
+      - https://en.wikipedia.org/wiki/Sharpe_ratio
 
     Params:
 
+      - timeframe: (default: TimeFrame.Years)
+
+      - compression (default: 1)
+
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+
       - riskfreerate: (default: 0.01 -> 1%)
 
-    Member Attributes:
+        Expressed in annual terms (see ``convertrate`` below)
 
-      - ``anret``: list of annual returns used for the final calculation
+      - convertrate (default: True)
 
-    **get_analysis**:
+        Convert the ``riskfreerate`` from annual to monthly, weekly or daily
+        rate. Sub-day conversions are not supported
 
-      - Returns a dictionary with key "sharperatio" holding the ratio
+      - daysfactor (default: 256)
+
+        On a conversion of annual to daily rate use the value as the number of
+        trading days in a year. Unlike months (12) and weeks (52) this can be
+        adjusted
+
+      - legacyannual (default: False)
+
+        Use the 'AnnualReturn' return analyzer, which as the name implies only
+        works on years
+
+    Methods:
+
+      - get_analysis
+
+        Returns a dictionary with key "sharperatio" holding the ratio
     '''
-    params = (('timeframe', TimeFrame.Years), ('riskfreerate', 0.01),)
+    params = (
+        ('timeframe', TimeFrame.Years),
+        ('compression', 1),
+        ('riskfreerate', 0.01),
+        ('convertrate', True),
+        ('daysfactor', 256),
+        ('legacyannual', False),
+    )
+
+    RATEFACTORS = {
+        TimeFrame.Weeks: 52,
+        TimeFrame.Months: 12,
+        TimeFrame.Years: 1,
+    }
 
     def __init__(self):
         super(SharpeRatio, self).__init__()
-        self.anret = AnnualReturn()
+        if self.p.legacyannual:
+            self.anret = AnnualReturn()
+        else:
+            self.timereturn = TimeReturn(
+                timeframe=self.p.timeframe,
+                compression=self.p.compression)
 
     def stop(self):
-        retfree = [self.p.riskfreerate] * len(self.anret.rets)
-        retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
-        retdev = standarddev(self.anret.rets)
+        if self.p.legacyannual:
+            retfree = [self.p.riskfreerate] * len(self.anret.rets)
+            retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
+            retdev = standarddev(self.anret.rets)
 
-        self.ratio = retavg / retdev
+            self.ratio = retavg / retdev
+        else:
+            rate = self.p.riskfreerate
+            if self.p.convertrate:
+                factor = None
+                if self.p.timeframe in self.RATEFACTORS:
+                    # rate provided on an annual basis ... downgrade it
+                    factor = self.RATEFACTORS[self.p.timeframe]
+                elif self.p.timeframe == TimeFrame.Days:
+                    factor = self.p.daysfactor
+
+                if factor is not None:
+                    rate = math.pow(1.0 + rate, 1.0 / factor) - 1.0
+
+            returns = list(itervalues(self.timereturn.get_analysis()))
+            retfree = itertools.repeat(rate)
+
+            ret_free = map(operator.sub, returns, retfree)
+            ret_free_avg = average(list(ret_free))
+            retdev = standarddev(returns)
+
+            self.ratio = ret_free_avg / retdev
 
     def get_analysis(self):
         return dict(sharperatio=self.ratio)

@@ -90,6 +90,24 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
         self.prenext()
 
+    def _notify_cashvalue(self, cash, value):
+        for child in self._children:
+            child._notify_cashvalue(cash, value)
+
+        self.notify_cashvalue(cash, value)
+
+    def _notify_trade(self, trade):
+        for child in self._children:
+            child._notify_trade(trade)
+
+        self.notify_trade(trade)
+
+    def _notify_order(self, order):
+        for child in self._children:
+            child._notify_order(order)
+
+        self.notify_order(order)
+
     def _nextstart(self):
         for child in self._children:
             child._nextstart()
@@ -113,6 +131,9 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
             child._stop()
 
         self.stop()
+
+    def notify_cashvalue(self, cash, value):
+        pass
 
     def notify_order(self, order):
         pass

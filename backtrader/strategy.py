@@ -380,12 +380,25 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for order in self._orderspending:
             self.notify_order(order)
             for analyzer in self.analyzers:
-                analyzer.notify_order(order)
+                analyzer._notify_order(order)
 
         for trade in self._tradespending:
             self.notify_trade(trade)
             for analyzer in self.analyzers:
-                analyzer.notify_trade(trade)
+                analyzer._notify_trade(trade)
+
+        cash = self.broker.getcash()
+        value = self.broker.getvalue()
+
+        self.notify_cashvalue(cash, value)
+        for analyzer in self.analyzers:
+            analyzer._notify_cashvalue(cash, value)
+
+    def notify_cashvalue(self, cash, value):
+        '''
+        Receives the current cash, value status of the strategy's broker
+        '''
+        pass
 
     def notify_order(self, order):
         '''
