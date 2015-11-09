@@ -1,3 +1,8 @@
+1.1.20.88
+  - #33 correction of typo added during correction of #33
+  - Added getdatabyname and string_types check in buy/sell/close to retrieve
+    datas in Strategy
+
 1.1.19.88
   - Fixes #33 by properly adjusting the cash for existing open futures (added
     long comment to explain the logic)
