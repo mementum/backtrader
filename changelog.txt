@@ -1,3 +1,19 @@
+1.1.19.88
+  - Fixes #33 by properly adjusting the cash for existing open futures (added
+    long comment to explain the logic)
+  - TimeReturn analyzer added. Can calculate returns for all timeframes
+  - SharpeRatio updated to use TimeReturn including automatic adjustment of
+    the (annual) riskfreerate for timeframes days, weeks, months. It can still
+    use the legacy AnnualReturn analyzer
+  - CommInfoBase added as root of all commission schemes to make commission
+    schemes more flexible by not tying margin to commission type deduction
+  - Added 4 CommInfoBase derived classes with standard commission schemes
+  - Extended broker.setcommission call with parameters to work with the new
+    CommInfoBase
+  - Implemented the legacy CommissionInfo as a subclass of CommInfoBase, fully
+    retaining the existing behavior
+  - Some in-code documentation updates
+
 1.1.18.88
   - Fixes #30 - Packaging issue under Python 3.x introduced in 1.1.17.88
 
