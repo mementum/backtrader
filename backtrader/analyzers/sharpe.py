@@ -34,28 +34,55 @@ from backtrader.analyzers import TimeReturn, AnnualReturn
 
 class SharpeRatio(Analyzer):
     '''
-    This analyzer calculates the SharpRatio of a strategy using a risk free
+    This analyzer calculates the SharpeRatio of a strategy using a risk free
     asset which is simply an interest rate
+
+    See also:
+
+      - https://en.wikipedia.org/wiki/Sharpe_ratio
 
     Params:
 
+      - timeframe: (default: TimeFrame.Years)
+
+      - compression (default: 1)
+
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+
       - riskfreerate: (default: 0.01 -> 1%)
 
-    Member Attributes:
+        Expressed in annual terms (see ``convertrate`` below)
 
-      - ``anret``: list of annual returns used for the final calculation
+      - convertrate (default: True)
 
-    **get_analysis**:
+        Convert the ``riskfreerate`` from annual to monthly, weekly or daily
+        rate. Sub-day conversions are not supported
 
-      - Returns a dictionary with key "sharperatio" holding the ratio
+      - daysfactor (default: 256)
+
+        On a conversion of annual to daily rate use the value as the number of
+        trading days in a year. Unlike months (12) and weeks (52) this can be
+        adjusted
+
+      - legacyannual (default: False)
+
+        Use the 'AnnualReturn' return analyzer, which as the name implies only
+        works on years
+
+    Methods:
+
+      - get_analysis
+
+        Returns a dictionary with key "sharperatio" holding the ratio
     '''
     params = (
-        ('riskfreerate', 0.01),
         ('timeframe', TimeFrame.Years),
         ('compression', 1),
-        ('legacyannual', False),
+        ('riskfreerate', 0.01),
         ('convertrate', True),
         ('daysfactor', 256),
+        ('legacyannual', False),
     )
 
     RATEFACTORS = {

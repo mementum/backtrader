@@ -37,15 +37,17 @@ class TimeReturn(Analyzer):
 
       - timeframe (default TimeFrame.Years)
 
-        Which timeframe to look into
+      - compression (default: 1)
 
-    Member Attributes:
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
 
-      - ``rets``: dictionary (key: datetime) of returns
+    Methods:
 
-    **get_analysis**:
+      - get_analysis
 
-      - Returns a dictionary of returns (key: datetime)
+        Returns a dictionary with returns as values and the datetime points for
+        each return as keys
     '''
     params = (
         ('timeframe', TimeFrame.Years),
