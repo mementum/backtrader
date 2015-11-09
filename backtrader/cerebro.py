@@ -87,6 +87,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._dooptimize = False
         self.feeds = list()
         self.datas = list()
+        self.datasbyname = collections.OrderedDict()
         self.strats = list()
         self.observers = list()
         self.analyzers = list()
@@ -152,12 +153,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         if name is not None:
             data._name = name
+
         self.datas.append(data)
+        self.datasbyname[data._name] = data
         feed = data.getfeed()
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
-    def replaydata_old(self, dataname, **kwargs):
+    def replaydata_old(self, dataname, name=name, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
 
@@ -167,9 +170,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``DataReplayer`` will be passed transparently
         '''
-        self.adddata(data=DataReplayer(dataname=dataname, **kwargs))
+        self.adddata(data=DataReplayer(dataname=dataname, **kwargs), name=name)
 
-    def resampledata_old(self, dataname, **kwargs):
+    def resampledata_old(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
 
@@ -179,9 +182,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``DataResampler`` will be passed transparently
         '''
-        self.adddata(data=DataResampler(dataname=dataname, **kwargs))
+        self.adddata(data=DataResampler(dataname=dataname, **kwargs),
+                     name=name)
 
-    def replaydata(self, dataname, **kwargs):
+    def replaydata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
 
@@ -192,9 +196,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         are supported by ``Replayer`` will be passed transparently
         '''
         dataname.replay(**kwargs)
-        self.adddata(dataname)
+        self.adddata(dataname, name=name)
 
-    def resampledata(self, dataname, **kwargs):
+    def resampledata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
 
@@ -205,7 +209,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         are supported by ``Resampler`` will be passed transparently
         '''
         dataname.resample(**kwargs)
-        self.adddata(dataname)
+        self.adddata(dataname, name=name)
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''

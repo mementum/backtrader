@@ -25,7 +25,7 @@ import collections
 import itertools
 import operator
 
-from .utils.py3 import filter, map, with_metaclass
+from .utils.py3 import filter, map, with_metaclass, string_types
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
@@ -412,6 +412,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def getdatabyname(self, name):
+        return self.env.datasbyname[name]
+
     def buy(self, data=None,
             size=None, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0):
@@ -420,6 +423,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         Returns: the submitted order
         '''
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
 
         data = data or self.datas[0]
         size = size or self.getsizing(data)
@@ -437,6 +442,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         Returns: the submitted order
         '''
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+
         data = data or self.datas[0]
         size = size or self.getsizing(data)
 
@@ -453,6 +461,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         Returns: the submitted order
         '''
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+
         possize = self.getposition(data, self.broker).size
         size = abs(size or possize)
 
