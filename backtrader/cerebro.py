@@ -160,7 +160,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
-    def replaydata_old(self, dataname, name=name, **kwargs):
+    def replaydata_old(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
 
