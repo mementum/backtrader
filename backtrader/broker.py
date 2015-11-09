@@ -247,7 +247,8 @@ class BrokerBack(with_metaclass(MetaParams, object)):
                     # futures from a common base price with regards to the
                     # close price
                     adjsize = psize - opened
-                    cash += comminfo.cashadjust(adjsize, pos.adjbase, price)
+                    cash += comminfo.cashadjust(adjsize,
+                                                position.adjbase, price)
 
                 # record adjust price base for end of bar cash adjustment
                 position.adjbase = price
