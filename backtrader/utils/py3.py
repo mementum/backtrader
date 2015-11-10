@@ -53,6 +53,12 @@ if PY2:
 
     def iteritems(d): returnd.iteritems()
 
+    def keys(d): return d.keys()
+
+    def values(d): return d.values()
+
+    def items(d): return d.items()
+
     import Queue as queue
 
 else:
@@ -77,6 +83,12 @@ else:
     def itervalues(d): return iter(d.values())
 
     def iteritems(d): return iter(d.items())
+
+    def keys(d): return list(d.keys())
+
+    def values(d): return list(d.values())
+
+    def items(d): return list(d.items())
 
     import queue as queue
 
