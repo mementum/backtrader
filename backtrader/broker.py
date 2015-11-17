@@ -298,7 +298,7 @@ class BrokerBack(with_metaclass(MetaParams, object)):
             if dt0 > order.dteos:
                 if order.pannotated:
                     execdt = order.data.datetime[-1]
-                    execprice = pannotated
+                    execprice = order.pannotated
                 else:
                     execdt = dt0
                     execprice = pclose
