@@ -25,7 +25,7 @@ import collections
 import itertools
 import operator
 
-from .utils.py3 import filter, map, with_metaclass, string_types
+from .utils.py3 import filter, map, with_metaclass, string_types, keys
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
@@ -412,7 +412,16 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def getdatanames(self):
+        '''
+        Returns a list of the existing data names
+        '''
+        return keys(self.env.datasbyname)
+
     def getdatabyname(self, name):
+        '''
+        Returns a given data by name using the environment (cerebro)
+        '''
         return self.env.datasbyname[name]
 
     def buy(self, data=None,

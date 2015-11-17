@@ -20,7 +20,7 @@
   - Some in-code documentation updates
 
 1.1.18.88
-  - Fixes #30 - Packaging issue under Python 3.x introduced in 1.1.17.88
+  - Fixes #31 - Packaging issue under Python 3.x introduced in 1.1.17.88
 
 1.1.17.88
   - #29 extend commissions to support additional schemes
