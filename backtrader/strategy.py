@@ -25,7 +25,8 @@ import collections
 import itertools
 import operator
 
-from .utils.py3 import filter, map, with_metaclass, string_types, keys
+from .utils.py3 import (filter, map, with_metaclass, string_types, keys,
+                        iteritems)
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
@@ -494,9 +495,56 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         A property ``position`` is also available
         '''
         data = data or self.datas[0]
-        return self.broker.getposition(data)
+        broker = broker or self.broker
+        return broker.getposition(data)
 
     position = property(getposition)
+
+    def getpositionbyname(self, name=None, broker=None):
+        '''
+        Returns the current position for a given name in a given broker.
+
+        If both are None, the main data and the default broker will be used
+
+        A property ``positionbyname`` is also available
+        '''
+        data = self.datas[0] if not name else self.getdatabyname(name)
+        broker = broker or self.broker
+        return broker.getposition(data)
+
+    positionbyname = property(getpositionbyname)
+
+    def getpositions(self, broker=None):
+        '''
+        Returns the current by data positions directly from the broker
+
+        If the given ``broker`` is None, the default broker will be used
+
+        A property ``positions`` is also available
+        '''
+        broker = broker or self.broker
+        return broker.positions
+
+    positions = property(getpositions)
+
+    def getpositionsbyname(self, broker=None):
+        '''
+        Returns the current by name positions directly from the broker
+
+        If the given ``broker`` is None, the default broker will be used
+
+        A property ``positionsbyname`` is also available
+        '''
+        broker = broker or self.broker
+        positions = broker.positions
+
+        posbyname = collections.OrderedDict()
+        for name, data in iteritems(self.env.datasbyname):
+            posbyname[name] = positions[data]
+
+        return posbyname
+
+    positionsbyname = property(getpositionsbyname)
 
     def setsizer(self, sizer):
         '''
