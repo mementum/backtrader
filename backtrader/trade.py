@@ -172,7 +172,7 @@ class Trade(object):
 
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
-            if True and comminfo:
+            if comminfo:
                 pnl = comminfo.profitandloss(-size, self.price, price)
 
             self.pnl += pnl
