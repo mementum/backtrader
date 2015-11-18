@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from .import num2date
 from .utils.py3 import range
 
 
@@ -49,7 +50,13 @@ class Trade(object):
       - isopen (bool): records if any update has opened the trade
       - justopened (bool): if the trade was just opened
       - baropen (int): bar in which this trade was opened
+      - dtopen (float): float coded datetime in which the trade was closed
+        - Use method ``open_datetime`` to get a Python datetime.datetime
+          or use the platform provided ``num2date`` method
       - barclose (int): bar in which this trade was closed
+      - dtclose (float): float coded datetime in which the trade was closed
+        - Use method ``close_datetime`` to get a Python datetime.datetime
+          or use the platform provided ``num2date`` method
       - barlen (int): number of bars this trade was open
     '''
 
@@ -74,13 +81,32 @@ class Trade(object):
         self.isclosed = False
 
         self.baropen = 0
+        self.dtopen = 0.0
         self.barclose = 0
+        self.dtclose = 0.0
         self.barlen = 0
 
         self.status = self.Created
 
     def __len__(self):
+        '''Shows if the trade has a size/is open'''
         return self.size
+
+    __bool__ = __len__
+
+    __nonzero__ = __len__
+
+    def open_datetime(self):
+        '''Returns a datetime.datetime object with the datetime in which
+        the trade was opened
+        '''
+        return num2date(self.dtopen)
+
+    def close_datetime(self):
+        '''Returns a datetime.datetime object with the datetime in which
+        the trade was closed
+        '''
+        return num2date(self.dtclose)
 
     def update(self, size, price, value, commission, pnl, comminfo=None):
         '''
@@ -117,6 +143,7 @@ class Trade(object):
 
         if self.justopened:
             self.baropen = len(self.data)
+            self.dtopen = self.data.datetime[0]
             self.long = self.size > 0
 
         # Any size means the trade was opened
@@ -132,6 +159,7 @@ class Trade(object):
         if self.isclosed:
             self.isopen = False
             self.barclose = len(self.data)
+            self.dtclose = self.data.datetime[0]
 
             self.status = self.Closed
         elif self.isopen:

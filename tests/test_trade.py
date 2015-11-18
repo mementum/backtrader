@@ -27,8 +27,21 @@ import backtrader as bt
 from backtrader import trade
 
 
+class FakeData(object):
+    '''
+    Minimal interface to avoid errors when trade tries to get information from
+    the data during the test
+    '''
+    def __len__(self):
+        return 0
+
+    @property
+    def datetime(self):
+        return [0.0]
+
+
 def test_run(main=False):
-    tr = trade.Trade(data=[None])
+    tr = trade.Trade(data=FakeData())
 
     commrate = 0.025
     size = 10
