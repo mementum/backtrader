@@ -161,21 +161,27 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     def buy(self, owner, data,
             size, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0):
+            exectype=None, valid=None, tradeid=0,
+            **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
                          size=size, price=price, pricelimit=plimit,
                          exectype=exectype, valid=valid, tradeid=tradeid)
 
+        order.addinfo(**kwargs)
+
         return self.submit(order)
 
     def sell(self, owner, data,
              size, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0):
+             exectype=None, valid=None, tradeid=0,
+             **kwargs):
 
         order = SellOrder(owner=owner, data=data,
                           size=size, price=price, pricelimit=plimit,
                           exectype=exectype, valid=valid, tradeid=tradeid)
+
+        order.addinfo(**kwargs)
 
         return self.submit(order)
 
