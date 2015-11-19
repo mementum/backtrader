@@ -43,7 +43,13 @@ class AutoDict(dict):
             if isinstance(val, (AutoDict, AutoOrderedDict)):
                 val._close()
 
+    def _open(self):
+        self._closed = False
+
     def __missing__(self, key):
+        if self._closed:
+            raise KeyError
+
         value = self[key] = type(self)()
         return value
 
