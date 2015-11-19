@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import itertools
+
 from .import num2date
 from .utils.py3 import range
 
@@ -38,6 +40,8 @@ class Trade(object):
     An trade is not meant to be reversed (no support in the logic for it)
 
     Member Attributes:
+      - ref: unique trade identifier
+      - status (int): one of Created, Open, Closed
       - size (int): current size of the trade
       - price (float): current price of the trade
       - value (float): current value of the trade
@@ -59,6 +63,7 @@ class Trade(object):
           or use the platform provided ``num2date`` method
       - barlen (int): number of bars this trade was open
     '''
+    refbasis = itertools.count(1)
 
     status_names = ['Created', 'Open', 'Closed']
     Created, Open, Closed = range(3)
@@ -66,6 +71,8 @@ class Trade(object):
     def __init__(self, data=None, tradeid=0,
                  size=0, price=0.0, value=0.0, commission=0.0):
 
+        self.ref = next(self.refbasis)
+        self.historyon = historyon
         self.data = data
         self.tradeid = tradeid
         self.size = size
