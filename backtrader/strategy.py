@@ -76,6 +76,8 @@ class MetaStrategy(StrategyBase.__class__):
         _obj.analyzers = ItemCollection()
         _obj.writers = list()
 
+        _obj._tradehistoryon = False
+
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -334,6 +336,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def set_tradehistory(self, onoff=True):
+        self._tradehistoryon = onoff
+
     def clear(self):
         self._orders.extend(self._orderspending)
         self._orderspending = list()
@@ -348,31 +353,39 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         tradedata = order.data
         datatrades = self._trades[tradedata][order.tradeid]
         if not datatrades:
-            datatrades.append(Trade(data=tradedata, tradeid=order.tradeid))
-
-        trade = datatrades[-1]
+            trade = Trade(data=tradedata, tradeid=order.tradeid,
+                          historyon=self._tradehistoryon)
+            datatrades.append(trade)
+        else:
+            trade = datatrades[-1]
 
         for exbit in order.executed.exbits:
-            trade.update(exbit.closed,
-                         exbit.price,
-                         exbit.closedvalue,
-                         exbit.closedcomm,
-                         exbit.pnl,
-                         comminfo=order.comminfo)
+            if exbit.closed:
+                trade.update(order,
+                             exbit.closed,
+                             exbit.price,
+                             exbit.closedvalue,
+                             exbit.closedcomm,
+                             exbit.pnl,
+                             comminfo=order.comminfo)
 
-            if trade.isclosed:
-                self._tradespending.append(trade)
-
-                # Open the next trade
-                trade = Trade(data=tradedata, tradeid=order.tradeid)
-                datatrades.append(trade)
+                if trade.isclosed:
+                    self._tradespending.append(trade)
 
             # Update it if needed
-            trade.update(exbit.opened,
-                         exbit.price,
-                         exbit.openedvalue,
-                         exbit.openedcomm,
-                         exbit.pnl)
+            if exbit.opened:
+                if trade.isclosed:
+                    trade = Trade(data=tradedata, tradeid=order.tradeid,
+                                  historyon=self._tradehistoryon)
+                    datatrades.append(trade)
+
+                trade.update(order,
+                             exbit.opened,
+                             exbit.price,
+                             exbit.openedvalue,
+                             exbit.openedcomm,
+                             exbit.pnl,
+                             comminfo=order.comminfo)
 
             if trade.justopened:
                 self._tradespending.append(trade)
@@ -427,7 +440,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0):
+            exectype=None, valid=None, tradeid=0, **kwargs):
         '''
         To create a buy (long) order and send it to the broker
 
@@ -442,11 +455,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.buy(
             self, data,
             size=size, price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid)
+            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0):
+             exectype=None, valid=None, tradeid=0, **kwargs):
         '''
         To create a selll (short) order and send it to the broker
 
@@ -461,11 +474,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.sell(
             self, data,
             size=size, price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid)
+            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def close(self,
               data=None, size=None, price=None, exectype=None, valid=None,
-              tradeid=0):
+              tradeid=0, **kwargs):
         '''
         Counters a long/short position closing it
 
@@ -479,10 +492,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         if possize > 0:
             return self.sell(data, size, price, exectype, valid,
-                             tradeid=tradeid)
+                             tradeid=tradeid, **kwargs)
         elif possize < 0:
             return self.buy(data, size, price, exectype, valid,
-                            tradeid=tradeid)
+                            tradeid=tradeid, **kwargs)
 
         return None
 
