@@ -24,11 +24,11 @@ from __future__ import (absolute_import, division, print_function,
 import itertools
 
 from .import num2date
-from .utils import AutoDict
+from .utils import AutoOrderedDict
 from .utils.py3 import range
 
 
-class TradeHistory(AutoDict):
+class TradeHistory(AutoOrderedDict):
     '''
     Represents the status and update event for each update a Trade has
 
@@ -46,7 +46,8 @@ class TradeHistory(AutoDict):
         - pnl (float): current profit and loss of the Trade
         - pnlcomm (float): current profit and loss minus commission
 
-      - update (dict with '.' notation): Holds the update parameters
+      - event (dict with '.' notation): Holds the event update parameters
+        - order (object): the order which initiated the update
         - size (int): size of the update
         - price (float): price of the update
         - commission (float): price of the update
@@ -64,20 +65,18 @@ class TradeHistory(AutoDict):
         self.status.pnl = pnl
         self.status.pnlcomm = pnlcomm
 
-    def update(self, order, size, price, commision):
+    def doupdate(self, order, size, price, commission):
         '''Used to fill the ``update`` part of the history entry'''
-        self.update.order = order
-        self.update.size = size
-        self.update.price = price
-        self.update.commission = commission
+        self.event.order = order
+        self.event.size = size
+        self.event.price = price
+        self.event.commission = commission
 
         # Do not allow updates (avoids typing errors)
         self._close()
 
     def datetime(self):
-        '''Returns a datetime.datetime object for the time the update event
-        happened'''
-
+        '''Returns a datetime for the time the update event happened'''
         return num2date(self.status.dt)
 
 
@@ -134,7 +133,6 @@ class Trade(object):
                  size=0, price=0.0, value=0.0, commission=0.0):
 
         self.ref = next(self.refbasis)
-        self.historyon = historyon
         self.data = data
         self.tradeid = tradeid
         self.size = size
@@ -155,20 +153,23 @@ class Trade(object):
         self.dtclose = 0.0
         self.barlen = 0
 
+        self.historyon = historyon
         self.history = list()
 
         self.status = self.Created
 
     def __len__(self):
-        '''Shows if the trade has a size/is open'''
+        '''Absolute size of the trade'''
         return abs(self.size)
 
     def __bool__(self):
+        '''Trade size is not 0'''
         return self.size != 0
 
     __nonzero__ = __bool__
 
     def getdataname(self):
+        '''Shortcut to retrieve the name of the data this trade references'''
         return self.data._name
 
     def open_datetime(self):
@@ -272,5 +273,5 @@ class Trade(object):
                 self.status, self.data.datetime[0], self.barlen,
                 self.size, self.price, self.value,
                 self.pnl, self.pnlcomm)
-            histentry.update(order, size, price, commission)
-            self.history.append(history)
+            histentry.doupdate(order, size, price, commission)
+            self.history.append(histentry)
