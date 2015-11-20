@@ -50,7 +50,7 @@ class AutoDict(dict):
         if self._closed:
             raise KeyError
 
-        value = self[key] = type(self)()
+        value = self[key] = AutoDict()
         return value
 
     def __getattr__(self, key):
@@ -83,7 +83,8 @@ class AutoOrderedDict(OrderedDict):
         if self._closed:
             raise KeyError
 
-        value = self[key] = type(self)()
+        # value = self[key] = type(self)()
+        value = self[key] = AutoOrderedDict()
         return value
 
     def __getattr__(self, key):
