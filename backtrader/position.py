@@ -33,11 +33,6 @@ class Position(object):
 
     The Position instances can be tested using len(position) to see if size
     is not null
-
-    User Methods:
-
-      - __len__: invoking len on the instance position indicates if size is
-        not null
     '''
 
     def __init__(self, size=0, price=0.0):
@@ -47,7 +42,12 @@ class Position(object):
         self.adjbase = None
 
     def __len__(self):
+        return abs(self.size)
+
+    def __bool__(self):
         return self.size != 0
+
+    __nonzero__ = __bool__
 
     def clone(self):
         return Position(size=self.size, price=self.price)

@@ -29,6 +29,7 @@ import math
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.utils.flushfile
+import backtrader.filters as btfilters
 
 from relativevolume import RelativeVolume
 
@@ -60,10 +61,10 @@ def runstrategy():
     )
 
     if args.filter:
-        data.addfilter(bt.SessionFilter)
+        data.addfilter(btfilters.SessionFilter)
 
     if args.filler:
-        data.addfilter(bt.SessionFiller, fill_vol=args.fvol)
+        data.addfilter(btfilters.SessionFiller, fill_vol=args.fvol)
 
     # Add the data to cerebro
     cerebro.adddata(data)

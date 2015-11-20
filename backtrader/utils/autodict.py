@@ -43,8 +43,14 @@ class AutoDict(dict):
             if isinstance(val, (AutoDict, AutoOrderedDict)):
                 val._close()
 
+    def _open(self):
+        self._closed = False
+
     def __missing__(self, key):
-        value = self[key] = type(self)()
+        if self._closed:
+            raise KeyError
+
+        value = self[key] = AutoDict()
         return value
 
     def __getattr__(self, key):
@@ -77,7 +83,8 @@ class AutoOrderedDict(OrderedDict):
         if self._closed:
             raise KeyError
 
-        value = self[key] = type(self)()
+        # value = self[key] = type(self)()
+        value = self[key] = AutoOrderedDict()
         return value
 
     def __getattr__(self, key):

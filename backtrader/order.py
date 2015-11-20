@@ -25,10 +25,10 @@ import copy
 import datetime
 import itertools
 
-from .utils.py3 import range, with_metaclass
+from .utils.py3 import range, with_metaclass, iteritems
 
 from .metabase import MetaParams
-from .utils import date2num
+from .utils import date2num, AutoOrderedDict
 
 
 class OrderExecutionBit(object):
@@ -196,6 +196,10 @@ class Order(with_metaclass(MetaParams, object)):
       - created: OrderData holding creation data
       - executed: OrderData holding execution data
 
+      - info: custom information passed over method :func:`addinfo`. It is kept
+        in the form of an OrderedDict which has been subclassed, so that keys
+        can also be specified using '.' notation
+
     User Methods:
 
       - isbuy(): returns bool indicating if the order buys
@@ -223,6 +227,13 @@ class Order(with_metaclass(MetaParams, object)):
         ('triggered', False), ('tradeid', 0),
     )
 
+    def addinfo(self, **kwargs):
+        '''Add the keys, values of kwargs to the internal info dictionary to
+        hold custom information in the order'''
+
+        for key, val in iteritems(kwargs):
+            self.info[key] = val
+
     def getstatusname(self, status):
         return self.Status[status]
 
@@ -246,6 +257,7 @@ class Order(with_metaclass(MetaParams, object)):
     def __init__(self):
         self.broker = None
         self.ref = next(self.refbasis)
+        self.info = AutoOrderedDict()
 
         if self.params.exectype is None:
             self.params.exectype = Order.Market

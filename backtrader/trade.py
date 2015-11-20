@@ -21,7 +21,63 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import itertools
+
+from .import num2date
+from .utils import AutoOrderedDict
 from .utils.py3 import range
+
+
+class TradeHistory(AutoOrderedDict):
+    '''
+    Represents the status and update event for each update a Trade has
+
+    This object is a dictionary which allows '.' notation
+
+    Attributes:
+      - status (dict with '.' notation): Holds the resulting status of an
+        update event
+        - status (int): Trade status
+        - dt (float): float coded datetime
+        - barlen (int): number of bars the trade has been active
+        - size (int): current size of the Trade
+        - price (float): current price of the Trade
+        - value (float): current monetary value of the Trade
+        - pnl (float): current profit and loss of the Trade
+        - pnlcomm (float): current profit and loss minus commission
+
+      - event (dict with '.' notation): Holds the event update parameters
+        - order (object): the order which initiated the update
+        - size (int): size of the update
+        - price (float): price of the update
+        - commission (float): price of the update
+    '''
+
+    def __init__(self, status, dt, barlen, size, price, value, pnl, pnlcomm):
+        '''Initializes the object to the current status of the Trade'''
+        super(TradeHistory, self).__init__()
+        self.status.status = status
+        self.status.dt = dt
+        self.status.barlen = barlen
+        self.status.size = size
+        self.status.price = price
+        self.status.value = value
+        self.status.pnl = pnl
+        self.status.pnlcomm = pnlcomm
+
+    def doupdate(self, order, size, price, commission):
+        '''Used to fill the ``update`` part of the history entry'''
+        self.event.order = order
+        self.event.size = size
+        self.event.price = price
+        self.event.commission = commission
+
+        # Do not allow updates (avoids typing errors)
+        self._close()
+
+    def datetime(self):
+        '''Returns a datetime for the time the update event happened'''
+        return num2date(self.status.dt)
 
 
 class Trade(object):
@@ -37,28 +93,46 @@ class Trade(object):
     An trade is not meant to be reversed (no support in the logic for it)
 
     Member Attributes:
+      - ref: unique trade identifier
+      - status (int): one of Created, Open, Closed
+      - tradeid: grouping tradeid passed to orders during creation
+        The default in orders is 0
       - size (int): current size of the trade
       - price (float): current price of the trade
       - value (float): current value of the trade
       - commission (float): current accumulated commission
       - pnl (float): current profit and loss of the trade (gross pnl)
-      - pnlcomm (float):
-        current profit and loss of the trade minus commission (net pnl)
-      - isclosed (bool):
-        records if the last update closed (set size to null the trade
+      - pnlcomm (float): current profit and loss of the trade minus
+        commission (net pnl)
+      - isclosed (bool): records if the last update closed (set size to
+        null the trade
       - isopen (bool): records if any update has opened the trade
       - justopened (bool): if the trade was just opened
       - baropen (int): bar in which this trade was opened
+      - dtopen (float): float coded datetime in which the trade was closed
+        - Use method ``open_datetime`` to get a Python datetime.datetime
+          or use the platform provided ``num2date`` method
       - barclose (int): bar in which this trade was closed
+      - dtclose (float): float coded datetime in which the trade was closed
+        - Use method ``close_datetime`` to get a Python datetime.datetime
+          or use the platform provided ``num2date`` method
       - barlen (int): number of bars this trade was open
+      - historyon (bool): whether history has to be recorded
+      - history (list): holds a list updated with each "update" event
+        containing the resulting status and parameters used in the update
+
+        The first entry in the history is the Opening Event
+        The last entry in the history is the Closing Event
     '''
+    refbasis = itertools.count(1)
 
     status_names = ['Created', 'Open', 'Closed']
     Created, Open, Closed = range(3)
 
-    def __init__(self, data=None, tradeid=0,
+    def __init__(self, data=None, tradeid=0, historyon=False,
                  size=0, price=0.0, value=0.0, commission=0.0):
 
+        self.ref = next(self.refbasis)
         self.data = data
         self.tradeid = tradeid
         self.size = size
@@ -74,24 +148,59 @@ class Trade(object):
         self.isclosed = False
 
         self.baropen = 0
+        self.dtopen = 0.0
         self.barclose = 0
+        self.dtclose = 0.0
         self.barlen = 0
+
+        self.historyon = historyon
+        self.history = list()
 
         self.status = self.Created
 
     def __len__(self):
-        return self.size
+        '''Absolute size of the trade'''
+        return abs(self.size)
 
-    def update(self, size, price, value, commission, pnl, comminfo=None):
+    def __bool__(self):
+        '''Trade size is not 0'''
+        return self.size != 0
+
+    __nonzero__ = __bool__
+
+    def getdataname(self):
+        '''Shortcut to retrieve the name of the data this trade references'''
+        return self.data._name
+
+    def open_datetime(self):
+        '''Returns a datetime.datetime object with the datetime in which
+        the trade was opened
+        '''
+        return num2date(self.dtopen)
+
+    def close_datetime(self):
+        '''Returns a datetime.datetime object with the datetime in which
+        the trade was closed
+        '''
+        return num2date(self.dtclose)
+
+    def update(self, order, size, price, value, commission, pnl,
+               comminfo):
         '''
         Updates the current trade. The logic does not check if the
         trade is reversed, which is not conceptually supported by the
         object.
 
-        If an update sets the size attribute to null, "closed" will be
+        If an update sets the size attribute to 0, "closed" will be
         set to true
 
+        Updates may be received twice for each order, once for the existing
+        size which has been closed (sell undoing a buy) and a second time for
+        the the opening part (sell reversing a buy)
+
         Args:
+            order: the order object which has (completely or partially)
+                generated this update
             size (int): amount to update the order
                 if size has the same sign as the current trade a
                 position increase will happen
@@ -99,8 +208,12 @@ class Trade(object):
                 reduction/close will happen
 
             price (float): always be positive to ensure consistency
-            value (float): cost incurred in new size/price op
+            value (float): (unused) cost incurred in new size/price op
+                           Not used because the value is calculated for the
+                           trade
             commission (float): incurred commission in the new size/price op
+            pnl (float): (unused) generated by the executed part
+                         Not used because the trade has an independent pnl
         '''
         if not size:
             return  # empty update, skip all other calculations
@@ -117,6 +230,7 @@ class Trade(object):
 
         if self.justopened:
             self.baropen = len(self.data)
+            self.dtopen = self.data.datetime[0]
             self.long = self.size > 0
 
         # Any size means the trade was opened
@@ -132,6 +246,7 @@ class Trade(object):
         if self.isclosed:
             self.isopen = False
             self.barclose = len(self.data)
+            self.dtclose = self.data.datetime[0]
 
             self.status = self.Closed
         elif self.isopen:
@@ -141,13 +256,22 @@ class Trade(object):
             # position increased (be it positive or negative)
             # update the average price
             self.price = (oldsize * self.price + size * price) / self.size
+            pnl = 0.0
 
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
-            if True and comminfo:
-                pnl = comminfo.profitandloss(-size, self.price, price)
+            pnl = comminfo.profitandloss(-size, self.price, price)
 
             self.pnl += pnl
             self.pnlcomm = self.pnl - self.commission
 
-        self.value = value
+        self.value = comminfo.getvaluesize(self.size, self.price)
+
+        # Update the history if needed
+        if self.historyon:
+            histentry = TradeHistory(
+                self.status, self.data.datetime[0], self.barlen,
+                self.size, self.price, self.value,
+                self.pnl, self.pnlcomm)
+            histentry.doupdate(order, size, price, commission)
+            self.history.append(histentry)

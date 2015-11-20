@@ -41,8 +41,6 @@ from .dataseries import *
 from .feed import *
 from .resampler import *
 from .resamplerfilter import *
-from .datafilter import *
-from .datafiller import *
 
 from .lineiterator import *
 from .indicator import *
@@ -60,3 +58,4 @@ from . import strategies
 from . import observers
 from . import analyzers
 from . import commissions
+from . import filters

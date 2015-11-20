@@ -71,6 +71,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
           - This setting will deactivate ``preload`` and ``runonce``
           - Using this setting also deactivates plotting
+
+      - ``writer`` (default: False)
+        If set to True a default WriterFile will be created which will print to
+        stdout. It will be added to the strategy (in addition to any other
+        writers added by the user code)
+
+      - ``tradehistory`` (default: False)
+        If set to True, it will activate update event logging in each trade for
+        all strategies. This can also be accomplished on a per strategy basis
+        with the strategy method ``set_tradehistory``
     '''
 
     params = (
@@ -81,6 +91,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('lookahead', 0),
         ('exactbars', False),
         ('writer', False),
+        ('tradehistory', False),
     )
 
     def __init__(self):
@@ -406,6 +417,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
+            if self.p.tradehistory:
+                strat.set_tradehistory()
             runstrats.append(strat)
 
         # loop separated for clarity

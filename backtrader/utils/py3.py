@@ -51,7 +51,7 @@ if PY2:
 
     def itervalues(d): return d.itervalues()
 
-    def iteritems(d): returnd.iteritems()
+    def iteritems(d): return d.iteritems()
 
     def keys(d): return d.keys()
 
