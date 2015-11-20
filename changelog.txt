@@ -1,3 +1,13 @@
+1.1.22.88
+  - Filters moved to submodule filters
+  - Full docstring update for CommInfoBase
+  - Small improvements to internal AutoDict/AutoOrdereDict
+  - Implementation of Trade history log (#40)
+  - Added __bool__, __nonzero__ to Position for position testing
+  - Orders support miscellaneous information from end-users (#42)
+  - Trades get unique identifier and datetime for opening/closing time (#42, #43)
+  - Corrected typo in iteritems (#38)
+
 1.1.21.88
   - Addition of keys, values, items to py2/3 compatibility layer
   - Add getdatanames to strategy
