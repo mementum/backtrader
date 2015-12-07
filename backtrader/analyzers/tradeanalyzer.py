@@ -52,9 +52,21 @@ class TradeAnalyzer(Analyzer):
         - Long/Short Total/Average/Max/Min
 
           - Won/Lost Total/Average/Max/Min
+
+    Note:
+
+      The analyzer uses an "auto"dict for the fields, which means that if no
+      trades are executed, no statistics will be generated.
+
+      In that case there will be a single field/subfield in the dictionary
+      returned by ``get_analysis``, namely:
+
+        - dictname['total']['total'] which will have a value of 0 (the field is
+          also reachable with dot notation dictname.total.total
     '''
     def start(self):
         self.trades = AutoOrderedDict()
+        self.trades.total.total = 0
 
     def stop(self):
         self.trades._close()

@@ -86,6 +86,12 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         # self.lines.datetime[0] = 0.0
 
     def _barupdate(self, index=0, replaying=False):
+        sstart = self.data.datetime.tm2dtime(self.sessionstart)
+        send = self.data.datetime.tm2dtime(self.sessionend)
+        if sstart > self.data.datetime[index] > sessend:
+            # Not within session limits - skip the bar
+            return
+
         if math.isnan(self.l.open[0]):
             self._barstart()
             self.lines.open[0] = self.data.l.open[index]
@@ -184,11 +190,10 @@ class BaseResampler(with_metaclass(MetaBaseResampler, AbstractDataBase)):
         return bardt.year > dt.year
 
     def _barisover_minutes_sub(self, index):
-        # Put session end in context of current datetime
-        sessend = self.data.datetime.tm2dtime(self.sessionend)
+        # Put session end of cached internal bar in context of current time
+        sessend = self.lines.datetime.tm2dtime(self.sessionend)
 
         if self.data.datetime[index] > sessend:
-            # Next session is on (defaults to next day)
             return True
 
         tm = self.lines.datetime.time(index)

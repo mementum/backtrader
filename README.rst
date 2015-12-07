@@ -22,10 +22,6 @@ backtrader
    :alt: Documentation Status
    :scale: 100%
    :target: https://readthedocs.org/projects/backtrader/
-.. image:: https://badges.gitter.im/mementum/backtrader.png
-   :alt: Gitter chat
-   :scale: 100%
-   :target: https://gitter.im/mementum/backtrader
 .. image:: https://img.shields.io/pypi/pyversions/backtrader.svg
    :alt: Pytghon versions
    :scale: 100%

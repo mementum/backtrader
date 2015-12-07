@@ -1,3 +1,11 @@
+1.1.23.88
+  - Fixes #46 by adding a default of total.total = 0 to indicate that no trades
+    were executed and therefore no statistics
+  - Fixes #46 by adding a default of total.total = 0 to indicate that no trades
+    were executed and therefore no statistics
+  - CalendarDays filter implementation and added sample
+  - Removed gitter from README
+
 1.1.22.88
   - Filters moved to submodule filters
   - Full docstring update for CommInfoBase
