@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin389/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
@@ -386,6 +386,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                              exbit.openedcomm,
                              exbit.pnl,
                              comminfo=order.comminfo)
+
+                # This extra check covers the case in which different tradeid
+                # orders have put the position down to 0 and the next order
+                # "opens" a position but "closes" the trade
+                if trade.isclosed:
+                    self._tradespending.append(trade)
 
             if trade.justopened:
                 self._tradespending.append(trade)
