@@ -25,6 +25,7 @@ import sys
 
 from backtrader import Analyzer
 from backtrader.utils import AutoOrderedDict, AutoDict
+from backtrader.utils.py3 import MAXINT
 
 
 class TradeAnalyzer(Analyzer):
@@ -154,7 +155,7 @@ class TradeAnalyzer(Analyzer):
             ml = trades.len.max or 0
             trades.len.max = max(ml, trade.barlen)
 
-            ml = trades.len.min or sys.maxint
+            ml = trades.len.min or MAXINT
             trades.len.min = min(ml, trade.barlen)
 
             # Length Won/Lost
@@ -168,7 +169,7 @@ class TradeAnalyzer(Analyzer):
                 m = trwl.max or 0
                 trwl.max = max(m, trade.barlen * wl)
                 if trade.barlen * wl:
-                    m = trwl.min or sys.maxint
+                    m = trwl.min or MAXINT
                     trwl.min = min(m, trade.barlen * wl)
 
             # Length Long/Short
@@ -185,7 +186,7 @@ class TradeAnalyzer(Analyzer):
                 # max/min
                 m = trls.max or 0
                 trls.max = max(m, barlen)
-                m = trls.min or sys.maxint
+                m = trls.min or MAXINT
                 trls.min = min(m, barlen or m)
 
                 for wlname in ['won', 'lost']:
@@ -202,7 +203,7 @@ class TradeAnalyzer(Analyzer):
                     # max/min
                     m = trls_wl.max or 0
                     trls_wl.max = max(m, barlen2)
-                    m = trls_wl.min or sys.maxint
+                    m = trls_wl.min or MAXINT
                     trls_wl.min = min(m, barlen2 or m)
 
     def get_analysis(self):

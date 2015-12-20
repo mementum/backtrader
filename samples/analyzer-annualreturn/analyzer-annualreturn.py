@@ -28,7 +28,8 @@ import datetime
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
-from backtrader.analyzers import SQN, AnnualReturn, TimeReturn, SharpeRatio
+from backtrader.analyzers import (SQN, AnnualReturn, TimeReturn, SharpeRatio,
+                                  TradeAnalyzer)
 
 
 class LongShortStrategy(bt.Strategy):
@@ -164,6 +165,8 @@ def runstrategy():
     else:
         cerebro.addanalyzer(TimeReturn, timeframe=tframes[args.tframe])
         cerebro.addanalyzer(SharpeRatio, timeframe=tframes[args.tframe])
+
+    cerebro.addanalyzer(TradeAnalyzer)
 
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
 
