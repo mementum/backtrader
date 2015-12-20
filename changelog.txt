@@ -1,3 +1,10 @@
+1.1.24.88
+  - Fixes #51 - a trade may reopen a position but close a trade if overlapping
+    (different tradeid) trades are active
+  - Address Pull Request #52 by adding Py 2/3 MAXINT compatible "constant" which
+    is imported into TradeAnalyzer and used instead of sys.maxint
+  - Fixes #50 by correcting open/popen typo in StopLimit order
+
 1.1.23.88
   - Fixes #46 by adding a default of total.total = 0 to indicate that no trades
     were executed and therefore no statistics
