@@ -380,7 +380,7 @@ class BrokerBack(with_metaclass(MetaParams, object)):
             if popen <= pcreated:
                 # price penetrated downwards with an open gap
                 order.triggered = True
-                if plimit <= open:
+                if plimit <= popen:
                     self._execute(order, order.data.datetime[0], price=popen)
                 elif plimit <= phigh:
                     # execute in same bar
