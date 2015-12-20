@@ -28,6 +28,8 @@ PY2 = sys.version_info.major == 2
 
 
 if PY2:
+    MAXINT = sys.maxint
+
     string_types = str, unicode
     integer_types = int, long
 
@@ -62,6 +64,8 @@ if PY2:
     import Queue as queue
 
 else:
+    MAXINT = sys.maxsize
+
     string_types = str,
     integer_types = int,
 
