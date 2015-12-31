@@ -33,13 +33,8 @@ import sys
 PY2 = sys.version_info.major == 2
 if PY2:
     from urllib2 import urlopen
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
 else:
     from urllib.request import urlopen
-    from io import StringIO
 
 
 logging.basicConfig(
@@ -63,17 +58,18 @@ class YahooDownload(object):
         url += '&g=%s' % period
         url += '&ignore=.csv'
 
-        self.datafile = urllib.request.urlopen(url)
+        self.datafile = urlopen(url)
         if self.datafile.headers['Content-Type'] != 'text/csv':
             self.datafile.close()
             raise ValueError(
                 'Wrong Content Type in headers %s' %
                 self.datafile.headers['Content-Type'])
 
-        self.headers = self.datafile.readline()  # skip the headers
+        # skip the headers
+        self.headers = self.datafile.readline().decode('utf-8')
 
         # buffer everything from the socket into a local buffer
-        f = StringIO(self.datafile.read())
+        f = io.StringIO(self.datafile.read().decode('utf-8'), newline=None)
         self.datafile.close()
         self.datafile = f
 
@@ -83,7 +79,7 @@ class YahooDownload(object):
             for line in self.datafile:
                 dq.appendleft(line)
 
-            f = StringIO()
+            f = io.StringIO(newline=None)
             f.writelines(dq)
 
             self.datafile.close()
@@ -95,7 +91,7 @@ class YahooDownload(object):
 
         if not hasattr(filename, 'read'):
             # It's not a file - open it
-            f = open(filename, 'wb')
+            f = io.open(filename, 'w')
         else:
             f = filename
 
@@ -165,6 +161,7 @@ if __name__ == '__main__':
             todate=todate,
             period=args.timeframe,
             reverse=reverse)
+
     except Exception as e:
         logging.error('Downloading data from Yahoo failed')
         logging.error(str(e))
@@ -172,7 +169,7 @@ if __name__ == '__main__':
 
     logging.info('Opening output file')
     try:
-        ofile = open(args.outfile, 'wb')
+        ofile = io.open(args.outfile, 'w')
     except IOError as e:
         logging.error('Error opening output file')
         logging.error(str(e))
@@ -182,7 +179,7 @@ if __name__ == '__main__':
     try:
         yahoodown.writetofile(ofile)
     except Exception as e:
-        logging.error('Downloading data from Yahoo failed')
+        logging.error('Writing to output file failed')
         logging.error(str(e))
         sys.exit(1)
 
