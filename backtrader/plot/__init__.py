@@ -26,6 +26,8 @@ try:
 except ImportError:
     raise ImportError(
         'Matplotlib seems to be missing. Needed for plotting support')
+else:
+    matplotlib.use('TkAgg')
 
 
 from .plot import Plot
