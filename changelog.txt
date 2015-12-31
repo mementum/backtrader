@@ -1,3 +1,8 @@
+1.1.25.88
+  - Fixes #55 and improves management of CSV subclasses opening a file from
+    other sources
+  - Sample which tests yahoo online downloading
+
 1.1.24.88
   - Fixes #51 - a trade may reopen a position but close a trade if overlapping
     (different tradeid) trades are active

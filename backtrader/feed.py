@@ -414,16 +414,18 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
     of ``_load`` which has been overriden by this base class
     '''
 
+    f = None
     params = (('headers', True), ('separator', ','),)
 
     def start(self):
         super(CSVDataBase, self).start()
 
-        if hasattr(self.p.dataname, 'readline'):
-            self.f = self.p.dataname
-        else:
-            # Let an exception propagate to let the caller know
-            self.f = open(self.p.dataname, 'rb')
+        if self.f is None:
+            if hasattr(self.p.dataname, 'readline'):
+                self.f = self.p.dataname
+            else:
+                # Let an exception propagate to let the caller know
+                self.f = open(self.p.dataname, 'rb')
 
         if self.p.headers:
             self.f.readline()  # skip the headers
