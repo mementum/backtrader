@@ -67,6 +67,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
 
         f = StringIO()
         f.writelines(dq)
+        f.seek(0)
         self.f.close()
         self.f = f
 
@@ -152,7 +153,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         self.error = None
 
         url = self.params.baseurl
-        url += 's=%s' % self.params.ticker
+        url += 's=%s' % self.params.dataname
         fromdate = self.params.fromdate
         url += '&a=%d&b=%d&c=%d' % \
                ((fromdate.month - 1), fromdate.day, fromdate.year)
@@ -180,7 +181,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         else:
             f = datafile
 
-        self.params.data = f
+        self.f = f
 
         # Prepared a "path" file -  CSV Parser can take over
         super(YahooFinanceData, self).start()
