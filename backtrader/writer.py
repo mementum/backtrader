@@ -22,12 +22,13 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import io
 import itertools
 import sys
 
 import backtrader as bt
 from backtrader.utils.py3 import (map, with_metaclass, string_types,
-                                  integer_types, StringIO)
+                                  integer_types)
 
 
 class WriterBase(with_metaclass(bt.MetaParams, object)):
@@ -203,7 +204,7 @@ class WriterFile(WriterBase):
 
 
 class WriterStringIO(WriterFile):
-    params = (('out', StringIO),)
+    params = (('out', io.StringIO),)
 
     def __init__(self):
         super(WriterStringIO, self).__init__()

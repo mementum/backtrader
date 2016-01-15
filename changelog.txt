@@ -1,3 +1,10 @@
+1.1.26.88
+  - Closes #49 by setting the matplotlib backend to "tkagg" to avoid using other
+    non-tested backends
+  - io.StringIO instead of internally imported one from py3
+  - CSVDataBase unicode/bytes unification and also for YahooFinanceData feed
+  - yahoodownlaod tool bytes/unicode clarification and urlopen bug correction
+
 1.1.25.88
   - Fixes #55 and improves management of CSV subclasses opening a file from
     other sources

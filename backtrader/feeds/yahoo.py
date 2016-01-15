@@ -23,9 +23,10 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 import datetime
+import io
 import itertools
 
-from ..utils.py3 import StringIO, urlopen
+from ..utils.py3 import urlopen
 
 
 from .. import feed
@@ -65,7 +66,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         for line in self.f:
             dq.appendleft(line)
 
-        f = StringIO()
+        f = io.StringIO(newline=None)
         f.writelines(dq)
         f.seek(0)
         self.f.close()
@@ -176,7 +177,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         if self.params.buffered:
             # buffer everything from the socket into a local buffer
-            f = StringIO(datafile.read())
+            f = io.StringIO(datafile.read().decode('utf-8'), newline=None)
             datafile.close()
         else:
             f = datafile

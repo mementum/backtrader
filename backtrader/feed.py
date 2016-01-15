@@ -24,10 +24,11 @@ from __future__ import (absolute_import, division, print_function,
 import collections
 import datetime
 import inspect
+import io
 import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, bytes, zip, range
+from backtrader.utils.py3 import with_metaclass, zip, range
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -425,12 +426,12 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
                 self.f = self.p.dataname
             else:
                 # Let an exception propagate to let the caller know
-                self.f = open(self.p.dataname, 'rb')
+                self.f = io.open(self.p.dataname, 'r')
 
         if self.p.headers:
             self.f.readline()  # skip the headers
 
-        self.separator = bytes(self.p.separator)
+        self.separator = self.p.separator
 
     def stop(self):
         super(CSVDataBase, self).stop()
@@ -448,7 +449,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         if not line:
             return False
 
-        line = line.rstrip(b'\r\n')
+        line = line.rstrip('\n')
         linetokens = line.split(self.separator)
         return self._loadline(linetokens)
 
