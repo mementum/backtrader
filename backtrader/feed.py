@@ -179,7 +179,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # different lengths (timeframes)
         self.lines.advance(size)
 
-        if datamaster:
+        if datamaster is not None:
             if len(self) > self.buflen():
                 # if no bar can be delivered, fill with an empty bar
                 self.rewind()
@@ -206,7 +206,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 # if load cannot produce more bars - forward the result
                 return ret
 
-            if not datamaster:
+            if datamaster is None:
                 # bar is there and no master ... return load's result
                 return ret
 
@@ -214,7 +214,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self.advance()
 
         # a bar is "loaded" or was preloaded - index has been moved to it
-        if datamaster:
+        if datamaster is not None:
             # there is a time reference to check against
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
                 # can't deliver new bar, too early, go back
@@ -242,7 +242,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         for ff, fargs, fkwargs in self._ffilters:
             ret += ff.last(self, *fargs, **fkwargs)
 
-        if datamaster and self._barstack:
+        if datamaster is not None and self._barstack:
             self.mlen.append(len(datamaster) - 1)
             self._tick_fill()
 
