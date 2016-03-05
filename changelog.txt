@@ -1,3 +1,8 @@
+1.1.27.88
+  - Closes #61 by checking datamaster against None to prevent operator
+    overloading to evaluate the object as False because line 0, contains a value
+    of 0 at index 0
+
 1.1.26.88
   - Closes #49 by setting the matplotlib backend to "tkagg" to avoid using other
     non-tested backends
