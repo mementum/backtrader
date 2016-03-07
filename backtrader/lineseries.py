@@ -97,8 +97,18 @@ class Lines(object):
     _getlinesextrabase = classmethod(lambda cls: 0)
 
     @classmethod
-    def _derive(cls, name, lines, extralines, otherbases):
+    def _derive(cls, name, lines, extralines, otherbases, linesoverride=False):
+        '''
+        Creates a subclass of this class with the lines of this class as
+        initial input for the subclass. It will include num "extralines" and
+        lines present in "otherbases"
 
+        "name" will be used as the suffix of the final class name
+
+        "linesoverride": if True the lines of all bases will be discarded and
+        the baseclass will be the topmost class "Lines". This is intended to
+        create a new hierarchy
+        '''
         obaseslines = ()
         obasesextralines = 0
 
@@ -109,16 +119,21 @@ class Lines(object):
                 obaseslines += otherbase._getlines()
                 obasesextralines += otherbase._getlinesextra()
 
-        baselines = cls._getlines() + obaseslines
-        baseextralines = cls._getlinesextra() + obasesextralines
+        if not linesoverride:
+            baselines = cls._getlines() + obaseslines
+            baseextralines = cls._getlinesextra() + obasesextralines
+        else:  # overriding lines, skip anything from baseclasses
+            baselines = ()
+            baseextralines = 0
 
         clslines = baselines + lines
         clsextralines = baseextralines + extralines
-
         lines2add = obaseslines + lines
 
         # str for Python 2/3 compatibility
-        newcls = type(str(cls.__name__ + '_' + name), (cls,), {})
+        basecls = cls if not linesoverride else Lines
+
+        newcls = type(str(cls.__name__ + '_' + name), (basecls,), {})
         clsmodule = sys.modules[cls.__module__]
         newcls.__module__ = cls.__module__
         setattr(clsmodule, str(cls.__name__ + '_' + name), newcls)
@@ -126,14 +141,13 @@ class Lines(object):
         setattr(newcls, '_getlinesbase', classmethod(lambda cls: baselines))
         setattr(newcls, '_getlines', classmethod(lambda cls: clslines))
 
-        setattr(newcls,
-                '_getlinesextrabase',
+        setattr(newcls, '_getlinesextrabase',
                 classmethod(lambda cls: baseextralines))
-        setattr(newcls,
-                '_getlinesextra',
+        setattr(newcls, '_getlinesextra',
                 classmethod(lambda cls: clsextralines))
 
-        l2add = enumerate(lines2add, start=len(cls._getlines()))
+        l2start = len(cls._getlines()) if not linesoverride else 0
+        l2add = enumerate(lines2add, start=l2start)
         for line, linealias in l2add:
             if not isinstance(linealias, string_types):
                 # a tuple or list was passed, 1st is name
@@ -300,6 +314,7 @@ class MetaLineSeries(LineMultiple.__class__):
         aliased = dct.setdefault('aliased', '')
 
         # Remove the line definition (if any) from the class creation
+        linesoverride = dct.pop('linesoverride', False)
         newlines = dct.pop('lines', ())
         extralines = dct.pop('extralines', 0)
 
@@ -314,7 +329,8 @@ class MetaLineSeries(LineMultiple.__class__):
         # Create a subclass of the lines class with our name and newlines
         # and put it in the class
         morebaseslines = [x.lines for x in bases[1:] if hasattr(x, 'lines')]
-        cls.lines = lines._derive(name, newlines, extralines, morebaseslines)
+        cls.lines = lines._derive(name, newlines, extralines, morebaseslines,
+                                  linesoverride)
 
         # Get a copy from base class plotinfo/plotlines (created with the
         # class or set a default)
@@ -324,7 +340,8 @@ class MetaLineSeries(LineMultiple.__class__):
         # Create a plotinfo/plotlines subclass and set it in the class
         morebasesplotinfo = \
             [x.plotinfo for x in bases[1:] if hasattr(x, 'plotinfo')]
-        cls.plotinfo = plotinfo._derive('pi_' + name, newplotinfo, morebasesplotinfo)
+        cls.plotinfo = plotinfo._derive('pi_' + name, newplotinfo,
+                                        morebasesplotinfo)
 
         # Before doing plotline newlines have been added and no plotlineinfo
         # is there add a default
