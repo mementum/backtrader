@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ from .lineseries import *
 
 from .dataseries import *
 from .feed import *
-from .resampler import *
 from .resamplerfilter import *
 
 from .lineiterator import *

@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,36 +37,20 @@ chkargs = dict()
 
 
 def test_run(main=False):
-    # for i in [True, False]:
-    for rstype in [True, False]:
-        if rstype:
-            runonces = [True]
-        else:
-            runonces = [True, False]
+    for runonce in [True, False]:
+        data = testcommon.getdata(0)
+        data.resample(timeframe=bt.TimeFrame.Weeks, compression=1)
 
-        for runonce in runonces:
-            data = testcommon.getdata(0)
-
-            if rstype:
-                data = bt.DataResampler(
-                    dataname=data,
-                    timeframe=bt.TimeFrame.Weeks,
-                    compression=1)
-            else:
-                data.resample(
-                    timeframe=bt.TimeFrame.Weeks,
-                    compression=1)
-
-            datas = [data]
-            testcommon.runtest(datas,
-                               testcommon.TestStrategy,
-                               main=main,
-                               runonce=runonce,
-                               plot=main,
-                               chkind=chkind,
-                               chkmin=chkmin,
-                               chkvals=chkvals,
-                               chkargs=chkargs)
+        datas = [data]
+        testcommon.runtest(datas,
+                           testcommon.TestStrategy,
+                           main=main,
+                           runonce=runonce,
+                           plot=main,
+                           chkind=chkind,
+                           chkmin=chkmin,
+                           chkvals=chkvals,
+                           chkargs=chkargs)
 
 
 if __name__ == '__main__':

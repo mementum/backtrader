@@ -8,19 +8,21 @@ done for a different timeframe, it's time to do some resampling.
 "Resampling" should actually be called "Upsampling" given that one goes from a
 source timeframe to a larger time frame (for example: days to weeks)
 
-"Downsampling" is not yet possible.
-
 ``backtrader`` has built-in support for resampling by passing the original data
-through a filter object which has intelligently been named: ``DataResampler``.
+through a filter object. Although there are several ways to achieve this, a
+straightforward interface exists to achieve this:
 
-The class has two functionalities:
+  - Instead of using ``cerebro.adddata(data)`` to put a ``data`` into the system use
+
+    ``cerebro.resampledata(data, **kwargs)``
+
+There are two main options that can be controlled
 
   - Change the timeframe
 
   - Compress bars
 
-To do so the ``DataResampler`` uses standard ``feed.DataBase`` parameters during
-construction:
+To do so the use the following parameters during when calling ``resampledata``:
 
   - ``timeframe`` (default: bt.TimeFrame.Days)
 
@@ -51,16 +53,17 @@ The magic is done by executing the following steps:
 
   - Loading the data as usual
 
-  - Feeding the data into a ``DataResampler`` with the desired
+  - Feeding the data into cerebro with ``resampledata`` with the desired
+    parameters:
 
-    - timeframe
-    - compression
+    - ``timeframe``
+    - ``compression``
 
 The code in the sample (the entire script at the bottom).
 
 .. literalinclude:: ./resampling-example.py
    :language: python
-   :lines: 38-57
+   :lines: 39-53
 
 A last example in which we first change the time frame from daily to weekly and
 then apply a 3 to 1 compression::
@@ -78,6 +81,39 @@ From the original 256 daily bars we end up with 18 3-week bars. The breakdown:
   - 52 / 3 = 17.33 and therefore 18 bars
 
 It doesn't take much more. Of course intraday data can also be resampled.
+
+The resampling filter supports 3 additional parameters, which in most cases
+should not be touched:
+
+  - ``bar2edge`` (default: True)
+
+    resamples using time boundaries as the target. For example with a
+    "ticks -> 5 seconds" the resulting 5 seconds bars will be aligned to
+    xx:00, xx:05, xx:10 ...
+
+  - ``adjbartime`` (default: True)
+
+    Use the time at the boundary to adjust the time of the delivered
+    resampled bar instead of the last seen timestamp. If resampling to "5
+    seconds" the time of the bar will be adjusted for example to hh:mm:05
+    even if the last seen timestamp was hh:mm:04.33
+
+    .. note::
+
+       Time will only be adjusted if "bar2edge" is True. It wouldn't make
+       sense to adjust the time if the bar has not been aligned to a
+       boundary
+
+  - ``rightedge`` (default: False)
+
+    Use the right edge of the time boundaries to set the time.
+
+    If False and compressing to 5 seconds the time of a resampled bar for
+    seconds between hh:mm:00 and hh:mm:04 will be hh:mm:00 (the starting
+    boundary
+
+    If True the used boundary for the time will be hh:mm:05 (the ending
+    boundary)
 
 The sample code for the resampling test script.
 

@@ -1,3 +1,13 @@
+1.2.1.88:
+  - Remove old DataReplayer/DataResampler and cerebro resampledata_old and
+    replaydata_old which were using them
+  - Adapt docs and test to remove DataReplayer/DataResampler and document the
+    newer interfaces
+  - Add ``linesoverride`` parameter to enable redefining the lines of an object
+    at any stage. Allows removing OHLC default support
+  - Generalized GenericCSV to use the defined line aliases
+  - Generalized tick assignment to use the defined line aliases
+
 1.1.27.88
   - Closes #61 by checking datamaster against None to prevent operator
     overloading to evaluate the object as False because line 0, contains a value

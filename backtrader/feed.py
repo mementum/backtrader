@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -155,22 +155,22 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # and the length doesn't change like if a replay is happening or
         # a real-time data feed is in use and 1 minutes bars are being
         # constructed with 5 seconds updates
-        self.tick_open = None
-        self.tick_high = None
-        self.tick_low = None
-        self.tick_close = self.tick_last = None
-        self.tick_volume = None
-        self.tick_openinterest = None
+        for lalias in self.getlinealiases():
+            if lalias != 'datetime':
+                setattr(self, 'tick_' + lalias, None)
+
+        self.tick_last = None
 
     def _tick_fill(self, force=False):
         # If nothing filled the tick_xxx attributes, the bar is the tick
-        if force or self.tick_open is None:
-            self.tick_open = self.lines.open[0]
-            self.tick_high = self.lines.high[0]
-            self.tick_low = self.lines.low[0]
-            self.tick_close = self.tick_last = self.lines.close[0]
-            self.tick_volume = self.lines.volume[0]
-            self.tick_openinterest = self.lines.openinterest[0]
+        alias0 = self._getlinealias(0)
+        if force or getattr(self, 'tick_', alias0) is None:
+            for lalias in self.getlinealiases():
+                if lalias != 'datetime':
+                    setattr(self, 'tick_' + lalias,
+                            getattr(self.lines, lalias)[0])
+
+            self.tick_last = getattr(self.lines, alias0)[0]
 
     def advance(self, size=1, datamaster=None):
         self._tick_nullify()

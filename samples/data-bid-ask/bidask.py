@@ -21,32 +21,36 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import testcommon
-
 import backtrader as bt
-import backtrader.indicators as btind
-
-chkdatas = 1
-chkvals = [
-    ['83.541267', '36.818395', '41.769503'],
-    ['88.667626', '21.409626', '63.796187'],
-    ['82.845850', '15.710059', '77.642219'],
-]
-
-chkmin = 18
-chkind = btind.StochasticFull
+import backtrader.feeds as btfeeds
 
 
-def test_run(main=False):
-    datas = [testcommon.getdata(i) for i in range(chkdatas)]
-    testcommon.runtest(datas,
-                       testcommon.TestStrategy,
-                       main=main,
-                       plot=main,
-                       chkind=chkind,
-                       chkmin=chkmin,
-                       chkvals=chkvals)
+class BidAskCSV(btfeeds.GenericCSVData):
+    linesoverride = True  # discard usual OHLC structure
+    # datetime must be present and last
+    lines = ('bid', 'ask', 'datetime')
+    # datetime (always 1st) and then the desired order for
+    params = (
+        ('dtformat', '%m/%d/%Y %H:%M:%S'),
+
+        ('datetime', 0),  # field pos 0
+        ('bid', 1),  # default field pos 1
+        ('ask', 2),  # defult field pos 2
+    )
+
+
+class St(bt.Strategy):
+    def next(self):
+        dtstr = self.data.datetime.datetime().isoformat()
+        print('%4d: %s - Bid %.4f - %.4f Ask' %
+              (len(self), dtstr, self.data.bid[0], self.data.ask[0]))
 
 
 if __name__ == '__main__':
-    test_run(main=True)
+    cerebro = bt.Cerebro()
+
+    data = BidAskCSV(dataname='../../datas/bidask.csv')
+    cerebro.adddata(data)
+    cerebro.addstrategy(St)
+
+    cerebro.run()

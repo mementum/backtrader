@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,26 +63,21 @@ def runstrat():
 
     # Load the Data
     datapath = args.dataname or '../../datas/2006-day-001.txt'
-    data = btfeeds.BacktraderCSVData(
-        dataname=datapath)
+    data = btfeeds.BacktraderCSVData(dataname=datapath)
 
+    # Handy dictionary for the argument timeframe conversion
     tframes = dict(
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Handy dictionary for the argument timeframe conversion
-    # Resample the data
-    data_replayed = bt.DataReplayer(
-        dataname=data,
-        timeframe=tframes[args.timeframe],
-        compression=args.compression)
-
     # First add the original data - smaller timeframe
-    cerebro.adddata(data_replayed)
+    cerebro.replaydata(data,
+                       timeframe=tframes[args.timeframe],
+                       compression=args.compression)
 
     # Run over everything
-    cerebro.run(preload=False)
+    cerebro.run()
 
     # Plot the result
     cerebro.plot(style='bar')

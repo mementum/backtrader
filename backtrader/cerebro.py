@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ from . import observers
 from .writer import WriterFile
 from .import num2date
 from .utils import OrderedDict
-from .resampler import DataResampler, DataReplayer
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -95,6 +94,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     )
 
     def __init__(self):
+        self._doreplay = False
         self._dooptimize = False
         self.feeds = list()
         self.datas = list()
@@ -171,50 +171,20 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
 
-    def replaydata_old(self, dataname, name=None, **kwargs):
-        '''
-        Adds a ``Data Feed`` to be replayed by the system
-
-        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
-        ``DataReplayer``
-
-        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
-        are supported by ``DataReplayer`` will be passed transparently
-        '''
-        self.adddata(data=DataReplayer(dataname=dataname, **kwargs), name=name)
-
-    def resampledata_old(self, dataname, name=None, **kwargs):
-        '''
-        Adds a ``Data Feed`` to be resample by the system
-
-        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
-        ``DataResampler``
-
-        Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
-        are supported by ``DataResampler`` will be passed transparently
-        '''
-        self.adddata(data=DataResampler(dataname=dataname, **kwargs),
-                     name=name)
-
     def replaydata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
-
-        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
-        ``DataReplayer``
 
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``Replayer`` will be passed transparently
         '''
         dataname.replay(**kwargs)
         self.adddata(dataname, name=name)
+        self._doreplay = True
 
     def resampledata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
-
-        ``dataname`` will be passed as ``dataname`` to a on-the-fly generated
-        ``DataResampler``
 
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``Resampler`` will be passed transparently
@@ -359,6 +329,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # with exact bars no preload and no runonce are possible
             # Do not modify the params, but the internal values used
             self._dorunonce = False
+            self._dopreload = False
+
+        if self._doreplay:
+            # preloading is not supported with replay. full timeframe bars
+            # are constructed in realtime
             self._dopreload = False
 
         self.runwriters = list()

@@ -29,19 +29,58 @@ Putting *Data Replay* into action follows the regular usage patterns of
 
   - Load a data feed
 
-  - Pass the data to ``DataReplayer`` which is yet another data feed that will
-    work on the loaded data feed
-
-  - Pass the new data feed to cerebro
+  - Pass the data to cerebro with ``replaydata``
 
   - Add a strategy
 
-  - And run ... *WITH PRELOAD DISABLED**
-
 .. note::
 
-   Preloading cannot be supported when data is being replayed because each bar
-   is actually built in real-time.
+   Preloading is not supported when data is being replayed because each bar
+   is actually built in real-time. It will automatically disabled in any
+   ``Cerebro`` instance.
+
+Parameters which can be passed to ``replaydata``:
+
+  - ``timeframe`` (default: bt.TimeFrame.Days)
+
+    Destination timeframe  which to be useful has to
+    be equal or larger than the source
+
+  - ``compression`` (default: 1)
+
+    Compress the selected value "n" to 1 bar
+
+Extended parameters (do not touch if not really needed):
+
+  - ``bar2edge`` (default: False)
+
+    replays using time boundaries as the target of the closed bar. For
+    example with a "ticks -> 5 seconds" the resulting 5 seconds bars will
+    be aligned to xx:00, xx:05, xx:10 ...
+
+  - ``adjbartime`` (default: False)
+
+    Use the time at the boundary to adjust the time of the delivered
+    resampled bar instead of the last seen timestamp. If resampling to "5
+    seconds" the time of the bar will be adjusted for example to hh:mm:05
+    even if the last seen timestamp was hh:mm:04.33
+
+    .. note::
+
+       Time will only be adjusted if "bar2edge" is True. It wouldn't make
+       sense to adjust the time if the bar has not been aligned to a
+       boundary
+
+  - ``rightedge`` (default: False)
+
+    Use the right edge of the time boundaries to set the time.
+
+    If False and compressing to 5 seconds the time of a resampled bar for
+    seconds between hh:mm:00 and hh:mm:04 will be hh:mm:00 (the starting
+    boundary
+
+    If True the used boundary for the time will be hh:mm:05 (the ending
+    boundary)
 
 For the sake of working with a example the standard 2006 daily data will be
 replayed on a weekly basis. Which means:
@@ -59,12 +98,11 @@ The trick:
   - With each new week the length will increase by one
 
 Some examples below, but first the sauce of the test script in which the data is
-loaded and passed to a replayer ... and ``run`` with ``preload=False`` to
-disable preloading (COMPULSORY)
+loaded and passed to cerebro with ``replaydata`` ... and then ``run``.
 
 .. literalinclude:: ./replay-example.py
    :language: python
-   :lines: 67-86
+   :lines: 64-78
 
 
 Example - Replay Daily to Weekly
@@ -167,7 +205,6 @@ Conclusion
 A reconstruction of the market development is possible. Usually a smaller
 timeframe set of data is available and can be used to discretely replay the
 timeframe which the system operates on.
-
 
 The test script.
 
