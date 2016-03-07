@@ -29,6 +29,10 @@ backtrader
 
 BackTesting platform written in Python to test trading strategies.
 
+`Release Notice (1.2.1.88):
+<http://www.backtrader.com/posts/2016-03-07-release-1.2.1.88/release-1.2.1.88/>`_
+
+
 Documentation
 =============
 
