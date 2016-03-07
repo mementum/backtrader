@@ -94,6 +94,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     )
 
     def __init__(self):
+        self._doreplay = False
         self._dooptimize = False
         self.feeds = list()
         self.datas = list()
@@ -179,6 +180,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         dataname.replay(**kwargs)
         self.adddata(dataname, name=name)
+        self._doreplay = True
 
     def resampledata(self, dataname, name=None, **kwargs):
         '''
@@ -327,6 +329,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # with exact bars no preload and no runonce are possible
             # Do not modify the params, but the internal values used
             self._dorunonce = False
+            self._dopreload = False
+
+        if self._doreplay:
+            # preloading is not supported with replay. full timeframe bars
+            # are constructed in realtime
             self._dopreload = False
 
         self.runwriters = list()
