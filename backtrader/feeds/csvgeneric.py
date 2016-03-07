@@ -70,10 +70,6 @@ class GenericCSVData(feed.CSVDataBase):
         ('openinterest', 6),
     )
 
-    linefields = [
-        'datetime', 'open', 'high', 'low', 'close', 'volume', 'openinterest'
-    ]
-
     def _loadline(self, linetokens):
         # Datetime needs special treatment
         dtfield = linetokens[self.p.datetime]
@@ -88,7 +84,7 @@ class GenericCSVData(feed.CSVDataBase):
         self.lines.datetime[0] = date2num(dt)
 
         # The rest of the fields can be done with the same procedure
-        for linefield in self.linefields[1:]:
+        for linefield in (x for x in self.getlinealiases() if x != 'datetime'):
             # Get the index created from the passed params
             csvidx = getattr(self.params, linefield)
 
