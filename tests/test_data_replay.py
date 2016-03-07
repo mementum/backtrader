@@ -38,19 +38,10 @@ chkargs = dict()
 
 
 def test_run(main=False):
-    for i in [True, False]:
+    # for i in [True, False]:
+    for runonce in [True, False]:
         data = testcommon.getdata(0)
-
-        if i:
-            data = bt.DataReplayer(
-                dataname=data,
-                timeframe=bt.TimeFrame.Weeks,
-                compression=1)
-        else:
-            data.replay(
-                timeframe=bt.TimeFrame.Weeks,
-                compression=1)
-
+        data.replay(timeframe=bt.TimeFrame.Weeks, compression=1)
         datas = [data]
         testcommon.runtest(datas,
                            testcommon.TestStrategy,
@@ -61,7 +52,7 @@ def test_run(main=False):
                            chkvals=chkvals,
                            chknext=chknext,
                            chkargs=chkargs,
-                           runonce=False, preload=False)
+                           runonce=runonce)
 
 
 if __name__ == '__main__':

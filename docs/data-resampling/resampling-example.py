@@ -38,8 +38,7 @@ def runstrat():
 
     # Load the Data
     datapath = args.dataname or '../../datas/2006-day-001.txt'
-    data = btfeeds.BacktraderCSVData(
-        dataname=datapath)
+    data = btfeeds.BacktraderCSVData(dataname=datapath)
 
     # Handy dictionary for the argument timeframe conversion
     tframes = dict(
@@ -47,14 +46,10 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Resample the data
-    data_resampled = bt.DataResampler(
-        dataname=data,
-        timeframe=tframes[args.timeframe],
-        compression=args.compression)
-
     # Add the resample data instead of the original
-    cerebro.adddata(data_resampled)
+    cerebro.resampledata(data,
+                         timeframe=tframes[args.timeframe],
+                         compression=args.compression)
 
     # Run over everything
     cerebro.run()
