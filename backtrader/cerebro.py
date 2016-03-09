@@ -33,6 +33,7 @@ from . import observers
 from .writer import WriterFile
 from .import num2date
 from .utils import OrderedDict
+from .strategy import Strategy
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -355,6 +356,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
 
         self.runstrats = list()
+
+        if not self.strats:  # Datas are present, add a strategy
+            self.addstrategy(Strategy)
+
         iterstrats = itertools.product(*self.strats)
         if not self._dooptimize or self.p.maxcpus == 1:
             # If no optimmization is wished ... or 1 core is to be used
