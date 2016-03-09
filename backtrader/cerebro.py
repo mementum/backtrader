@@ -319,6 +319,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         if not self.datas:
             return
+            return []  # nothing can be run
 
         pkeys = self.params._getkeys()
         for key, val in kwargs.items():
