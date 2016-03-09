@@ -72,6 +72,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
     def __init__(self, data):
         # Calculate and save timedelta for timeframe
+        self._tdframe = self._tdeltas[data._timeframe]
         self._tdunit = self._tdeltas[data._timeframe] * data._compression
 
         self.seenbar = False  # control if at least one bar has been seen
@@ -105,7 +106,11 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
         if dtime_cur > self.sessend:
             # bar over session end - fill up and invalidate
-            self._fillbars(data, self.dtime_prev, self.sessend + self._tdunit)
+            # Do not put current bar in stack to let it be evaluated below
+            # Fill up to endsession + smallest unit of timeframe
+            self._fillbars(data, self.dtime_prev,
+                           self.sessend + self._tdframe,
+                           tostack=False)
             self.sessend = MAXDATE
 
         # Fall through from previous check ... the bar which is over the
@@ -130,7 +135,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
         return False
 
-    def _fillbars(self, data, time_start, time_end, forcedirty=False):
+    def _fillbars(self, data, time_start, time_end, tostack=True):
         '''
         Fills one by one bars as needed from time_start to time_end
 
@@ -144,7 +149,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
             dirty = self._fillbar(data, time_start)
             time_start += self._tdunit
 
-        if dirty or forcedirty:
+        if dirty and tostack:
             data._save2stack(erase=True)
 
     def _fillbar(self, data, dtime):

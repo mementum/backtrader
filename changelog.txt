@@ -1,3 +1,8 @@
+1.2.2.88:
+  - Update of bidask sample
+  - SessionFiller correction to avoid moving the evaluated bar too early into
+    the stack and avoid the previous session to fill into new session
+
 1.2.1.88:
   - Remove old DataReplayer/DataResampler and cerebro resampledata_old and
     replaydata_old which were using them
