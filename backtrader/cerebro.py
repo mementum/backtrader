@@ -318,7 +318,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
             Strategy classes added with ``addstrategy``
         '''
         if not self.datas:
-            return
             return []  # nothing can be run
 
         pkeys = self.params._getkeys()
