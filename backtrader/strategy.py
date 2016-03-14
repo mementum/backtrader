@@ -497,11 +497,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size or possize)
 
         if possize > 0:
-            return self.sell(data, size, price, exectype, valid,
+            return self.sell(data=data, size=size, price=price,
+                             exectype=exectype, valid=valid,
                              tradeid=tradeid, **kwargs)
         elif possize < 0:
-            return self.buy(data, size, price, exectype, valid,
-                            tradeid=tradeid, **kwargs)
+            return self.sell(data=data, size=size, price=price,
+                             exectype=exectype, valid=valid,
+                             tradeid=tradeid, **kwargs)
 
         return None
 

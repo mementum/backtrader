@@ -33,6 +33,7 @@ from . import observers
 from .writer import WriterFile
 from .import num2date
 from .utils import OrderedDict
+from .strategy import Strategy
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -189,6 +190,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``Resampler`` will be passed transparently
         '''
+        if dataname in self.datas:
+            dataname = dataname.clone()
+
         dataname.resample(**kwargs)
         self.adddata(dataname, name=name)
 
@@ -315,7 +319,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             Strategy classes added with ``addstrategy``
         '''
         if not self.datas:
-            return
+            return []  # nothing can be run
 
         pkeys = self.params._getkeys()
         for key, val in kwargs.items():
@@ -352,6 +356,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
 
         self.runstrats = list()
+
+        if not self.strats:  # Datas are present, add a strategy
+            self.addstrategy(Strategy)
+
         iterstrats = itertools.product(*self.strats)
         if not self._dooptimize or self.p.maxcpus == 1:
             # If no optimmization is wished ... or 1 core is to be used
