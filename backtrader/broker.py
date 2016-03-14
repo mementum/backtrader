@@ -32,11 +32,31 @@ from .order import Order, BuyOrder, SellOrder
 
 
 class BrokerBack(with_metaclass(MetaParams, object)):
+    '''Broker Simulator
+      Parameters:
 
+        Note: use the setXXXX to set the value after instance creation
+
+        - ``cash`` (default: 10000): starting cash
+
+        - ``commission`` (default: CommInfoBase(percabs=True))
+          base commission scheme which applies to all assets
+
+        - ``checksubmit`` (default: True)
+          check margin/cash before accepting an order into the system
+
+        - ``eosbar`` (default: False):
+          With intraday bars consider a bar with the same ``time`` as the end
+          of session to be the end of the session. This is not usually the
+          case, because some bars (final auction) are produced by many
+          exchanges for many products for a couple of minutes after the end of
+          the session
+    '''
     params = (
         ('cash', 10000.0),
         ('commission', CommInfoBase(percabs=True)),
         ('checksubmit', True),
+        ('eosbar', False),
     )
 
     def __init__(self):
@@ -56,6 +76,9 @@ class BrokerBack(with_metaclass(MetaParams, object)):
         self.notifs = collections.deque()
 
         self.submitted = collections.deque()
+
+    def seteosbar(self, eosbar):
+        self.p.eosbar = eosbar
 
     def getcash(self):
         return self.cash
@@ -121,6 +144,7 @@ class BrokerBack(with_metaclass(MetaParams, object)):
         return o.status
 
     def submit(self, order):
+        order.plen = len(order.data)
         if self.p.checksubmit:
             order.submit()
             self.submitted.append(order)
@@ -154,7 +178,6 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     def submit_accept(self, order):
         order.pannotated = None
-        order.plen = len(order.data)
         order.accept()
         self.pending.append(order)
         self.notify(order)
@@ -298,11 +321,11 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     def _try_exec_close(self, order, pclose):
         if len(order.data) > order.plen:
-
             dt0 = order.data.datetime[0]
 
-            if dt0 > order.dteos:
-                if order.pannotated:
+            if dt0 > order.dteos or (self.p.eosbar and dt0 == order.dteos):
+                # past the end of session or right at it and eosbar is True
+                if order.pannotated and dt0 != order.dteos:
                     execdt = order.data.datetime[-1]
                     execprice = order.pannotated
                 else:
