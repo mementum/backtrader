@@ -1,3 +1,20 @@
+1.2.3.88:
+  - Add samples following 'Close' order corrections/improvements for
+    testing. Addresses #62
+  - Improve 'Close' execution support and correct conflicting behavior
+    with method checksubmit. Addresses #62
+  - Correct method close of strategy by using kwargs which was not
+    taking into account the existence of a plimit parameter in methods
+    buy/sell and would pass the execution type as plimit
+  - PandasData extension sample and data supporting discussion in
+    ticket #65
+  - If datas have been passed to cerebro, ensure cerebro has a
+    strategy to run against (which can get indicators, analyzers,
+    observers and other through the appropriate interface)
+  - Addresses #64 by auto-cloning datas in resampledata if the data
+    was already in the system
+  - Return a list in case cerebro.run is not run due to missing datas
+
 1.2.2.88:
   - Update of bidask sample
   - SessionFiller correction to avoid moving the evaluated bar too early into
