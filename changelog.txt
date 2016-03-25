@@ -1,3 +1,7 @@
+1.2.4.88
+  - Improved detection in cerebro.resampledata of existing datas before cloning
+  - Added detection in cerebro.replaydata of existing datas before cloning
+
 1.2.3.88:
   - Add samples following 'Close' order corrections/improvements for
     testing. Addresses #62
