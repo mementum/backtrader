@@ -179,6 +179,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``Replayer`` will be passed transparently
         '''
+        if any(dataname is x for x in self.datas):
+            dataname = dataname.clone()
+
         dataname.replay(**kwargs)
         self.adddata(dataname, name=name)
         self._doreplay = True
@@ -190,7 +193,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
         are supported by ``Resampler`` will be passed transparently
         '''
-        if dataname in self.datas:
+        if any(dataname is x for x in self.datas):
             dataname = dataname.clone()
 
         dataname.resample(**kwargs)
