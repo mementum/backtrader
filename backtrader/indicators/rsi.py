@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from . import Indicator, Max, MovAv
+from . import DivZeroByZero
 
 
 class UpDay(Indicator):
@@ -115,8 +116,7 @@ class DownDayBool(Indicator):
 
 
 class RelativeStrengthIndex(Indicator):
-    '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
+    '''Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"*.
 
     It measures momentum by calculating the ration of higher closes and
@@ -136,6 +136,17 @@ class RelativeStrengthIndex(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    Notes:
+      - ``safediv`` (default: False) If this parameter is True the division
+        rs = maup / madown will be checked for the special cases in which a
+        ``0 / 0`` or ``x / 0`` division will happen
+
+      - ``safehigh`` (default: 100.0) will be used as RSI value for the ``x /
+        0`` case
+
+      - ``safelow``  (default: 50.0) will be used as RSI value for the ``0 /
+        0`` case
     '''
     alias = ('RSI', 'RSI_SMMA', 'RSI_Wilder',)
 
@@ -143,7 +154,10 @@ class RelativeStrengthIndex(Indicator):
     params = (('period', 14),
               ('movav', MovAv.Smoothed),
               ('upperband', 70.0),
-              ('lowerband', 30.0))
+              ('lowerband', 30.0),
+              ('safediv', False),
+              ('safehigh', 100.0),
+              ('safelow', 50.0),)
 
     def _plotlabel(self):
         plabels = [self.p.period]
@@ -158,9 +172,34 @@ class RelativeStrengthIndex(Indicator):
         downday = DownDay(self.data)
         maup = self.p.movav(upday, period=self.p.period)
         madown = self.p.movav(downday, period=self.p.period)
-        rs = maup / madown
+        if not self.p.safediv:
+            rs = maup / madown
+        else:
+            highrs = self._rscalc(self.p.safehigh)
+            lowrs = self._rscalc(self.p.safelow)
+            rs = DivZeroByZero(maup, madown, highrs, lowrs)
+
         self.lines.rsi = 100.0 - 100.0 / (1.0 + rs)
         super(RelativeStrengthIndex, self).__init__()
+
+    def _rscalc(self, rsi):
+        try:
+            rs = (-100.0 / (rsi - 100.0)) - 1.0
+        except ZeroDivisionError:
+            return float('inf')
+
+        return rs
+
+
+class RSI_Safe(RSI):
+    '''
+    Subclass of RSI which changes parameers ``safediv`` to ``True`` as the
+    default value
+
+    See:
+      - http://en.wikipedia.org/wiki/Relative_strength_index
+    '''
+    params = (('safediv', True),)
 
 
 class RSI_SMA(Indicator):

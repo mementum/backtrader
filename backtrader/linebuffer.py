@@ -38,7 +38,7 @@ import math
 
 from .utils.py3 import range, with_metaclass, string_types
 
-from .lineroot import LineRoot, LineSingle
+from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
 from .utils import num2date, time2num
 
@@ -456,8 +456,13 @@ class MetaLineActions(LineBuffer.__class__):
             super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
 
         # Do not produce anything until the operation lines produce something
-        _minperiod = \
-            max([x._minperiod for x in args if isinstance(x, LineSingle)])
+        _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
+
+        if not _minperiods:
+            mlines = [x.lines[0] for x in args if isinstance(x, LineMultiple)]
+            _minperiods = [x._minperiod for x in mlines]
+
+        _minperiod = max(_minperiods)
 
         # update own minperiod if needed
         _obj.updateminperiod(_minperiod)

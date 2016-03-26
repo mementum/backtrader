@@ -47,8 +47,8 @@ class DivByZero(Logic):
     '''
     def __init__(self, a, b, zero=0.0):
         super(DivByZero, self).__init__(a, b)
-        self.a = self.args[0]
-        self.b = self.args[1]
+        self.a = a
+        self.b = b
         self.zero = zero
 
     def next(self):
@@ -65,6 +65,50 @@ class DivByZero(Logic):
         for i in range(start, end):
             b = srcb[i]
             dst[i] = srca[i] / b if b else zero
+
+
+class DivZeroByZero(Logic):
+    '''This operation is a Lines object and fills it values by executing a
+    division on the numerator / denominator arguments and avoiding a division
+    by zero exception or an indetermination by checking the
+    denominator/numerator pair
+
+    Params:
+      - a: numerator (numeric or iterable object ... mostly a Lines object)
+      - b: denominator (numeric or iterable object ... mostly a Lines object)
+      - single (def: +inf): value to apply if division is x / 0
+      - dual (def: 0.0): value to apply if division is 0 / 0
+    '''
+    def __init__(self, a, b, single=float('inf'), dual=0.0):
+        super(DivZeroByZero, self).__init__(a, b)
+        self.a = a
+        self.b = b
+        self.single = single
+        self.dual = dual
+
+    def next(self):
+        b = self.b[0]
+        a = self.a[0]
+        if b == 0.0:
+            self[0] = self.dual if a == 0.0 else self.single
+        else:
+            self[0] = self.a[0] / b
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        single = self.single
+        dual = self.dual
+
+        for i in range(start, end):
+            b = srcb[i]
+            a = srca[i]
+            if b == 0.0:
+                dst[i] = dual if a == 0.0 else single
+            else:
+                dst[i] = a / b
 
 
 class Cmp(Logic):
