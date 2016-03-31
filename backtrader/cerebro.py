@@ -411,7 +411,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for strat in runstrats:
             if self.p.stdstats:
                 strat._addobserver(False, observers.Broker)
-                strat._addobserver(False, observers.BuySell)
+                strat._addobserver(True, observers.BuySell)
                 strat._addobserver(False, observers.Trades)
 
             for multi, obscls, obsargs, obskwargs in self.observers:
