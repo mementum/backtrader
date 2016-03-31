@@ -92,7 +92,12 @@ class LineBuffer(LineSingle):
         ''' Resets the internal buffer structure and the indices
         '''
         if self.mode == self.RingBuffer:
-            self.array = collections.deque(maxlen=self.maxlen)
+            # add 1 to ensure resample/replay work because they will use
+            # backwards to erase the last bar/tick before delivering a new bar
+            # The previous forward would have discarded the bar "period" times
+            # ago and it will not come back. Having + 1 in the size allows the
+            # forward without removing that bar
+            self.array = collections.deque(maxlen=self.maxlen + 1)
             self.useislice = True
         else:
             self.array = array.array(str('d'))
