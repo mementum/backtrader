@@ -1,3 +1,10 @@
+1.2.5.88
+  - Fixes #67 by having the Buy Sell Observer be displayed for all datas in the
+    system
+  - Improve support of live data feed resampling/replaying. Addresses comments
+    in #69 and #44
+  - Support safe division by zero RSI calculations. Closes #68
+
 1.2.4.88
   - Improved detection in cerebro.resampledata of existing datas before cloning
   - Added detection in cerebro.replaydata of existing datas before cloning
