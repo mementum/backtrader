@@ -96,6 +96,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         # hold datamaster points corresponding to own
         _obj.mlen = list()
 
+        _obj._barstack = collections.deque()  # for filter operations
+
         _obj._filters = list()
         _obj._ffilters = list()
         for fp in _obj.p.filters:
@@ -128,6 +130,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def start(self):
         self._barstack = collections.deque()
+        self.mlen = list()
 
     def stop(self):
         pass

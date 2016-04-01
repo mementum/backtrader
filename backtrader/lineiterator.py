@@ -242,7 +242,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                 self.next()
             elif clock_len == self._minperiod:
                 self.nextstart()  # only called for the 1st value
-            else:
+            elif clock_len:
                 self.prenext()
 
     def _once(self):
