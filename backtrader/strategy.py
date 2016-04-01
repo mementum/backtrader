@@ -297,7 +297,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         wrinfo['Params'] = self.p._getkwargs()
 
         sections = [
-            ['Indicators', self.getindicators()],
+            ['Indicators', self.getindicators_lines()],
             ['Observers', self.getobservers()]
         ]
 
