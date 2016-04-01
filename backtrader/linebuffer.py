@@ -38,7 +38,7 @@ import math
 
 from .utils.py3 import range, with_metaclass, string_types
 
-from .lineroot import LineRoot, LineSingle
+from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
 from .utils import num2date, time2num
 
@@ -92,7 +92,12 @@ class LineBuffer(LineSingle):
         ''' Resets the internal buffer structure and the indices
         '''
         if self.mode == self.RingBuffer:
-            self.array = collections.deque(maxlen=self.maxlen)
+            # add 1 to ensure resample/replay work because they will use
+            # backwards to erase the last bar/tick before delivering a new bar
+            # The previous forward would have discarded the bar "period" times
+            # ago and it will not come back. Having + 1 in the size allows the
+            # forward without removing that bar
+            self.array = collections.deque(maxlen=self.maxlen + 1)
             self.useislice = True
         else:
             self.array = array.array(str('d'))
@@ -456,8 +461,13 @@ class MetaLineActions(LineBuffer.__class__):
             super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
 
         # Do not produce anything until the operation lines produce something
-        _minperiod = \
-            max([x._minperiod for x in args if isinstance(x, LineSingle)])
+        _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
+
+        if not _minperiods:
+            mlines = [x.lines[0] for x in args if isinstance(x, LineMultiple)]
+            _minperiods = [x._minperiod for x in mlines]
+
+        _minperiod = max(_minperiods)
 
         # update own minperiod if needed
         _obj.updateminperiod(_minperiod)

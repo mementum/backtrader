@@ -234,7 +234,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                     observer.next()
                 elif minperstatus == 0:
                     observer.nextstart()  # only called for the 1st value
-                else:
+                elif len(observer):
                     observer.prenext()
             else:
                 observer._next()
@@ -297,7 +297,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         wrinfo['Params'] = self.p._getkwargs()
 
         sections = [
-            ['Indicators', self.getindicators()],
+            ['Indicators', self.getindicators_lines()],
             ['Observers', self.getobservers()]
         ]
 

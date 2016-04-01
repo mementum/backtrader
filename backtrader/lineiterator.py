@@ -168,6 +168,10 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def getindicators(self):
         return self._lineiterators[LineIterator.IndType]
 
+    def getindicators_lines(self):
+        return [x for x in self._lineiterators[LineIterator.IndType]
+                if hasattr(x, 'lines')]
+
     def getobservers(self):
         return self._lineiterators[LineIterator.ObsType]
 
@@ -238,7 +242,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                 self.next()
             elif clock_len == self._minperiod:
                 self.nextstart()  # only called for the 1st value
-            else:
+            elif clock_len:
                 self.prenext()
 
     def _once(self):
