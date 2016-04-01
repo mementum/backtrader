@@ -4,6 +4,8 @@
   - Improve support of live data feed resampling/replaying. Addresses comments
     in #69 and #44
   - Support safe division by zero RSI calculations. Closes #68
+  - Fixes #71. Single Lines (LineOperations in this case) don't get added to
+    the indicator mix for writers
 
 1.2.4.88
   - Improved detection in cerebro.resampledata of existing datas before cloning
