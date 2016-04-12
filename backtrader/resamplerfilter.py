@@ -162,8 +162,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return point
 
     def _barover_subdays(self, data):
-        # Put session end in context of current datetime
-        sessend = data.datetime.tm2dtime(data.sessionend)
+        # Put session end in context of last bar datetime
+        sessend = int(self.bar.datetime) + data.sessionend
 
         if data.datetime[0] > sessend:
             # Next session is on (defaults to next day)
