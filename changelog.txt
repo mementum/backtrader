@@ -1,3 +1,10 @@
+1.2.6.88
+  - Fix broken data-multitimeframe sample
+  - Address #72 by improving _getsizing method which not also takes data as
+    parameter
+  - Fixes #77 by correctly calculating when the current session ends for the
+    last bar (when next session data is already in)
+
 1.2.5.88
   - Fixes #67 by having the Buy Sell Observer be displayed for all datas in the
     system
