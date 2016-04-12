@@ -160,7 +160,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Adds a ``Data Feed`` instance to the mix.
 
-        if ``name`` is not None it will be put into ``data._name`` which is
+        If ``name`` is not None it will be put into ``data._name`` which is
         meant for decoration/plotting purposes.
         '''
         if name is not None:
@@ -176,8 +176,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Adds a ``Data Feed`` to be replayed by the system
 
+        If ``name`` is not None it will be put into ``data._name`` which is
+        meant for decoration/plotting purposes.
+
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
-        are supported by ``Replayer`` will be passed transparently
+        are supported by the replay filter will be passed transparently
         '''
         if any(dataname is x for x in self.datas):
             dataname = dataname.clone()
@@ -190,8 +193,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Adds a ``Data Feed`` to be resample by the system
 
+        If ``name`` is not None it will be put into ``data._name`` which is
+        meant for decoration/plotting purposes.
+
         Any other kwargs like ``timeframe``, ``compression``, ``todate`` which
-        are supported by ``Resampler`` will be passed transparently
+        are supported by the resample filter will be passed transparently
         '''
         if any(dataname is x for x in self.datas):
             dataname = dataname.clone()
@@ -211,12 +217,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
           - cerebro.optstrategy(MyStrategy, period=(15, 25))
 
-        or
+        This will execute an optimization for values 15 and 25. Whereas
 
           - cerebro.optstrategy(MyStrategy, period=range(15, 25))
 
-        This will execute MyStrategy with ``period`` values 15 -> 25 (25 not
-        included in the lot)
+        will execute MyStrategy with ``period`` values 15 -> 25 (25 not
+        included, because ranges are semi-open in Python)
 
         If a parameter is passed but shall not be optimized the call looks
         like:

@@ -33,9 +33,10 @@ class SizerBase(with_metaclass(MetaParams, object)):
     def getsizing(self, data, broker=None):
         broker = broker or self.params.broker
         return self._getsizing(broker.getcommissioninfo(data),
-                               broker.getcash())
+                               broker.getcash(),
+                               data)
 
-    def _getsizing(self, comminfo, cash):
+    def _getsizing(self, comminfo, cash, data=None):
         raise NotImplementedError
 
     def setbroker(self, broker):
@@ -48,7 +49,7 @@ class SizerBase(with_metaclass(MetaParams, object)):
 class SizerFix(SizerBase):
     params = (('stake', 1),)
 
-    def _getsizing(self, comminfo, cash):
+    def _getsizing(self, comminfo, cash, data=None):
         return self.params.stake
 
     def setsizing(self, stake):
