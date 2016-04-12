@@ -81,7 +81,7 @@ def runstrat():
     # Handy dictionary for the argument timeframe conversion
     # Resample the data
     if args.noresample:
-        datapath = args.dataname2 or '../datas/sample/2006-week-001.txt'
+        datapath = args.dataname2 or '../../datas/2006-week-001.txt'
         data2 = btfeeds.BacktraderCSVData(
             dataname=datapath)
     else:
@@ -101,18 +101,18 @@ def runstrat():
             data2 = bt.DataClone(dataname=data)
             if args.replay:
                 if args.timeframe == 'daily':
-                    data2.addprocessor(ReplayerDaily)
+                    data2.addfilter(ReplayerDaily)
                 elif args.timeframe == 'weekly':
-                    data2.addprocessor(ReplayerWeekly)
+                    data2.addfilter(ReplayerWeekly)
                 elif args.timeframe == 'monthly':
-                    data2.addprocessor(ReplayerMonthly)
+                    data2.addfilter(ReplayerMonthly)
             else:
                 if args.timeframe == 'daily':
-                    data2.addprocessor(ResamplerDaily)
+                    data2.addfilter(ResamplerDaily)
                 elif args.timeframe == 'weekly':
-                    data2.addprocessor(ResamplerWeekly)
+                    data2.addfilter(ResamplerWeekly)
                 elif args.timeframe == 'monthly':
-                    data2.addprocessor(ResamplerMonthly)
+                    data2.addfilter(ResamplerMonthly)
 
     # First add the original data - smaller timeframe
     cerebro.adddata(data)
