@@ -1,3 +1,11 @@
+1.2.7.88
+  - Correct resampling/replaying behavior for calculating the delivery with
+    configured compression fator for timeframes ticks and days or larger.
+    Addresses #47, #77, #78
+  - Adapt resample/replay tests to improved resampling/replaying code which
+    delivers the bar 1 tick earlier
+  - Sample for bidask data to OHLC. Closes #78
+
 1.2.6.88
   - Fix broken data-multitimeframe sample
   - Address #72 by improving _getsizing method which not also takes data as
