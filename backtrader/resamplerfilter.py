@@ -50,15 +50,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self._firstbar = True
 
     def _checkbarover(self, data):
-        if not self._barover(data):
-            return False
-
         ret = False
-        if (self.p.bar2edge and
-            self.p.timeframe in [TimeFrame.MicroSeconds,
-                                 TimeFrame.Seconds,
-                                 TimeFrame.Minutes]):
+        update = False
+        if not self._barover(data):
+            return ret, update
 
+        if (self.p.bar2edge and
+                TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days):
             ret = True
         else:
             # over time/date limit - increase number of bars completed
@@ -66,13 +64,18 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             if not (self.compcount % self.p.compression):
                 # boundary crossed and enough bars for compression ... proceed
                 ret = True
+                update = True
 
         if ret:
-            self._baroverdeliver(data)
+            self._baroverdeliver(data, update)
 
-        return ret
+        return ret, update
 
-    def _baroverdeliver(self, data):
+    def _baroverdeliver(self, data, update=False):
+        if update:
+            self.bar.bupdate(data)
+            data.backwards()
+
         if not self.replaying:
             if TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days:
                 # Adjust resampled to time limit for micro/seconds/minutes
@@ -81,8 +84,11 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             # deliver bar
             data._add2stack(list(self.bar.values()))
 
-        # re-init bar
-        self.bar.bstart()
+        elif update:  # replaying and update
+            data._updatebar(list(self.bar.values()), forward=self._firstbar)
+            self._firstbar = True  # next bar is first after a re-init
+
+        self.bar.bstart(maxdate=True)  # re-init bar
 
     def last(self, data):
         '''Called when the data is no longer producing bars
@@ -288,9 +294,10 @@ class Resampler(_BaseResampler):
 
     def __call__(self, data):
         '''Called for each set of values produced by the data source'''
-        self._checkbarover(data)
-        self.bar.bupdate(data)
-        data.backwards()  # remove bar consumed here
+        _, updated = self._checkbarover(data)
+        if not updated:
+            self.bar.bupdate(data)
+            data.backwards()  # remove bar consumed here
 
         # return True to indicate the bar can no longer be used by the data
         return True
@@ -347,18 +354,19 @@ class Replayer(_BaseResampler):
     replaying = True
 
     def __call__(self, data):
-        if self._checkbarover(data):
-            self._firstbar = True
-
         # Update the tick values
         data._tick_fill(force=True)  # before we erase the data below
 
-        # Update internal bar - before removing the data bar
-        self.bar.bupdate(data)
-        data.backwards()
-        # deliver current bar too
-        data._updatebar(list(self.bar.values()), forward=self._firstbar)
-        self._firstbar = False
+        barover, updated = self._checkbarover(data)
+        if barover:
+            self._firstbar = True
+
+        if not updated:  # Update internal bar - before removing the data bar
+            self.bar.bupdate(data)
+            data.backwards()
+            # deliver current bar too
+            data._updatebar(list(self.bar.values()), forward=self._firstbar)
+            self._firstbar = False
 
         return False  # nothing removed from the system
 
