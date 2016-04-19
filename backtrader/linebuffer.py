@@ -79,9 +79,17 @@ class LineBuffer(LineSingle):
     def get_idx(self):
         return self._idx
 
-    def set_idx(self, idx):
+    def set_idx(self, idx, force=False):
+        # if RingBuffer and the last position of the buffer was reached, keep
+        # it (unless force) as index 0. This allows resampling
+        #  - forward adds a position, but the 1st one is discarded, the 0 is
+        #  invariant
+        # force supports replaying, which needs the extra bar to float
+        # forward/backwards, because the last input is read, and after a
+        # "backwards" is used to update the previous data. Unless the position
+        # 0 was moved to the previous index, it would fail
         if self.mode == self.RingBuffer:
-            if self._idx < self.lenmark:
+            if force or self._idx < self.lenmark:
                 self._idx = idx
         else:  # default: UnBounded
             self._idx = idx
@@ -107,10 +115,10 @@ class LineBuffer(LineSingle):
         self.idx = -1
         self.extension = 0
 
-    def ringbuffer(self, maxlen=-1):
+    def ringbuffer(self, maxlen=-1, saveself=False):
         self.mode = self.RingBuffer
         self.maxlen = self._minperiod if maxlen < 0 else maxlen
-        self.lenmark = maxlen - 1
+        self.lenmark = self.maxlen
         self.reset()
 
     def __len__(self):
@@ -224,17 +232,16 @@ class LineBuffer(LineSingle):
         for i in range(size):
             self.array.append(value)
 
-    def backwards(self, size=1):
+    def backwards(self, size=1, force=False):
         ''' Moves the logical index backwards and reduces the buffer as much as needed
 
         Keyword Args:
             size (int): How many extra positions to rewind and reduce the
             buffer
-
         '''
-        self.idx -= size
+        # Go directly to property setter to support force
+        self.set_idx(self._idx - size, force=force)
         self.lencount -= size
-
         for i in range(size):
             self.array.pop()
 

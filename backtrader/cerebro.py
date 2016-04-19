@@ -37,8 +37,7 @@ from .strategy import Strategy
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
-    '''
-    Params:
+    '''Params:
 
       - ``preload`` (default: True)
 
@@ -61,16 +60,45 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
       - exactbars (default: False)
 
-        If True, the system will switch to a mode in which all "lines" objects
-        will use exactly the number of bars needed for the task. If a Simple
-        Moving Average has a period of 30, the underlying data will have always
-        a running buffer of 30 bars to allow the calculation of the Simple
-        Moving Average
+        With the default value each and every value stored in a line is kept in
+        memory
 
-        Note:
+        Possible values:
+          - ``True`` or ``1``: all "lines" objects reduce memory usage to the
+            automatically calculated minimum period.
 
-          - This setting will deactivate ``preload`` and ``runonce``
-          - Using this setting also deactivates plotting
+            If a Simple Moving Average has a period of 30, the underlying data
+            will have always a running buffer of 30 bars to allow the
+            calculation of the Simple Moving Average
+
+            - This setting will deactivate ``preload`` and ``runonce``
+            - Using this setting also deactivates **plotting**
+
+          - ``-1``: datas and indicators/operations at strategy level will keep
+            all data in memory.
+
+            For example: a ``RSI`` internally uses the indicator ``UpDay`` to
+            make calculations. This subindicator will not keep all data in
+            memory
+
+            - This allows to keep ``plotting`` and ``preloading`` active.
+
+            - ``runonce`` will be deactivated
+
+          - ``-2``: datas and indicators kept as attributes of the strategy
+            will keep all data in memory.
+
+            For example: a ``RSI`` internally uses the indicator ``UpDay`` to
+            make calculations. This subindicator will not keep all data in
+            memory
+
+            If in the ``__init__`` something like
+            ``a = self.data.close - self.data.high`` is defined, then ``a``
+            will not keep all data in memory
+
+            - This allows to keep ``plotting`` and ``preloading`` active.
+
+            - ``runonce`` will be deactivated
 
       - ``writer`` (default: False)
         If set to True a default WriterFile will be created which will print to
@@ -292,7 +320,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``numfigs`` split the plot in the indicated number of charts reducing
         chart density if wished
         '''
-        if self.p.exactbars:
+        if int(self.p.exactbars) > 0:
             return
 
         if not plotter:
@@ -339,10 +367,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._dopreload = self.p.preload
 
         if self.p.exactbars:
-            # with exact bars no preload and no runonce are possible
-            # Do not modify the params, but the internal values used
-            self._dorunonce = False
-            self._dopreload = False
+            self._dorunonce = False  # something is saving memory, no runonce
+            self._dopreload = self._dopreload and int(self.p.exactbars) < 1
 
         if self._doreplay:
             # preloading is not supported with replay. full timeframe bars
@@ -435,13 +461,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             strat._start()
 
-        if self.p.exactbars:
-            for strat in runstrats:
-                strat.ringbuffer()
+        for i, strat in enumerate(runstrats):
+            strat.ringbuffer(
+                savememory=int(self.p.exactbars), savedatas=(not i))
 
         for data in self.datas:
             data.reset()
-            if not self.p.exactbars:
+            if int(self.p.exactbars) < 1:  # datas can be full length
                 data.extend(size=self.params.lookahead)
             data.start()
             if self._dopreload:

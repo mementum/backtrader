@@ -61,6 +61,7 @@ def runtest(datas,
             strategy,
             runonce=None,
             preload=None,
+            exbar=False,
             plot=False,
             optimize=False,
             maxcpus=1,
@@ -71,29 +72,33 @@ def runtest(datas,
     preloads = [True, False] if preload is None else [preload]
 
     cerebros = list()
-    for ronce in runonces:
-        cerebro = bt.Cerebro(runonce=ronce, preload=preload, maxcpus=maxcpus)
+    for prload in preloads:
+        for ronce in runonces:
+            cerebro = bt.Cerebro(runonce=ronce,
+                                 preload=prload,
+                                 maxcpus=maxcpus,
+                                 exactbars=exbar)
 
-        if isinstance(datas, bt.LineSeries):
-            datas = [datas]
-        for data in datas:
-            cerebro.adddata(data)
+            if isinstance(datas, bt.LineSeries):
+                datas = [datas]
+            for data in datas:
+                cerebro.adddata(data)
 
-        if not optimize:
-            cerebro.addstrategy(strategy, **kwargs)
+            if not optimize:
+                cerebro.addstrategy(strategy, **kwargs)
 
-            if writer:
-                wr = writer[0]
-                wrkwargs = writer[1]
-                cerebro.addwriter(wr, **wrkwargs)
-        else:
-            cerebro.optstrategy(strategy, **kwargs)
+                if writer:
+                    wr = writer[0]
+                    wrkwargs = writer[1]
+                    cerebro.addwriter(wr, **wrkwargs)
+            else:
+                cerebro.optstrategy(strategy, **kwargs)
 
-        cerebro.run()
-        if plot:
-            cerebro.plot()
+            cerebro.run()
+            if plot:
+                cerebro.plot()
 
-        cerebros.append(cerebro)
+            cerebros.append(cerebro)
 
     return cerebros
 

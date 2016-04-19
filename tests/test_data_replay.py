@@ -37,23 +37,24 @@ chkind = [btind.SMA]
 chkargs = dict()
 
 
-def test_run(main=False):
-    # for i in [True, False]:
-    for runonce in [True, False]:
-        data = testcommon.getdata(0)
-        data.replay(timeframe=bt.TimeFrame.Weeks, compression=1)
-        datas = [data]
-        testcommon.runtest(datas,
-                           testcommon.TestStrategy,
-                           main=main,
-                           plot=main,
-                           chkind=chkind,
-                           chkmin=chkmin,
-                           chkvals=chkvals,
-                           chknext=chknext,
-                           chkargs=chkargs,
-                           runonce=runonce)
+def test_run(main=False, exbar=False):
+    data = testcommon.getdata(0)
+    data.replay(timeframe=bt.TimeFrame.Weeks, compression=1)
+    datas = [data]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals,
+                       chknext=chknext,
+                       chkargs=chkargs,
+                       runonce=False,
+                       preload=False,
+                       exbar=exbar)
 
 
 if __name__ == '__main__':
-    test_run(main=True)
+    for exbar in [False, -1, -2]:
+        test_run(main=True, exbar=exbar)

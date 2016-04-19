@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import inspect
 import itertools
 import operator
 
@@ -102,18 +103,39 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
-    def ringbuffer(self, maxlen=-1):
-        super(Strategy, self).ringbuffer(maxlen=maxlen)
+    def ringbuffer(self, maxlen=-1, savememory=0, savedatas=False):
+        '''The strategy changes the kwargs of ringbuffer to elaborate to which
+        level memory has to be saved and to control the saving status of the
+        datas which has to be controlled only by the 1st strategy'''
+        if not savememory:  # nothing to save
+            return
 
-        # Activate it for all sub lineiterators
-        for objtype in self._lineiterators:
-            for obj in self._lineiterators[objtype]:
-                obj.ringbuffer(maxlen=maxlen)
+        if savememory == 1:  # max level everything saves
+            if savedatas:  # to control it from cerebro - only 1st strategy
+                # Activate it for the datas with the calculated minperiods
+                # because datas have not recalculated own periods
+                for i, period in enumerate(self._minperiods):
+                    self.datas[i].ringbuffer(maxlen=period)
 
-        # Activate it for the datas with the calculated minperiods
-        # because datas have not recalculated own periods
-        for i, period in enumerate(self._minperiods):
-            self.datas[i].ringbuffer(maxlen=period)
+            for line in self.lines:  # own lines
+                line.ringbuffer(maxlen=maxlen)
+
+        if abs(savememory) == 1:  # 1 all save, -1 only subelements
+            saveself = savememory == 1
+            for objtype in self._lineiterators:
+                for obj in self._lineiterators[objtype]:
+                    obj.ringbuffer(maxlen=maxlen, saveself=saveself)
+
+        elif savememory == -2:  # everything not at indicator level
+            mids = [id(attr) for name, attr in inspect.getmembers(self)
+                    if getattr(attr, '_ltype', -1) == self.IndType]
+
+            for obj in self._lineiterators[self.IndType]:
+                obj.ringbuffer(maxlen=maxlen, saveself=id(obj) not in mids)
+
+            # Observers do not save (for plotting) but below yes
+            for obj in self._lineiterators[self.ObsType]:
+                obj.ringbuffer(maxlen=maxlen, saveself=False)
 
     def _periodset(self):
         dataids = [id(data) for data in self.datas]
