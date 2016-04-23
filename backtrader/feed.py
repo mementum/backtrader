@@ -309,7 +309,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         '''Saves given bar (list of values) to the stack for later retrieval'''
         self._barstack.append(bar)
 
-    def _save2stack(self, erase=False):
+    def _save2stack(self, erase=False, force=False):
         '''Saves current bar to the bar stack for later retrieval
 
         Parameter ``erase`` determines removal from the data stream
@@ -318,7 +318,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self._barstack.append(bar)
 
         if erase:  # remove bar if requested
-            self.backwards()
+            self.backwards(force=force)
 
     def _updatebar(self, bar, forward=False, ago=0):
         '''Load a value from the stack onto the lines to form the new bar
