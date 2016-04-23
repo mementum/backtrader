@@ -34,7 +34,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     params = (
         ('bar2edge', True),
         ('adjbartime', True),
-        ('rightedge', False),
+        ('rightedge', True),
 
         ('timeframe', TimeFrame.Days),
         ('compression', 1),
@@ -48,60 +48,25 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self.bar = _Bar(maxdate=True)  # bar holder
         self.compcount = 0  # count of produced bars to control compression
         self._firstbar = True
+        self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
+        self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
+                             self.subdays)
 
     def _checkbarover(self, data):
-        ret = False
-        update = False
+        isover = False
         if not self._barover(data):
-            return ret, update
+            return isover
 
-        if (self.p.bar2edge and
-                TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days):
-            ret = True
+        if self.subdays and self.p.bar2edge:
+            isover = True
         else:
             # over time/date limit - increase number of bars completed
             self.compcount += 1
             if not (self.compcount % self.p.compression):
                 # boundary crossed and enough bars for compression ... proceed
-                ret = True
-                update = True
+                isover = True
 
-        if ret:
-            self._baroverdeliver(data, update)
-
-        return ret, update
-
-    def _baroverdeliver(self, data, update=False):
-        if update:
-            self.bar.bupdate(data)
-            data.backwards()
-
-        if not self.replaying:
-            if TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days:
-                # Adjust resampled to time limit for micro/seconds/minutes
-                if self.p.bar2edge and self.p.adjbartime:
-                    self._adjusttime()
-            # deliver bar
-            data._add2stack(list(self.bar.values()))
-
-        elif update:  # replaying and update
-            data._updatebar(list(self.bar.values()), forward=self._firstbar)
-            self._firstbar = True  # next bar is first after a re-init
-
-        self.bar.bstart(maxdate=True)  # re-init bar
-
-    def last(self, data):
-        '''Called when the data is no longer producing bars
-
-        Can be called multiple times. It has the chance to (for example)
-        produce extra bars which may still be accumulated and have to be
-        delivered
-        '''
-        if not self.replaying and self.bar.isopen():
-            self._baroverdeliver(data)
-            return True
-
-        return False
+        return isover
 
     def _barover(self, data):
         tframe = self.p.timeframe
@@ -273,7 +238,7 @@ class Resampler(_BaseResampler):
            sense to adjust the time if the bar has not been aligned to a
            boundary
 
-      - rightedge (default: False)
+      - rightedge (default: True)
 
         Use the right edge of the time boundaries to set the time.
 
@@ -287,20 +252,41 @@ class Resampler(_BaseResampler):
     params = (
         ('bar2edge', True),
         ('adjbartime', True),
-        ('rightedge', False),
+        ('rightedge', True),
     )
 
     replaying = False
 
+    def last(self, data):
+        '''Called when the data is no longer producing bars
+
+        Can be called multiple times. It has the chance to (for example)
+        produce extra bars which may still be accumulated and have to be
+        delivered
+        '''
+        if self.bar.isopen():
+            if self.doadjusttime:
+                self._adjusttime()
+
+            data._add2stack(self.bar.lvalues())
+            self.bar.bstart(maxdate=True)  # close the bar to avoid dups
+            return True
+
+        return False
+
     def __call__(self, data):
         '''Called for each set of values produced by the data source'''
-        _, updated = self._checkbarover(data)
-        if not updated:
-            self.bar.bupdate(data)
-            data.backwards()  # remove bar consumed here
+        if self._checkbarover(data):
+            if self.doadjusttime:
+                self._adjusttime()
 
-        # return True to indicate the bar can no longer be used by the data
-        return True
+            data._add2stack(self.bar.lvalues())
+            self.bar.bstart(maxdate=True)  # bar delivered -> restart
+
+        self.bar.bupdate(data)  # update new or existing bar
+        data.backwards()  # remove used bar
+
+        return True  # tell the system to fetch a new bar (stack or source)
 
 
 class Replayer(_BaseResampler):
@@ -314,7 +300,7 @@ class Replayer(_BaseResampler):
 
     Params
 
-      - bar2edge (default: False)
+      - bar2edge (default: True)
 
         replays using time boundaries as the target of the closed bar. For
         example with a "ticks -> 5 seconds" the resulting 5 seconds bars will
@@ -333,7 +319,10 @@ class Replayer(_BaseResampler):
            sense to adjust the time if the bar has not been aligned to a
            boundary
 
-      - rightedge (default: False)
+        .. note:: if this parameter is True an extra tick with the *adjusted*
+                  time will be introduced at the end of the *replayed* bar
+
+      - rightedge (default: True)
 
         Use the right edge of the time boundaries to set the time.
 
@@ -346,29 +335,38 @@ class Replayer(_BaseResampler):
 
     '''
     params = (
-        ('bar2edge', False),  # changed from base
-        ('adjbartime', False),  # changed from base
-        ('rightedge', False),
+        ('bar2edge', True),
+        ('adjbartime', False),
+        ('rightedge', True),
     )
 
     replaying = True
 
     def __call__(self, data):
-        # Update the tick values
-        data._tick_fill(force=True)  # before we erase the data below
+        data._tick_fill(force=True)  # update
 
-        barover, updated = self._checkbarover(data)
-        if barover:
-            self._firstbar = True
+        if self._checkbarover(data):
+            if self.doadjusttime:  # insert extra tick with adjusted time
+                self._adjusttime()
 
-        if not updated:  # Update internal bar - before removing the data bar
+                # Update to the point right before the new data
+                data._updatebar(self.bar.lvalues(), forward=False, ago=-1)
+
+                # Reopen bar with real new data and save data to queue
+                self.bar.bupdate(data, reopen=True)
+                data._save2stack(erase=True, force=True)
+            else:
+                # Data already "forwarded" and we replay to new bar
+                # No need to go backwards. simply reopen internal cache
+                self.bar.bupdate(data, reopen=True)
+        else:
+            # not over, update, remove new entry, deliver
             self.bar.bupdate(data)
-            data.backwards()
-            # deliver current bar too
-            data._updatebar(list(self.bar.values()), forward=self._firstbar)
+            data.backwards(force=True)
+            data._updatebar(self.bar.lvalues(), forward=self._firstbar)
             self._firstbar = False
 
-        return False  # nothing removed from the system
+        return False
 
 
 class ResamplerTicks(Resampler):
