@@ -26,7 +26,7 @@ import inspect
 
 from .utils.py3 import with_metaclass
 from .lineseries import LineSeries
-from .import num2date
+from . import num2date
 from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
@@ -169,13 +169,16 @@ class _Bar(AutoOrderedDict):
         o = self.open
         return o == o  # False if NaN, True in other cases
 
-    def bupdate(self, data):
+    def bupdate(self, data, reopen=False):
         '''Updates a bar with the values from data
 
         Returns True if the update was the 1st on a bar (just opened)
 
         Returns False otherwise
         '''
+        if reopen:
+            self.bstart()
+
         self.datetime = data.datetime[0]
 
         self.high = max(self.high, data.high[0])
@@ -185,7 +188,8 @@ class _Bar(AutoOrderedDict):
         self.volume += data.volume[0]
         self.openinterest = data.openinterest[0]
 
-        if not self.isopen():
+        o = self.open
+        if reopen or not o == o:
             self.open = data.open[0]
             return True  # just opened the bar
 
