@@ -79,6 +79,9 @@ def runtest(datas,
                                  maxcpus=maxcpus,
                                  exactbars=exbar)
 
+            if kwargs.get('main', False):
+                print('prload {} / ronce {}'.format(prload, ronce))
+
             if isinstance(datas, bt.LineSeries):
                 datas = [datas]
             for data in datas:
@@ -147,6 +150,10 @@ class TestStrategy(bt.Strategy):
         if self.p.main:
             dtstr = self.data.datetime.date(0).strftime('%Y-%m-%d')
             print('%s - %d - %f' % (dtstr, len(self), self.ind[0]))
+            pstr = ', '.join(str(x) for x in
+                             [self.data.open[0], self.data.high[0],
+                              self.data.low[0], self.data.close[0]])
+            print('%s - %d, %s' % (dtstr, len(self), pstr))
 
     def start(self):
         self.nextcalls = 0
