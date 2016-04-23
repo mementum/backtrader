@@ -320,7 +320,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         if erase:  # remove bar if requested
             self.backwards()
 
-    def _updatebar(self, bar, forward=False):
+    def _updatebar(self, bar, forward=False, ago=0):
         '''Load a value from the stack onto the lines to form the new bar
 
         Returns True if values are present, False otherwise
@@ -329,7 +329,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self.forward()
 
         for line, val in zip(self.itersize(), bar):
-            line[0] = val
+            line[0 + ago] = val
 
     def _fromstack(self, forward=False):
         '''Load a value from the stack onto the lines to form the new bar
