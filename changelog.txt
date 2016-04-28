@@ -1,3 +1,13 @@
+1.2.8.88
+  - WeekDaysFiller sample for #76
+  - Implement new memory saving schemes. Addresses #74
+  - Additions/Refactoring to the intenal api offered to filters and internal
+    utils objects and removal of leftover prints
+  - Refactoring of replay/resample filters
+  - Some testing refactoring
+  - Support for cross-plotting across datas of different timeframes
+  - PivotPoint sample for #81
+
 1.2.7.88
   - Correct resampling/replaying behavior for calculating the delivery with
     configured compression fator for timeframes ticks and days or larger.

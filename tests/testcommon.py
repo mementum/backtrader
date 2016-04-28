@@ -61,6 +61,7 @@ def runtest(datas,
             strategy,
             runonce=None,
             preload=None,
+            exbar=False,
             plot=False,
             optimize=False,
             maxcpus=1,
@@ -71,29 +72,36 @@ def runtest(datas,
     preloads = [True, False] if preload is None else [preload]
 
     cerebros = list()
-    for ronce in runonces:
-        cerebro = bt.Cerebro(runonce=ronce, preload=preload, maxcpus=maxcpus)
+    for prload in preloads:
+        for ronce in runonces:
+            cerebro = bt.Cerebro(runonce=ronce,
+                                 preload=prload,
+                                 maxcpus=maxcpus,
+                                 exactbars=exbar)
 
-        if isinstance(datas, bt.LineSeries):
-            datas = [datas]
-        for data in datas:
-            cerebro.adddata(data)
+            if kwargs.get('main', False):
+                print('prload {} / ronce {}'.format(prload, ronce))
 
-        if not optimize:
-            cerebro.addstrategy(strategy, **kwargs)
+            if isinstance(datas, bt.LineSeries):
+                datas = [datas]
+            for data in datas:
+                cerebro.adddata(data)
 
-            if writer:
-                wr = writer[0]
-                wrkwargs = writer[1]
-                cerebro.addwriter(wr, **wrkwargs)
-        else:
-            cerebro.optstrategy(strategy, **kwargs)
+            if not optimize:
+                cerebro.addstrategy(strategy, **kwargs)
 
-        cerebro.run()
-        if plot:
-            cerebro.plot()
+                if writer:
+                    wr = writer[0]
+                    wrkwargs = writer[1]
+                    cerebro.addwriter(wr, **wrkwargs)
+            else:
+                cerebro.optstrategy(strategy, **kwargs)
 
-        cerebros.append(cerebro)
+            cerebro.run()
+            if plot:
+                cerebro.plot()
+
+            cerebros.append(cerebro)
 
     return cerebros
 
@@ -142,6 +150,10 @@ class TestStrategy(bt.Strategy):
         if self.p.main:
             dtstr = self.data.datetime.date(0).strftime('%Y-%m-%d')
             print('%s - %d - %f' % (dtstr, len(self), self.ind[0]))
+            pstr = ', '.join(str(x) for x in
+                             [self.data.open[0], self.data.high[0],
+                              self.data.low[0], self.data.close[0]])
+            print('%s - %d, %s' % (dtstr, len(self), pstr))
 
     def start(self):
         self.nextcalls = 0

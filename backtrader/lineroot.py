@@ -93,7 +93,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
         return self._operationown_stage2(operation)
 
-    def ringbuffer(self, maxlen=-1):
+    def ringbuffer(self, maxlen=-1, saveself=False):
         '''
         Change the lines to implement a minimum size ringbuffer scheme
         '''
@@ -313,7 +313,7 @@ class LineMultiple(LineRoot):
     def _makeoperationown(self, operation, _ownerskip=None):
         return self.lines[0]._makeoperationown(operation, _ownerskip)
 
-    def ringbuffer(self, maxlen=-1):
+    def ringbuffer(self, maxlen=-1, saveself=False):
         for line in self.lines:
             line.ringbuffer(maxlen=maxlen)
 

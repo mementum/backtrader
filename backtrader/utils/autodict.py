@@ -23,6 +23,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from collections import OrderedDict, defaultdict
 
+from .py3 import values as py3lvalues
+
 
 def Tree():
     return defaultdict(Tree)
@@ -130,3 +132,6 @@ class AutoOrderedDict(OrderedDict):
             return type(other)() / other
 
         return self + other
+
+    def lvalues(self):
+        return py3lvalues(self)

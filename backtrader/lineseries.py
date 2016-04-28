@@ -232,12 +232,12 @@ class Lines(object):
         for line in self.lines:
             line.forward(value, size=size)
 
-    def backwards(self, size=1):
+    def backwards(self, size=1, force=False):
         '''
         Proxy line operation
         '''
         for line in self.lines:
-            line.backwards(size)
+            line.backwards(size, force=force)
 
     def rewind(self, size=1):
         '''
@@ -464,8 +464,8 @@ class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     def forward(self, value=NAN, size=1):
         self.lines.forward(value, size)
 
-    def backwards(self, size=1):
-        self.lines.backwards(size)
+    def backwards(self, size=1, force=False):
+        self.lines.backwards(size, force=force)
 
     def rewind(self, size=1):
         self.lines.rewind(size)
@@ -516,9 +516,9 @@ class LineSeriesStub(LineSeries):
         if not self.slave:
             super(LineSeriesStub, self).forward(value, size)
 
-    def backwards(self, size=1):
+    def backwards(self, size=1, force=False):
         if not self.slave:
-            super(LineSeriesStub, self).backwards(size)
+            super(LineSeriesStub, self).backwards(size, force=force)
 
     def rewind(self, size=1):
         if not self.slave:

@@ -317,6 +317,17 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def _plotinit(self):
         pass
 
+    def ringbuffer(self, maxlen=-1, saveself=False):
+        # override default behavior to have fine control
+        if saveself:
+            for line in self.lines:  # own lines
+                line.ringbuffer(maxlen=maxlen)
+
+        # if called, anything under use has to save memory
+        for objtype in self._lineiterators:
+            for obj in self._lineiterators[objtype]:
+                obj.ringbuffer(maxlen=maxlen, saveself=True)
+
 
 # This 3 subclasses can be used for identification purposes within LineIterator
 # or even outside (like in LineObservers)
