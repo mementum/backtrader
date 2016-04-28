@@ -364,6 +364,18 @@ class Plot(with_metaclass(MetaParams, object)):
             if ax in self.pinf.zorder:
                 plotkwargs['zorder'] = self.pinf.zordernext(ax)
 
+            if ind.plotinfo.plotmaster is not None:
+                clk = getattr(ind._clock, 'owner', ind._clock)
+                mlens = getattr(clk, 'mlen', None)
+                newlplot = list()
+                if mlens:
+                    prevmlen = 0
+                    for i, mlen in enumerate(mlens):
+                        newlplot.extend([lplot[i]] * (mlen + 1 - prevmlen))
+                        prevmlen = mlen + 1
+
+                    lplot = newlplot
+
             pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
             plottedline = pltmethod(self.pinf.x, lplot, **plotkwargs)
             try:
@@ -662,7 +674,7 @@ class Plot(with_metaclass(MetaParams, object)):
                         else:
                             break
 
-            if x.plotinfo.plotmaster:
+            if x.plotinfo.plotmaster is not None:
                 key = x.plotinfo.plotmaster
 
             if x.plotinfo.subplot and not x.plotinfo.plotmaster:
