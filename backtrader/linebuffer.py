@@ -467,6 +467,11 @@ class MetaLineActions(LineBuffer.__class__):
         _obj, args, kwargs = \
             super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
 
+        _obj._clock = _obj._owner  # default setting
+
+        if isinstance(args[0], LineRoot):
+            _obj._clock = args[0]
+
         # Do not produce anything until the operation lines produce something
         _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
 
@@ -525,7 +530,7 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
         return obj
 
     def _next(self):
-        clock_len = len(self._owner)
+        clock_len = len(self._clock)
         if clock_len > len(self):
             self.forward()
 
@@ -538,7 +543,7 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
             self.prenext()
 
     def _once(self):
-        self.forward(size=self._owner.buflen())
+        self.forward(size=self._clock.buflen())
         self.home()
 
         self.preonce(0, self._minperiod - 1)
