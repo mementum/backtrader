@@ -77,7 +77,6 @@ def _num2date(x, tz=None):
         microsecond = 0  # compensate for rounding errors
 
     if tz is not None:
-        print('HERE')
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
             microsecond, tzinfo=UTC).astimezone(tz)
