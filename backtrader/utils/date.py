@@ -22,10 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import datetime
+import time
 
-from .dateintern import _num2date, _date2num, time2num, num2time
+from .dateintern import _num2date, _date2num, time2num, num2time, UTC
 
-__all__ = ('num2date', 'date2num', 'time2num', 'num2time')
+__all__ = ('num2date', 'date2num', 'time2num', 'num2time', 'UTC')
 
 try:
     import matplotlib.dates as mdates
