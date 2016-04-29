@@ -220,7 +220,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def _oncepost(self):
         for indicator in self._lineiterators[LineIterator.IndType]:
-            indicator.advance()
+            if len(indicator._clock) > len(indicator):
+                indicator.advance()
 
         self.advance()
         self._notify()
