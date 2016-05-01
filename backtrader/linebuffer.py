@@ -471,9 +471,13 @@ class MetaLineActions(LineBuffer.__class__):
 
     def __call__(cls, *args, **kwargs):
         # implement a cache to avoid duplicating lines actions
-        ckey = (tuple(args), tuple(kwargs.items()))  # tuples are hashable
-        if ckey in cls._acache:
+        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples are hashable
+        try:
             return cls._acache[ckey]
+        except TypeError:  # something not hashable
+            return super(MetaLineActions, cls).__call__(*args, **kwargs)
+        except KeyError:
+            pass  # hashable but not in the cache
 
         _obj = super(MetaLineActions, cls).__call__(*args, **kwargs)
         return cls._acache.setdefault(ckey, _obj)

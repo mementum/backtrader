@@ -31,6 +31,25 @@ from .lineseries import LineSeriesMaker
 class MetaIndicator(IndicatorBase.__class__):
     _indcol = dict()
 
+    _icache = dict()
+
+    @classmethod
+    def cleancache(cls):
+        cls._icache = dict()
+
+    def __call__(cls, *args, **kwargs):
+        # implement a cache to avoid duplicating lines actions
+        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples are hashable
+        try:
+            return cls._icache[ckey]
+        except TypeError:  # something not hashable
+            return super(MetaIndicator, cls).__call__(*args, **kwargs)
+        except KeyError:
+            pass  # hashable but not in the cache
+
+        _obj = super(MetaIndicator, cls).__call__(*args, **kwargs)
+        return cls._icache.setdefault(ckey, _obj)
+
     def __init__(cls, name, bases, dct):
         '''
         Class has already been created ... register subclasses
