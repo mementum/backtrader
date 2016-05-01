@@ -46,6 +46,9 @@ class TimeFrame(object):
 
 
 class DataSeries(LineSeries):
+    plotinfo = dict(plot=True,
+                    plotind=True)
+
     _name = ''
     _compression = 1
     _timeframe = TimeFrame.Days

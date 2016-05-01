@@ -411,6 +411,8 @@ class MetaLineSeries(LineMultiple.__class__):
 
 
 class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
+    plotinfo = dict()
+
     csv = True
 
     @property
