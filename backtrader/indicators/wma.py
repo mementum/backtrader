@@ -44,7 +44,7 @@ class WeightedMovingAverage(MovingAverageBase):
 
     def __init__(self):
         coef = 2.0 / (self.p.period * (self.p.period + 1.0))
-        weights = [float(x) for x in range(1, self.p.period + 1)]
+        weights = tuple(float(x) for x in range(1, self.p.period + 1))
 
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line

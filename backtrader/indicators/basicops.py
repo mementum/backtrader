@@ -370,12 +370,10 @@ class WeightedAverage(PeriodN):
     '''
     alias = ('AverageWeighted',)
     lines = ('av',)
-    params = (('coef', 1.0), ('weights', []),)
+    params = (('coef', 1.0), ('weights', tuple()),)
 
     def __init__(self):
         super(WeightedAverage, self).__init__()
-        self.coef = 2.0 / (self.p.period * (self.p.period + 1.0))
-        self.weights = [float(x) for x in range(1, self.p.period + 1)]
 
     def next(self):
         data = self.data.get(size=self.p.period)
