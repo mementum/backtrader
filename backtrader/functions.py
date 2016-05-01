@@ -130,6 +130,39 @@ class Cmp(Logic):
             dst[i] = cmp(srca[i], srcb[i])
 
 
+class CmpEx(Logic):
+    def __init__(self, a, b, r1, r2, r3):
+        super(CmpEx, self).__init__(a, b, r1, r2, r3)
+        self.a = self.args[0]
+        self.b = self.args[1]
+        self.r1 = self.args[2]
+        self.r2 = self.args[3]
+        self.r3 = self.args[4]
+
+    def next(self):
+        self[0] = cmp(self.a[0], self.b[0])
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b.array
+        r1 = self.r1.array
+        r2 = self.r2.array
+        r3 = self.r3.array
+
+        for i in range(start, end):
+            ai = srca[i]
+            bi = srcb[i]
+
+            if ai < bi:
+                dst[i] = r1[i]
+            elif ai > bi:
+                dst[i] = r3[i]
+            else:
+                dst[i] = r2[i]
+
+
 class If(Logic):
     def __init__(self, cond, a, b):
         super(If, self).__init__(a, b)
