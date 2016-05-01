@@ -1,3 +1,18 @@
+1.2.9.92
+  - Add 3 new indicators (from #81): PivotPoint, FibonacciPivotPoint,
+    DemarkPivotPoint
+  - Add new function CmpEx
+  - Change plotinit to the intial stages of plotting
+  - Add plotinfo information to any LineSeries objects
+  - Implement LineActions Cache
+  - Implement Indicator Cache
+  - Cover resampling across midnight border #81
+  - Correct error in docs (concepts) #82
+  - Addresses #82 by only advancing indicators in runonce mode if the clock
+    has overtaken it
+  - Addresses #82 by having LinesOperations define and internal clock which
+    may not be the owner
+
 1.2.8.88
   - WeekDaysFiller sample for #76
   - Implement new memory saving schemes. Addresses #74

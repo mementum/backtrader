@@ -306,8 +306,6 @@ class Plot(with_metaclass(MetaParams, object)):
                 subinds=None, upinds=None, downinds=None,
                 masterax=None):
 
-        ind._plotinit()
-
         sch = self.p.scheme
 
         # check subind
@@ -661,6 +659,8 @@ class Plot(with_metaclass(MetaParams, object)):
 
             if not x.plotinfo.plot or x.plotinfo.plotskip:
                 continue
+
+            x._plotinit()  # will be plotted ... call its init function
 
             # support LineSeriesStub which has "owner" to point to the data
             key = getattr(x._clock, 'owner', x._clock)

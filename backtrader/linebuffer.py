@@ -463,9 +463,33 @@ class MetaLineActions(LineBuffer.__class__):
     postinit it registers the instance to the owner (remember that owner has
     been found in the base Metaclass for LineRoot)
     '''
+    _acache = dict()
+
+    @classmethod
+    def cleancache(cls):
+        cls._acache = dict()
+
+    def __call__(cls, *args, **kwargs):
+        # implement a cache to avoid duplicating lines actions
+        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples are hashable
+        try:
+            return cls._acache[ckey]
+        except TypeError:  # something not hashable
+            return super(MetaLineActions, cls).__call__(*args, **kwargs)
+        except KeyError:
+            pass  # hashable but not in the cache
+
+        _obj = super(MetaLineActions, cls).__call__(*args, **kwargs)
+        return cls._acache.setdefault(ckey, _obj)
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
+
+        _obj._clock = _obj._owner  # default setting
+
+        if isinstance(args[0], LineRoot):
+            _obj._clock = args[0]
 
         # Do not produce anything until the operation lines produce something
         _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
@@ -525,7 +549,7 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
         return obj
 
     def _next(self):
-        clock_len = len(self._owner)
+        clock_len = len(self._clock)
         if clock_len > len(self):
             self.forward()
 
@@ -538,7 +562,7 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
             self.prenext()
 
     def _once(self):
-        self.forward(size=self._owner.buflen())
+        self.forward(size=self._clock.buflen())
         self.home()
 
         self.preonce(0, self._minperiod - 1)

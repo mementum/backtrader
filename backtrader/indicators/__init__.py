@@ -56,6 +56,7 @@ from .envelope import *
 from .macd import *
 from .momentum import *
 from .oscillator import *
+from .pivotpoint import *
 from .prettygoodoscillator import *
 from .priceoscillator import *
 from .rsi import *

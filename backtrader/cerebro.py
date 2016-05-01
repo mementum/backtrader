@@ -27,6 +27,8 @@ import multiprocessing
 
 from .utils.py3 import map, range, zip, with_metaclass, string_types
 
+from . import linebuffer
+from . import indicator
 from .broker import BrokerBack
 from .metabase import MetaParams
 from . import observers
@@ -355,6 +357,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
           - For Optimization: a list of lists which contain instances of the
             Strategy classes added with ``addstrategy``
         '''
+        linebuffer.LineActions.cleancache()  # clean cache
+        indicator.Indicator.cleancache()  # clean cache
+
         if not self.datas:
             return []  # nothing can be run
 

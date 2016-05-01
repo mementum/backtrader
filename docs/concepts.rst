@@ -476,10 +476,10 @@ stage 2 mode. Buiding on the previous example::
 
       def __init__(self):
 
-          sma = btind.SimpleMovinAverage(self.data, period=20)
+          self.sma = sma = btind.SimpleMovinAverage(self.data, period=20)
 
 	  close_over_sma = self.data.close > sma
-	  sma_dist_to_high = self.data.high - sma
+	  self.sma_dist_to_high = self.data.high - sma
 
 	  sma_dist_small = sma_dist_to_high < 3.5
 
@@ -487,7 +487,7 @@ stage 2 mode. Buiding on the previous example::
 	  # a language construst and not an operator and thus a
 	  # function has to be provided by the platform to emulate it
 
-	  sell_sig = bt.And(close_over_sma, sma_dist_small)
+	  self.sell_sig = bt.And(close_over_sma, sma_dist_small)
 
       def next(self):
 
@@ -495,18 +495,18 @@ stage 2 mode. Buiding on the previous example::
 	  # in the sense that the object is being tested for a True/False
 	  # response
 
-	  if sma > 30.0:
+	  if self.sma > 30.0:
 	      print('sma is greater than 30.0')
 
-	  if sma > self.data.close:
+	  if self.sma > self.data.close:
 	      print('sma is above the close price')
 
-          if sell_sig:  # if sell_sig == True: would also be valid
+          if self.sell_sig:  # if sell_sig == True: would also be valid
 	      print('sell sig is True')
 	  else:
 	      print('sell sig is False')
 
-	  if sma_dist_to_high > 5.0:
+	  if self.sma_dist_to_high > 5.0:
 	      print('distance from sma to hig is greater than 5.0')
 
 Not a very useful strategy, just an example. During Stage 2 operators return the
@@ -516,9 +516,11 @@ floats) and also arithmetic operations do.
 .. note:: Notice that comparisons are actually not using the [] operator. This
 	  is meant to further simplify things.
 
-	  if sma > 30.0 ... compares sma[0] to 30.0 (1st line and current value)
+	  ``if self.sma > 30.0:`` ... compares self.sma[0] to 30.0 (1st line
+	  and current value)
 
-	  if sma > self.sma.close ... compares sma[0] to self.data.close[0]
+	  ``if self.sma > self.sma.close:`` ... compares self.sma[0] to
+	  self.data.close[0]
 
 Some non-overriden operators/functions
 ======================================
