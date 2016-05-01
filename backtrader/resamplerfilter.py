@@ -207,6 +207,10 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             pm, psec = divmod(pm, 60 * 1e6)
             ps, pus = divmod(psec, 1e6)
 
+        if ph > 23:  # went over midnight:
+            self.bar.datetime += ph // 24
+            ph %= 24
+
         # Get current datetime value which was taken from data
         dt = num2date(self.bar.datetime)
         # Replace intraday parts with the calculated ones and update it
