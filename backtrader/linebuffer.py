@@ -463,6 +463,21 @@ class MetaLineActions(LineBuffer.__class__):
     postinit it registers the instance to the owner (remember that owner has
     been found in the base Metaclass for LineRoot)
     '''
+    _acache = dict()
+
+    @classmethod
+    def cleancache(cls):
+        cls._acache = dict()
+
+    def __call__(cls, *args, **kwargs):
+        # implement a cache to avoid duplicating lines actions
+        ckey = (tuple(args), tuple(kwargs.items()))  # tuples are hashable
+        if ckey in cls._acache:
+            return cls._acache[ckey]
+
+        _obj = super(MetaLineActions, cls).__call__(*args, **kwargs)
+        return cls._acache.setdefault(ckey, _obj)
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaLineActions, cls).dopreinit(_obj, *args, **kwargs)
