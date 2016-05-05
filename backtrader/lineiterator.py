@@ -23,10 +23,12 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 import operator
+import sys
 
 from .utils.py3 import map, range, zip, with_metaclass, string_types
 
-from .lineroot import LineRoot
+from .lineroot import LineRoot, LineSingle
+from .linebuffer import LineActions
 from .lineseries import LineSeries, LineSeriesMaker
 from .dataseries import DataSeries
 from . import metabase
@@ -353,3 +355,75 @@ class ObserverBase(DataAccessor):
 
 class StrategyBase(DataAccessor):
     pass
+
+
+# Utility class to couple lines/lineiterators which may have different lengths
+# Will only work when runonce=False is passed to Cerebro
+
+class SingleCoupler(LineActions):
+    def __init__(self, cdata, clock=None):
+        super(SingleCoupler, self).__init__()
+        self._clock = clock if clock is not None else self._owner
+
+        self.cdata = cdata
+        self.dlen = 0
+        self.val = float('NaN')
+
+    def next(self):
+        if len(self.cdata) > self.dlen:
+            self.val = self.cdata[0]
+            self.dlen += 1
+
+        self[0] = self.val
+
+
+class MultiCoupler(LineIterator):
+    _ltype = LineIterator.IndType
+
+    def __init__(self):
+        super(MultiCoupler, self).__init__()
+        self.dlen = 0
+        self.dsize = self.fullsize()  # shorcut for number of lines
+        self.dvals = [float('NaN')] * self.dsize
+
+    def next(self):
+        if len(self.data) > self.dlen:
+            self.dlen += 1
+
+            for i in range(self.dsize):
+                self.dvals[i] = self.data.lines[i][0]
+
+        for i in range(self.dsize):
+            self.lines[i][0] = self.dvals[i]
+
+
+def LinesCoupler(cdata, clock=None, **kwargs):
+    if isinstance(cdata, LineSingle):
+        return SingleCoupler(cdata, clock)  # return for single line
+
+    cdatacls = cdata.__class__  # copy important structures before creation
+    try:
+        LinesCoupler.counter += 1  # counter for unique class name
+    except AttributeError:
+        LinesCoupler.counter = 0
+
+    # Prepare a MultiCoupler subclass
+    nclsname = str('LinesCoupler_%d' % LinesCoupler.counter)
+    ncls = type(nclsname, (MultiCoupler,), {})
+    thismod = sys.modules[LinesCoupler.__module__]
+    setattr(thismod, ncls.__name__, ncls)
+    # Replace lines et al., to get a sensible clone
+    ncls.lines = cdatacls.lines
+    ncls.params = cdatacls.params
+    ncls.plotinfo = cdatacls.plotinfo
+    ncls.plotlines = cdatacls.plotlines
+
+    obj = ncls(cdata, **kwargs)  # instantiate
+    # The clock is set here to avoid it being interpreted as a data by the
+    # LineIterator background scanning code
+    obj._clock = clock or obj._owner
+    return obj
+
+
+# Add an alias (which seems a lot more sensible for "Single Line" lines
+LineCoupler = LinesCoupler
