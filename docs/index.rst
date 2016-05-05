@@ -28,6 +28,7 @@ Contents:
    data-replay/data-replay
    strategy
    induse
+   mixing-timeframes/indicators-mixing-timeframes
    inddev
    observers-and-statistics/observers-and-statistics
    analyzers/analyzers
