@@ -664,6 +664,8 @@ class Plot(with_metaclass(MetaParams, object)):
 
             # support LineSeriesStub which has "owner" to point to the data
             key = getattr(x._clock, 'owner', x._clock)
+            if key is strategy:  # a LinesCoupler
+                key = strategy.data
 
             if getattr(x.plotinfo, 'plotforce', False):
                 if key not in strategy.datas:
