@@ -42,11 +42,11 @@ The blog:
 
 Read the full documentation at readthedocs.org:
 
-  - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
+  - `backtrader documentation <http://backtrader.readthedocs.io/>`_
 
 List of built-in Indicators (88)
 
-  - `backtrader indicators <http://backtrader.readthedocs.org/indautoref.html>`_
+  - `backtrader indicators <http://backtrader.readthedocs.io/indautoref.html>`_
 
 Python 2/3 Support
 ==================
