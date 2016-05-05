@@ -72,6 +72,7 @@ class LineBuffer(LineSingle):
     UnBounded, RingBuffer = (0, 1)
 
     def __init__(self):
+        self.lines = [self]
         self.mode = self.UnBounded
         self.bindings = list()
         self.reset()
@@ -330,10 +331,22 @@ class LineBuffer(LineSingle):
 
     bind2line = bind2lines
 
-    def __call__(self, ago=0):
+    def __call__(self, ago=None):
+        '''Returns either a delayed verison of itself in the form of a
+        LineDelay object or a timeframe adapting version with regards to a ago
+
+        Param: ago (default: None)
+
+          If ago is None or an instance of LineRoot (a lines object) the
+          returned valued is a LineCoupler instance
+
+          If ago is anything else, it is assumed to be an int and a LineDelay
+          object will be returned
         '''
-        Return a delayed version of self by "ago" periods
-        '''
+        from .lineiterator import LineCoupler
+        if ago is None or isinstance(ago, LineRoot):
+            return LineCoupler(self, ago)
+
         return LineDelay(self, ago)
 
     def _makeoperation(self, other, operation, r=False, _ownerskip=None):

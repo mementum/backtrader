@@ -291,7 +291,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def getwriterheaders(self):
         self.indobscsv = [self]
 
-        indobs = itertools.chain(self.getindicators(), self.getobservers())
+        indobs = itertools.chain(
+            self.getindicators_lines(), self.getobservers())
         self.indobscsv.extend(filter(lambda x: x.csv, indobs))
 
         headers = list()

@@ -29,8 +29,8 @@ backtrader
 
 BackTesting platform written in Python to test trading strategies.
 
-`Release Notice (1.2.1.88):
-<http://www.backtrader.com/posts/2016-03-07-release-1.2.1.88/release-1.2.1.88/>`_
+`Release Post (1.3.0.92):
+<http://www.backtrader.com/posts/2016-05-05-indicators-mixing-timeframes/indicators-mixing-timeframes/>`_
 
 
 Documentation
@@ -42,11 +42,11 @@ The blog:
 
 Read the full documentation at readthedocs.org:
 
-  - `backtrader documentation <http://backtrader.readthedocs.org/en/latest/introduction.html>`_
+  - `backtrader documentation <http://backtrader.readthedocs.io/>`_
 
 List of built-in Indicators (88)
 
-  - `backtrader indicators <http://backtrader.readthedocs.org/indautoref.html>`_
+  - `backtrader indicators <http://backtrader.readthedocs.io/indautoref.html>`_
 
 Python 2/3 Support
 ==================
@@ -130,7 +130,7 @@ cup of tea, you can always have a look at similar Python platforms:
   - `Trading with Python <http://www.tradingwithpython.com/>`_
   - `visualize-wealth <https://github.com/benjaminmgross/visualize-wealth>`_
   - `tia: Toolkit for integration and analysis
-    <https://github.com/bpsmith/tiaa>`_
+    <https://github.com/bpsmith/tia>`_
   - `QuantSoftware Toolkit
     <http://wiki.quantsoftware.org/index.php?title=QuantSoftware_ToolKit>`_
   - `bt <http://pmorissette.github.io/bt/index.html>`_
