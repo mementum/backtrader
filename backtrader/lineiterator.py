@@ -170,7 +170,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
     def getindicators_lines(self):
         return [x for x in self._lineiterators[LineIterator.IndType]
-                if hasattr(x, 'lines')]
+                if hasattr(x.lines, 'getlinesaliases')]
 
     def getobservers(self):
         return self._lineiterators[LineIterator.ObsType]
