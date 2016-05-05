@@ -72,6 +72,7 @@ class LineBuffer(LineSingle):
     UnBounded, RingBuffer = (0, 1)
 
     def __init__(self):
+        self.lines = [self]
         self.mode = self.UnBounded
         self.bindings = list()
         self.reset()
