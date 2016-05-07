@@ -322,7 +322,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``numfigs`` split the plot in the indicated number of charts reducing
         chart density if wished
         '''
-        if int(self.p.exactbars) > 0:
+        if self._exactbars > 0:
             return
 
         if not plotter:
@@ -370,10 +370,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._dorunonce = self.p.runonce
         self._dopreload = self.p.preload
+        self._exactbars = int(self.p.exactbars)
 
-        if self.p.exactbars:
+        if self._exactbars:
             self._dorunonce = False  # something is saving memory, no runonce
-            self._dopreload = self._dopreload and int(self.p.exactbars) < 1
+            self._dopreload = self._dopreload and self._exactbars < 1
 
         if self._doreplay:
             # preloading is not supported with replay. full timeframe bars
@@ -472,7 +473,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for data in self.datas:
             data.reset()
-            if int(self.p.exactbars) < 1:  # datas can be full length
+            if self._exactbars < 1:  # datas can be full length
                 data.extend(size=self.params.lookahead)
             data.start()
             if self._dopreload:
