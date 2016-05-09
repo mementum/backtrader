@@ -588,6 +588,14 @@ class LineSeriesStub(LineSeries):
         if not self.slave:
             super(LineSeriesStub, self).advance(size)
 
+    def qbuffer(self):
+        if not self.slave:
+            super(LineSeriesStub, self).qbuffer()
+
+    def minbuffer(self, size):
+        if not self.slave:
+            super(LineSeriesStub, self).minbuffer(size)
+
 
 def LineSeriesMaker(arg, slave=False):
     if isinstance(arg, LineSeries):

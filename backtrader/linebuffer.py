@@ -69,7 +69,7 @@ class LineBuffer(LineSingle):
     it will also be set in the binding.
     '''
 
-    UnBounded, RingBuffer = (0, 1)
+    UnBounded, QBuffer = (0, 1)
 
     def __init__(self):
         self.lines = [self]
@@ -81,7 +81,7 @@ class LineBuffer(LineSingle):
         return self._idx
 
     def set_idx(self, idx, force=False):
-        # if RingBuffer and the last position of the buffer was reached, keep
+        # if QBuffer and the last position of the buffer was reached, keep
         # it (unless force) as index 0. This allows resampling
         #  - forward adds a position, but the 1st one is discarded, the 0 is
         #  invariant
@@ -89,7 +89,7 @@ class LineBuffer(LineSingle):
         # forward/backwards, because the last input is read, and after a
         # "backwards" is used to update the previous data. Unless the position
         # 0 was moved to the previous index, it would fail
-        if self.mode == self.RingBuffer:
+        if self.mode == self.QBuffer:
             if force or self._idx < self.lenmark:
                 self._idx = idx
         else:  # default: UnBounded
@@ -100,13 +100,13 @@ class LineBuffer(LineSingle):
     def reset(self):
         ''' Resets the internal buffer structure and the indices
         '''
-        if self.mode == self.RingBuffer:
-            # add 1 to ensure resample/replay work because they will use
-            # backwards to erase the last bar/tick before delivering a new bar
-            # The previous forward would have discarded the bar "period" times
-            # ago and it will not come back. Having + 1 in the size allows the
-            # forward without removing that bar
-            self.array = collections.deque(maxlen=self.maxlen + 1)
+        if self.mode == self.QBuffer:
+            # add extrasize to ensure resample/replay work because they will
+            # use backwards to erase the last bar/tick before delivering a new
+            # bar The previous forward would have discarded the bar "period"
+            # times ago and it will not come back. Having + 1 in the size
+            # allows the forward without removing that bar
+            self.array = collections.deque(maxlen=self.maxlen + self.extrasize)
             self.useislice = True
         else:
             self.array = array.array(str('d'))
@@ -116,10 +116,32 @@ class LineBuffer(LineSingle):
         self.idx = -1
         self.extension = 0
 
-    def ringbuffer(self, maxlen=-1, saveself=False):
-        self.mode = self.RingBuffer
-        self.maxlen = self._minperiod if maxlen < 0 else maxlen
-        self.lenmark = self.maxlen
+    def qbuffer(self, savemem=0, extrasize=0):
+        self.mode = self.QBuffer
+        self.maxlen = 1
+        self.extrasize = extrasize
+        self.lenmark = self.maxlen - (not self.extrasize)
+        self.reset()
+
+    def getindicators(self):
+        return []
+
+    def minbuffer(self, size):
+        '''The linebuffer must guarantee the minimum requested size to be
+        available.
+
+        In non-dqbuffer mode, this is always true (of course until data is
+        filled at the beginning, there are less values, but minperiod in the
+        framework should account for this.
+
+        In dqbuffer mode the buffer has to be adjusted for this if currently
+        less than requested
+        '''
+        if self.mode != self.QBuffer or self.maxlen >= size:
+            return
+
+        self.maxlen = size
+        self.lenmark = self.maxlen - (not self.extrasize)
         self.reset()
 
     def __len__(self):
@@ -504,6 +526,9 @@ class MetaLineActions(LineBuffer.__class__):
         if isinstance(args[0], LineRoot):
             _obj._clock = args[0]
 
+        # Keep a reference to the datas for buffer adjustment purposes
+        _obj._datas = [x for x in args if isinstance(x, LineRoot)]
+
         # Do not produce anything until the operation lines produce something
         _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
 
@@ -550,6 +575,14 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
     '''
 
     _ltype = LineBuffer.IndType
+
+    def getindicators(self):
+        return []
+
+    def qbuffer(self, savemem=0):
+        super(LineActions, self).qbuffer(savemem=savemem)
+        for data in self._datas:
+            data.minbuffer(size=self._minperiod)
 
     @staticmethod
     def arrayize(obj):

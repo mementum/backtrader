@@ -31,6 +31,7 @@ from .utils.py3 import (filter, map, with_metaclass, string_types, keys,
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
+from .lineroot import LineSingle
 from .metabase import ItemCollection
 from .sizer import SizerFix
 from .trade import Trade
@@ -103,39 +104,40 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     # This unnamed line is meant to allow having "len" and "forwarding"
     extralines = 1
 
-    def ringbuffer(self, maxlen=-1, savememory=0, savedatas=False):
-        '''The strategy changes the kwargs of ringbuffer to elaborate to which
-        level memory has to be saved and to control the saving status of the
-        datas which has to be controlled only by the 1st strategy'''
-        if not savememory:  # nothing to save
-            return
+    def qbuffer(self, savemem=0):
+        '''Enable the memory saving schemes. Possible values for ``savemem``:
 
-        if savememory == 1:  # max level everything saves
-            if savedatas:  # to control it from cerebro - only 1st strategy
-                # Activate it for the datas with the calculated minperiods
-                # because datas have not recalculated own periods
-                for i, period in enumerate(self._minperiods):
-                    self.datas[i].ringbuffer(maxlen=period)
+          0: No savings. Each lines object keeps in memory all values
 
-            for line in self.lines:  # own lines
-                line.ringbuffer(maxlen=maxlen)
+          1: All lines objects save memory, using the strictly minimum needed
 
-        if abs(savememory) == 1:  # 1 all save, -1 only subelements
-            saveself = savememory == 1
-            for objtype in self._lineiterators:
-                for obj in self._lineiterators[objtype]:
-                    obj.ringbuffer(maxlen=maxlen, saveself=saveself)
+        Negative values are meant to be used when plotting is required:
 
-        elif savememory == -2:  # everything not at indicator level
-            mids = [id(attr) for name, attr in inspect.getmembers(self)
-                    if getattr(attr, '_ltype', -1) == self.IndType]
+          -1: Indicators at Strategy Level and Observers do not enable memory
+              savings (but anything declared below it does)
 
-            for obj in self._lineiterators[self.IndType]:
-                obj.ringbuffer(maxlen=maxlen, saveself=id(obj) not in mids)
+          -2: Same as -1 plus activation of memory saving for any indicators
+              which has declared *plotinfo.plot* as False (will not be plotted)
+        '''
+        if savemem < 0:
+            # Get any attribute which labels itself as Indicator
+            for ind in self._lineiterators[self.IndType]:
+                subsave = isinstance(ind, (LineSingle,))
+                if not subsave and savemem < -1:
+                    subsave = not ind.plotinfo.plot
+                ind.qbuffer(savemem=subsave)
 
-            # Observers do not save (for plotting) but below yes
-            for obj in self._lineiterators[self.ObsType]:
-                obj.ringbuffer(maxlen=maxlen, saveself=False)
+        elif savemem > 0:
+            for data in self.datas:
+                data.qbuffer()
+
+            for line in self.lines:
+                line.qbuffer(savemem=1)
+
+            # Save in all object types depending on the strategy
+            for itcls in self._lineiterators:
+                for it in self._lineiterators[itcls]:
+                    it.qbuffer(savemem=1)
 
     def _periodset(self):
         dataids = [id(data) for data in self.datas]

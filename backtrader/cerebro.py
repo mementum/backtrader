@@ -467,9 +467,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             strat._start()
 
-        for i, strat in enumerate(runstrats):
-            strat.ringbuffer(
-                savememory=int(self.p.exactbars), savedatas=(not i))
+        for strat in runstrats:
+            strat.qbuffer(self._exactbars)
 
         for data in self.datas:
             data.reset()
