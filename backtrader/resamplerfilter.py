@@ -41,6 +41,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     )
 
     def __init__(self, data):
+        data.resampling = 1
         # Modify data information according to own parameters
         data._timeframe = self.p.timeframe
         data._compression = self.p.compression

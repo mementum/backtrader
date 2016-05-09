@@ -319,16 +319,18 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def _plotinit(self):
         pass
 
-    def ringbuffer(self, maxlen=-1, saveself=False):
-        # override default behavior to have fine control
-        if saveself:
-            for line in self.lines:  # own lines
-                line.ringbuffer(maxlen=maxlen)
+    def qbuffer(self, savemem=0):
+        if savemem:
+            for line in self.lines:
+                line.qbuffer()
 
-        # if called, anything under use has to save memory
-        for objtype in self._lineiterators:
-            for obj in self._lineiterators[objtype]:
-                obj.ringbuffer(maxlen=maxlen, saveself=True)
+        # If called, anything under it, must save
+        for obj in self._lineiterators[self.IndType]:
+            obj.qbuffer(savemem=1)
+
+        # Tell datas to adjust buffer to minimum period
+        for data in self.datas:
+            data.minbuffer(self._minperiod)
 
 
 # This 3 subclasses can be used for identification purposes within LineIterator

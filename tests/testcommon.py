@@ -61,7 +61,7 @@ def runtest(datas,
             strategy,
             runonce=None,
             preload=None,
-            exbar=False,
+            exbar=None,
             plot=False,
             optimize=False,
             maxcpus=1,
@@ -70,38 +70,40 @@ def runtest(datas,
 
     runonces = [True, False] if runonce is None else [runonce]
     preloads = [True, False] if preload is None else [preload]
+    exbars = [-2, -1, False] if exbar is None else [exbar]
 
     cerebros = list()
     for prload in preloads:
         for ronce in runonces:
-            cerebro = bt.Cerebro(runonce=ronce,
-                                 preload=prload,
-                                 maxcpus=maxcpus,
-                                 exactbars=exbar)
+            for exbar in exbars:
+                cerebro = bt.Cerebro(runonce=ronce,
+                                     preload=prload,
+                                     maxcpus=maxcpus,
+                                     exactbars=exbar)
 
-            if kwargs.get('main', False):
-                print('prload {} / ronce {}'.format(prload, ronce))
+                if kwargs.get('main', False):
+                    print('prload {} / ronce {}'.format(prload, ronce))
 
-            if isinstance(datas, bt.LineSeries):
-                datas = [datas]
-            for data in datas:
-                cerebro.adddata(data)
+                if isinstance(datas, bt.LineSeries):
+                    datas = [datas]
+                for data in datas:
+                    cerebro.adddata(data)
 
-            if not optimize:
-                cerebro.addstrategy(strategy, **kwargs)
+                if not optimize:
+                    cerebro.addstrategy(strategy, **kwargs)
 
-                if writer:
-                    wr = writer[0]
-                    wrkwargs = writer[1]
-                    cerebro.addwriter(wr, **wrkwargs)
-            else:
-                cerebro.optstrategy(strategy, **kwargs)
+                    if writer:
+                        wr = writer[0]
+                        wrkwargs = writer[1]
+                        cerebro.addwriter(wr, **wrkwargs)
+                else:
+                    cerebro.optstrategy(strategy, **kwargs)
 
-            cerebro.run()
-            if plot:
-                cerebro.plot()
+                cerebro.run()
+                if plot:
+                    cerebro.plot()
 
-            cerebros.append(cerebro)
+                cerebros.append(cerebro)
 
     return cerebros
 

@@ -99,6 +99,7 @@ class TestStrategy(bt.Strategy):
         _chkcash.append(cash)
 
     def next(self):
+        # print('self.data.close.array:', self.data.close.array)
         if self.orderid:
             # if an order is active, no new orders are allowed
             return
@@ -120,37 +121,39 @@ def test_run(main=False):
 
     for runonce in [True, False]:
         for preload in [True, False]:
-            _chkvalues = list()
-            _chkcash = list()
+            for exbar in [True, False, -1, -2]:
+                _chkvalues = list()
+                _chkcash = list()
 
-            datas = [testcommon.getdata(i) for i in range(chkdatas)]
-            testcommon.runtest(datas,
-                               TestStrategy,
-                               runonce=runonce,
-                               preload=preload,
-                               optimize=True,
-                               period=range(5, 45),
-                               printdata=main,
-                               printops=main,
-                               plot=False)
+                datas = [testcommon.getdata(i) for i in range(chkdatas)]
+                testcommon.runtest(datas,
+                                   TestStrategy,
+                                   runonce=runonce,
+                                   preload=preload,
+                                   exbar=exbar,
+                                   optimize=True,
+                                   period=range(5, 45),
+                                   printdata=main,
+                                   printops=main,
+                                   plot=False)
 
-            if not main:
-                assert CHKVALUES == _chkvalues
-                assert CHKCASH == _chkcash
+                if not main:
+                    assert CHKVALUES == _chkvalues
+                    assert CHKCASH == _chkcash
 
-            else:
-                print('*' * 50)
-                print(CHKVALUES == _chkvalues)
-                print('-' * 50)
-                print(CHKVALUES)
-                print('-' * 50)
-                print(_chkvalues)
-                print('*' * 50)
-                print(CHKCASH == _chkcash)
-                print('-' * 50)
-                print(CHKCASH)
-                print('-' * 50)
-                print(_chkcash)
+                else:
+                    print('*' * 50)
+                    print(CHKVALUES == _chkvalues)
+                    print('-' * 50)
+                    print(CHKVALUES)
+                    print('-' * 50)
+                    print(_chkvalues)
+                    print('*' * 50)
+                    print(CHKCASH == _chkcash)
+                    print('-' * 50)
+                    print(CHKCASH)
+                    print('-' * 50)
+                    print(_chkcash)
 
 
 if __name__ == '__main__':

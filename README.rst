@@ -29,8 +29,8 @@ backtrader
 
 BackTesting platform written in Python to test trading strategies.
 
-`Release Post (1.3.0.92):
-<http://www.backtrader.com/posts/2016-05-05-indicators-mixing-timeframes/indicators-mixing-timeframes/>`_
+`Release Post (1.3.1.92):
+<http://www.backtrader.com/posts/2016-05-09-memory-savings/memory-savings/>`_
 
 
 Documentation

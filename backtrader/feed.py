@@ -125,8 +125,15 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     _feed = None
 
+    resampling = 0
+
     def getfeed(self):
         return self._feed
+
+    def qbuffer(self, savemem=0):
+        extrasize = self.resampling
+        for line in self.lines:
+            line.qbuffer(savemem=savemem, extrasize=extrasize)
 
     def start(self):
         self._barstack = collections.deque()
@@ -264,8 +271,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 return True
 
             if not self._load():  # no bar
-                self.backwards()  # undo data pointer
-
+                # use force to make sure in exactbars the pointer is undone
+                # this covers especially (but not uniquely) the case in which
+                # the last bar has been seen and a backwards would ruin pointer
+                # accounting in the "stop" method of the strategy
+                self.backwards(force=True)  # undo data pointer
                 break  # finally no bar available from stack or _load
 
             # Check standard date from/to filters

@@ -93,10 +93,12 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
         return self._operationown_stage2(operation)
 
-    def ringbuffer(self, maxlen=-1, saveself=False):
-        '''
-        Change the lines to implement a minimum size ringbuffer scheme
-        '''
+    def qbuffer(self, savemem=0):
+        '''Change the lines to implement a minimum size qbuffer scheme'''
+        raise NotImplementedError
+
+    def minbuffer(self, size):
+        '''Receive notification of how large the buffer must at least be'''
         raise NotImplementedError
 
     def setminperiod(self, minperiod):
@@ -313,9 +315,13 @@ class LineMultiple(LineRoot):
     def _makeoperationown(self, operation, _ownerskip=None):
         return self.lines[0]._makeoperationown(operation, _ownerskip)
 
-    def ringbuffer(self, maxlen=-1, saveself=False):
+    def qbuffer(self, savemem=0):
         for line in self.lines:
-            line.ringbuffer(maxlen=maxlen)
+            line.qbuffer(savemem=1)
+
+    def minbuffer(self, size):
+        for line in self.lines:
+            line.minbuffer(size)
 
 
 class LineSingle(LineRoot):

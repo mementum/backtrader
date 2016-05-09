@@ -14,10 +14,11 @@ Contents:
    introduction
    installation
    quickstart/quickstart
-   automated-bt-run/automated-bt-run
+   cerebro
+   memory-savings/memory-savings
+   strategy
    concepts
    operating
-   cerebro
    datafeed
    datafeed-develop-csv
    datafeed-develop-general/datafeed-develop-general
@@ -26,8 +27,8 @@ Contents:
    data-resampling/data-resampling
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
-   strategy
    induse
+   mixing-timeframes/indicators-mixing-timeframes
    inddev
    observers-and-statistics/observers-and-statistics
    analyzers/analyzers
@@ -38,6 +39,7 @@ Contents:
    position
    trade
    plotting
+   automated-bt-run/automated-bt-run
    dataautoref
    indautoref
    strategy-reference
