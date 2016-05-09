@@ -1,3 +1,9 @@
+1.3.1.92
+  - Memory saving schemes (exactbars parameter to cerebro) full implemented
+  - Add mixing-timeframes to the docs
+  - Add memory-savings to the docs
+  - Cosmetic corrections to data-resampling sample
+
 1.3.0.92
   - Address #84 #86 by implemting a LinesCoupler lines object which fills longer
     timeframe lines with shorter timeframes
