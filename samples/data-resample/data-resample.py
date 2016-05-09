@@ -49,17 +49,20 @@ def runstrat():
 
     # Resample the data
     if args.oldrs:
+        # Old resampler, fully deprecated
         data = bt.DataResampler(
             dataname=data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
+
+        # Add the resample data instead of the original
+        cerebro.adddata(data)
     else:
-        data.resample(
+        # New resampler
+        cerebro.resampledata(
+            data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
-
-    # Add the resample data instead of the original
-    cerebro.adddata(data)
 
     # Run over everything
     cerebro.run()

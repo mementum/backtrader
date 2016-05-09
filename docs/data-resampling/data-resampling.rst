@@ -104,7 +104,7 @@ should not be touched:
        sense to adjust the time if the bar has not been aligned to a
        boundary
 
-  - ``rightedge`` (default: False)
+  - ``rightedge`` (default: True)
 
     Use the right edge of the time boundaries to set the time.
 

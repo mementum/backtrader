@@ -52,7 +52,7 @@ Parameters which can be passed to ``replaydata``:
 
 Extended parameters (do not touch if not really needed):
 
-  - ``bar2edge`` (default: False)
+  - ``bar2edge`` (default: True)
 
     replays using time boundaries as the target of the closed bar. For
     example with a "ticks -> 5 seconds" the resulting 5 seconds bars will
@@ -71,7 +71,7 @@ Extended parameters (do not touch if not really needed):
        sense to adjust the time if the bar has not been aligned to a
        boundary
 
-  - ``rightedge`` (default: False)
+  - ``rightedge`` (default: True)
 
     Use the right edge of the time boundaries to set the time.
 
