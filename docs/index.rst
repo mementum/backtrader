@@ -15,6 +15,7 @@ Contents:
    installation
    quickstart/quickstart
    cerebro
+   memory-savings/memory-savings
    strategy
    concepts
    operating
