@@ -127,6 +127,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def __init__(self):
         self._doreplay = False
         self._dooptimize = False
+        self.stores = list()
         self.feeds = list()
         self.datas = list()
         self.datasbyname = collections.OrderedDict()
@@ -154,6 +155,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addstore(self, store):
+        '''Adds an ``Store`` instance to the if not already present'''
+        if store not in self.stores:
+            self.stores.append(store)
 
     def addwriter(self, wrtcls, *args, **kwargs):
         '''
@@ -186,6 +192,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def addobservermulti(self, obscls, *args, **kwargs):
         self.observers.append((True, obscls, args, kwargs))
 
+    def notify_store(self, msg, *args, **kwargs):
+        '''Receive store notifications in cerebro'''
+        pass
+
+    def _storenotify(self):
+        for store in self.stores:
+            while True:
+                notif = store.get_notification()
+                if notif is None:
+                    break
+                msg, args, kwargs = notif
+
+                self.notify_store(msg, *args, **kwargs)
+                for strat in self.runningstrats:
+                    strat.notify_store(msg, *args, **kwargs)
+
     def adddata(self, data, name=None):
         '''
         Adds a ``Data Feed`` instance to the mix.
@@ -195,6 +217,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         if name is not None:
             data._name = name
+
+        data.setenvironment(self)
 
         self.datas.append(data)
         self.datasbyname[data._name] = data
@@ -422,7 +446,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
-        runstrats = list()
+        self.runningstrats = runstrats = list()
+        for store in self.stores:
+            store.start()
+
         self._broker.start()
 
         for feed in self.feeds:
@@ -495,6 +522,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.stop()
 
+        for store in self.stores:
+            store.stop()
+
         self.stop_writers(runstrats)
 
         return runstrats
@@ -524,8 +554,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         notification to the strategy
         '''
         self._broker.next()
-        while self._broker.notifs:
-            order = self._broker.notifs.popleft()
+        while True:
+            order = self._broker.get_notification()
+            if order is None:
+                break
             order.owner._addnotification(order)
 
     def _runnext(self, runstrats):
@@ -549,6 +581,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # Only go extra round if something was changed by "lasts"
                     break
 
+            self._storenotify()
             self._brokernotify()
 
             for strat in runstrats:

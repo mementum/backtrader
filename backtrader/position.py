@@ -37,9 +37,46 @@ class Position(object):
 
     def __init__(self, size=0, price=0.0):
         self.size = size
-        self.price = price
+        self.price = self.price_orig = price
 
         self.adjbase = None
+
+        self.upopened = size
+        self.upclosed = 0
+        self.set(size, price)
+
+    def set(self, size, price):
+        if self.size > 0:
+            if size > self.size:
+                self.upopened = size - self.size  # new 10 - old 5 -> 5
+                self.upclosed = 0
+            else:
+                # same side min(0, 3) -> 0 / reversal min(0, -3) -> -3
+                self.upopened = min(0, size)
+                # same side min(10, 10 - 5) -> 5
+                # reversal min(10, 10 - -5) -> min(10, 15) -> 10
+                self.upclosed = min(self.size, self.size - size)
+
+        elif self.size < 0:
+            if size < self.size:
+                self.upopened = size - self.size  # ex: -5 - -3 -> -2
+                self.upclosed = 0
+            else:
+                # same side max(0, -5) -> 0 / reversal max(0, 5) -> 5
+                self.upopened = max(0, size)
+                # same side max(-10, -10 - -5) -> max(-10, -5) -> -5
+                # reversal max(-10, -10 - 5) -> max(-10, -15) -> -10
+                self.upclosed = max(self.size, self.size - size)
+
+        else:  # self.size == 0
+            self.upopened = self.size
+            self.upclosed = 0
+
+        self.size = size
+        self.price_orig = self.price
+        self.price = price
+
+        return self.size, self.price, self.upopened, self.upclosed
 
     def __len__(self):
         return abs(self.size)
@@ -93,6 +130,7 @@ class Position(object):
             because they refer to a part of the "size" argument
         '''
 
+        self.price_orig = self.price
         oldsize = self.size
         self.size += size
 
@@ -131,5 +169,8 @@ class Position(object):
             else:  # self.size > 0 - reversed position from minus to plus
                 opened, closed = self.size, -oldsize
                 self.price = price
+
+        self.upopened = opened
+        self.upclosed = closed
 
         return self.size, self.price, opened, closed

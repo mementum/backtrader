@@ -146,7 +146,7 @@ Member Attributes (meant for statistics/observers/analyzers):
    bar, when a daily timeframe is in use)
 
 
-Reference: Srategy
+Reference: Strategy
 ==================
 
 .. currentmodule:: backtrader

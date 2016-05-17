@@ -42,7 +42,7 @@ class MultiTradeStrategy(bt.Strategy):
     params = dict(
         period=15,
         stake=1,
-        printout=False,
+        printout=True,
         onlylong=False,
         mtrade=False,
     )
@@ -60,7 +60,7 @@ class MultiTradeStrategy(bt.Strategy):
         # Create SMA on 2nd data
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
         # Create a CrossOver Signal from close an moving average
-        self.signal = btind.CrossOver(self.data.close, sma)
+        self.signal = btind.CrossOver(self.data.close, sma, plot=True)
 
         # To alternate amongst different tradeids
         if self.p.mtrade:

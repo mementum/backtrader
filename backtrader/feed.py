@@ -123,6 +123,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('sessionend', None),
               ('filters', []),)
 
+    CONNECTED, CONNBROKEN, DELAYED, LIVE = range(4)
+
     _feed = None
 
     resampling = 0
@@ -144,6 +146,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def clone(self, **kwargs):
         return DataClone(dataname=self, **kwargs)
+
+    def setenvironment(self, env):
+        '''Keep a reference to the environment'''
+        self._env = self
 
     def addfilter_simple(self, f, *args, **kwargs):
         fp = SimpleFilterWrapper(self, f, *args, **kwargs)

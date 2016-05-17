@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
 import copy
 import datetime
 import itertools
@@ -112,7 +113,8 @@ class OrderData(object):
 
     '''
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0):
-        self.exbits = list()
+        self.exbits = list()  # for historical purposes
+        self.pending = collections.deque()  # for processing in strategy
 
         self.dt = dt
         self.size = size
@@ -143,18 +145,20 @@ class OrderData(object):
         return self.exbits[key]
 
     def add(self, dt, size, price,
-            closed, closedvalue, closedcommission,
-            opened, openedvalue, openedcomm, pnl,
-            psize, pprice):
+            closed=0, closedvalue=0.0, closedcomm=0.0,
+            opened=0, openedvalue=0.0, openedcomm=0.0,
+            pnl=0.0,
+            psize=0, pprice=0.0):
 
         self.addbit(
             OrderExecutionBit(dt, size, price,
-                              closed, closedvalue, closedcommission,
+                              closed, closedvalue, closedcomm,
                               opened, openedvalue, openedcomm, pnl,
                               psize, pprice))
 
     def addbit(self, exbit):
         self.exbits.append(exbit)
+        self.pending.append(exbit)
 
         self.remsize -= exbit.size
 
@@ -168,6 +172,12 @@ class OrderData(object):
         self.pnl += exbit.pnl
         self.psize = exbit.psize
         self.pprice = exbit.pprice
+
+    def getpending(self):
+        try:
+            return self.pending.popleft()
+        except IndexError:
+            return None
 
 
 class Order(with_metaclass(MetaParams, object)):
@@ -215,6 +225,8 @@ class Order(with_metaclass(MetaParams, object)):
 
     Created, Submitted, Accepted, Partial, Completed, \
         Canceled, Expired, Margin = range(8)
+
+    Cancelled = Canceled
 
     Status = [
         'Created', 'Submitted', 'Accepted', 'Partial',
@@ -322,8 +334,8 @@ class Order(with_metaclass(MetaParams, object)):
         self.broker = broker
 
     def brokerstatus(self):
-        if broker:
-            return broker.orderstatus(self)
+        if self.broker:
+            return self.broker.orderstatus(self)
 
         return self.status
 

@@ -458,6 +458,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def notify_store(self, msg, *args, **kwargs):
+        '''Receives a notification from real feed (1 feed -> n datas)'''
+        pass
+
     def getdatanames(self):
         '''
         Returns a list of the existing data names
@@ -469,6 +473,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         Returns a given data by name using the environment (cerebro)
         '''
         return self.env.datasbyname[name]
+
+    def cancel(self, order):
+        '''Cancels the order in the broker'''
+        self.broker.cancel(order)
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
