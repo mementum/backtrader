@@ -42,7 +42,7 @@ class MultiTradeStrategy(bt.Strategy):
     params = dict(
         period=15,
         stake=1,
-        printout=True,
+        printout=False,
         onlylong=False,
         mtrade=False,
     )
@@ -60,7 +60,7 @@ class MultiTradeStrategy(bt.Strategy):
         # Create SMA on 2nd data
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
         # Create a CrossOver Signal from close an moving average
-        self.signal = btind.CrossOver(self.data.close, sma, plot=True)
+        self.signal = btind.CrossOver(self.data.close, sma)
 
         # To alternate amongst different tradeids
         if self.p.mtrade:
@@ -143,6 +143,7 @@ def runstrategy():
                         period=args.period,
                         onlylong=args.onlylong,
                         stake=args.stake,
+                        printout=args.printout,
                         mtrade=args.mtrade)
 
     # Add the commission - only stocks like a for each operation
@@ -187,6 +188,9 @@ def parse_args():
 
     parser.add_argument('--onlylong', '-ol', action='store_true',
                         help='Do only long operations')
+
+    parser.add_argument('--printout', action='store_true',
+                        help='Print operation log from strategy')
 
     parser.add_argument('--cash', default=100000, type=int,
                         help='Starting Cash')
