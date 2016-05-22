@@ -72,7 +72,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
     # size, price=None, pricelimit=None,
     # exectype=None, valid=None,
     # tradeid=0, **kwargs):
-    def __init__(self, action):
+    def __init__(self, action, **kwargs):
 
         self.ordtype = self.Buy if action == 'BUY' else self.Sell
         super(IBOrder, self).__init__()
@@ -117,7 +117,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
             self.m_lmtPrice = self.pricelimit  # req limit execution
             self.m_auxPrice = self.price  # trigger price
 
-        self.m_totalQuantity = sel.size
+        self.m_totalQuantity = abs(self.size)  # ib takes only positives
 
         self.m_transmit = True
 
