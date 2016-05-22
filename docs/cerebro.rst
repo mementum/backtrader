@@ -5,10 +5,10 @@ This class is the cornerstone of ``backtrader`` because it serves as a central
 point for:
 
   1. Gathering all inputs (*Data Feeds*), actors (*Stratgegies*), spectators
-  (*Observers*), critics (*Analyzers*) and documenters (*Writers*) ensuring the
-  show still goes on at any moment.
+     (*Observers*), critics (*Analyzers*) and documenters (*Writers*) ensuring the
+     show still goes on at any moment.
 
-  2. Execute the backtesting
+  2. Execute the backtesting/or live data feeding/trading
 
   3. Returning the results
 
@@ -137,8 +137,10 @@ The arguments for the different supported ways of execuing the backtesting:
 
   - ``runonce`` (default: ``True``)
 
-    Run ``Indicators`` in vectorized mode to speed up the entire system.
-    Strategies and Observers will always be run on an event based basis
+    Calculate ``Indicators`` in a single pass in a tight inner *for loop* to
+    speed up the entire system.  Strategies and Observers will always be run on
+    an event based (next) basis to ensure the logic is executed for each and
+    every step
 
   - ``maxcpus`` (default: ``None`` -> all available cores)
 
@@ -265,6 +267,8 @@ Backtesting logic
 *****************
 
 Brief outline of the flow of things:
+
+  0. Deliver any store notifications
 
   1. Ask datas to deliver the next set of ticks/bars
 
