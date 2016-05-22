@@ -92,6 +92,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
     _store = ibstore.IBStore
 
+    def islive(self):
+        return True
+
     def __init__(self, **kwargs):
         self.ib = self._store(**kwargs)
         self.parsecontract()
