@@ -37,7 +37,10 @@ class Position(object):
 
     def __init__(self, size=0, price=0.0):
         self.size = size
-        self.price = self.price_orig = price
+        if size:
+            self.price = self.price_orig = price
+        else:
+            self.price = 0.0
 
         self.adjbase = None
 
@@ -74,7 +77,10 @@ class Position(object):
 
         self.size = size
         self.price_orig = self.price
-        self.price = price
+        if size:
+            self.price = price
+        else:
+            self.price = 0.0
 
         return self.size, self.price, self.upopened, self.upclosed
 
@@ -129,7 +135,6 @@ class Position(object):
             Both opened and closed carry the same sign as the "size" argument
             because they refer to a part of the "size" argument
         '''
-
         self.price_orig = self.price
         oldsize = self.size
         self.size += size
