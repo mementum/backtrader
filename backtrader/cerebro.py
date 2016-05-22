@@ -51,6 +51,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Run ``Indicators`` in vectorized mode to speed up the entire system.
         Strategies and Observers will always be run on an event based basis
 
+      - ``live`` (default: False)
+
+        If no data has reported itself as *live* (via the data's ``islive``
+        method but the end user still want to run in ``live`` mode, this
+        parameter can be set to true
+
+        This will simultaneously deactivate ``preload`` and ``runonce``. It
+        will have no effect on memory saving schemes.
+
+        Run ``Indicators`` in vectorized mode to speed up the entire system.
+        Strategies and Observers will always be run on an event based basis
+
       - ``maxcpus`` (default: None -> all available cores)
 
          How many cores to use simultaneously for optimization
@@ -60,7 +72,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         If True default Observers will be added: Broker (Cash and Value),
         Trades and BuySell
 
-      - exactbars (default: False)
+      - ``exactbars`` (default: False)
 
         With the default value each and every value stored in a line is kept in
         memory
@@ -197,7 +209,17 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     def addnotifycallback(self, callback):
         '''Adds a callback to get messages which would be handled by the
-        notify_store method'''
+        notify_store method
+
+        The signature of the callback must support the following:
+
+          - callback(msg, *args, **kwargs)
+
+        The actual ``msg``, ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
         self.notifycallbacks.append(callback)
 
     def _notify_store(self, msg, *args, **kwargs):
@@ -207,7 +229,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.notify_store(msg, *args, **kwargs)
 
     def notify_store(self, msg, *args, **kwargs):
-        '''Receive store notifications in cerebro'''
+        '''Receive store notifications in cerebro
+
+        This method can be overrided in ``Cerebro`` subclasses
+
+        The actual ``msg``, ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
         pass
 
     def _storenotify(self):
