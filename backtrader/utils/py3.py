@@ -29,6 +29,10 @@ PY2 = sys.version_info.major == 2
 
 if PY2:
     MAXINT = sys.maxint
+    MININT = -sys.maxint - 1
+
+    MAXFLOAT = sys.float_info.max
+    MINFLOAT = sys.float_info.min
 
     string_types = str, unicode
     integer_types = int, long
@@ -62,6 +66,10 @@ if PY2:
 
 else:
     MAXINT = sys.maxsize
+    MININT = -sys.maxsize - 1
+
+    MAXFLOAT = sys.float_info.max
+    MINFLOAT = sys.float_info.min
 
     string_types = str,
     integer_types = int,
