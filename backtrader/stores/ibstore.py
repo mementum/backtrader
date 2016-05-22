@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+from copy import copy
 from datetime import datetime, timedelta
 import inspect
 import itertools
@@ -120,6 +121,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('host', '127.0.0.1'),
         ('port', 7496),
         ('clientId', None),  # None generates a random clientid 1 -> 2^16
+        ('notifyall', False),
         ('_debug', False),
         ('reconnect', 3),  # -1 forever, 0 No, > 0 number of retries
         ('timeout', 3.0),  # timeout between reconnections
@@ -162,7 +164,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.acc_value = AutoDict()  # current total value per account
         self.acc_upds = AutoDict()  # current account valueinfos per account
 
-        self.ordbyid = dict()
+        self.port_update = False  # indicate whether to signal to broker
 
         self.positions = collections.defaultdict(Position)  # actual positions
 
@@ -170,8 +172,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.orderid = None  # next possible orderid (will be itertools.count)
 
         self.managed_accounts = list()  # received via managedAccounts
-
-        self.ostatus = queue.Queue()  # keep non yet broker processed statuses
 
         self.notifs = queue.Queue()  # store notifications for cerebro
 
@@ -186,7 +186,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             host=self.p.host, port=self.p.port, clientId=self.clientId)
 
         # register a printall method if requested
-        if self.p._debug:
+        if self.p._debug or self.p.notifyall:
             self.conn.registerAll(self.watcher)
 
         # Register decorated methods with the conn
@@ -215,7 +215,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.broker = broker
 
     def stop(self):
-        self.conn.disconnect()  # disconnect should be an invariant
+        try:
+            self.conn.disconnect()  # disconnect should be an invariant
+        except AttributeError:
+            pass    # conn may have never been connected and lack "disconnect"
+
+        # Unblock any calls set on these events
+        self._event_managed_accounts.set()
+        self._event_accdownload.set()
 
     def logmsg(self, *args):
         # for logging purposes
@@ -225,6 +232,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     def watcher(self, msg):
         # will be registered to see all messages if debug is requested
         self.logmsg(str(msg))
+        if self.p.notifyall:
+            self.notifs.put((msg, tuple(msg.values()), dict(msg.items())))
 
     def connected(self):
         # The isConnected method is available through __getattr__ indirections
@@ -326,23 +335,35 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @ibregister
     def error(self, msg):
+        # 100-199 Order related
+        # 200-203 tickerId and Order Related
+        # 300-399 A mix of things: orders, connectivity, tickers, misc errors
+        # 400-449 Seem order related again
+        # 500-531 Connectivity/Communication Errors
+        # 10000-100027 Mix of special orders/routing
+        # 1100-1102 TWS connectivy to the outside
+        # 1300- Socket dropped in client-TWS communication
+        # 2100-2110 Informative about Data Farm status (id=-1)
+
         # All errors are logged to the environment (cerebro), because many
         # errors in Interactive Brokers are actually informational and many may
         # actually be of interest to the user
-        self.notifs.put((msg, tuple(msg.values()), dict(msg.items())))
+        if not self.p.notifyall:
+            self.notifs.put((msg, tuple(msg.values()), dict(msg.items())))
 
         # Manage those events which have to do with connection
         if msg.errorCode is None:
             # Usually received as an error in connection of just before disconn
             pass
-        if msg.errorCode == 200:
-            # contractDetails - security was not found, notify over right queue
+        elif msg.errorCode in [200, 203]:
+            # cdetails 200 security not found, notify over right queue
+            # cdetails 203 security not allowed for acct
             q = self.qs[msg.id]
             q.put(None)
             self.cancelQueue(q)
-        elif msg.errorCode == 1300:
-            # Connection has been lost. The port for a new connection is there
-            # newport = int(msg.errorMsg.split('-')[-1])  # bla bla bla -7496
+
+        elif msg.errorCode == 326:  # not recoverable, clientId in use
+            self.dontreconnect = True
             self.conn.disconnect()
             self.stopdatas()
 
@@ -355,10 +376,19 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             # Once for each data
             pass  # don't need to manage it
 
-        elif msg.errorCode == 326:  # not recoverable, clientId in use
-            self.dontreconnect = True
+        elif msg.errorCode == 1300:
+            # Connection has been lost. The port for a new connection is there
+            # newport = int(msg.errorMsg.split('-')[-1])  # bla bla bla -7496
             self.conn.disconnect()
             self.stopdatas()
+
+        elif hasattr(msg, 'id') and msg.id > 0:
+            # elif 100 <= msg.errorCode < 200 or msg.errorCode in [201, 202]:
+            # TOCHECK: in theory the tag for "orders" is "id" and we could
+            # check the presence of that as attribute in the error message. But
+            # codes 200, 203 which are for reqMktData with tickerId seem to
+            # carry that tag too.  Are those the only exceptions?
+            self.broker.push_ordererror(msg)
 
     @ibregister
     def connectionClosed(self, msg):
@@ -767,57 +797,23 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # received when the order is in the system after placeOrder
         # the message contains: order, contract, orderstate
         # no need to manage it. wait for orderstatus to notify
-        os = msg.orderState
-        print('-*' * 10, 'ORDERSTATE')
-        for f in ['m_status', 'm_initMargin', 'm_maintMargin',
-                  'm_equityWithLoan', 'm_commission', 'm_minCommission',
-                  'm_maxCommission', 'm_commissionCurrency', 'm_warningText']:
-
-            print(f, ':', getattr(os, f))
-        print('-*' * 10)
+        # self.broker.push_orderstate(msg.orderState)
+        pass
 
     @ibregister
     def execDetails(self, msg):
         '''Receive execDetails'''
-        ex = msg.execution
-        print('-*' * 10, 'EXECUTION')
-        for f in ['m_orderId', 'm_clientId', 'm_execId', 'm_time',
-                  'm_acctNumber', 'm_exchange', 'm_side', 'm_shares',
-                  'm_price', 'm_permId', 'm_liquidation', 'm_cumQty',
-                  'm_avgPrice', 'm_orderRef', 'm_evRule', 'm_evMultiplier']:
-
-            print(f, ':', getattr(ex, f))
-        print('-*' * 10)
+        self.broker.push_execution(msg.execution)
 
     @ibregister
     def orderStatus(self, msg):
         '''Receive the event ``orderStatus``'''
-        self.ostatus.put(msg)
-        # self.broker.push_orderstatus(msg)
+        self.broker.push_orderstatus(msg)
 
     @ibregister
     def commissionReport(self, msg):
         '''Receive the event commissionReport'''
-        cr = msg.commissionReport
-        print('-*' * 10, 'COMMISSION REPORT')
-        for f in ['m_execId', 'm_commission', 'm_currency', 'm_realizedPNL',
-                  'm_yield', 'm_yieldRedemptionDate']:
-
-            print(f, ':', getattr(cr, f))
-        print('-*' * 10)
-
-    def get_orderstatus(self):
-        '''For client brokers. Gets orderstatus messages that have been put
-        into the Queue until it is empty
-
-        Returns the OrderStatus or None if the queue is Empty
-        '''
-        try:
-            return self.ostatus.get(False)  # non-blocking provoking Exception
-        except queue.Empty:
-            pass
-
-        return None
+        self.broker.push_commissionreport(msg.commissionReport)
 
     def reqPositions(self):
         '''Proxy to reqPositions'''
@@ -846,6 +842,11 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # the event indicates it's over. It's only false once, and can be used
         # to find out if it has at least been downloaded once
         self._event_accdownload.set()
+        if False:
+            if self.port_update:
+                self.broker.push_portupdate()
+
+                self.port_update = False
 
     @ibregister
     def updatePortfolio(self, msg):
@@ -857,13 +858,26 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 self.positions[msg.contract.m_conId] = position
             else:
                 position = self.positions[msg.contract.m_conId]
-                position.set(msg.position, msg.averageCost)
+                if not position.fix(msg.position, msg.averageCost):
+                    err = ibopt.messageError(
+                        id=-1, errorCode=-1,
+                        errorMsg='**** POSITION FIXING REPORTS ERROR')
 
-    def getposition(self, contract):
+                    self.notifs.put(err)
+
+                # Flag signal to broker at the end of account download
+                # self.port_update = True
+                self.broker.push_portupdate()
+
+    def getposition(self, contract, clone=False):
         # Lock access to the position dicts. This is called from main thread
         # and updates could be happening in the background
         with self._lock_pos:
-            return self.positions[contract.m_conId]
+            position = self.positions[contract.m_conId]
+            if clone:
+                return copy(position)
+
+            return position
 
     @ibregister
     def updateAccountValue(self, msg):
@@ -895,19 +909,30 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         '''
         # Wait for at least 1 account update download to have been finished
         # before the account infos can be returned to the calling client
-        self._event_accdownload.wait()
+        if self.connected():
+            self._event_accdownload.wait()
         # Lock access to acc_cash to avoid an event intefering
         with self._updacclock:
             if account is None:
                 # wait for the managedAccount Messages
-                self._event_managed_accounts.wait()
-                if len(self.managed_accounts) > 1:
+                if self.connected():
+                    self._event_managed_accounts.wait()
+
+                if not self.managed_accounts:
+                    return self.acc_upds.copy()
+
+                elif len(self.managed_accounts) > 1:
                     return self.acc_upds.copy()
 
                 # Only 1 account, fall through to return only 1
                 account = self.managed_accounts[0]
 
-            return self.acc_upds[account].copy()
+            try:
+                return self.acc_upds[account].copy()
+            except KeyError:
+                pass
+
+            return self.acc_upds.copy()
 
     def get_acc_value(self, account=None):
         '''Returns the net liquidation value sent by TWS during regular updates
@@ -921,19 +946,30 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         '''
         # Wait for at least 1 account update download to have been finished
         # before the value can be returned to the calling client
-        self._event_accdownload.wait()
+        if self.connected():
+            self._event_accdownload.wait()
         # Lock access to acc_cash to avoid an event intefering
         with self._lock_accupd:
             if account is None:
                 # wait for the managedAccount Messages
-                self._event_managed_accounts.wait()
-                if len(self.managed_accounts) > 1:
+                if self.connected():
+                    self._event_managed_accounts.wait()
+
+                if not self.managed_accounts:
+                    return float()
+
+                elif len(self.managed_accounts) > 1:
                     return sum(self.acc_value.values())
 
                 # Only 1 account, fall through to return only 1
                 account = self.managed_accounts[0]
 
-            return self.acc_value[account]
+            try:
+                return self.acc_value[account]
+            except KeyError:
+                pass
+
+            return float()
 
     def get_acc_cash(self, account=None):
         '''Returns the total cash value sent by TWS during regular updates
@@ -947,16 +983,25 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         '''
         # Wait for at least 1 account update download to have been finished
         # before the cash can be returned to the calling client
-        self._event_accdownload.wait()
+        if self.connected():
+            self._event_accdownload.wait()
         # Lock access to acc_cash to avoid an event intefering
         with self._lock_accupd:
             if account is None:
                 # wait for the managedAccount Messages
-                self._event_managed_accounts.wait()
-                if len(self.managed_accounts) > 1:
+                if self.connected():
+                    self._event_managed_accounts.wait()
+
+                if not self.managed_accounts:
+                    return float()
+
+                elif len(self.managed_accounts) > 1:
                     return sum(self.acc_cash.values())
 
                 # Only 1 account, fall through to return only 1
                 account = self.managed_accounts[0]
 
-            return self.acc_cash[account]
+            try:
+                return self.acc_cash[account]
+            except KeyError:
+                pass
