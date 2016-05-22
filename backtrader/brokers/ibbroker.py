@@ -46,17 +46,17 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
     needed to be compatible with the internally defined orders'''
 
     def __str__(self):
-        tojoin = list()
+        basetxt = super(IBOrder, self).__str__()
+        tojoin = [basetxt]
         tojoin.append('Ref: {}'.format(self.ref))
         tojoin.append('orderId: {}'.format(self.m_orderId))
-        tojoin.append('Status: {}'.format(self.status))
-        tojoin.append('Status Name: {}'.format(self.getstatusname()))
         tojoin.append('Action: {}'.format(self.m_action))
-        tojoin.append('Size: {}'.format(self.m_totalQuantity))
+        tojoin.append('Size (ib): {}'.format(self.m_totalQuantity))
         tojoin.append('Lmt Price: {}'.format(self.m_lmtPrice))
         tojoin.append('Aux Price: {}'.format(self.m_auxPrice))
-        tojoin.append('orderType: {}'.format(self.m_orderType))
-        tojoin.append('tif: {}'.format(self.m_tif))
+        tojoin.append('OrderType: {}'.format(self.m_orderType))
+        tojoin.append('Tif (Time in Force): {}'.format(self.m_tif))
+        tojoin.append('GoodTillDate: {}'.format(self.m_goodTillDate))
         return '\n'.join(tojoin)
 
     _OrdTypes = {
