@@ -494,7 +494,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         return self.broker.buy(
             self, data,
-            size=size, price=price, plimit=plimit,
+            size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def sell(self, data=None,
@@ -513,7 +513,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         return self.broker.sell(
             self, data,
-            size=size, price=price, plimit=plimit,
+            size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def close(self,
