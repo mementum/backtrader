@@ -160,8 +160,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         except StopIteration:
             pass
 
-        # Make the contract
-        self.contract = self.ib.makecontract(
+        # Make the initial contract
+        self.cdetails = None
+        self.precontract = self.ib.makecontract(
             symbol=symbol, sectype=sectype, exch=exch, curr=curr,
             expiry=expiry, strike=strike, right=right, mult=mult)
 
@@ -175,12 +176,17 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
         if self.ib.connected():
             # get real contract details with real conId (contractId)
-            q = self.ib.reqContractDetails(self.contract)
+            q = self.ib.reqContractDetails(self.precontract)
             msg = q.get()
             if msg is None:
                 self.contract = None
+                self.contractdetails = None
             else:
                 self.contract = msg.contractDetails.m_summary
+                self.contractdetails = msg.contractDetails
+        else:
+            self.contract = None
+            self.contractdetails = None
 
     def stop(self):
         '''Stops and tells the store to stop'''
@@ -217,7 +223,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             msg = self.q.get()
             if msg is None:
                 if self.contract is None:
-                    return
+                    return False
 
                 if not self.ib.reconnect(resub=True):
                     return False  # no reconnect or failed
