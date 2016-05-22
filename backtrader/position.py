@@ -22,6 +22,9 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
+from copy import copy
+
+
 class Position(object):
     '''
     Keeps and updates the size and price of a position. The object has no
@@ -47,6 +50,15 @@ class Position(object):
         self.upopened = size
         self.upclosed = 0
         self.set(size, price)
+
+    def clone(self):
+        return copy(self)
+
+    def fix(self, size, price):
+        oldsize = self.size
+        self.size = size
+        self.price = price
+        return self.size == oldsize
 
     def set(self, size, price):
         if self.size > 0:
