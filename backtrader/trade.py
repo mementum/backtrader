@@ -129,6 +129,19 @@ class Trade(object):
     status_names = ['Created', 'Open', 'Closed']
     Created, Open, Closed = range(3)
 
+    def __str__(self):
+        toprint = (
+            'ref', 'data', 'tradeid',
+            'size', 'price', 'value', 'commission', 'pnl', 'pnlcomm',
+            'justopened', 'isopen', 'isclosed',
+            'baropen', 'dtopen', 'barclose', 'dtclose', 'barlen',
+            'historyon', 'history',
+            'status')
+
+        return '\n'.join(
+            (':'.join((x, str(getattr(self, x)))) for x in toprint)
+        )
+
     def __init__(self, data=None, tradeid=0, historyon=False,
                  size=0, price=0.0, value=0.0, commission=0.0):
 
