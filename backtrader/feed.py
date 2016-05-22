@@ -129,6 +129,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     resampling = 0
 
+    def islive(self):
+        '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
+        ``runonce`` because a live data source must be fetched tick by tick (or
+        bar by bar)'''
+        return False
+
     def getfeed(self):
         return self._feed
 
