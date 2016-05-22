@@ -33,11 +33,15 @@ from backtrader.utils import flushfile
 
 
 class EmptyStrategy(bt.Strategy):
-    params = dict(smaperiod=15)
+    params = dict(
+        smaperiod=5,
+        stake=10,
+    )
 
     def __init__(self):
         # To control operation entries
         self.orderid = list()
+        self.order = None
 
         # Create SMA on 2nd data
         self.sma = btind.MovAv.SMA(self.data, period=self.p.smaperiod)
@@ -45,6 +49,22 @@ class EmptyStrategy(bt.Strategy):
         print('--------------------------------------------------')
         print('Strategy Created')
         print('--------------------------------------------------')
+
+    def notify_store(self, msg, *args, **kwargs):
+        print('*' * 5, 'STORE NOTIF:', msg)
+
+    def notify_order(self, order):
+        if order.status == [order.Completed, order.Cancelled, order.Rejected]:
+            self.order = None
+
+        print('-' * 50, 'ORDER BEGIN')
+        print(order)
+        print('-' * 50, 'ORDER END')
+
+    def notify_trade(self, trade):
+        print('-' * 50, 'TRADE BEGIN')
+        print(trade)
+        print('-' * 50, 'TRADE END')
 
     def prenext(self):
         self.next(frompre=True)
@@ -78,20 +98,19 @@ class EmptyStrategy(bt.Strategy):
             txt.append('%.2f' % float('NaN'))
             print(', '.join(txt))
 
-        if self.done:
-            return
-
-        if not self.position or len(self.orderid) < 1:
-            order = self.buy(size=20,
-                             exectype=bt.Order.Market,
-                             price=self.data0.close[0])
-            self.orderid.append(order)
-        else:
-            self.sell(size=self.position.size + 200,
-                      exectype=bt.Order.Market,
-                      price=self.data0.close[0])
-
-            self.done = True
+        if not self.position and len(self.orderid) < 1:
+            self.order = self.buy(size=self.p.stake,
+                                  exectype=bt.Order.Limit,
+                                  price=round(self.data0.close[0] * 0.90, 2),
+                                  # valid=self.data0.datetime[0] + 2.0)
+                                  #valid=0)
+                                  valid=datetime.timedelta())
+            self.orderid.append(self.order)
+        elif self.position.size > 0:
+            if self.order is None:
+                self.order = self.sell(size=self.p.stake // 2,
+                                       exectype=bt.Order.Market,
+                                       price=self.data0.close[0])
 
     def start(self):
         header = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume',
@@ -123,6 +142,7 @@ def runstrategy():
                            useRT=args.rtbar,
                            tz=tz,
                            _debug=args.debug,
+                           notifyall=args.notifyall,
                            timeframe=bt.TimeFrame.Ticks)
 
     if args.data1 is None:
@@ -133,6 +153,7 @@ def runstrategy():
                                useRT=args.rtbar,
                                tz=tz,
                                _debug=args.debug,
+                               notifyall=args.notifyall,
                                timeframe=bt.TimeFrame.Ticks)
 
     bar2edge = not args.nobar2edge
@@ -174,7 +195,9 @@ def runstrategy():
             cerebro.adddata(data1)
 
     # Add the strategy
-    cerebro.addstrategy(EmptyStrategy, smaperiod=args.smaperiod)
+    cerebro.addstrategy(EmptyStrategy,
+                        smaperiod=args.smaperiod,
+                        stake=args.stake)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=1)
@@ -195,43 +218,48 @@ def parse_args():
                         help='Port for the Interactive Brokers TWS Connection')
 
     parser.add_argument('--rtbar', required=False, action='store_true',
-                        help=('Use 5 seconds real time bar updates'))
+                        help='Use 5 seconds real time bar updates')
 
     parser.add_argument('--debug', required=False, action='store_true',
-                        help=('Display all info received form IB'))
+                        help='Display all info received form IB')
 
     parser.add_argument('--seeprint', required=False, action='store_true',
-                        help=('See IbPy initial print messages'))
+                        help='See IbPy initial print messages')
 
     parser.add_argument('--smaperiod', default=5, type=int,
                         help='Period to apply to the Simple Moving Average')
 
+    parser.add_argument('--stake', default=10, type=int,
+                        help='Stake to use')
+
     pgroup = parser.add_mutually_exclusive_group(required=False)
 
     pgroup.add_argument('--replay', required=False, action='store_true',
-                        help=('replay to minutes'))
+                        help='replay to minutes')
 
     pgroup.add_argument('--resample', required=False, action='store_true',
-                        help=('resample to minutes'))
+                        help='resample to minutes')
 
     parser.add_argument('--compression', default=1, type=int,
                         help='Compression level for resample/replay')
 
     parser.add_argument('--nobar2edge', required=False, action='store_true',
-                        help=('no bar2edge'))
+                        help='no bar2edge')
 
     parser.add_argument('--noadjbartime', required=False, action='store_true',
-                        help=('noadjbartime'))
+                        help='noadjbartime')
 
     parser.add_argument('--norightedge', required=False, action='store_true',
-                        help=('rightedge'))
+                        help='rightedge')
 
     parser.add_argument('--tz', required=False,
-                        help=('Timezone in pytz format. Ex: "US/Eastern"'))
+                        help='Timezone in pytz format. Ex: "US/Eastern"')
 
     parser.add_argument('--broker', required=False, action='store_true',
-                        help=('Use IB as broker'))
+                        help='Use IB as broker')
 
+    parser.add_argument('--notifyall', required=False, action='store_true',
+                        help='Notify all messages to strategy')
     return parser.parse_args()
 
 
