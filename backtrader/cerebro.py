@@ -136,6 +136,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.analyzers = list()
         self.indicators = list()
         self.writers = list()
+        self.notifycallbacks = list()
 
         self._broker = BrokerBack()
 
@@ -192,6 +193,17 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def addobservermulti(self, obscls, *args, **kwargs):
         self.observers.append((True, obscls, args, kwargs))
 
+    def addnotifycallback(self, callback):
+        '''Adds a callback to get messages which would be handled by the
+        notify_store method'''
+        self.notifycallbacks.append(callback)
+
+    def _notify_store(self, msg, *args, **kwargs):
+        for callback in self.notifycallbacks:
+            callback(msg, *args, **kwargs)
+
+        self.notify_store(msg, *args, **kwargs)
+
     def notify_store(self, msg, *args, **kwargs):
         '''Receive store notifications in cerebro'''
         pass
@@ -204,7 +216,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     break
                 msg, args, kwargs = notif
 
-                self.notify_store(msg, *args, **kwargs)
+                self._notify_store(msg, *args, **kwargs)
                 for strat in self.runningstrats:
                     strat.notify_store(msg, *args, **kwargs)
 
@@ -516,6 +528,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for strat in runstrats:
             strat._stop()
 
+        self._broker.stop()
+
         for data in self.datas:
             data.stop()
 
@@ -532,6 +546,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def stop_writers(self, runstrats):
         cerebroinfo = OrderedDict()
         datainfos = OrderedDict()
+
         for i, data in enumerate(self.datas):
             datainfos['Data%d' % i] = data.getwriterinfo()
 
@@ -568,6 +583,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         data0 = self.datas[0]
         d0ret = True
         while d0ret:
+            # Notify anything from the store even before moving datas
+            # because datas may not move due to an error reported by the store
+            self._storenotify()
+
             d0ret = data0.next()
             if d0ret:
                 for data in self.datas[1:]:
@@ -581,7 +600,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # Only go extra round if something was changed by "lasts"
                     break
 
-            self._storenotify()
             self._brokernotify()
 
             for strat in runstrats:
