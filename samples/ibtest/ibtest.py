@@ -54,7 +54,7 @@ class EmptyStrategy(bt.Strategy):
         print('*' * 5, 'STORE NOTIF:', msg)
 
     def notify_order(self, order):
-        if order.status == [order.Completed, order.Cancelled, order.Rejected]:
+        if order.status in [order.Completed, order.Cancelled, order.Rejected]:
             self.order = None
 
         print('-' * 50, 'ORDER BEGIN')
@@ -98,12 +98,13 @@ class EmptyStrategy(bt.Strategy):
             txt.append('%.2f' % float('NaN'))
             print(', '.join(txt))
 
+        print('Position size is:', self.position.size)
         if not self.position and len(self.orderid) < 1:
             self.order = self.buy(size=self.p.stake,
-                                  exectype=bt.Order.Limit,
+                                  exectype=bt.Order.Market,
                                   price=round(self.data0.close[0] * 0.90, 2),
                                   # valid=self.data0.datetime[0] + 2.0)
-                                  #valid=0)
+                                  # valid=0)
                                   valid=datetime.timedelta())
             self.orderid.append(self.order)
         elif self.position.size > 0:
