@@ -91,6 +91,34 @@ Gathering input
        broker = MyBroker()
        cerebro.broker = broker  # property using getbroker/setbroker methods
 
+  5. Receive notifications
+
+     If *datas* and/or *brokers* send notifications (or a *store* provider
+     which creates them) they will be received through the
+     ``Cerebro.notify_store`` method. There are three (3) ways to work with
+     these notifications
+
+     - Add a *callback* to a ``cerebro`` instance via the
+       ``addnotifycallback(callback)`` call. The callback has to support this
+       signature::
+
+	 callback(msg, *args, **kwargs)
+
+       The actual ``msg``, ``*args`` and ``**kwargs`` received are
+       implementation defined (depend entirely on the *data/broker/store*) but
+       in general one should expect them to be *printable* to allow for
+       reception and experimentation.
+
+     - Override the ``notify_store`` method in the ``Strategy`` subclass which
+       is added to a ``cerebro`` instance.
+
+       The signature: ``notify_store(self, msg, *args, **kwargs)``
+
+     - Subclass ``Cerebro`` and override ``notify_store`` (same signature as in
+       the ``Strategy``)
+
+       This should be the least preferred method
+
 
 Execute the backtesting
 ***********************
@@ -116,26 +144,64 @@ The arguments for the different supported ways of execuing the backtesting:
 
     How many cores to use simultaneously for optimization
 
-  - stdstats (default: ``True``)
+  - ``stdstats`` (default: ``True``)
 
     If ``True`` default Observers will be added: Broker (Cash and Value),
     Trades and BuySell
 
-  - exactbars (default: ``False``)
+  - ``live`` (default: False)
 
-    If ``True``, the system will switch to a mode in which all "lines" objects
-    will use exactly the number of bars needed for the task. If a Simple
-    Moving Average has a period of 30, the underlying data will have always
-    a running buffer of 30 bars to allow the calculation of the Simple
-    Moving Average.
+    If no data has reported itself as *live* (via the data's ``islive``
+    method but the end user still want to run in ``live`` mode, this
+    parameter can be set to true
 
-    This can be used if keeping past data is not needed (for eample no plotting
-    is needed), because memory will be kept to a minimum.
+    This will simulatenously deactivate ``preload`` and ``runonce``. It
+    will have no effect on memory saving schemes.
 
-    Note:
+    Run ``Indicators`` in vectorized mode to speed up the entire system.
+    Strategies and Observers will always be run on an event based basis
 
-      - This setting will deactivate ``preload`` and ``runonce``
-      - Using this setting also deactivates plotting
+  - ``exactbars`` (default: False)
+
+    With the default value each and every value stored in a line is kept in
+    memory
+
+    Possible values:
+      - ``True`` or ``1``: all "lines" objects reduce memory usage to the
+        automatically calculated minimum period.
+
+        If a Simple Moving Average has a period of 30, the underlying data
+        will have always a running buffer of 30 bars to allow the
+        calculation of the Simple Moving Average
+
+        - This setting will deactivate ``preload`` and ``runonce``
+        - Using this setting also deactivates **plotting**
+
+      - ``-1``: datas and indicators/operations at strategy level will keep
+        all data in memory.
+
+        For example: a ``RSI`` internally uses the indicator ``UpDay`` to
+        make calculations. This subindicator will not keep all data in
+        memory
+
+        - This allows to keep ``plotting`` and ``preloading`` active.
+
+        - ``runonce`` will be deactivated
+
+      - ``-2``: datas and indicators kept as attributes of the strategy
+        will keep all data in memory.
+
+        For example: a ``RSI`` internally uses the indicator ``UpDay`` to
+        make calculations. This subindicator will not keep all data in
+        memory
+
+        If in the ``__init__`` something like
+        ``a = self.data.close - self.data.high`` is defined, then ``a``
+        will not keep all data in memory
+
+        - This allows to keep ``plotting`` and ``preloading`` active.
+
+        - ``runonce`` will be deactivated
 
   - ``writer`` (default: ``False``)
 
@@ -148,7 +214,6 @@ The arguments for the different supported ways of execuing the backtesting:
     If set to True, it will activate update event logging in each trade for
     all strategies. This can also be accomplished on a per strategy basis
     with the strategy method ``set_tradehistory``
-
 
 Standard Observers
 ==================
@@ -253,6 +318,10 @@ Reference
 .. currentmodule:: backtrader
 
 .. autoclass:: Cerebro
+
+   .. automethod:: addnotifycallback
+
+   .. automethod:: notify_store
 
    .. automethod:: adddata
 
