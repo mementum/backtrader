@@ -137,7 +137,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
 
         elif self.valid == 0:
             tif = 'DAY'
-        else:  # assume it is a floar
+        else:  # assume it is a float
             tif = 'GTD'  # Good til date
             valid = num2date(self.valid)
             self.m_goodTillDate = bytes(valid.strftime('%Y%m%d %H:%M:%S'))
