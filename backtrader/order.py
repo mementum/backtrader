@@ -26,7 +26,7 @@ import copy
 import datetime
 import itertools
 
-from .utils.py3 import range, with_metaclass, iteritems
+from .utils.py3 import range, with_metaclass, iteritems, queue
 
 from .metabase import MetaParams
 from .utils import date2num, AutoOrderedDict
@@ -114,7 +114,7 @@ class OrderData(object):
     '''
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0):
         self.exbits = list()  # for historical purposes
-        self.pending = collections.deque()  # for processing in strategy
+        self.pending = queue.Queue()  # for processing in strategy
 
         self.dt = dt
         self.size = size
@@ -158,7 +158,7 @@ class OrderData(object):
 
     def addbit(self, exbit):
         self.exbits.append(exbit)
-        self.pending.append(exbit)
+        self.pending.put(exbit)
 
         self.remsize -= exbit.size
 
@@ -175,10 +175,13 @@ class OrderData(object):
 
     def getpending(self):
         try:
-            return self.pending.popleft()
-        except IndexError:
-            return None
+            return self.pending.get(False)  # produce exception if empty
+        except queue.Empty:
+            pass
+        return None
 
+    def markpending(self):
+        self.pending.put(None)  # mark pending limit
 
 class Order(with_metaclass(MetaParams, object)):
     '''
