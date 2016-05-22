@@ -120,11 +120,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('stdstats', True),
         ('lookahead', 0),
         ('exactbars', False),
+        ('live', False),
         ('writer', False),
         ('tradehistory', False),
     )
 
     def __init__(self):
+        self._dolive = False
         self._doreplay = False
         self._dooptimize = False
         self.stores = list()
@@ -237,6 +239,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         feed = data.getfeed()
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
+
+        if data.islive():
+            self._dolive = True
 
     def replaydata(self, dataname, name=None, **kwargs):
         '''
@@ -415,6 +420,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if self._doreplay:
             # preloading is not supported with replay. full timeframe bars
             # are constructed in realtime
+            self._dopreload = False
+
+        if self._dolive or self.p.live:
+            # in this case both preload and runonce must be off
+            self._dorunonce = False
             self._dopreload = False
 
         self.runwriters = list()
