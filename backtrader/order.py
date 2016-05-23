@@ -290,8 +290,24 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.dteos = date2num(dteos)
 
     def clone(self):
+        # The method has to deliver a meaningful copy of an order. Meaningful
+        # in that ``mutable`` fields are copied to retain the current value in
+        # a notification for the end user and take along fields that can still
+        # be modified. Therefore
+
+        # - Invoke ``executed.markpending`` to set a mark up to the point in
+        # which pending execution bits (not yet notified to the user) have been
+        # seen
+        # - copy itself
+        # - copy ``executed`` to retain values of current execution's size and
+        # price because this can change before the notification makes it to the
+        # user
+        # - replace ``executed`` with the copy
+        # Do not touch ``created`` which is inmutable from creatio
         self.executed.markpending()
-        return copy(self)  # status could change in next to completed
+        obj = copy(self)
+        obj.executed = copy(self.executed)
+        return obj  # status could change in next to completed
 
     def getstatusname(self, status=None):
         return self.Status[self.status if status is None else status]
