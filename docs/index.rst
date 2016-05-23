@@ -36,6 +36,8 @@ Contents:
    commission-schemes/commission-schemes
    order-creation-execution/order-creation-execution
    order
+   extending-commissions/commission-schemes-extended
+   user-defined-commissions/commission-schemes-subclassing
    position
    trade
    plotting
