@@ -25,7 +25,7 @@ Trades are only informative and have no user callable methods.
 
 
 Reference: Trade
-=======================================
+================
 
 .. currentmodule:: backtrader.trade
 
