@@ -54,7 +54,7 @@ Notice the following:
   - A member variable ``self.datas`` exists which is array/list/iterable holding
     at least one item (hopefully or else an exception will be raised)
 
-So it is. `Datas` get added to the platform and they will show up inside the
+So it is. *Datas* get added to the platform and they will show up inside the
 stratey in the sequential order in which they were added to the systems.
 
 .. note:: This also applies to ``Indicators``, should the end user develop his
@@ -96,16 +96,17 @@ The example above can be further simplfied to::
 
       ...
 
-``self.data`` has been completely removed. If this is done, the indicator (in
-this case the SimpleMovingAverage) receives the first data of the object in
-which is being created (the Strategy), which is ``self.data``
+``self.data`` has been completely removed from the invocation of
+``SimpleMovingAverage``. If this is done, the indicator (in this case the
+``SimpleMovingAverage``) receives the first data of the object in which is being
+created (the Strategy), which is ``self.data`` (aka ``self.data0`` or ``self.datas[0]``)
 
 
 Indicators and Operations ara DATAS
 ===================================
 
 Not only `Data Feeds` are datas and can be passed around. `Indicators` and
-results of `Operations` are also datas.
+results of ``Operations`` are also datas.
 
 In the previous example the `SimpleMovingAverage` was receiving
 ``self.datas[0]`` as input to operate on. An example with oeprations and extra
@@ -270,6 +271,39 @@ be quickly accessed by number:
   - ``self.dataX_Y`` points to ``self.dataX.lines[X]`` which is a full shorthard
     version of ``self.datas[X].lines[Y]``
 
+Accessing ``lines`` in *Data Feeds*
+===================================
+
+Inside *data feeds* the ``lines`` can also be accessed ommitting the
+``lines``. This makes it more natural to work with thinks like ``close``
+prices.
+
+For example::
+
+  data = btfeeds.BacktraderCSVData(dataname='mydata.csv')
+
+  ...
+
+  class MyStrategy(bt.Strategy):
+
+      ...
+
+      def next(self):
+
+          if self.data.close[0] > 30.0:
+	      ...
+
+Which seems more natural than the also valid: ``if self.data.lines.close[0] >
+30.0:``. The same doesn't apply to ``Indicators`` with the reasoning being:
+
+  - An ``Indicator`` could have an attribute ``close`` which holds an
+    intermediate calculation, which is later delivered to the actual ``lines``
+    also named ``close``
+
+In the case of *Data Feeds*, no calculation takes place, because it is only a
+data source.
+
+
 *Lines* len
 ===========
 
@@ -380,6 +414,89 @@ thing. In a strategy, for example::
 
 Of course and logically, prices `set` before ``-1`` will be accessed with ``-2,
 -3, ...``.
+
+
+Lines DELAYED indexing
+**********************
+
+The ``[]`` operator syntax is there to extract individual values during the
+``next`` logic phase. *Lines* objects support an additional notation to address
+values through a *delayed lines object* during the ``__init__`` phase.
+
+Let's say that the interest in the logic is to compare the previous *close* value
+to the actual value of a *simple moving average*. Rather than doing it manually
+in each ``next`` iteration a pre-canned *lines* object can be generated::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period=20)
+
+      def __init__(self):
+
+          self.movav = btind.SimpleMovingAverage(self.data, period=self.p.period)
+	  self.cmpval = self.data.close(-1) > self.sma
+
+      def next(self):
+          if self.cmpval[0]:
+	      print('Previous close is higher than the moving average')
+
+Here the ``(delay)`` notation is being used:
+
+  - This delivers a replica of the ``close`` prices but delayed by ``-1``.
+
+
+Lines Coupling
+**************
+
+The operator ``()`` can be used as shown above with ``delay`` value to provide
+a delayed version of a *lines* object.
+
+If the syntax is used *WITHOUT* providing a ``delay`` value, then a
+``LinesCoupler`` *lines* object is returned. This is meant to establish a
+coupling between indicators that operate on *datas* with different timeframes.
+
+Datas with different timeframes have different *lengths*, and the indicators
+operating on them replicate the length of the data. Example:
+
+  - A daily data feed has around 250 bars per year
+
+  - A weekly data feed has 52 bars per year
+
+Trying to create an operation (for example) which compares 2 *simple moving
+averages*, each operating on the datas quoted above would break. It would be
+unclear how to match the 250 bars from the daily timeframe to the 52 bars of
+the weekly timeframe.
+
+The reader could imagine a ``date`` comparison taking place in the background
+to find out a day - week correspondence, but:
+
+  - ``Indicators`` are just mathematical formulas and have no *datetime*
+    information
+
+    They know nothing about the environment, just that if the data provides
+    enough values, a calculation can take place.
+
+But the ``()`` empty notation comes to the rescue::
+
+  class MyStrategy(bt.Strategy):
+      params = dict(period=20)
+
+      def __init__(self):
+
+          # data0 is a daily data
+          sma0 = btind.SMA(self.data0, period=15)  # 15 days sma
+	  # data1 is a weekly data
+          sma1 = btind.SMA(self.data1, period=5)  # 5 weeks sma
+
+	  self.buysig = sma0 > sma1()
+
+      def next(self):
+          if self.buysig[0]:
+	      print('daily sma is greater than weekly sma1')
+
+Here the larger timeframe indicator, ``sma1`` is *coupled* to the daily
+timeframe with ``sma1()``. This returns an object which is compatible with the
+larger numbers of bars of ``sma0`` and copies the values produced by ``sma1``,
+effectivelly spreading the 52 weekly bars in 250 daily bars
 
 
 Operators, using natural constructs
@@ -516,11 +633,11 @@ floats) and also arithmetic operations do.
 .. note:: Notice that comparisons are actually not using the [] operator. This
 	  is meant to further simplify things.
 
-	  ``if self.sma > 30.0:`` ... compares self.sma[0] to 30.0 (1st line
-	  and current value)
+	  ``if self.sma > 30.0:`` ... compares ``self.sma[0]`` to ``30.0`` (1st
+	  line and current value)
 
-	  ``if self.sma > self.sma.close:`` ... compares self.sma[0] to
-	  self.data.close[0]
+	  ``if self.sma > self.data.close:`` ... compares ``self.sma[0]`` to
+	  ``self.data.close[0]``
 
 Some non-overriden operators/functions
 ======================================
@@ -551,6 +668,65 @@ Functions:
 These utility operators/functions operate on iterables. The elements in the
 iterables can be regular Python numeric types (ints, floats, ...) and also
 objects with *Lines*.
+
+An example generating a very dumb buy signal::
+
+  class MyStrategy(bt.Strategy):
+
+      def __init__(self):
+
+          sma1 = btind.SMA(self.data.close, period=15)
+          self.buysig = bt.And(sma1 > self.data.close, sma1 > self.data.high)
+
+      def next(self):
+          if self.buysig[0]:
+	      pass  # do something here
+
+It is obvious that if the ``sma1`` is higher than the high, it must be higher
+than the close. But the point is illustrating the use of ``bt.And``.
+
+Using ``bt.If``::
+
+  class MyStrategy(bt.Strategy):
+
+      def __init__(self):
+
+          sma1 = btind.SMA(self.data.close, period=15)
+          high_or_low = bt.If(sma1 > self.data.close, self.data.low, self.data.high)
+	  sma2 = btind.SMA(high_or_low, period=15)
+
+Breakdown:
+
+  - Generate a ``SMA`` on ``data.close`` of ``period=15``
+
+  - And then
+
+    - ``bt.If`` the value of the *sma* is larger than ``close``, return
+      ``low``, else return ``high``
+
+      Remember that no actual value is being returned when ``bt.If`` is being
+      invoked. It returns a *Lines* object which is just like a
+      *SimpleMovingAverage*.
+
+      The values will be calculated later when the system runs
+
+  - The generated ``bt.If`` *Lines* object is then fed to a 2nd ``SMA`` which
+    will sometimes use the ``low`` prices and sometimes the ``high`` prices for
+    the calculation
+
+Those **functions** take also numeric values. The same example with a modification::
+
+  class MyStrategy(bt.Strategy):
+
+      def __init__(self):
+
+          sma1 = btind.SMA(self.data.close, period=15)
+          high_or_30 = bt.If(sma1 > self.data.close, 30.0, self.data.high)
+	  sma2 = btind.SMA(high_or_low, period=15)
+
+Now the 2nd moving average uses either ``30.0`` or the ``high`` prices to
+perform the calculation, depending on the logic status of ``sma`` vs ``close``
+
 
 Date and Time Manipulation
 ==========================

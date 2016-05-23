@@ -1,8 +1,4 @@
 
-.. post:: May 09, 2016
-   :author: mementum
-   :image: 1
-
 Saving Memory
 #############
 
