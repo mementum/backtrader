@@ -537,14 +537,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             Possible values:
 
               - ``None``: this generates an order that will not expire (aka
-                *Good til cancel*) and remain in the market until matched or
+                *Good till cancel*) and remain in the market until matched or
                 canceled. In reality brokers tend to impose a temporal limit,
                 but this is usually so far away in time to consider it as not
                 expiring
 
               - ``datetime.datetime`` or ``datetime.date`` instance: the date
                 will be used to generate an order valid until the given
-                datetime (aka *good til date*)
+                datetime (aka *good till date*)
 
               - ``Order.DAY`` or ``0`` or ``timedelta()``: a day valid until
                 the *End of the Session* (aka *day* order) will be generated
@@ -552,7 +552,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
               - ``numeric value``: This is assumed to be a value corresponding
                 to a datetime in ``matplotlib`` coding (the one used by
                 ``backtrader``) and will used to generate an order valid until
-                that time (*good til date*)
+                that time (*good till date*)
 
           - ``tradeid`` (default: ``0``)
 
