@@ -28,54 +28,6 @@ For order execution logic the following execution types:
 Order Management
 ================
 
-The main goal is ease of use and therefore the most direct (and simple) way to
-do order management is from the strategy itself.
-
-The ``buy`` and ``self`` primitives have the following signature as ``Strategy``
-methods:
-
-  - def buy(self, data=None, size=None, price=None, plimit=None, exectype=None, valid=None):
-
-  - **def buy(self, data=None, size=None, price=None, exectype=None, valid=None)**
-
-    - ``data`` -> data feed reference which is the assed to buy
-
-      If ``None`` is passed the main data of the strategy is used as the target
-
-    - ``size`` -> int/long determining the stake to apply
-
-      if ``None`` is passed, the ``Sizer`` available in the strategy will be
-      used to automatically determine the stake. The default ``Sizer`` uses a
-      fixed state of **1**
-
-    - ``price`` -> will be ignored for ``Market`` and can be left as ``None``
-      orders but must be a float for the other order types. If left as ``None``
-      the current closing price will be used
-
-    - ``plimit`` -> limit price in ``StopLimit`` orders where ``price`` will be
-      used as the trigger price
-
-      If left as ``None`` then ``price`` will be used as the limit (trigger and
-      limit are the same)
-
-    - ``exectype`` -> One of the order execution types. If ``None`` is passed
-      then ``Market`` will be assumed
-
-      The execution types are enumerated in ``Order``. Example: ``Order.Limit``
-
-    - ``valid`` -> float value from date2num (or from the data feed) or a
-      datetime.datetime Python object
-
-      **Note**: A ``Market`` order will be executed regardless of the ``valid``
-      parameter
-
-    RETURN VALUE: an ``Order`` instance
-
-  - **def sell(self, data=None, size=None, price=None, exectype=None, valid=None)**
-
-Because canceling an order just requires the ``order`` reference returned by
-either ``buy`` or ``self``, the primitive from the broker can be used (see below)
-
 Some examples::
 
   # buy the main date, with sizer default stake, Market order
