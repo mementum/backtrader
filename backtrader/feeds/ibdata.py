@@ -41,7 +41,7 @@ class MetaIBData(DataBase.__class__):
 class IBData(with_metaclass(MetaIBData, DataBase)):
     '''Interactive Brokers Data Feed.
 
-    Supports the following contract specifications in ``dataname``:
+    Supports the following contract specifications in parameter ``dataname``:
 
           - TICKER  # Stock type and SMART exchange
           - TICKER-STK  # Stock and SMART exchange
@@ -62,6 +62,47 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-RIGHT-STRIKE  # OPT
           - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-RIGHT-STRIKE-MULT  # OPT
 
+    Params:
+
+      - ``sectype`` (default: ``STK``)
+
+        Default value to apply as *security type* if not provided in the
+        ``dataname`` specification
+
+      - ``exchange`` (default: ``SMART``)
+
+        Default value to apply as *exchange* if not provided in the
+        ``dataname`` specification
+
+      - ``currency`` (default: ``''``)
+
+        Default value to apply as *currency* if not provided in the
+        ``dataname`` specification
+
+      - ``tz`` (default: ``None``)
+
+        ``pytz`` or compatible timezone object to apply to the timestamps
+        provided by Interactive Brokers (UTC) to convert the time to that
+        timezone. The final datetime objects generated in the platform will
+        still be naive (timezone-less) to allow for easy comparison across the
+        platforma and eaay conversion from/to numeric values
+
+        Usual timezone guidelines recommend to always work in UTC and only
+        convert to a specified timezone when displaying to the user.
+
+      - ``useRT`` (default: ``False``)
+
+        If ``True`` the ``5 Seconds Realtime bars`` provided by Interactive
+        Brokers will be used as the smalles tick. According to the
+        documentation they correspond to real-time values (once collated and
+        curated by IB)
+
+        If ``False`` then the ``RTVolume`` prices will be used, which are based
+        on receiving ticks. In the case of ``CASH`` assets (like for example
+        EUR.JPY) ``RTVolume`` will always be used and from it the ``bid`` price
+        (industry de-facto standard with IB according to the literature
+        scattered over the Internet)
+
     The default values in the params are the to allow things like ```TICKER``,
     to which the parameter ``sectype`` (default: ``STK``) and ``exchange``
     (default: ``SMART``) are applied.
@@ -69,17 +110,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     Some assets like ``AAPL`` need full specification including ``currency``
     (default: '') whereas others like ``TWTR`` can be simply passed as it is.
 
-      - ``AAPL-STK-SMART-USD`` would be the full specification
+      - ``AAPL-STK-SMART-USD`` would be the full specification for dataname
 
-    Default ``sectype``, ``exchange`` and ``currency`` can be specified as
-    parameters to the data feed.
-
-    A timezone (``tz``: default None) can be applied to work directly in the
-    specifiec timezone rather than in UTC, but internally the objects are
-    managed without timezones.  This must be a ``pytz`` object (or compatible)
-
-    Real-Time Bars (5 seconds Real-Time) can be requested with ``useRT``
-    (default: False). This doesn't work with demo accounts.
+        Or else: ``IBData`` as ``IBData(dataname='AAPL', currency='USD')``
+        which uses the default values (``STK`` and ``SMART``) and overrides
+        the currency to be ``USD``
     '''
 
     params = (
@@ -93,6 +128,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     _store = ibstore.IBStore
 
     def islive(self):
+        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
+        should be deactivated'''
         return True
 
     def __init__(self, **kwargs):
@@ -100,10 +137,14 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.parsecontract()
 
     def setenvironment(self, env):
+        '''Receives an environment (cerebro) and passes it over to the store it
+        belongs to'''
         super(IBData, self).setenvironment(env)
         env.addstore(self.ib)
 
     def parsecontract(self):
+        '''Parses dataname following the specification and geneates a default
+        contract'''
         # Set defaults for optional tokens in the ticker string
         exch = self.p.exchange
         curr = self.p.currency
@@ -164,7 +205,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             pass
 
         # Make the initial contract
-        self.cdetails = None
+        self.contractdetails = None
         self.precontract = self.ib.makecontract(
             symbol=symbol, sectype=sectype, exch=exch, curr=curr,
             expiry=expiry, strike=strike, right=right, mult=mult)
@@ -172,7 +213,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.cashtype = sectype == 'CASH'
 
     def start(self):
-        '''Starts the IB connecction and gets the real contract if it exists'''
+        '''Starts the IB connecction and gets the real contract and
+        contractdetails if it exists'''
         super(IBData, self).start()
         # Kickstart store and get queue to wait on
         self.q = self.ib.start(data=self)
@@ -197,7 +239,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.ib.stop()
 
     def reqdata(self):
-        '''request real-time data. checks item time and parameter useRT'''
+        '''request real-time data. checks item type (cash or not cash) and parameter
+        useRT
+        '''
         if self.contract is None:
             return
 
@@ -226,19 +270,24 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             msg = self.q.get()
             if msg is None:
                 if self.contract is None:
+                    # initial connection failed, nothing can be done
                     return False
 
+                # a contract exists, connection lost -> try reconnecting
                 if not self.ib.reconnect(resub=True):
                     return False  # no reconnect or failed
 
                 continue  # back to data fetch
 
-            if self.p.useRT:
-                return self._load_rtbar(msg)
+            # Process the message according to expected return type
+            if not self.p.useRT or self.cashtype:
+                return self._load_rtvolume(msg)
 
-            return self._load_rtvolume(msg)
+            return self._load_rtbar(msg)
 
     def _load_rtbar(self, rtbar):
+        # A complete 5 second bar made of real-time ticks is delivered and
+        # contains open/high/low/close/volume prices
         # Datetime transformation
         self.lines.datetime[0] = date2num(rtbar.time)
 
@@ -253,6 +302,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return True
 
     def _load_rtvolume(self, rtvol):
+        # A single tick is delivered and is therefore used for the entire set
+        # of prices. Ideally the
+        # contains open/high/low/close/volume prices
         # Datetime transformation
         self.lines.datetime[0] = date2num(rtvol.datetime)
 

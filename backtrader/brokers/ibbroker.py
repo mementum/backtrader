@@ -43,9 +43,32 @@ from backtrader.comminfo import CommInfoBase
 
 class IBOrder(OrderBase, ib.ext.Order.Order):
     '''Subclasses the IBPy order to provide the minimum extra functionality
-    needed to be compatible with the internally defined orders'''
+    needed to be compatible with the internally defined orders
+
+    Once ``OrderBase`` has processed the parameters, the __init__ method takes
+    over to use the parameter values and set the appropriate values in the
+    ib.ext.Order.Order object
+
+    Any extra parameters supplied with kwargs are applied directly to the
+    ib.ext.Order.Order object, which could be used as follows::
+
+      Example: if the 4 order execution types directly supported by
+      ``backtrader`` are not enough, in the case of for example
+      *Interactive Brokers* the following could be passed as *kwargs*::
+
+        orderType='LIT', lmtPrice=10.0, auxPrice=9.8
+
+      This would override the settings created by ``backtrader`` and
+      generate a ``LIMIT IF TOUCHED`` order with a *touched* price of 9.8
+      and a *limit* price of 10.0.
+
+    This would be done almost always from the ``Buy`` and ``Sell`` methods of
+    the ``Strategy`` subclass being used in ``Cerebro``
+    '''
 
     def __str__(self):
+        '''Get the printout from the base class and add some ib.Order specific
+        fields'''
         basetxt = super(IBOrder, self).__str__()
         tojoin = [basetxt]
         tojoin.append('Ref: {}'.format(self.ref))
@@ -59,6 +82,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         tojoin.append('GoodTillDate: {}'.format(self.m_goodTillDate))
         return '\n'.join(tojoin)
 
+    # Map backtrader order types to the ib specifics
     _OrdTypes = {
         None: bytes('MKT'),  # default
         Order.Market: bytes('MKT'),
@@ -68,10 +92,6 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         Order.StopLimit: bytes('STPLMT'),
     }
 
-    # def __init__(self, action, owner, data,
-    # size, price=None, pricelimit=None,
-    # exectype=None, valid=None,
-    # tradeid=0, **kwargs):
     def __init__(self, action, **kwargs):
 
         self.ordtype = self.Buy if action == 'BUY' else self.Sell
@@ -150,6 +170,18 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
 
 
 class IBCommInfo(CommInfoBase):
+    '''
+    Commissions are calculated by ib, but the trades calculations in the
+    ```Strategy`` rely on the order carrying a CommInfo object attached for the
+    calculation of the operation cost and value.
+
+    These are non-critical informations, but removing them from the trade could
+    break existing usage and it is better to provide a CommInfo objet which
+    enables those calculations even if with approvimate values.
+
+    The margin calculation is not a known in advance information with IB
+    (margin impact can be gotten from OrderState objects) and therefore it is
+    left as future exercise to get it'''
 
     def getvaluesize(self, size, price):
         # In real life the margin approaches the price
@@ -175,28 +207,22 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     This class maps the orders/positions from Interactive Brokers to the
     internal API of ``backtrader``.
 
-    Params:
+    Notes:
 
-      - ``comission`` (default: CommInfoBase(percabs=True))
-        The user's commission in Interactive Brokers is not known so a
-        commission scheme with null comissions is applied (the system needs
-        one)
+      - ``tradeid`` is not really supported, because the profit and loss are
+        taken directly from IB. Because (as expected) calculates it in FIFO
+        manner, the pnl is not accurate for the tradeid.
 
-        It can be replaced by the end user during instantiation or later with
-        the methods:
+      - Position
 
-          - addcommission
-          - setcomission
+        If there is an open position for an asset at the beginning of
+        operaitons or orders given by other means change a position, the trades
+        calculated in the ``Strategy`` in cerebro will not reflect the reality.
 
-    Differences:
-
-      - ``commissions`` and ``positions``: order status updates (including
-        execution) from ib don't carry commission information or profit and
-        loss. Accumulated profit and loss is sent back portfolio
-        updates. ``backtrader`` tries to keep positions in sync by checking
-        each order status updates.
-
-        This would affect the calculations for "trades"
+        To avoid this, this broker would have to do its own position
+        management which would also allow tradeid with multiple ids (profit and
+        loss would also be calculated locally), but could be considered to be
+        defeating the purpose of working with a live broker
     '''
     params = ()
 
