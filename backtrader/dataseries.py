@@ -37,6 +37,8 @@ class TimeFrame(object):
     Names = ['Ticks', 'MicroSeconds', 'Seconds',
              'Minutes', 'Days', 'Weeks', 'Months', 'Years']
 
+    names = Names  # support old naming convention
+
     @classmethod
     def getname(cls, tframe, compression):
         if compression == 1:
