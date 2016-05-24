@@ -83,7 +83,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         return '\n'.join(tojoin)
 
     # Map backtrader order types to the ib specifics
-    _OrdTypes = {
+    _IBOrdTypes = {
         None: bytes('MKT'),  # default
         Order.Market: bytes('MKT'),
         Order.Limit: bytes('LMT'),
@@ -95,27 +95,12 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
     def __init__(self, action, **kwargs):
 
         self.ordtype = self.Buy if action == 'BUY' else self.Sell
+
         super(IBOrder, self).__init__()
-
-        # Simulate the "params" from the internal Order class and set them
-        # before calling the OrderBase initialization
-        if False:
-            self.owner = owner
-            self.data = data
-            self.size = size
-            self.tradeid = tradeid
-            self.exectype = exectype
-            self.price = price
-            self.pricelimit = pricelimit
-            self.tradeid = tradeid
-            self.valid = valid
-
-            OrderBase.__init__(self)  # call 2nd baseclass
-
         ib.ext.Order.Order.__init__(self)  # Invoke 2nd base class
 
         # Now fill in the specific IB parameters
-        self.m_orderType = self._OrdTypes[self.exectype]
+        self.m_orderType = self._IBOrdTypes[self.exectype]
         self.m_permid = 0
 
         # 'B' or 'S' should be enough
@@ -304,7 +289,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         except (ValueError, TypeError):
             mult = 1.0
 
-        stocklike = contract.m_secType in ['FUT', 'OPT', 'FOP']
+        stocklike = contract.m_secType not in ('FUT', 'OPT', 'FOP',)
 
         return IBCommInfo(mult=mult, stocklike=stocklike)
 
@@ -363,8 +348,10 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         self.notifs.put(None)  # mark notificatino boundary
 
     # Order statuses in msg
-    SUBMITTED, FILLED, CANCELLED, INACTIVE = (
-        'Submitted', 'Filled', 'Cancelled', 'Inactive')
+    (SUBMITTED, FILLED, CANCELLED, INACTIVE,
+     PENDINGSUBMIT, PENDINGCANCEL, PRESUBMITTED) = (
+        'Submitted', 'Filled', 'Cancelled', 'Inactive',
+         'PendingSubmit', 'PendingCancel', 'PreSubmitted',)
 
     def push_orderstatus(self, msg):
         # Cancelled and Submitted with Filled = 0 can be pushed immediately
@@ -387,7 +374,20 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             order.cancel()
             self.notify(order)
 
+        elif msg.status == self.PENDINGCANCEL:
+            # In theory this message should not be seen according to the docs,
+            # but other messages like PENDINGSUBMIT which are similarly
+            # described in the docs have been received in the demo
+            if order.status == order.Cancelled:  # duplicate detection
+                return
+
+            order.cancel()
+            self.notify(order)
+
         elif msg.status == self.INACTIVE:
+            # This is a tricky one, because the instances seen have led to
+            # order rejection in the demo, but according to the docs there may
+            # be a number of reasons and it seems like it could be reactivated
             if order.status == order.Rejected:  # duplicate detection
                 return
 
@@ -398,6 +398,13 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             # These two are kept inside the order until execdetails and
             # commission are all in place - commission is the last to come
             self.ordstatus[msg.orderId][msg.filled] = msg
+
+        elif msg.status in [self.PENDINGSUBMIT, self.PRESUBMITTED]:
+            # According to the docs, these statuses can only be set by the
+            # programmer but the demo account sent it back at random times with
+            # "filled"
+            if msg.filled:
+                self.ordstatus[msg.orderId][msg.filled] = msg
         else:  # Unknown status ...
             pass
 
@@ -409,7 +416,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             ex = self.executions.pop(cr.m_execId)
             oid = ex.m_orderId
             order = self.orderbyid[oid]
-            ostatus = self.ordstatus[oid][ex.m_cumQty]
+            ostatus = self.ordstatus[oid].pop(ex.m_cumQty)
 
             position = self.getposition(order.data, clone=False)
             pprice_orig = position.price
@@ -433,12 +440,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             # The internal broker calc should yield the same result
             # pnl = comminfo.profitandloss(-closed, pprice_orig, price)
 
-            # FIXME ... from data or from execution From data it can be way off
-            # the real execution time depending on the timeframe dt =
-            # order.data.datetime[0] With execution time, the problem is the
-            # time difference from UTC (data) if no timezone has been provided,
-            # because the actual time is reported in computer's local
-            # time. Sample: m_time: 20160518 20:19:46
+            # Use the actual time provided by the execution object
             dt = date2num(datetime.strptime(ex.m_time, '%Y%m%d  %H:%M:%S'))
 
             # Need to simulate a margin, but it plays no role, because it is
@@ -453,6 +455,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
             if ostatus.status == self.FILLED:
                 order.completed()
+                self.ostatus.pop(oid)  # nothing left to be reported
             else:
                 order.partial()
 

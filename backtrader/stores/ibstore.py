@@ -112,7 +112,47 @@ def ibregister(f):
 
 
 class IBStore(with_metaclass(MetaSingleton, object)):
-    '''Singleton class wrapping an ibpy ibConnection instance.'''
+    '''Singleton class wrapping an ibpy ibConnection instance.
+
+    The parameters can also be specified in the classes which use this store,
+    like ``IBData`` and ``IBBroker``
+
+    Parameters:
+
+      - ``host`` (default: '127.0.0.1'): where IB TWS or IB Gateway are
+        actually running. And although this will usually be the localhost, it
+        must not be
+
+      - ``port`` (default: 7496): port to connect to. The demo system uses
+        ``7497``
+
+      - ``clientId`` (default: None): which clientId to use to connect to TWS.
+
+        None: generates a random id between 1 and 65535
+        An ``integer``: will be passed as the value to use.
+
+      - ``notifyall`` (default: False)
+
+        If ``False`` only ``error`` messages will be sent to the
+        ``notify_store`` methods of ``Cerebro`` and ``Strategy``.
+
+        If ``True``, each and every message received from TWS will be notified
+
+      - ``_debug`` (default: False)
+
+        Print all messages received from TWS to standard output
+
+      - ``reconnect`` (default: 3)
+
+        Number of attempts to try to reconnect after the 1st connection attempt
+        fails
+
+        Set it to a ``-1`` value to keep on reconnecting forever
+
+      - ``timeout`` (default: 3.0)
+
+        Time in seconds between reconnection attemps
+    '''
 
     BrokerCls = None  # broker class will autoregister
     DataCls = None  # data class will auto register
@@ -382,12 +422,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.conn.disconnect()
             self.stopdatas()
 
-        elif hasattr(msg, 'id') and msg.id > 0:
-            # elif 100 <= msg.errorCode < 200 or msg.errorCode in [201, 202]:
-            # TOCHECK: in theory the tag for "orders" is "id" and we could
-            # check the presence of that as attribute in the error message. But
-            # codes 200, 203 which are for reqMktData with tickerId seem to
-            # carry that tag too.  Are those the only exceptions?
+        elif msg.errorCode < 500:
+            # Given the myriad of errorCodes, start by assuming is an order
+            # error and if not, the checkes there will let it go
             self.broker.push_ordererror(msg)
 
     @ibregister
@@ -803,7 +840,24 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def execDetails(self, msg):
         '''Receive execDetails'''
-        self.broker.push_execution(msg.execution)
+        ex = msg.execution
+        print('-*' * 10, 'EXECUTION')
+        for f in ['m_orderId', 'm_clientId', 'm_execId', 'm_time',
+                  'm_acctNumber', 'm_exchange', 'm_side', 'm_shares',
+                  'm_price', 'm_permId', 'm_liquidation', 'm_cumQty',
+                  'm_avgPrice', 'm_orderRef', 'm_evRule',
+                  'm_evMultiplier']:
+
+            print(f, ':', getattr(ex, f))
+        print('-*' * 10)
+
+        self.broker.push_execution(ex)
+
+        if False:
+            @ibregister
+            def execDetails(self, msg):
+                '''Receive execDetails'''
+                self.broker.push_execution(msg.execution)
 
     @ibregister
     def orderStatus(self, msg):
@@ -813,7 +867,21 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def commissionReport(self, msg):
         '''Receive the event commissionReport'''
-        self.broker.push_commissionreport(msg.commissionReport)
+        cr = msg.commissionReport
+        print('-*' * 10, 'COMMISSION REPORT')
+        for f in ['m_execId', 'm_commission', 'm_currency',
+                  'm_realizedPNL', 'm_yield', 'm_yieldRedemptionDate']:
+
+            print(f, ':', getattr(cr, f))
+        print('-*' * 10)
+
+        self.broker.push_commissionreport(cr)
+
+    if False:
+        @ibregister
+        def commissionReport(self, msg):
+            '''Receive the event commissionReport'''
+            self.broker.push_commissionreport(msg.commissionReport)
 
     def reqPositions(self):
         '''Proxy to reqPositions'''
@@ -859,11 +927,12 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             else:
                 position = self.positions[msg.contract.m_conId]
                 if not position.fix(msg.position, msg.averageCost):
-                    err = ibopt.messageError(
-                        id=-1, errorCode=-1,
-                        errorMsg='**** POSITION FIXING REPORTS ERROR')
+                    err = ('The current calculated position and '
+                           'the position reported by the broker do not match. '
+                           'Operation can continue, but the trades '
+                           'calculated in the strategy may be wrong')
 
-                    self.notifs.put(err)
+                    self.notifs.put((err, (), {}))
 
                 # Flag signal to broker at the end of account download
                 # self.port_update = True

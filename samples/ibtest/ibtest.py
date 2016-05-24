@@ -36,6 +36,7 @@ class EmptyStrategy(bt.Strategy):
     params = dict(
         smaperiod=5,
         stake=10,
+        exectype=bt.Order.Market,
     )
 
     def __init__(self):
@@ -101,7 +102,7 @@ class EmptyStrategy(bt.Strategy):
         print('Position size is:', self.position.size)
         if not self.position and len(self.orderid) < 1:
             self.order = self.buy(size=self.p.stake,
-                                  exectype=bt.Order.Market,
+                                  exectype=self.p.exectype,
                                   price=round(self.data0.close[0] * 0.90, 2),
                                   # valid=self.data0.datetime[0] + 2.0)
                                   # valid=0)
@@ -161,23 +162,25 @@ def runstrategy():
     adjbartime = not args.noadjbartime
     rightedge = not args.norightedge
 
-    if args.replay:
+    if args.replay is not None:
+        tframe = bt.TimeFrame.TFrame(args.replay.capitalize())
         cerebro.replaydata(dataname=data0,
-                           timeframe=bt.TimeFrame.Seconds,
+                           timeframe=tframe,
                            compression=args.compression,
                            bar2edge=bar2edge,
                            adjbartime=adjbartime,
                            rightedge=rightedge)
         if data1 is not None:
             cerebro.replaydata(dataname=data1,
-                               timeframe=bt.TimeFrame.Seconds,
+                               timeframe=tframe,
                                compression=args.compression,
                                bar2edge=bar2edge,
                                adjbartime=adjbartime,
                                rightedge=rightedge)
-    elif args.resample:
+    elif args.resample is not None:
+        tframe = bt.TimeFrame.TFrame(args.resample.capitalize())
         cerebro.resampledata(dataname=data0,
-                             timeframe=bt.TimeFrame.Seconds,
+                             timeframe=tframe,
                              compression=args.compression,
                              bar2edge=bar2edge,
                              adjbartime=adjbartime,
@@ -185,7 +188,7 @@ def runstrategy():
 
         if data1 is not None:
             cerebro.resampledata(dataname=data1,
-                                 timeframe=bt.TimeFrame.Seconds,
+                                 timeframe=tframe,
                                  compression=args.compression,
                                  bar2edge=bar2edge,
                                  adjbartime=adjbartime,
@@ -198,7 +201,8 @@ def runstrategy():
     # Add the strategy
     cerebro.addstrategy(EmptyStrategy,
                         smaperiod=args.smaperiod,
-                        stake=args.stake)
+                        stake=args.stake,
+                        exectype=bt.Order.ExecType(args.exectype))
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=1)
@@ -233,13 +237,20 @@ def parse_args():
     parser.add_argument('--stake', default=10, type=int,
                         help='Stake to use')
 
+    parser.add_argument('--exectype', required=False, action='store',
+                        default=bt.Order.ExecTypes[0],
+                        choices=bt.Order.ExecTypes,
+                        help='Execution to Use when opening position')
+
     pgroup = parser.add_mutually_exclusive_group(required=False)
 
-    pgroup.add_argument('--replay', required=False, action='store_true',
-                        help='replay to minutes')
+    pgroup.add_argument('--replay', default=None, required=False,
+                        action='store', choices=bt.TimeFrame.Names,
+                        help='replay to chosen timeframe')
 
-    pgroup.add_argument('--resample', required=False, action='store_true',
-                        help='resample to minutes')
+    pgroup.add_argument('--resample', default=None, required=False,
+                        action='store', choices=bt.TimeFrame.Names,
+                        help='resample to chosen timeframe')
 
     parser.add_argument('--compression', default=1, type=int,
                         help='Compression level for resample/replay')
