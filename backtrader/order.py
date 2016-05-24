@@ -206,32 +206,31 @@ class OrderBase(with_metaclass(MetaParams, object)):
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('exectype', None), ('valid', None),
-        ('triggered', False), ('tradeid', 0),
+        ('tradeid', 0),
     )
 
-    DAY = datetime.timedelta()
+    DAY = datetime.timedelta()  # constant for DAY order identification
 
-    ExecType = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
     Market, Close, Limit, Stop, StopLimit = range(5)
+    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
 
-    OrdType = ['Buy', 'Sell']
+    OrdTypes = ['Buy', 'Sell']
     Buy, Sell = range(2)
 
     Created, Submitted, Accepted, Partial, Completed, \
         Canceled, Expired, Margin, Rejected = range(9)
 
-    Cancelled = Canceled
+    Cancelled = Canceled  # alias
 
     Status = [
         'Created', 'Submitted', 'Accepted', 'Partial',
         'Completed', 'Canceled', 'Expired', 'Margin', 'Rejected',
     ]
 
-    refbasis = itertools.count(1)
+    refbasis = itertools.count(1)  # for a unique identifier per order
 
     def __getattr__(self, name):
-        # dig into self.params if not found as attribute
-        # mostly for external access
+        # Return attr from params if not found in order
         return getattr(self.params, name)
 
     def __setattribute__(self, name, value):
@@ -265,6 +264,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.broker = None
         self.info = AutoOrderedDict()
         self.comminfo = None
+        self.triggered = False
 
         self.status = Order.Created
 
@@ -316,25 +316,36 @@ class OrderBase(with_metaclass(MetaParams, object)):
         return obj  # status could change in next to completed
 
     def getstatusname(self, status=None):
+        '''Returns the name for a given status or the one of the order'''
         return self.Status[self.status if status is None else status]
 
     def getordername(self, exectype=None):
-        return self.ExecType[self.exectype if exectype is None else exectype]
+        '''Returns the name for a given exectype or the one of the order'''
+        return self.ExecTypes[self.exectype if exectype is None else exectype]
+
+    @classmethod
+    def ExecType(cls, exectype):
+        return getattr(cls, exectype)
 
     def ordtypename(self, ordtype=None):
-        return self.OrdType[self.ordtype if ordtype is None else ordtype]
+        '''Returns the name for a given ordtype or the one of the order'''
+        return self.OrdTypes[self.ordtype if ordtype is None else ordtype]
 
     def alive(self):
+        '''Returns True if the order is in a status in which it can still be
+        executed
+        '''
         return self.status in [Order.Created, Order.Submitted,
                                Order.Partial, Order.Accepted]
 
     def addcomminfo(self, comminfo):
+        '''Stores a CommInfo scheme associated with the asset'''
         self.comminfo = comminfo
 
     def addinfo(self, **kwargs):
         '''Add the keys, values of kwargs to the internal info dictionary to
-        hold custom information in the order'''
-
+        hold custom information in the order
+        '''
         for key, val in iteritems(kwargs):
             self.info[key] = val
 
@@ -345,30 +356,40 @@ class OrderBase(with_metaclass(MetaParams, object)):
         return self.ref != other.ref
 
     def isbuy(self):
+        '''Returns True if the order is a Buy order'''
         return self.ordtype == self.Buy
 
     def issell(self):
+        '''Returns True if the order is a Sell order'''
         return self.ordtype == self.Sell
 
     def setposition(self, position):
+        '''Receives the current position for the asset and stotres it'''
         self.position = position
 
     def submit(self, broker=None):
+        '''Marks an order as submitted and stores the broker to which it was
+        submitted'''
         self.status = Order.Submitted
         self.broker = broker
         self.plen = len(self.data)
 
     def accept(self, broker=None):
+        '''Marks an order as accepted'''
         self.status = Order.Accepted
         self.broker = broker
 
     def brokerstatus(self):
+        '''Tries to retrieve the status from the broker in which the order is.
+
+        Defaults to last known status if no broker is associated'''
         if self.broker:
             return self.broker.orderstatus(self)
 
         return self.status
 
     def reject(self, broker=None):
+        '''Marks an order as rejected'''
         if self.status == Order.Rejected:
             return False
 
@@ -378,17 +399,21 @@ class OrderBase(with_metaclass(MetaParams, object)):
         return True
 
     def cancel(self):
+        '''Marks an order as cancelled'''
         self.status = Order.Canceled
         self.executed.dt = self.data.datetime[0]
 
     def margin(self):
+        '''Marks an order as having met a margin call'''
         self.status = Order.Margin
         self.executed.dt = self.data.datetime[0]
 
     def completed(self):
+        '''Marks an order as completely filled'''
         self.status = self.Completed
 
     def partial(self):
+        '''Marks an order as partially filled'''
         self.status = self.Partial
 
     def execute(self, dt, size, price,
@@ -397,6 +422,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
                 margin, pnl,
                 psize, pprice):
 
+        '''Receives data execution input and stores it'''
         if not size:
             return
 
@@ -457,11 +483,10 @@ class Order(OrderBase):
                 margin, pnl,
                 psize, pprice):
 
-        super(Order, self).execute(
-            dt, size, price,
-            closed, closedvalue, closedcomm,
-            opened, openedvalue, openedcomm,
-            margin, pnl, psize, pprice)
+        super(Order, self).execute(dt, size, price,
+                                   closed, closedvalue, closedcomm,
+                                   opened, openedvalue, openedcomm,
+                                   margin, pnl, psize, pprice)
 
         if self.executed.remsize:
             self.status = Order.Partial
