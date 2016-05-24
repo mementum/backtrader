@@ -231,7 +231,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def notify_store(self, msg, *args, **kwargs):
         '''Receive store notifications in cerebro
 
-        This method can be overrided in ``Cerebro`` subclasses
+        This method can be overridden in ``Cerebro`` subclasses
 
         The actual ``msg``, ``*args`` and ``**kwargs`` received are
         implementation defined (depend entirely on the *data/broker/store*) but
