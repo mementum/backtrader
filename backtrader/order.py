@@ -401,6 +401,11 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         self.executed.margin = margin
 
+    def expire(self):
+        '''Marks an order as expired. Returns True if it worked'''
+        order.status = self.Expired
+        return True
+
 
 class Order(OrderBase):
     '''
@@ -460,7 +465,7 @@ class Order(OrderBase):
         # self.comminfo = None
 
     def expire(self):
-        if self.params.exectype == Order.Market:
+        if self.exectype == Order.Market:
             return False  # will be executed yes or yes
 
         if self.valid and self.data.datetime[0] > self.valid:
