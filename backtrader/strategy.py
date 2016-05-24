@@ -381,8 +381,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             trade = datatrades[-1]
 
-        while True:
-            exbit = order.executed.getpending()
+        for exbit in order.executed.iterpending():
             if exbit is None:
                 break
 
