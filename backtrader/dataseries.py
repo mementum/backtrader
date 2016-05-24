@@ -34,15 +34,23 @@ class TimeFrame(object):
     Ticks, MicroSeconds, Seconds, \
         Minutes, Days, Weeks, Months, Years = range(8)
 
-    names = ['Ticks', 'MicroSeconds', 'Seconds',
+    Names = ['Ticks', 'MicroSeconds', 'Seconds',
              'Minutes', 'Days', 'Weeks', 'Months', 'Years']
 
     @classmethod
     def getname(cls, tframe, compression):
         if compression == 1:
             # return singular if compression is 1
-            return cls.names[tframe][:-1]
-        return cls.names[tframe]
+            return cls.Names[tframe][:-1]
+        return cls.Names[tframe]
+
+    @classmethod
+    def TFrame(cls, name):
+        return getattr(cls, name)
+
+    @classmethod
+    def TName(cls, tframe):
+        return cls.Names[tframe]
 
 
 class DataSeries(LineSeries):
