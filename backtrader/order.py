@@ -350,6 +350,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
     def submit(self, broker=None):
         self.status = Order.Submitted
         self.broker = broker
+        self.plen = len(self.data)
 
     def accept(self, broker=None):
         self.status = Order.Accepted

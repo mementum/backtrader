@@ -189,7 +189,6 @@ class BrokerBack(BrokerBase):
         return o.status
 
     def submit(self, order):
-        order.plen = len(order.data)
         if self.p.checksubmit:
             order.submit()
             self.submitted.append(order)

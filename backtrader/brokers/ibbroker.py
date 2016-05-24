@@ -289,7 +289,6 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         return o.status
 
     def submit(self, order):
-        order.plen = len(order.data)
         order.submit(self)
 
         self.orderbyid[order.m_orderId] = order
