@@ -26,7 +26,7 @@ from copy import copy
 import datetime
 import itertools
 
-from .utils.py3 import range, with_metaclass, iteritems, queue
+from .utils.py3 import range, with_metaclass, iteritems
 
 from .metabase import MetaParams
 from .utils import date2num, AutoOrderedDict
@@ -94,7 +94,7 @@ class OrderData(object):
 
     Member Attributes:
 
-      - exbits : list of OrderExecutionBits for this OrderData
+      - exbits : iterable of OrderExecutionBits for this OrderData
 
       - dt: datetime (float) creation/execution time
       - size: requested/executed size
@@ -112,9 +112,22 @@ class OrderData(object):
       - pprice: current open position price
 
     '''
+    # According to the docs, collections.deque is thread-safe with appends at
+    # both ends, there will be no pop (nowhere) and therefore to know which the
+    # new exbits are two indices are needed. At time of cloning (__copy__) the
+    # indices can be updated to match the previous end, and the new end
+    # (len(exbits)
+    # Example: start 0, 0 -> islice(exbits, 0, 0) -> []
+    # One added -> copy -> updated 0, 1 -> islice(exbits, 0, 1) -> [1 elem]
+    # Other added -> copy -> updated 1, 2 -> islice(exbits, 1, 2) -> [1 elem]
+    # "add" and "__copy__" happen always in the same thread (with all current
+    # implementations) and therefore no append will happen during a copy and
+    # the len of the exbits can be queried with no concerns about another
+    # thread making an append and with no need for a lock
+
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0):
-        self.exbits = list()  # for historical purposes
-        self.pending = queue.Queue()  # for processing in strategy
+        self.exbits = collections.deque()  # for historical purposes
+        self.p1, self.p2 = 0, 0  # indices to pending notifications
 
         self.dt = dt
         self.size = size
@@ -157,8 +170,8 @@ class OrderData(object):
                               psize, pprice))
 
     def addbit(self, exbit):
+        # Stores an ExecutionBit and recalculates own values from ExBit
         self.exbits.append(exbit)
-        self.pending.put(exbit)
 
         self.remsize -= exbit.size
 
@@ -174,14 +187,19 @@ class OrderData(object):
         self.pprice = exbit.pprice
 
     def getpending(self):
-        try:
-            return self.pending.get(False)  # produce exception if empty
-        except queue.Empty:
-            pass
-        return None
+        return list(self.iterpending())
+
+    def iterpending(self):
+        return itertools.islice(self.exbits, self.p1, self.p2)
 
     def markpending(self):
-        self.pending.put(None)  # mark pending limit
+        # rebuild the indices to mark which exbits are pending in clone
+        self.p1, self.p2 = self.p2, len(self.exbits)
+
+    def clone(self):
+        obj = copy(self)
+        obj.markpending()
+        return obj
 
 
 class OrderBase(with_metaclass(MetaParams, object)):
@@ -290,23 +308,11 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.dteos = date2num(dteos)
 
     def clone(self):
-        # The method has to deliver a meaningful copy of an order. Meaningful
-        # in that ``mutable`` fields are copied to retain the current value in
-        # a notification for the end user and take along fields that can still
-        # be modified. Therefore
-
-        # - Invoke ``executed.markpending`` to set a mark up to the point in
-        # which pending execution bits (not yet notified to the user) have been
-        # seen
-        # - copy itself
-        # - copy ``executed`` to retain values of current execution's size and
-        # price because this can change before the notification makes it to the
-        # user
-        # - replace ``executed`` with the copy
-        # Do not touch ``created`` which is inmutable from creatio
-        self.executed.markpending()
+        # status, triggered and executed are the only moving parts in order
+        # status and triggered are covered by copy
+        # executed has to be replaced with an intelligent clone of itself
         obj = copy(self)
-        obj.executed = copy(self.executed)
+        obj.executed = self.executed.clone()
         return obj  # status could change in next to completed
 
     def getstatusname(self, status=None):
