@@ -647,6 +647,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 self._next_writers(runstrats)
 
+        # Last notification chance before stopping
+        self._storenotify()
+
     def _runonce(self, runstrats):
         '''
         Actual implementation of run in vector mode.
