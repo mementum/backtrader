@@ -22,6 +22,17 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import datetime
+import time as _time
+
+ZERO = datetime.timedelta(0)
+
+STDOFFSET = datetime.timedelta(seconds=-_time.timezone)
+if _time.daylight:
+    DSTOFFSET = datetime.timedelta(seconds=-_time.altzone)
+else:
+    DSTOFFSET = STDOFFSET
+
+DSTDIFF = DSTOFFSET - STDOFFSET
 
 
 # A UTC class, same as the one in the Python Docs
@@ -29,16 +40,43 @@ class _UTC(datetime.tzinfo):
     """UTC"""
 
     def utcoffset(self, dt):
-        return datetime.timedelta(0)
+        return ZERO
 
     def tzname(self, dt):
         return "UTC"
 
     def dst(self, dt):
-        return datetime.timedelta(0)
+        return ZERO
+
+
+class _LocalTimezone(datetime.tzinfo):
+
+    def utcoffset(self, dt):
+        if self._isdst(dt):
+            return DSTOFFSET
+        else:
+            return STDOFFSET
+
+    def dst(self, dt):
+        if self._isdst(dt):
+            return DSTDIFF
+        else:
+            return ZERO
+
+    def tzname(self, dt):
+        return _time.tzname[self._isdst(dt)]
+
+    def _isdst(self, dt):
+        tt = (dt.year, dt.month, dt.day,
+              dt.hour, dt.minute, dt.second,
+              dt.weekday(), 0, 0)
+        stamp = _time.mktime(tt)
+        tt = _time.localtime(stamp)
+        return tt.tm_isdst > 0
 
 
 UTC = _UTC()
+TZLocal = _LocalTimezone()
 
 
 HOURS_PER_DAY = 24.0
