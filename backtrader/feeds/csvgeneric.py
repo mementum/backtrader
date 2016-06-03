@@ -80,7 +80,7 @@ class GenericCSVData(feed.CSVDataBase):
             dtfield += 'T' + linetokens[self.p.time]
             dtformat += 'T' + self.p.tmformat
 
-        dt = datetime.datetime.strptime(dtfield.decode('utf-8'), dtformat)
+        dt = datetime.datetime.strptime(dtfield, dtformat)
         self.lines.datetime[0] = date2num(dt)
 
         # The rest of the fields can be done with the same procedure
