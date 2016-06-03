@@ -40,7 +40,7 @@ from .utils.py3 import range, with_metaclass, string_types
 
 from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
-from .utils import num2date, time2num
+from .utils import num2date, time2num, TZLocal
 
 
 NAN = float('NaN')
@@ -72,6 +72,7 @@ class LineBuffer(LineSingle):
     UnBounded, QBuffer = (0, 1)
 
     def __init__(self):
+        self._tz = None
         self.lines = [self]
         self.mode = self.UnBounded
         self.bindings = list()
@@ -378,14 +379,17 @@ class LineBuffer(LineSingle):
     def _makeoperationown(self, operation, _ownerskip=None):
         return LineOwnOperation(self, operation, _ownerskip=None)
 
+    def set_tz(self, tz):
+        self._tz = TZLocal if tz is True else tz
+
     def datetime(self, ago=0):
-        return num2date(self.array[self.idx + ago])
+        return num2date(self.array[self.idx + ago], tz=self._tz)
 
-    def date(self, ago=0):
-        return num2date(self.array[self.idx + ago]).date()
+    def date(self, ago=0, tz=None):
+        return num2date(self.array[self.idx + ago], tz=self._tz).date()
 
-    def time(self, ago=0):
-        return num2date(self.array[self.idx + ago]).time()
+    def time(self, ago=0, tz=None):
+        return num2date(self.array[self.idx + ago], tz=self._tz).time()
 
     def dt(self, ago=0):
         '''
