@@ -51,6 +51,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Run ``Indicators`` in vectorized mode to speed up the entire system.
         Strategies and Observers will always be run on an event based basis
 
+      - ``live`` (default: False)
+
+        If no data has reported itself as *live* (via the data's ``islive``
+        method but the end user still want to run in ``live`` mode, this
+        parameter can be set to true
+
+        This will simultaneously deactivate ``preload`` and ``runonce``. It
+        will have no effect on memory saving schemes.
+
+        Run ``Indicators`` in vectorized mode to speed up the entire system.
+        Strategies and Observers will always be run on an event based basis
+
       - ``maxcpus`` (default: None -> all available cores)
 
          How many cores to use simultaneously for optimization
@@ -60,7 +72,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         If True default Observers will be added: Broker (Cash and Value),
         Trades and BuySell
 
-      - exactbars (default: False)
+      - ``exactbars`` (default: False)
 
         With the default value each and every value stored in a line is kept in
         memory
@@ -120,13 +132,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('stdstats', True),
         ('lookahead', 0),
         ('exactbars', False),
+        ('live', False),
         ('writer', False),
         ('tradehistory', False),
     )
 
     def __init__(self):
+        self._dolive = False
         self._doreplay = False
         self._dooptimize = False
+        self.stores = list()
         self.feeds = list()
         self.datas = list()
         self.datasbyname = collections.OrderedDict()
@@ -135,6 +150,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.analyzers = list()
         self.indicators = list()
         self.writers = list()
+        self.storecbs = list()
+        self.datacbs = list()
 
         self._broker = BrokerBack()
 
@@ -154,6 +171,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def addstore(self, store):
+        '''Adds an ``Store`` instance to the if not already present'''
+        if store not in self.stores:
+            self.stores.append(store)
 
     def addwriter(self, wrtcls, *args, **kwargs):
         '''
@@ -186,6 +208,89 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def addobservermulti(self, obscls, *args, **kwargs):
         self.observers.append((True, obscls, args, kwargs))
 
+    def addstorecb(self, callback):
+        '''Adds a callback to get messages which would be handled by the
+        notify_store method
+
+        The signature of the callback must support the following:
+
+          - callback(msg, \*args, \*\*kwargs)
+
+        The actual ``msg``, ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
+        self.storecbs.append(callback)
+
+    def _notify_store(self, msg, *args, **kwargs):
+        for callback in self.storecbs:
+            callback(msg, *args, **kwargs)
+
+        self.notify_store(msg, *args, **kwargs)
+
+    def notify_store(self, msg, *args, **kwargs):
+        '''Receive store notifications in cerebro
+
+        This method can be overridden in ``Cerebro`` subclasses
+
+        The actual ``msg``, ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
+        pass
+
+    def _storenotify(self):
+        for store in self.stores:
+            for notif in store.get_notifications():
+                msg, args, kwargs = notif
+
+                self._notify_store(msg, *args, **kwargs)
+                for strat in self.runningstrats:
+                    strat.notify_store(msg, *args, **kwargs)
+
+    def adddatacb(self, callback):
+        '''Adds a callback to get messages which would be handled by the
+        notify_data method
+
+        The signature of the callback must support the following:
+
+          - callback(msg, data, status, \*args, \*\*kwargs)
+
+        The actual ``*args`` and ``**kwargs`` received are implementation
+        defined (depend entirely on the *data/broker/store*) but in general one
+        should expect them to be *printable* to allow for reception and
+        experimentation.
+        '''
+        self.datacbs.append(callback)
+
+    def _datanotify(self):
+        for data in self.datas:
+            for notif in data.get_notifications():
+                status, args, kwargs = notif
+                self._notify_data(data, status, *args, **kwargs)
+                for strat in self.runningstrats:
+                    strat.notify_data(data, status, *args, **kwargs)
+
+    def _notify_data(self, data, status, *args, **kwargs):
+        for callback in self.datacbs:
+            callback(msg, *args, **kwargs)
+
+        self.notify_data(data, status, *args, **kwargs)
+
+    def notify_data(self, data, status, *args, **kwargs):
+        '''Receive data notifications in cerebro
+
+        This method can be overridden in ``Cerebro`` subclasses
+
+        The actual ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
+        pass
+
     def adddata(self, data, name=None):
         '''
         Adds a ``Data Feed`` instance to the mix.
@@ -196,11 +301,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if name is not None:
             data._name = name
 
+        data.setenvironment(self)
+
         self.datas.append(data)
         self.datasbyname[data._name] = data
         feed = data.getfeed()
         if feed and feed not in self.feeds:
             self.feeds.append(feed)
+
+        if data.islive():
+            self._dolive = True
 
     def replaydata(self, dataname, name=None, **kwargs):
         '''
@@ -381,6 +491,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # are constructed in realtime
             self._dopreload = False
 
+        if self._dolive or self.p.live:
+            # in this case both preload and runonce must be off
+            self._dorunonce = False
+            self._dopreload = False
+
         self.runwriters = list()
 
         # Add the system default writer if requested
@@ -422,7 +537,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
-        runstrats = list()
+        self.runningstrats = runstrats = list()
+        for store in self.stores:
+            store.start()
+
         self._broker.start()
 
         for feed in self.feeds:
@@ -489,11 +607,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for strat in runstrats:
             strat._stop()
 
+        self._broker.stop()
+
         for data in self.datas:
             data.stop()
 
         for feed in self.feeds:
             feed.stop()
+
+        for store in self.stores:
+            store.stop()
 
         self.stop_writers(runstrats)
 
@@ -502,6 +625,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def stop_writers(self, runstrats):
         cerebroinfo = OrderedDict()
         datainfos = OrderedDict()
+
         for i, data in enumerate(self.datas):
             datainfos['Data%d' % i] = data.getwriterinfo()
 
@@ -524,8 +648,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         notification to the strategy
         '''
         self._broker.next()
-        while self._broker.notifs:
-            order = self._broker.notifs.popleft()
+        while True:
+            order = self._broker.get_notification()
+            if order is None:
+                break
             order.owner._addnotification(order)
 
     def _runnext(self, runstrats):
@@ -536,6 +662,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         data0 = self.datas[0]
         d0ret = True
         while d0ret:
+            # Notify anything from the store even before moving datas
+            # because datas may not move due to an error reported by the store
+            self._storenotify()
+            self._datanotify()
+
             d0ret = data0.next()
             if d0ret:
                 for data in self.datas[1:]:
@@ -555,6 +686,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 strat._next()
 
                 self._next_writers(runstrats)
+
+        # Last notification chance before stopping
+        self._datanotify()
+        self._storenotify()
 
     def _runonce(self, runstrats):
         '''

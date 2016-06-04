@@ -26,7 +26,6 @@ import inspect
 
 from .utils.py3 import with_metaclass
 from .lineseries import LineSeries
-from . import num2date
 from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
@@ -34,15 +33,25 @@ class TimeFrame(object):
     Ticks, MicroSeconds, Seconds, \
         Minutes, Days, Weeks, Months, Years = range(8)
 
-    names = ['Ticks', 'MicroSeconds', 'Seconds',
+    Names = ['Ticks', 'MicroSeconds', 'Seconds',
              'Minutes', 'Days', 'Weeks', 'Months', 'Years']
+
+    names = Names  # support old naming convention
 
     @classmethod
     def getname(cls, tframe, compression):
         if compression == 1:
             # return singular if compression is 1
-            return cls.names[tframe][:-1]
-        return cls.names[tframe]
+            return cls.Names[tframe][:-1]
+        return cls.Names[tframe]
+
+    @classmethod
+    def TFrame(cls, name):
+        return getattr(cls, name)
+
+    @classmethod
+    def TName(cls, tframe):
+        return cls.Names[tframe]
 
 
 class DataSeries(LineSeries):
@@ -71,7 +80,7 @@ class DataSeries(LineSeries):
     def getwritervalues(self):
         values = [self._name, len(self)]
 
-        dtstr = num2date(self.datetime[0])
+        dtstr = self.datetime.datetime(0)
         values.append(dtstr)
 
         for line in self.LineOrder[1:]:
@@ -158,7 +167,7 @@ class _Bar(AutoOrderedDict):
         self.volume = 0.0
         self.openinterest = 0.0
         if maxdate:
-            # Without - 1 ... fromordinal (inside num2date) will not work
+            # Without - 1 ... converting back to time will not work
             self.datetime = date2num(datetime.datetime.max) - 1
         else:
             self.datetime = None

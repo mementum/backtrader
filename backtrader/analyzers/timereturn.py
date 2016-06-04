@@ -95,7 +95,7 @@ class TimeReturn(Analyzer):
             dtkey = dt.year * 10000 + dt.month * 100 + dt.day
             dtcmp = datetime.datetime(dt.year, dt.month, dt.day)
 
-        elif self.p.timeframe == TimeFrame.Minutes:
+        else:
             dtcmp, dtkey = self._getsubday_cmpkey(dt)
 
         return dtcmp, dtkey

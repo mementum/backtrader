@@ -66,6 +66,7 @@ In most cases and for regular usage patterns this will look like::
 	      # Do something else
 	      pass
 
+
 In this snippet:
 
   - During ``__init__`` an attribute is assigned an indicator
@@ -89,17 +90,140 @@ strategy will:
   - be notified through ``notify_cashvalue(cash, value)`` of the current cash
     and portfolio in the broker
 
+  - Events (implementation specific) via ``notify_store(msg, *args, **kwargs)``
+
+    See :doc:`cerebro` for an explanation on the *store* notifications. These
+    will delivered to the strategy even if they have also been delivered to a
+    ``cerebro`` instance (with an overriden ``notify_store`` method or via a
+    *callback*)
+
+And *Strategies* also like traders have the chance to operate in the market
+during the ``next`` method to try to achieve profit with
+
+  - the ``buy`` method to go long or reduce/close a short position
+  - the ``sell`` method to go short or reduce/close a long position
+  - the ``close`` method to obviously close an existing position
+  - the ``cancel`` method to cancel a not yet executed order
+
+
+How to Buy/Sell/Close
+=====================
+
+The ``Buy`` and ``Sell`` methods generate orders. When invoked they return an
+``Order`` (or subclass) instance that can be used as a reference. This order
+has a unique ``ref`` identifier that can be used for comparison
+
+.. note:: Subclasses of ``Order`` for speficic broker implementations may carry
+	  additional *unique identifiers* provided by the broker.
+
+To create the order use the folloing parameters:
+
+  - ``data`` (default: ``None``)
+
+    For which data the order has to be created. If ``None`` then the
+    first data in the system, ``self.datas[0] or self.data0`` (aka
+    ``self.data``) will be used
+
+  - ``size`` (default: ``None``)
+
+    Size to use (positive) of units of data to use for the order.
+
+    If ``None`` the ``sizer`` instance retrieved via ``getsizer`` will
+    be used to determine the size.
+
+  - ``price`` (default: ``None``)
+
+    Price to use (live brokers may place restrictions on the actual
+    format if it does not comply to minimum tick size requirements)
+
+    ``None`` is valid for ``Market`` and ``Close`` orders (the market
+    determines the price)
+
+    For ``Limit``, ``Stop`` and ``StopLimit`` orders this value
+    determines the trigger point (in the case of ``Limit`` the trigger
+    is obviously at which price the order should be matched)
+
+  - ``plimit`` (default: ``None``)
+
+    Only applicable to ``StopLimit`` orders. This is the price at which
+    to set the implicit *Limit* order, once the *Stop* has been
+    triggered (for which ``price`` has been used)
+
+  - ``exectype`` (default: ``None``)
+
+    Possible values:
+
+    - ``Order.Market`` or ``None``. A market order will be executed
+      with the next available price. In backtesting it will be the
+      opening price of the next bar
+
+    - ``Order.Limit``. An order which can only be executed at the given
+      ``price`` or better
+
+    - ``Order.Stop``. An order which is triggered at ``price`` and
+      executed like an ``Order.Market`` order
+
+    - ``Order.StopLimit``. An order which is triggered at ``price`` and
+      executed as an implicit *Limit* order with price given by
+      ``pricelimit``
+
+  - ``valid`` (default: ``None``)
+
+    Possible values:
+
+      - ``None``: this generates an order that will not expire (aka
+        *Good til cancel*) and remain in the market until matched or
+        canceled. In reality brokers tend to impose a temporal limit,
+        but this is usually so far away in time to consider it as not
+        expiring
+
+      - ``datetime.datetime`` or ``datetime.date`` instance: the date
+        will be used to generate an order valid until the given
+        datetime (aka *good til date*)
+
+      - ``Order.DAY`` or ``0`` or ``timedelta()``: a day valid until
+        the *End of the Session* (aka *day* order) will be generated
+
+      - ``numeric value``: This is assumed to be a value corresponding
+        to a datetime in ``matplotlib`` coding (the one used by
+        ``backtrader``) and will used to generate an order valid until
+        that time (*good til date*)
+
+  - ``tradeid`` (default: ``0``)
+
+    This is an internal value applied by ``backtrader`` to keep track
+    of overlapping trades on the same asset. This ``tradeid`` is sent
+    back to the *strategy* when notifying changes to the status of the
+    orders.
+
+  - ``**kwargs``: additional broker implementations may support extra
+    parameters. ``backtrader`` will pass the *kwargs* down to the
+    created order objects
+
+    Example: if the 4 order execution types directly supported by
+    ``backtrader`` are not enough, in the case of for example
+    *Interactive Brokers* the following could be passed as *kwargs*::
+
+      orderType='LIT', lmtPrice=10.0, auxPrice=9.8
+
+    This would override the settings created by ``backtrader`` and
+    generate a ``LIMIT IF TOUCHED`` order with a *touched* price of 9.8
+    and a *limit* price of 10.0.
+
 
 Information Bits:
+=================
 
-  - A Strategy has a "length" which is always equal to that of the main
-    data (datas[0])
+  - A Strategy has a *length* which is always equal to that of the main
+    data (``datas[0]``) and can of course be gotten with ``len(self)``
 
-    ``next`` can be called without changes in length if data is being
+    ``next`` can be called without changes in *length* if data is being
     replayed or a live feed is being passed and new ticks for the same
     point in time (length) are arriving
 
+
 Member Attributes:
+==================
 
   - ``env``: the cerebro entity in which this Strategy lives
   - ``datas``: array of datas which have been passed to cerebro
@@ -124,7 +248,9 @@ Member Attributes:
 
     Methods to retrieve all possitions are available (see the reference)
 
+
 Member Attributes (meant for statistics/observers/analyzers):
+=============================================================
 
   - ``_orderspending``: list of orders which will be notified to the
     strategy before ``next`` is called
@@ -146,8 +272,8 @@ Member Attributes (meant for statistics/observers/analyzers):
    bar, when a daily timeframe is in use)
 
 
-Reference: Srategy
-==================
+Reference: Strategy
+===================
 
 .. currentmodule:: backtrader
 
@@ -163,10 +289,12 @@ Reference: Srategy
    .. automethod:: notify_order
    .. automethod:: notify_trade
    .. automethod:: notify_cashvalue
+   .. automethod:: notify_store
 
    .. automethod:: buy
    .. automethod:: sell
    .. automethod:: close
+   .. automethod:: cancel
 
    .. automethod:: getsizer
    .. automethod:: setsizer

@@ -28,7 +28,7 @@ import io
 import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, zip, range
+from backtrader.utils.py3 import with_metaclass, zip, range, queue
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -53,6 +53,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
+
+        _obj.notifs = queue.Queue()  # store notifications for cerebro
 
         return _obj, args, kwargs
 
@@ -79,17 +81,27 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.fromdate = datetime.datetime.combine(
-                _obj.p.fromdate, _obj.p.sessionstart)
+            if not hasattr(_obj.p.fromdate, 'hour'):
+                _obj.p.fromdate = datetime.datetime.combine(
+                    _obj.p.fromdate, _obj.p.sessionstart)
 
         if isinstance(_obj.p.todate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.todate = datetime.datetime.combine(
-                _obj.p.todate, _obj.p.sessionend)
+            if not hasattr(_obj.p.todate, 'hour'):
+                _obj.p.todate = datetime.datetime.combine(
+                    _obj.p.todate, _obj.p.sessionend)
 
-        _obj.fromdate = date2num(_obj.p.fromdate)
-        _obj.todate = date2num(_obj.p.todate)
+        if _obj.p.fromdate is None:
+            _obj.fromdate = float('-inf')
+        else:
+            _obj.fromdate = date2num(_obj.p.fromdate)
+
+        if _obj.p.todate is None:
+            _obj.todate = float('inf')
+        else:
+            _obj.todate = date2num(_obj.p.todate)
+
         _obj.sessionstart = time2num(_obj.p.sessionstart)
         _obj.sessionend = time2num(_obj.p.sessionend)
 
@@ -113,19 +125,53 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                                       dataseries.OHLCDateTime)):
+
     params = (('dataname', None),
-              ('fromdate', datetime.datetime.min),
-              ('todate', datetime.datetime.max),
               ('name', ''),
               ('compression', 1),
               ('timeframe', TimeFrame.Days),
+              ('fromdate', None),
+              ('todate', None),
               ('sessionstart', None),
               ('sessionend', None),
               ('filters', []),)
 
+    CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED, LIVE = range(5)
+    _NOTIFNAMES = [
+        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE']
+
+    @classmethod
+    def _getstatusname(cls, status):
+        return cls._NOTIFNAMES[status]
+
     _feed = None
 
     resampling = 0
+
+    def islive(self):
+        '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
+        ``runonce`` because a live data source must be fetched tick by tick (or
+        bar by bar)'''
+        return False
+
+    def put_notification(self, status, *args, **kwargs):
+        '''Add arguments to notification queue'''
+        self.notifs.put((status, args, kwargs))
+        self._laststatus = status
+
+    def get_notifications(self):
+        '''Return the pending "store" notifications'''
+        # The background thread could keep on adding notifications. The None
+        # mark allows to identify which is the last notification to deliver
+        self.notifs.put(None)  # put a mark
+        notifs = list()
+        while True:
+            notif = self.notifs.get()
+            if notif is None:  # mark is reached
+                break
+            notifs.append(notif)
+
+        return notifs
 
     def getfeed(self):
         return self._feed
@@ -138,12 +184,20 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def start(self):
         self._barstack = collections.deque()
         self.mlen = list()
+        self._laststatus = self.CONNECTED
 
     def stop(self):
         pass
 
     def clone(self, **kwargs):
         return DataClone(dataname=self, **kwargs)
+
+    def setenvironment(self, env):
+        '''Keep a reference to the environment'''
+        self._env = self
+
+    def getenvironment(self):
+        return self._env
 
     def addfilter_simple(self, f, *args, **kwargs):
         fp = SimpleFilterWrapper(self, f, *args, **kwargs)
@@ -218,8 +272,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
             if datamaster is None:
                 # bar is there and no master ... return load's result
+                # self._tick_fill()
                 return ret
-
         else:
             self.advance()
 

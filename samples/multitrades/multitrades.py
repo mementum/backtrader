@@ -143,6 +143,7 @@ def runstrategy():
                         period=args.period,
                         onlylong=args.onlylong,
                         stake=args.stake,
+                        printout=args.printout,
                         mtrade=args.mtrade)
 
     # Add the commission - only stocks like a for each operation
@@ -187,6 +188,9 @@ def parse_args():
 
     parser.add_argument('--onlylong', '-ol', action='store_true',
                         help='Do only long operations')
+
+    parser.add_argument('--printout', action='store_true',
+                        help='Print operation log from strategy')
 
     parser.add_argument('--cash', default=100000, type=int,
                         help='Starting Cash')

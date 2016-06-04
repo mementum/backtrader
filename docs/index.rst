@@ -14,11 +14,12 @@ Contents:
    introduction
    installation
    quickstart/quickstart
-   cerebro
-   memory-savings/memory-savings
-   strategy
    concepts
    operating
+   cerebro
+   strategy
+   order
+   order-creation-execution/order-creation-execution
    datafeed
    datafeed-develop-csv
    datafeed-develop-general/datafeed-develop-general
@@ -34,12 +35,13 @@ Contents:
    analyzers/analyzers
    writer
    commission-schemes/commission-schemes
-   order-creation-execution/order-creation-execution
-   order
+   extending-commissions/commission-schemes-extended
+   user-defined-commissions/commission-schemes-subclassing
    position
    trade
    plotting
    automated-bt-run/automated-bt-run
+   memory-savings/memory-savings
    dataautoref
    indautoref
    strategy-reference

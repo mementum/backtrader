@@ -5,8 +5,8 @@ Line Iterators
 **************
 
 To engage into operations, the plaftorm uses the notion of `line
-iterators`. They have loosely modeled after Python's iterators but have actually
-nothing to do with them.
+iterators`. They have been loosely modeled after Python's iterators but have
+actually nothing to do with them.
 
 Strategies and Indicators are `line iterators`.
 
@@ -44,7 +44,7 @@ But because they are not regular iterators, two additional methods exist:
 Extra methods for `Indicators`
 ==============================
 
-To speed up operations `Indicators` support a batch operation mode which has
+To speed up operations, `Indicators` support a batch operation mode which has
 been termed as `runonce`. It is not strictly needed (a ``next`` method suffices)
 but it greatly reduces time.
 
@@ -111,7 +111,7 @@ Briefly explained:
 
     - ``prenext`` 24 times
     - ``nextstart`` 1 time (in turn calling ``next``)
-    - ``next`` n additional times until the `data feed` has been exhausted
+    - ``next`` n additional times until the *data feed* has been exhausted
 
 Let's go for the killer indicator: *a SimpleMovingAverage* over another
 *SimpleMovingAverage*. The instantiation could look like::
@@ -124,14 +124,21 @@ What now goes on:
 
   - The same as above for ``sma1``
 
-  - ``sma2`` is receiving a `data feed` which has a *minimum period* of 25 which
+  - ``sma2`` is receiving a **data feed** which has a *minimum period* of 25 which
     is our ``sma1`` and therefore
 
   - The ``sma2`` methods are called as indicated:
 
-    - ``prenext`` 25 + 18 times for a total of 43 times
-    - ``nextstart`` 1 time (in turn calling ``next``)
-    - ``next`` n additional times until the `data feed` has been exhausted
+    - ``prenext`` the first 25 + 18 times for a total of 43 times
+
+      - 25 times to let ``sma1`` produce its 1st sensible value
+
+      - 18 times to accumulate extra ``sma1`` values
+
+      - For a total of 19 values (1 after 25 calls and then 18 more)
+
+    - ``nextstart`` then 1 time (in turn calling ``next``)
+    - ``next`` the n additional times until the *data feed* has been exhausted
 
 The platform is calling ``next`` when the system has already processed 44 bars.
 

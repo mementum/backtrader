@@ -1,8 +1,4 @@
 
-.. post:: May 05, 2016
-   :author: mementum
-   :image: 1
-
 Mixing Timeframes in Indicators
 ###############################
 

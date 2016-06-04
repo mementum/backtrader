@@ -21,7 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import copy
+import collections
+from copy import copy
 import datetime
 import itertools
 
@@ -93,7 +94,7 @@ class OrderData(object):
 
     Member Attributes:
 
-      - exbits : list of OrderExecutionBits for this OrderData
+      - exbits : iterable of OrderExecutionBits for this OrderData
 
       - dt: datetime (float) creation/execution time
       - size: requested/executed size
@@ -111,8 +112,22 @@ class OrderData(object):
       - pprice: current open position price
 
     '''
+    # According to the docs, collections.deque is thread-safe with appends at
+    # both ends, there will be no pop (nowhere) and therefore to know which the
+    # new exbits are two indices are needed. At time of cloning (__copy__) the
+    # indices can be updated to match the previous end, and the new end
+    # (len(exbits)
+    # Example: start 0, 0 -> islice(exbits, 0, 0) -> []
+    # One added -> copy -> updated 0, 1 -> islice(exbits, 0, 1) -> [1 elem]
+    # Other added -> copy -> updated 1, 2 -> islice(exbits, 1, 2) -> [1 elem]
+    # "add" and "__copy__" happen always in the same thread (with all current
+    # implementations) and therefore no append will happen during a copy and
+    # the len of the exbits can be queried with no concerns about another
+    # thread making an append and with no need for a lock
+
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0):
-        self.exbits = list()
+        self.exbits = collections.deque()  # for historical purposes
+        self.p1, self.p2 = 0, 0  # indices to pending notifications
 
         self.dt = dt
         self.size = size
@@ -143,17 +158,19 @@ class OrderData(object):
         return self.exbits[key]
 
     def add(self, dt, size, price,
-            closed, closedvalue, closedcommission,
-            opened, openedvalue, openedcomm, pnl,
-            psize, pprice):
+            closed=0, closedvalue=0.0, closedcomm=0.0,
+            opened=0, openedvalue=0.0, openedcomm=0.0,
+            pnl=0.0,
+            psize=0, pprice=0.0):
 
         self.addbit(
             OrderExecutionBit(dt, size, price,
-                              closed, closedvalue, closedcommission,
+                              closed, closedvalue, closedcomm,
                               opened, openedvalue, openedcomm, pnl,
                               psize, pprice))
 
     def addbit(self, exbit):
+        # Stores an ExecutionBit and recalculates own values from ExBit
         self.exbits.append(exbit)
 
         self.remsize -= exbit.size
@@ -169,8 +186,260 @@ class OrderData(object):
         self.psize = exbit.psize
         self.pprice = exbit.pprice
 
+    def getpending(self):
+        return list(self.iterpending())
 
-class Order(with_metaclass(MetaParams, object)):
+    def iterpending(self):
+        return itertools.islice(self.exbits, self.p1, self.p2)
+
+    def markpending(self):
+        # rebuild the indices to mark which exbits are pending in clone
+        self.p1, self.p2 = self.p2, len(self.exbits)
+
+    def clone(self):
+        obj = copy(self)
+        obj.markpending()
+        return obj
+
+
+class OrderBase(with_metaclass(MetaParams, object)):
+    params = (
+        ('owner', None), ('data', None), ('size', None), ('price', None),
+        ('pricelimit', None), ('exectype', None), ('valid', None),
+        ('tradeid', 0),
+    )
+
+    DAY = datetime.timedelta()  # constant for DAY order identification
+
+    Market, Close, Limit, Stop, StopLimit = range(5)
+    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
+
+    OrdTypes = ['Buy', 'Sell']
+    Buy, Sell = range(2)
+
+    Created, Submitted, Accepted, Partial, Completed, \
+        Canceled, Expired, Margin, Rejected = range(9)
+
+    Cancelled = Canceled  # alias
+
+    Status = [
+        'Created', 'Submitted', 'Accepted', 'Partial',
+        'Completed', 'Canceled', 'Expired', 'Margin', 'Rejected',
+    ]
+
+    refbasis = itertools.count(1)  # for a unique identifier per order
+
+    def __getattr__(self, name):
+        # Return attr from params if not found in order
+        return getattr(self.params, name)
+
+    def __setattribute__(self, name, value):
+        if hasattr(self.params, name):
+            setattr(self.params, name, value)
+        else:
+            super(Order, self).__setattribute__(name, value)
+
+    def __str__(self):
+        tojoin = list()
+        tojoin.append('Ref: {}'.format(self.ref))
+        tojoin.append('OrdType: {}'.format(self.ordtype))
+        tojoin.append('OrdType: {}'.format(self.ordtypename()))
+        tojoin.append('Status: {}'.format(self.status))
+        tojoin.append('Status: {}'.format(self.getstatusname()))
+        tojoin.append('Size: {}'.format(self.size))
+        tojoin.append('Price: {}'.format(self.price))
+        tojoin.append('Price Limit: {}'.format(self.pricelimit))
+        tojoin.append('ExecType: {}'.format(self.exectype))
+        tojoin.append('ExecType: {}'.format(self.getordername()))
+        tojoin.append('CommInfo: {}'.format(self.comminfo))
+        tojoin.append('End of Session: {}'.format(self.dteos))
+        tojoin.append('Info: {}'.format(self.info))
+        tojoin.append('Broker: {}'.format(self.broker))
+        tojoin.append('Alive: {}'.format(self.alive()))
+
+        return '\n'.join(tojoin)
+
+    def __init__(self):
+        self.ref = next(self.refbasis)
+        self.broker = None
+        self.info = AutoOrderedDict()
+        self.comminfo = None
+        self.triggered = False
+
+        self.status = Order.Created
+
+        if self.exectype is None:
+            self.exectype = Order.Market
+
+        if not self.isbuy():
+            self.size = -self.size
+
+        # Set a reference price if price is not set using
+        # the close price
+        if not self.price and not self.pricelimit:
+            price = self.data.close[0]
+        else:
+            price = self.price
+
+        self.created = OrderData(dt=self.data.datetime[0],
+                                 size=self.size,
+                                 price=price,
+                                 pricelimit=self.pricelimit)
+
+        self.executed = OrderData(remsize=self.size)
+        self.position = 0
+
+        if isinstance(self.valid, (datetime.datetime, datetime.date)):
+            # comparison will later be done against the raw datetime[0] value
+            self.valid = date2num(self.valid)
+
+        # get next session end
+        dtime = self.data.datetime.datetime(0)
+
+        # provisional end-of-session
+        session = self.data.p.sessionend
+        h, m, s = session.hour, session.minute, session.second
+        dteos = dtime.replace(hour=h, minute=m, second=s)
+
+        if dteos < dtime:
+            # eos before current time ... no ... must be next day
+            dteos += datetime.timedelta(days=1)
+
+        self.dteos = date2num(dteos)
+
+    def clone(self):
+        # status, triggered and executed are the only moving parts in order
+        # status and triggered are covered by copy
+        # executed has to be replaced with an intelligent clone of itself
+        obj = copy(self)
+        obj.executed = self.executed.clone()
+        return obj  # status could change in next to completed
+
+    def getstatusname(self, status=None):
+        '''Returns the name for a given status or the one of the order'''
+        return self.Status[self.status if status is None else status]
+
+    def getordername(self, exectype=None):
+        '''Returns the name for a given exectype or the one of the order'''
+        return self.ExecTypes[self.exectype if exectype is None else exectype]
+
+    @classmethod
+    def ExecType(cls, exectype):
+        return getattr(cls, exectype)
+
+    def ordtypename(self, ordtype=None):
+        '''Returns the name for a given ordtype or the one of the order'''
+        return self.OrdTypes[self.ordtype if ordtype is None else ordtype]
+
+    def alive(self):
+        '''Returns True if the order is in a status in which it can still be
+        executed
+        '''
+        return self.status in [Order.Created, Order.Submitted,
+                               Order.Partial, Order.Accepted]
+
+    def addcomminfo(self, comminfo):
+        '''Stores a CommInfo scheme associated with the asset'''
+        self.comminfo = comminfo
+
+    def addinfo(self, **kwargs):
+        '''Add the keys, values of kwargs to the internal info dictionary to
+        hold custom information in the order
+        '''
+        for key, val in iteritems(kwargs):
+            self.info[key] = val
+
+    def __eq__(self, other):
+        return self.ref == other.ref
+
+    def __ne__(self, other):
+        return self.ref != other.ref
+
+    def isbuy(self):
+        '''Returns True if the order is a Buy order'''
+        return self.ordtype == self.Buy
+
+    def issell(self):
+        '''Returns True if the order is a Sell order'''
+        return self.ordtype == self.Sell
+
+    def setposition(self, position):
+        '''Receives the current position for the asset and stotres it'''
+        self.position = position
+
+    def submit(self, broker=None):
+        '''Marks an order as submitted and stores the broker to which it was
+        submitted'''
+        self.status = Order.Submitted
+        self.broker = broker
+        self.plen = len(self.data)
+
+    def accept(self, broker=None):
+        '''Marks an order as accepted'''
+        self.status = Order.Accepted
+        self.broker = broker
+
+    def brokerstatus(self):
+        '''Tries to retrieve the status from the broker in which the order is.
+
+        Defaults to last known status if no broker is associated'''
+        if self.broker:
+            return self.broker.orderstatus(self)
+
+        return self.status
+
+    def reject(self, broker=None):
+        '''Marks an order as rejected'''
+        if self.status == Order.Rejected:
+            return False
+
+        self.status = Order.Rejected
+        self.executed.dt = self.data.datetime[0]
+        self.broker = broker
+        return True
+
+    def cancel(self):
+        '''Marks an order as cancelled'''
+        self.status = Order.Canceled
+        self.executed.dt = self.data.datetime[0]
+
+    def margin(self):
+        '''Marks an order as having met a margin call'''
+        self.status = Order.Margin
+        self.executed.dt = self.data.datetime[0]
+
+    def completed(self):
+        '''Marks an order as completely filled'''
+        self.status = self.Completed
+
+    def partial(self):
+        '''Marks an order as partially filled'''
+        self.status = self.Partial
+
+    def execute(self, dt, size, price,
+                closed, closedvalue, closedcomm,
+                opened, openedvalue, openedcomm,
+                margin, pnl,
+                psize, pprice):
+
+        '''Receives data execution input and stores it'''
+        if not size:
+            return
+
+        self.executed.add(dt, size, price,
+                          closed, closedvalue, closedcomm,
+                          opened, openedvalue, openedcomm,
+                          pnl, psize, pprice)
+
+        self.executed.margin = margin
+
+    def expire(self):
+        '''Marks an order as expired. Returns True if it worked'''
+        order.status = self.Expired
+        return True
+
+
+class Order(OrderBase):
     '''
     Class which holds creation/execution data and type of oder.
 
@@ -180,9 +449,10 @@ class Order(with_metaclass(MetaParams, object)):
       - Accepted: accepted by the broker
       - Partial: partially executed
       - Completed: fully exexcuted
-      - Canceled: canceled by the user
+      - Canceled/Cancelled: canceled by the user
       - Expired: expired
       - Margin: not enough cash to execute the order.
+      - Rejected: Rejected by the broker
 
         This can happen during order submission (and therefore the order will
         not reach the Accepted status) or before execution with each new bar
@@ -206,130 +476,6 @@ class Order(with_metaclass(MetaParams, object)):
       - issell(): returns bool indicating if the order sells
       - alive(): returns bool if order is in status Partial or Accepted
     '''
-    refbasis = itertools.count(1)
-
-    OrderType = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
-    Market, Close, Limit, Stop, StopLimit = range(5)
-
-    Buy, Sell = range(2)
-
-    Created, Submitted, Accepted, Partial, Completed, \
-        Canceled, Expired, Margin = range(8)
-
-    Status = [
-        'Created', 'Submitted', 'Accepted', 'Partial',
-        'Completed', 'Canceled', 'Expired', 'Margin'
-    ]
-
-    params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None),
-        ('pricelimit', None), ('exectype', None), ('valid', None),
-        ('triggered', False), ('tradeid', 0),
-    )
-
-    def addinfo(self, **kwargs):
-        '''Add the keys, values of kwargs to the internal info dictionary to
-        hold custom information in the order'''
-
-        for key, val in iteritems(kwargs):
-            self.info[key] = val
-
-    def getstatusname(self, status):
-        return self.Status[status]
-
-    def __getattr__(self, name):
-        # dig into self.params if not found as attribute
-        # mostly for external access
-        return getattr(self.params, name)
-
-    def __setattribute__(self, name, value):
-        if hasattr(self.params, name):
-            setattr(self.params, name, value)
-        else:
-            super(Order, self).__setattribute__(name, value)
-
-    def __eq__(self, other):
-        return self.ref == other.ref
-
-    def __ne__(self, other):
-        return self.ref != other.ref
-
-    def __init__(self):
-        self.broker = None
-        self.ref = next(self.refbasis)
-        self.info = AutoOrderedDict()
-
-        if self.params.exectype is None:
-            self.params.exectype = Order.Market
-
-        self.status = Order.Created
-        if not self.isbuy():
-            self.params.size = -self.params.size
-
-        # Set a reference price if price is not set using
-        # the close price
-        if not self.p.price and not self.p.pricelimit:
-            price = self.data.close[0]
-        else:
-            price = self.p.price
-
-        self.created = OrderData(dt=self.data.datetime[0],
-                                 size=self.params.size,
-                                 price=price,
-                                 pricelimit=self.params.pricelimit)
-
-        self.executed = OrderData(remsize=self.params.size)
-        self.position = 0
-
-        if isinstance(self.p.valid, (datetime.datetime, datetime.date)):
-            # comparison will later be done against the raw datetime[0] value
-            self.p.valid = date2num(self.p.valid)
-
-        # get next session end
-        dtime = self.data.datetime.datetime(0)
-
-        # provisional end-of-session
-        session = self.data.p.sessionend
-        h, m, s = session.hour, session.minute, session.second
-        dteos = dtime.replace(hour=h, minute=m, second=s)
-
-        if dteos < dtime:
-            # eos before current time ... no ... must be next day
-            dteos += datetime.timedelta(days=1)
-
-        self.dteos = date2num(dteos)
-
-    def clone(self):
-        obj = copy.copy(self)
-        obj.executed = copy.deepcopy(self.executed)
-        return obj
-
-    def setposition(self, position):
-        self.position = position
-
-    def isbuy(self):
-        return isinstance(self, BuyOrder)
-
-    def issell(self):
-        return isinstance(self, SellOrder)
-
-    def submit(self, broker=None):
-        self.status = Order.Submitted
-        self.broker = broker
-
-    def accept(self, broker=None):
-        self.status = Order.Accepted
-        self.broker = broker
-
-    def brokerstatus(self):
-        if broker:
-            return broker.orderstatus(self)
-
-        return self.status
-
-    def cancel(self):
-        self.status = Order.Canceled
-        self.executed.dt = self.data.datetime[0]
 
     def execute(self, dt, size, price,
                 closed, closedvalue, closedcomm,
@@ -337,27 +483,20 @@ class Order(with_metaclass(MetaParams, object)):
                 margin, pnl,
                 psize, pprice):
 
-        if not size:
-            return
+        super(Order, self).execute(dt, size, price,
+                                   closed, closedvalue, closedcomm,
+                                   opened, openedvalue, openedcomm,
+                                   margin, pnl, psize, pprice)
 
-        self.executed.add(dt, size, price,
-                          closed, closedvalue, closedcomm,
-                          opened, openedvalue, openedcomm,
-                          pnl, psize, pprice)
-
-        self.executed.margin = margin
         if self.executed.remsize:
             self.status = Order.Partial
         else:
             self.status = Order.Completed
 
-        self.comminfo = None
-
-    def addcomminfo(self, comminfo):
-        self.comminfo = comminfo
+        # self.comminfo = None
 
     def expire(self):
-        if self.params.exectype == Order.Market:
+        if self.exectype == Order.Market:
             return False  # will be executed yes or yes
 
         if self.valid and self.data.datetime[0] > self.valid:
@@ -366,14 +505,6 @@ class Order(with_metaclass(MetaParams, object)):
             return True
 
         return False
-
-    def margin(self):
-        self.status = Order.Margin
-        self.executed.dt = self.data.datetime[0]
-
-    def alive(self):
-        return self.status in [Order.Created, Order.Submitted,
-                               Order.Partial, Order.Accepted]
 
 
 class BuyOrder(Order):

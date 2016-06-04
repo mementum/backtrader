@@ -29,3 +29,4 @@ from .vchart import *
 from .yahoo import *
 from .sierrachart import *
 from .pandafeed import *
+from .ibdata import *

@@ -40,7 +40,7 @@ from .utils.py3 import range, with_metaclass, string_types
 
 from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
-from .utils import num2date, time2num
+from .utils import num2date, time2num, num2dt
 
 
 NAN = float('NaN')
@@ -382,10 +382,10 @@ class LineBuffer(LineSingle):
         return num2date(self.array[self.idx + ago])
 
     def date(self, ago=0):
-        return num2date(self.array[self.idx + ago]).date()
+        return num2dt(self.array[self.idx + ago])
 
     def time(self, ago=0):
-        return num2date(self.array[self.idx + ago]).time()
+        return num2date(self.array[self.idx + ago])
 
     def dt(self, ago=0):
         '''

@@ -285,9 +285,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self.start()
 
     def start(self):
-        '''
-        Called right before the backtesting is about to be started
-        '''
+        '''Called right before the backtesting is about to be started.'''
         pass
 
     def getwriterheaders(self):
@@ -357,9 +355,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._stage1()
 
     def stop(self):
-        '''
-        Called right before the backtesting is about to be stopped
-        '''
+        '''Called right before the backtesting is about to be stopped'''
         pass
 
     def set_tradehistory(self, onoff=True):
@@ -385,7 +381,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             trade = datatrades[-1]
 
-        for exbit in order.executed.exbits:
+        for exbit in order.executed.iterpending():
+            if exbit is None:
+                break
+
             if exbit.closed:
                 trade.update(order,
                              exbit.closed,
@@ -458,6 +457,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         pass
 
+    def notify_store(self, msg, *args, **kwargs):
+        '''Receives a notification from a store provider'''
+        pass
+
+    def notify_data(self, data, status, *args, **kwargs):
+        '''Receives a notification from data'''
+        pass
+
     def getdatanames(self):
         '''
         Returns a list of the existing data names
@@ -470,13 +477,110 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         return self.env.datasbyname[name]
 
+    def cancel(self, order):
+        '''Cancels the order in the broker'''
+        self.broker.cancel(order)
+
     def buy(self, data=None,
             size=None, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, **kwargs):
-        '''
-        To create a buy (long) order and send it to the broker
+        '''Create a buy (long) order and send it to the broker
 
-        Returns: the submitted order
+          - ``data`` (default: ``None``)
+
+            For which data the order has to be created. If ``None`` then the
+            first data in the system, ``self.datas[0] or self.data0`` (aka
+            ``self.data``) will be used
+
+          - ``size`` (default: ``None``)
+
+            Size to use (positive) of units of data to use for the order.
+
+            If ``None`` the ``sizer`` instance retrieved via ``getsizer`` will
+            be used to determine the size.
+
+          - ``price`` (default: ``None``)
+
+            Price to use (live brokers may place restrictions on the actual
+            format if it does not comply to minimum tick size requirements)
+
+            ``None`` is valid for ``Market`` and ``Close`` orders (the market
+            determines the price)
+
+            For ``Limit``, ``Stop`` and ``StopLimit`` orders this value
+            determines the trigger point (in the case of ``Limit`` the trigger
+            is obviously at which price the order should be matched)
+
+          - ``plimit`` (default: ``None``)
+
+            Only applicable to ``StopLimit`` orders. This is the price at which
+            to set the implicit *Limit* order, once the *Stop* has been
+            triggered (for which ``price`` has been used)
+
+          - ``exectype`` (default: ``None``)
+
+            Possible values:
+
+            - ``Order.Market`` or ``None``. A market order will be executed
+              with the next available price. In backtesting it will be the
+              opening price of the next bar
+
+            - ``Order.Limit``. An order which can only be executed at the given
+              ``price`` or better
+
+            - ``Order.Stop``. An order which is triggered at ``price`` and
+              executed like an ``Order.Market`` order
+
+            - ``Order.StopLimit``. An order which is triggered at ``price`` and
+              executed as an implicit *Limit* order with price given by
+              ``pricelimit``
+
+          - ``valid`` (default: ``None``)
+
+            Possible values:
+
+              - ``None``: this generates an order that will not expire (aka
+                *Good till cancel*) and remain in the market until matched or
+                canceled. In reality brokers tend to impose a temporal limit,
+                but this is usually so far away in time to consider it as not
+                expiring
+
+              - ``datetime.datetime`` or ``datetime.date`` instance: the date
+                will be used to generate an order valid until the given
+                datetime (aka *good till date*)
+
+              - ``Order.DAY`` or ``0`` or ``timedelta()``: a day valid until
+                the *End of the Session* (aka *day* order) will be generated
+
+              - ``numeric value``: This is assumed to be a value corresponding
+                to a datetime in ``matplotlib`` coding (the one used by
+                ``backtrader``) and will used to generate an order valid until
+                that time (*good till date*)
+
+          - ``tradeid`` (default: ``0``)
+
+            This is an internal value applied by ``backtrader`` to keep track
+            of overlapping trades on the same asset. This ``tradeid`` is sent
+            back to the *strategy* when notifying changes to the status of the
+            orders.
+
+          - ``**kwargs``: additional broker implementations may support extra
+            parameters. ``backtrader`` will pass the *kwargs* down to the
+            created order objects
+
+            Example: if the 4 order execution types directly supported by
+            ``backtrader`` are not enough, in the case of for example
+            *Interactive Brokers* the following could be passed as *kwargs*::
+
+              orderType='LIT', lmtPrice=10.0, auxPrice=9.8
+
+            This would override the settings created by ``backtrader`` and
+            generate a ``LIMIT IF TOUCHED`` order with a *touched* price of 9.8
+            and a *limit* price of 10.0.
+
+        Returns:
+          - the submitted order
+
         '''
         if isinstance(data, string_types):
             data = self.getdatabyname(data)
@@ -486,7 +590,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         return self.broker.buy(
             self, data,
-            size=size, price=price, plimit=plimit,
+            size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def sell(self, data=None,
@@ -494,6 +598,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
              exectype=None, valid=None, tradeid=0, **kwargs):
         '''
         To create a selll (short) order and send it to the broker
+
+        See the documentation for ``buy`` for an explanation of the parameters
 
         Returns: the submitted order
         '''
@@ -505,14 +611,21 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         return self.broker.sell(
             self, data,
-            size=size, price=price, plimit=plimit,
+            size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
 
     def close(self,
-              data=None, size=None, price=None, exectype=None, valid=None,
-              tradeid=0, **kwargs):
+              data=None, size=None, price=None, plimit=None,
+              exectype=None, valid=None, tradeid=0, **kwargs):
         '''
         Counters a long/short position closing it
+
+        See the documentation for ``buy`` for an explanation of the parameters
+
+        Note:
+
+          - ``size``: automatically calculated from the existing position if
+            not provided (default: ``None``) by the caller
 
         Returns: the submitted order
         '''
@@ -523,13 +636,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size or possize)
 
         if possize > 0:
-            return self.sell(data=data, size=size, price=price,
+            return self.sell(data=data, size=size, price=price, plimit=plimit,
                              exectype=exectype, valid=valid,
                              tradeid=tradeid, **kwargs)
         elif possize < 0:
-            return self.sell(data=data, size=size, price=price,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+            return self.buy(data=data, size=size, price=price, plimit=plimit,
+                            exectype=exectype, valid=valid,
+                            tradeid=tradeid, **kwargs)
 
         return None
 

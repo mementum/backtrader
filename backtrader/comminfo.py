@@ -169,6 +169,23 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
 
 class CommissionInfo(CommInfoBase):
+    '''Base Class for the actual Commission Schemes.
+
+    CommInfoBase was created to keep suppor for the original, incomplete,
+    support provided by ``backtrader``. New commission schemes derive from this
+    class which subclasses CommInfoBase.
+
+    The default value of ``percabs`` is also changed to ``True``
+
+    Params:
+
+      - percabs (def: True): when ``commtype`` is set to COMM_PERC, whether
+        the parameter ``commission`` has to be understood as XX% or 0.XX
+
+        If this param is True: 0.XX
+        If this param is False: XX%
+
+    '''
     params = (
         ('percabs', True),  # Original CommissionInfo took 0.xx for percentages
     )

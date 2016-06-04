@@ -76,9 +76,58 @@ class MetaAnalyzer(bt.MetaParams):
 
 
 class Analyzer(with_metaclass(MetaAnalyzer, object)):
+    '''Analyzer base class. All analyzers are subclass of this one
+
+    An Analyzer instance operates in the frame of a strategy and provides an
+    analysis for that strategy.
+
+    Automagically set member attributes:
+
+      - self.strategy (giving access to the strategy and anything accessible
+        from it)
+
+      - self.datas[x] giving access to the array of datas present in the the
+        system, which could also be accessed via the strategy reference
+
+      - self.data, giving access to self.datas[0]
+
+      - self.dataX -> self.datas[X]
+
+      - self.dataX_Y -> self.datas[X].lines[Y]
+
+      - self.dataX_name -> self.datas[X].name
+
+      - self.data_name -> self.datas[0].name
+
+      - self.data_Y -> self.datas[0].lines[Y]
+
+    This is not a *Lines* object, but the methods and operation follow the same
+    design
+
+      - __init__ during instantiation and initial setup
+
+      - ``start`` / ``stop`` to signal the begin and end of operations
+
+      - ``prenext`` / ``nextstart`` / ``next`` family of methods that follow
+        the calls made to the same methods in the strategy
+
+      - ``notify_trade`` / ``notify_order`` / ``notify_cashvalue`` which
+        receive the same notifications as the equivalent methods of the
+        strategy
+
+    The mode of operation is open and no pattern is preferred. As such the
+    analysis can be generated with the ``next`` calls, at the end of operations
+    during ``stop`` and even with a single method like ``notify_trade``
+
+    The important thing is to override ``get_analysis`` to return a  dict-like
+    object containing the results of the analysis (the actual format is
+    implementation dependent)
+    '''
     csv = True
 
     def __len__(self):
+        '''Support for invoking ``len`` on analyzers by actually returning the
+        current length of the strategy the analyzer operates on'''
         return len(self.strategy)
 
     def _register(self, child):
@@ -133,33 +182,60 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         self.stop()
 
     def notify_cashvalue(self, cash, value):
+        '''Receives the cash/value notification before each next cycle'''
         pass
 
     def notify_order(self, order):
+        '''Receives order notifications before each next cycle'''
         pass
 
     def notify_trade(self, trade):
+        '''Receives trade notifications before each next cycle'''
         pass
 
     def next(self):
+        '''Invoked for each next invocation of the strategy, once the minum
+        preiod of the strategy has been reached'''
         pass
 
     def prenext(self):
+        '''Invoked for each prenext invocation of the strategy, until the minimum
+        preiod of the strategy has been reached
+        '''
         pass
 
     def nextstart(self):
+        '''Invoked exactly once for the nextstart invocation of the strategy,
+        when the minimum period has been first reached
+        '''
         self.next()
 
     def start(self):
+        '''Invoked to indicate the start of operations, giving the analyzer
+        time to setup up needed things'''
         pass
 
     def stop(self):
+        '''Invoked to indicate the end of operations, giving the analyzer
+        time to shut down needed things'''
         pass
 
     def get_analysis(self):
+        '''Returns a dict-like object with the results of the analysis
+
+        The keys and format of analysis results in the dictionary is
+        implementation dependent.
+
+        It is not even enforced that the result is a dict-like object, just the
+        convention
+        '''
         return dict()
 
     def print(self, *args, **kwargs):
+        '''Prints the results returned by ``get_analysis`` via a standard
+        ``Writerfile`` object, which defaults to writing things to standard
+        output
+        '''
         writer = bt.WriterFile(*args, **kwargs)
         writer.start()
         pdct = dict()
@@ -168,4 +244,7 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         writer.stop()
 
     def pprint(self, *args, **kwargs):
+        '''Prints the results returned by ``get_analysis`` using the pretty
+        print Python module (*pprint*)
+        '''
         pp.pprint(self.get_analysis(), *args, **kwargs)

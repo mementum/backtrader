@@ -238,3 +238,13 @@ The code
 .. literalinclude:: ./strategy-with-commission.py
    :language: python
    :lines: 21-
+
+
+Reference
+=========
+
+.. currentmodule:: backtrader
+
+.. autoclass:: CommInfoBase
+
+.. autoclass:: CommissionInfo

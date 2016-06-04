@@ -110,12 +110,16 @@ class Trade(object):
       - justopened (bool): if the trade was just opened
       - baropen (int): bar in which this trade was opened
       - dtopen (float): float coded datetime in which the trade was closed
+
         - Use method ``open_datetime`` to get a Python datetime.datetime
           or use the platform provided ``num2date`` method
+
       - barclose (int): bar in which this trade was closed
       - dtclose (float): float coded datetime in which the trade was closed
+
         - Use method ``close_datetime`` to get a Python datetime.datetime
           or use the platform provided ``num2date`` method
+
       - barlen (int): number of bars this trade was open
       - historyon (bool): whether history has to be recorded
       - history (list): holds a list updated with each "update" event
@@ -128,6 +132,19 @@ class Trade(object):
 
     status_names = ['Created', 'Open', 'Closed']
     Created, Open, Closed = range(3)
+
+    def __str__(self):
+        toprint = (
+            'ref', 'data', 'tradeid',
+            'size', 'price', 'value', 'commission', 'pnl', 'pnlcomm',
+            'justopened', 'isopen', 'isclosed',
+            'baropen', 'dtopen', 'barclose', 'dtclose', 'barlen',
+            'historyon', 'history',
+            'status')
+
+        return '\n'.join(
+            (':'.join((x, str(getattr(self, x)))) for x in toprint)
+        )
 
     def __init__(self, data=None, tradeid=0, historyon=False,
                  size=0, price=0.0, value=0.0, commission=0.0):

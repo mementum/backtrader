@@ -199,7 +199,7 @@ The code::
   ...
   ...
 
-  data = btfeed.GenericCSVData(
+  data = btfeeds.GenericCSVData(
       dataname='mydata.csv',
 
       fromdate=datetime.datetime(2000, 1, 1),
@@ -219,3 +219,32 @@ The code::
       volume=6,
       openinterest=-1
   )
+
+
+This can also be made *permanent* with subclassing::
+
+  import datetime
+  import backtrader.feeds as btfeed
+
+  class MyHLOC(btfreeds.GenericCSVData):
+
+    params = (
+      ('fromdate', datetime.datetime(2000, 1, 1)),
+      ('todate', datetime.datetime(2000, 12, 31)),
+      ('nullvalue', 0.0),
+      ('dtformat', ('%Y-%m-%d')),
+      ('tmformat', ('%H.%M.%S')),
+
+      ('datetime', 0),
+      ('time', 1),
+      ('high', 2),
+      ('low', 3),
+      ('open', 4),
+      ('close', 5),
+      ('volume', 6),
+      ('openinterest', -1)
+  )
+
+This new class can be reused now by just providing the ``dataname``::
+
+  data = btfeeds.MyHLOC(dataname='mydata.csv')

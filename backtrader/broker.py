@@ -31,8 +31,77 @@ from .metabase import MetaParams
 from .order import Order, BuyOrder, SellOrder
 
 
-class BrokerBack(with_metaclass(MetaParams, object)):
+class BrokerBase(with_metaclass(MetaParams, object)):
+    params = (
+        ('commission', CommInfoBase(percabs=True)),
+    )
+
+    def __init__(self):
+        self.comminfo = dict()
+        self.init()
+
+    def init(self):
+        # called from init and from start
+        if None not in self.comminfo:
+            self.comminfo = dict({None: self.p.commission})
+
+    def start(self):
+        self.init()
+
+    def stop(self):
+        pass
+
+    def getcommissioninfo(self, data):
+        if data._name in self.comminfo:
+            return self.comminfo[data._name]
+
+        return self.comminfo[None]
+
+    def setcommission(self,
+                      commission=0.0, margin=None, mult=1.0,
+                      commtype=None, percabs=True, stocklike=False,
+                      name=None):
+
+        comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
+                            commtype=commtype, stocklike=stocklike,
+                            percabs=percabs)
+        self.comminfo[name] = comm
+
+    def addcommissioninfo(self, comminfo, name=None):
+        self.comminfo[name] = comminfo
+
+    def getcash(self):
+        raise NotImplementedError
+
+    def getvalue(self, datas=None):
+        raise NotImplementedError
+
+    def getposition(self, data):
+        raise NotImplementedError
+
+    def submit(self, order):
+        raise NotImplementedError
+
+    def cancel(self, order):
+        raise NotImplementedError
+
+    def buy(self, owner, data, size, price=None, plimit=None, exectype=None,
+            valid=None, tradeid=0, **kwargs):
+
+        raise NotImplementedError
+
+    def sell(self, owner, data, size, price=None, plimit=None, exectype=None,
+             valid=None, tradeid=0, **kwargs):
+
+        raise NotImplementedError
+
+    def next(self):
+        pass
+
+
+class BrokerBack(BrokerBase):
     '''Broker Simulator
+
       Parameters:
 
         Note: use the setXXXX to set the value after instance creation
@@ -54,19 +123,12 @@ class BrokerBack(with_metaclass(MetaParams, object)):
     '''
     params = (
         ('cash', 10000.0),
-        ('commission', CommInfoBase(percabs=True)),
         ('checksubmit', True),
         ('eosbar', False),
     )
 
-    def __init__(self):
-        self.comminfo = dict()
-        self.init()
-
     def init(self):
-        if None not in self.comminfo:
-            self.comminfo = dict({None: self.p.commission})
-
+        super(BrokerBack, self).init()
         self.startingcash = self.cash = self.p.cash
 
         self.orders = list()  # will only be appending
@@ -77,6 +139,14 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
         self.submitted = collections.deque()
 
+    def get_notification(self):
+        try:
+            return self.notifs.popleft()
+        except IndexError:
+            pass
+
+        return None
+
     def seteosbar(self, eosbar):
         self.p.eosbar = eosbar
 
@@ -85,31 +155,6 @@ class BrokerBack(with_metaclass(MetaParams, object)):
 
     def setcash(self, cash):
         self.startingcash = self.cash = self.p.cash = cash
-
-    def getcommissioninfo(self, data):
-        if data._name in self.comminfo:
-            return self.comminfo[data._name]
-
-        return self.comminfo[None]
-
-    def setcommission(self,
-                      commission=0.0, margin=None, mult=1.0,
-                      commtype=None, percabs=True, stocklike=False,
-                      name=None):
-
-        comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
-                            commtype=commtype, stocklike=stocklike,
-                            percabs=percabs)
-        self.comminfo[name] = comm
-
-    def addcommissioninfo(self, comminfo, name=None):
-        self.comminfo[name] = comminfo
-
-    def start(self):
-        self.init()
-
-    def stop(self):
-        pass
 
     def cancel(self, order):
         try:
@@ -144,7 +189,6 @@ class BrokerBack(with_metaclass(MetaParams, object)):
         return o.status
 
     def submit(self, order):
-        order.plen = len(order.data)
         if self.p.checksubmit:
             order.submit()
             self.submitted.append(order)

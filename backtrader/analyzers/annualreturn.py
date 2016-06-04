@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 from collections import OrderedDict
 
 from backtrader.utils.py3 import range
-from backtrader import Analyzer, num2date
+from backtrader import Analyzer
 
 
 class AnnualReturn(Analyzer):
@@ -58,13 +58,11 @@ class AnnualReturn(Analyzer):
         self.rets = list()
         self.ret = OrderedDict()
 
-        for i in range(len(self.strategy.data)):
-            dt = num2date(self.strategy.data.datetime.getzeroval(i))
-
-            value_cur = self.strategy.stats.broker.value.getzeroval(i)
+        for i in range(len(self.data) - 1, -1, -1):
+            dt = self.data.datetime.date(-i)
+            value_cur = self.strategy.stats.broker.value[-i]
 
             if dt.year > cur_year:
-
                 if cur_year >= 0:
                     annualret = (value_end / value_start) - 1.0
                     self.rets.append(annualret)
