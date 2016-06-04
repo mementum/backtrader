@@ -130,6 +130,11 @@ def _num2date(x, tz=None):
     return dt
 
 
+def _num2dt(x, tz=None):
+    ix = int(x)
+    return datetime.datetime.fromordinal(ix)
+
+
 def _date2num(dt):
     """
     Convert :mod:`datetime` to the Gregorian date as UTC float days,
