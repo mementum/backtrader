@@ -21,8 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import datetime
+
 from backtrader.feed import DataBase
-from backtrader import TimeFrame, date2num
+from backtrader import TimeFrame, date2num, num2date
 from backtrader.utils.py3 import bytes, with_metaclass, queue
 from backtrader.metabase import MetaParams
 from backtrader.stores import ibstore
@@ -51,16 +53,22 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - TICKER-IND-EXCHANGE  # Index
           - TICKER-IND-EXCHANGE-CURRENCY  # Index
 
+          - TICKER-YYYYMM-EXCHANGE  # Future
           - TICKER-YYYYMM-EXCHANGE-CURRENCY  # Future
-          - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULTIPLIER  # Future
+          - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULT  # Future
+          - TICKER-FUT-EXCHANGE-CURRENCY-YYYYMM-MULT # Future
 
-          - TICKER-YYYYMM-EXCHANGE-CURRENCY-RIGHT-STRIKE  # FOP
-          - TICKER-YYYYMM-EXCHANGE-CURRENCY-RIGHT-STRIKE-MULT  # FOP
+          - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT  # FOP
+          - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT-MULT  # FOP
+          - TICKER-FOP-EXCHANGE-CURRENCY-YYYYMM-STRIKE-RIGHT # FOP
+          - TICKER-FOP-EXCHANGE-CURRENCY-YYYYMM-STRIKE-RIGHT-MULT # FOP
 
           - CUR1.CUR2-CASH-IDEALPRO  # Forex
 
-          - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-RIGHT-STRIKE  # OPT
-          - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-RIGHT-STRIKE-MULT  # OPT
+          - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-STRIKE-RIGHT  # OPT
+          - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-STRIKE-RIGHT-MULT  # OPT
+          - TICKER-OPT-EXCHANGE-CURRENCY-YYYYMMDD-STRIKE-RIGHT # OPT
+          - TICKER-OPT-EXCHANGE-CURRENCY-YYYYMMDD-STRIKE-RIGHT-MULT # OPT
 
     Params:
 
@@ -78,17 +86,6 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
         Default value to apply as *currency* if not provided in the
         ``dataname`` specification
-
-      - ``tz`` (default: ``None``)
-
-        ``pytz`` or compatible timezone object to apply to the timestamps
-        provided by Interactive Brokers (UTC) to convert the time to that
-        timezone. The final datetime objects generated in the platform will
-        still be naive (timezone-less) to allow for easy comparison across the
-        platforma and eaay conversion from/to numeric values
-
-        Usual timezone guidelines recommend to always work in UTC and only
-        convert to a specified timezone when displaying to the user.
 
       - ``useRT`` (default: ``False``)
 
@@ -116,16 +113,20 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         which uses the default values (``STK`` and ``SMART``) and overrides
         the currency to be ``USD``
     '''
-
     params = (
         ('sectype', 'STK'),  # usual industry value
         ('exchange', 'SMART'),  # usual industry value
         ('currency', ''),
-        ('tz', None),
         ('useRT', False),  # use RealTime 5 seconds bars
+        ('historical', False),  # only historical download
+        ('what', 'TRADES'),  # historical - what to show
+        ('useRTH', False),  # historical - download only Regular Trading Hours
     )
 
     _store = ibstore.IBStore
+
+    # States for the Finite State Machine in _load
+    _ST_START, _ST_LIVE, _ST_HISTORBACK = range(3)
 
     def islive(self):
         '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
@@ -143,8 +144,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         env.addstore(self.ib)
 
     def parsecontract(self):
-        '''Parses dataname following the specification and geneates a default
-        contract'''
+        '''Parses dataname generates a default contract'''
         # Set defaults for optional tokens in the ticker string
         exch = self.p.exchange
         curr = self.p.currency
@@ -217,21 +217,23 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         contractdetails if it exists'''
         super(IBData, self).start()
         # Kickstart store and get queue to wait on
-        self.q = self.ib.start(data=self)
+        self.qlive = self.ib.start(data=self)
+        self.qhist = None
+
+        self.contract = None
+        self.contractdetails = None
+
+        self._state = self._ST_START  # initial state for _load
+        self._statelivereconn = False  # if reconnecting in live state
+        self._storedmsg = dict()  # keep pending live message (under None)
 
         if self.ib.connected():
             # get real contract details with real conId (contractId)
-            q = self.ib.reqContractDetails(self.precontract)
-            msg = q.get()
-            if msg is None:
-                self.contract = None
-                self.contractdetails = None
-            else:
-                self.contract = msg.contractDetails.m_summary
-                self.contractdetails = msg.contractDetails
-        else:
-            self.contract = None
-            self.contractdetails = None
+            cds = self.ib.getContractDetails(self.precontract, maxcount=1)
+            if cds is not None:
+                cdetails = cds[0]
+                self.contract = cdetails.contractDetails.m_summary
+                self.contractdetails = cdetails.contractDetails
 
     def stop(self):
         '''Stops and tells the store to stop'''
@@ -239,18 +241,16 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.ib.stop()
 
     def reqdata(self):
-        '''request real-time data. checks item type (cash or not cash) and parameter
-        useRT
-        '''
+        '''request real-time data. checks cash vs non-cash) and param useRT'''
         if self.contract is None:
             return
 
         if not self.p.useRT or self.cashtype:
-            self.q = self.ib.reqMktData(self.contract, tz=self.p.tz)
+            self.qlive = self.ib.reqMktData(self.contract)
         else:
-            self.q = self.ib.reqRealTimeBars(self.contract, tz=self.p.tz)
+            self.qlive = self.ib.reqRealTimeBars(self.contract)
 
-        return self.q
+        return self.qlive
 
     def canceldata(self):
         '''Cancels Market Data subscription, checking asset type and useRT'''
@@ -258,39 +258,130 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return
 
         if not self.p.useRT or self.cashtype:
-            self.ib.cancelMktData(self.q)
+            self.ib.cancelMktData(self.qlive)
         else:
-            self.ib.cancelRealTimeBars(self.q)
+            self.ib.cancelRealTimeBars(self.qlive)
 
     def _load(self):
-        # Wait on the qeue until None arrives (no data). Try to reconnect and
-        # if not possible for whatever the reason, bail out.
-        # Else process the message with the appropriate parser (asset
+        if self.contract is None:
+            self.put_notification(self.DISCONNECTED)
+            return False  # nothing can be done
+
         while True:
-            msg = self.q.get()
-            if msg is None:
-                if self.contract is None:
-                    # initial connection failed, nothing can be done
-                    return False
+            if self._state == self._ST_START:
+                if self.p.historical:
+                    self.put_notification(self.DELAYED)
+                    dtend = None
+                    if self.todate < float('inf'):
+                        dtend = num2date(self.todate)
 
-                # a contract exists, connection lost -> try reconnecting
+                    dtbegin = None
+                    if self.fromdate > float('-inf'):
+                        dtbegin = num2date(self.fromdate)
+
+                    self.qhist = self.ib.reqHistoricalDataEx(
+                        self.contract, dtend, dtbegin,
+                        self._timeframe, self._compression,
+                        what=self.p.what, useRTH=self.p.useRTH)
+
+                    self._state = self._ST_HISTORBACK
+                    continue
+
+                # Live is requested
                 if not self.ib.reconnect(resub=True):
-                    return False  # no reconnect or failed
+                    self.put_notification(self.DISCONNECTED)
+                    return False  # failed
 
-                continue  # back to data fetch
+                # else only live wished
+                self.put_notification(self.DELAYED)
+                self._statelivereconn = True  # attempt backfilling
+                self._state = self._ST_LIVE
 
-            # Process the message according to expected return type
-            if not self.p.useRT or self.cashtype:
-                return self._load_rtvolume(msg)
+            elif self._state == self._ST_HISTORBACK:
+                msg = self.qhist.get()
+                if msg is None:  # Conn broken during historical/backfilling
+                    # Situation not managed. Simply bail out
+                    self.put_notification(self.DISCONNECTED)
+                    return False  # error management cancelled the queue
 
-            return self._load_rtbar(msg)
+                if msg.date is not None:
+                    if self._load_rtbar(msg, hist=True):
+                        return True  # loading worked
 
-    def _load_rtbar(self, rtbar):
+                    # the date is from overlapping historical request
+                    continue
+
+                # End of histdata
+                if self.p.historical:  # only historical
+                    self.put_notification(self.DISCONNECTED)
+                    return False  # end of historical
+
+                # Live is also wished - go for it
+                self._state = self._ST_LIVE
+                continue
+
+            elif self._state == self._ST_LIVE:
+                msg = self._storedmsg.pop(None, self.qlive.get())
+                if msg is None:  # Conn broken during historical/backfilling
+                    self.put_notification(self.CONNBROKEN)
+                    # Try to reconnect
+                    if not self.ib.reconnect(resub=True):
+                        self.put_notification(self.DISCONNECTED)
+                        return False  # failed
+
+                    self._statelivereconn = True
+                    continue
+
+                # Process the message according to expected return type
+                if not self._statelivereconn:
+                    if self._laststatus != self.LIVE:
+                        if self.qlive.qsize() <= 1:  # very short live queue
+                            self.put_notification(self.LIVE)
+
+                    if not self.p.useRT or self.cashtype:
+                        return self._load_rtvolume(msg)
+
+                    return self._load_rtbar(msg)
+
+                # Fall through to processing reconnect - try to backfill
+                self.put_notification(self.DELAYED)
+                self._storedmsg[None] = msg  # keep the msg
+
+                dtend = None
+                if len(self) > 1:
+                    # len == 1 ... forwarded for the 1st time
+                    dtbegin = self.datetime.datetime(-1)
+                elif self.fromdate > float('-inf'):
+                    dtbegin = num2date(self.fromdate)
+                else:  # 1st bar and no begin set
+                    # passing None to fetch max possible in 1 request
+                    dtbegin = None
+
+                rtvolume = not self.p.useRT or self.cashtype
+                dtend = msg.datetime if rtvolume else msg.time
+
+                self.qhist = self.ib.reqHistoricalDataEx(
+                    self.contract, dtend, dtbegin,
+                    self._timeframe, self._compression,
+                    what=self.p.what,
+                    useRTH=self.p.useRTH)
+
+                self._state = self._ST_HISTORBACK
+                self._statelivereconn = False
+                continue
+
+    def _load_rtbar(self, rtbar, hist=False):
         # A complete 5 second bar made of real-time ticks is delivered and
         # contains open/high/low/close/volume prices
         # Datetime transformation
-        self.lines.datetime[0] = date2num(rtbar.time)
+        if not hist:
+            self.lines.datetime[0] = date2num(rtbar.time)
+        else:
+            dt = date2num(rtbar.date)
+            if dt <= self.lines.datetime[0]:
+                return False  # cannot deliver earlier than already delivered
 
+        self.lines.datetime[0] = dt
         # Put the tick into the bar
         self.lines.open[0] = rtbar.open
         self.lines.high[0] = rtbar.high

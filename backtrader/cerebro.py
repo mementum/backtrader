@@ -150,7 +150,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.analyzers = list()
         self.indicators = list()
         self.writers = list()
-        self.notifycallbacks = list()
+        self.storecbs = list()
+        self.datacbs = list()
 
         self._broker = BrokerBack()
 
@@ -207,7 +208,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def addobservermulti(self, obscls, *args, **kwargs):
         self.observers.append((True, obscls, args, kwargs))
 
-    def addnotifycallback(self, callback):
+    def addstorecb(self, callback):
         '''Adds a callback to get messages which would be handled by the
         notify_store method
 
@@ -220,10 +221,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         in general one should expect them to be *printable* to allow for
         reception and experimentation.
         '''
-        self.notifycallbacks.append(callback)
+        self.storecbs.append(callback)
 
     def _notify_store(self, msg, *args, **kwargs):
-        for callback in self.notifycallbacks:
+        for callback in self.storecbs:
             callback(msg, *args, **kwargs)
 
         self.notify_store(msg, *args, **kwargs)
@@ -242,15 +243,53 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     def _storenotify(self):
         for store in self.stores:
-            while True:
-                notif = store.get_notification()
-                if notif is None:
-                    break
+            for notif in store.get_notifications():
                 msg, args, kwargs = notif
 
                 self._notify_store(msg, *args, **kwargs)
                 for strat in self.runningstrats:
                     strat.notify_store(msg, *args, **kwargs)
+
+    def adddatacb(self, callback):
+        '''Adds a callback to get messages which would be handled by the
+        notify_data method
+
+        The signature of the callback must support the following:
+
+          - callback(msg, data, status, \*args, \*\*kwargs)
+
+        The actual ``*args`` and ``**kwargs`` received are implementation
+        defined (depend entirely on the *data/broker/store*) but in general one
+        should expect them to be *printable* to allow for reception and
+        experimentation.
+        '''
+        self.datacbs.append(callback)
+
+    def _datanotify(self):
+        for data in self.datas:
+            for notif in data.get_notifications():
+                status, args, kwargs = notif
+                self._notify_data(data, status, *args, **kwargs)
+                for strat in self.runningstrats:
+                    strat.notify_data(data, status, *args, **kwargs)
+
+    def _notify_data(self, data, status, *args, **kwargs):
+        for callback in self.datacbs:
+            callback(msg, *args, **kwargs)
+
+        self.notify_data(data, status, *args, **kwargs)
+
+    def notify_data(self, data, status, *args, **kwargs):
+        '''Receive data notifications in cerebro
+
+        This method can be overridden in ``Cerebro`` subclasses
+
+        The actual ``*args`` and ``**kwargs`` received are
+        implementation defined (depend entirely on the *data/broker/store*) but
+        in general one should expect them to be *printable* to allow for
+        reception and experimentation.
+        '''
+        pass
 
     def adddata(self, data, name=None):
         '''
@@ -626,6 +665,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
             self._storenotify()
+            self._datanotify()
 
             d0ret = data0.next()
             if d0ret:
@@ -648,6 +688,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 self._next_writers(runstrats)
 
         # Last notification chance before stopping
+        self._datanotify()
         self._storenotify()
 
     def _runonce(self, runstrats):

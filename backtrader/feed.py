@@ -28,7 +28,7 @@ import io
 import os.path
 
 from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, zip, range
+from backtrader.utils.py3 import with_metaclass, zip, range, queue
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -53,6 +53,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
+
+        _obj.notifs = queue.Queue()  # store notifications for cerebro
 
         return _obj, args, kwargs
 
@@ -134,7 +136,13 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('sessionend', None),
               ('filters', []),)
 
-    CONNECTED, CONNBROKEN, DELAYED, LIVE = range(4)
+    CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED, LIVE = range(5)
+    _NOTIFNAMES = [
+        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE']
+
+    @classmethod
+    def _getstatusname(cls, status):
+        return cls._NOTIFNAMES[status]
 
     _feed = None
 
@@ -145,6 +153,25 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ``runonce`` because a live data source must be fetched tick by tick (or
         bar by bar)'''
         return False
+
+    def put_notification(self, status, *args, **kwargs):
+        '''Add arguments to notification queue'''
+        self.notifs.put((status, args, kwargs))
+        self._laststatus = status
+
+    def get_notifications(self):
+        '''Return the pending "store" notifications'''
+        # The background thread could keep on adding notifications. The None
+        # mark allows to identify which is the last notification to deliver
+        self.notifs.put(None)  # put a mark
+        notifs = list()
+        while True:
+            notif = self.notifs.get()
+            if notif is None:  # mark is reached
+                break
+            notifs.append(notif)
+
+        return notifs
 
     def getfeed(self):
         return self._feed
@@ -157,6 +184,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def start(self):
         self._barstack = collections.deque()
         self.mlen = list()
+        self._laststatus = self.CONNECTED
 
     def stop(self):
         pass

@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 from copy import copy
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import inspect
 import itertools
 import random
@@ -36,29 +36,17 @@ import ib.opt as ibopt
 from backtrader import TimeFrame, Position
 from backtrader.metabase import MetaParams
 from backtrader.utils.py3 import bytes, queue, with_metaclass
-from backtrader.utils.flushfile import StdOutDevNull
-from backtrader.utils.date import UTC
 from backtrader.utils import AutoDict
 
 
-def _ts2dt(tstamp=None, tz=None):
-    # Transforms a RTVolume timestamp to a datetime object using the tz to
-    # transform if provided, although the final object is naive to allow for a
-    # sensible comparison to other naive objects in the system
-    if tstamp is None:
-        dt = datetime.utcnow()
-        if tz is not None:
-            dt = dt.replace(tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
-        return dt
+def _ts2dt(tstamp=None):
+    # Transforms a RTVolume timestamp to a datetime object
+    if not tstamp:
+        return datetime.now()
 
     sec, msec = divmod(long(tstamp), 1000)
     usec = msec * 1000
-    dt = datetime.utcfromtimestamp(sec).replace(microsecond=usec)
-    if tz is not None:
-        # convert to local time and make it naive again to ensure it stays
-        # right when converting to a number
-        dt = dt.replace(tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
-    return dt
+    return datetime.fromtimestamp(sec).replace(microsecond=usec)
 
 
 class RTVolume(object):
@@ -70,21 +58,19 @@ class RTVolume(object):
     _fields = [
         ('price', float),
         ('size', int),
-        ('datetime', int),
+        ('datetime', _ts2dt),
         ('volume', int),
         ('vwap', float),
         ('single', bool)
     ]
 
-    def __init__(self, rtvol='', price=None, tz=None):
+    def __init__(self, rtvol='', price=None):
         # Use a provided string or simulate a list of empty tokens
         tokens = iter(rtvol.split(';'))
 
         # Put the tokens as attributes using the corresponding func
         for name, func in self._fields:
             setattr(self, name, func(next(tokens)) if rtvol else func())
-
-        self.datetime = _ts2dt(self.datetime, tz=tz)
 
         # If price was provided use it
         if price is not None:
@@ -154,6 +140,11 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         Time in seconds between reconnection attemps
     '''
 
+    # Set a base for the data requests (historical/realtime) to distinguish the
+    # id in the error notifications from orders, where the basis (usually
+    # starting at 1) is set by TWS
+    REQIDBASE = 0x10000000
+
     BrokerCls = None  # broker class will autoregister
     DataCls = None  # data class will auto register
 
@@ -169,7 +160,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @classmethod
     def getdata(self, *args, **kwargs):
-        '''Returns data with *args, **kwargs from registered ``DataCls``'''
+        '''Returns ``DataCls`` with args, kwargs'''
         return cls.DataCls(*args, **kwargs)
 
     @classmethod
@@ -183,6 +174,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self._lock_q = threading.Lock()  # sync access to _tickerId/Queues
         self._lock_accupd = threading.Lock()  # sync account updates
         self._lock_pos = threading.Lock()  # sync account updates
+        self._lock_notif = threading.Lock()  # sync access to notif queue
+
         # Account list received
         self._event_managed_accounts = threading.Event()
         self._event_accdownload = threading.Event()
@@ -197,8 +190,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # Structures to hold datas requests
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
         self.ts = collections.OrderedDict()  # key: queue -> tickerId
-        self.tzs = collections.OrderedDict()  # key: tickerId -> timezone
-        self.iscash = set()  # tickerIds from cash products (for ex: EUR.JPY)
+        self.iscash = dict()  # tickerIds from cash products (for ex: EUR.JPY)
+
+        self.histexreq = dict()  # holds segmented historical requests
 
         self.acc_cash = AutoDict()  # current total cash per account
         self.acc_value = AutoDict()  # current total value per account
@@ -208,8 +202,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         self.positions = collections.defaultdict(Position)  # actual positions
 
-        self._tickerId = itertools.count(1)  # unique tickerIds
+        self._tickerId = itertools.count(self.REQIDBASE)  # unique tickerIds
         self.orderid = None  # next possible orderid (will be itertools.count)
+
+        self.cdetails = collections.defaultdict(list)  # hold cdetails requests
 
         self.managed_accounts = list()  # received via managedAccounts
 
@@ -237,6 +233,35 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
             message = getattr(ibopt.message, name)
             self.conn.register(method, message)
+
+        # This utility key function transforms a barsize into a:
+        #   (Timeframe, Compression) tuple which can be sorted
+        def keyfn(x):
+            n, t = x.split()
+            tf, comp = self._sizes[t]
+            return (tf, int(n) * comp)
+
+        # This utility key function transforms a duration into a:
+        #   (Timeframe, Compression) tuple which can be sorted
+        def key2fn(x):
+            n, d = x.split()
+            tf = self._dur2tf[d]
+            return (tf, int(n))
+
+        # Generate a table of reverse durations
+        self.revdur = collections.defaultdict(list)
+        # The table (dict) is a ONE to MANY relation of
+        #   duration -> barsizes
+        # Here it is reversed to get a ONE to MANY relation of
+        #   barsize -> durations
+        for duration, barsizes in self._durations.items():
+            for barsize in barsizes:
+                self.revdur[keyfn(barsize)].append(duration)
+
+        # Once managed, sort the durations according to real duration and not
+        # to the text form using the utility key above
+        for barsize in self.revdur:
+            self.revdur[barsize].sort(key=key2fn)
 
     def start(self, data=None, broker=None):
         self.reconnect(fromstart=True)  # reconnect should be an invariant
@@ -364,18 +389,23 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         for q in reversed(qs):  # datamaster the last one to get a None
             q.put(None)
 
-    def get_notification(self):
-        '''Return the pending "store" notifications until the queue is empty'''
-        try:
-            return self.notifs.get(False)  # non-blocking provoke exception
-        except queue.Empty:
-            pass
+    def get_notifications(self):
+        '''Return the pending "store" notifications'''
+        # The background thread could keep on adding notifications. The None
+        # mark allows to identify which is the last notification to deliver
+        self.notifs.put(None)  # put a mark
+        notifs = list()
+        while True:
+            notif = self.notifs.get()
+            if notif is None:  # mark is reached
+                break
+            notifs.append(notif)
 
-        return None
+        return notifs
 
     @ibregister
     def error(self, msg):
-        # 100-199 Order related
+        # 100-199 Order/Data/Historical related
         # 200-203 tickerId and Order Related
         # 300-399 A mix of things: orders, connectivity, tickers, misc errors
         # 400-449 Seem order related again
@@ -395,12 +425,20 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         if msg.errorCode is None:
             # Usually received as an error in connection of just before disconn
             pass
-        elif msg.errorCode in [200, 203]:
+        elif msg.errorCode in [200, 203, 162, 320, 321, 322]:
             # cdetails 200 security not found, notify over right queue
             # cdetails 203 security not allowed for acct
-            q = self.qs[msg.id]
-            q.put(None)
-            self.cancelQueue(q)
+            try:
+                q = self.qs[msg.id]
+            except KeyError:
+                pass  # should not happend but it can
+            else:
+                self.cancelQueue(q, True)
+
+        elif msg.errorCode in [354]:
+            # This error means --- No subscription. Need to keep a reference to
+            # the calling data to let the data know ... it cannot resub
+            pass
 
         elif msg.errorCode == 326:  # not recoverable, clientId in use
             self.dontreconnect = True
@@ -425,7 +463,13 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         elif msg.errorCode < 500:
             # Given the myriad of errorCodes, start by assuming is an order
             # error and if not, the checkes there will let it go
-            self.broker.push_ordererror(msg)
+            if msg.id < self.REQIDBASE:
+                if self.broker is not None:
+                    self.broker.push_ordererror(msg)
+            else:
+                # Cancel the queue if a "data" reqId error is given: sanity
+                q = self.qs[msg.id]
+                self.cancelQueue(q, True)
 
     @ibregister
     def connectionClosed(self, msg):
@@ -462,9 +506,23 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # notified value from TWS
         return next(self.orderid)
 
-    def getTickerQueue(self, tz=None, start=False):
-        '''Creates ticker/Queue for data delivery to a data feed'''
+    def reuseQueue(self, tickerId):
+        '''Reuses queue for tickerId, returning the new tickerId and q'''
+        with self._lock_q:
+            # Invalidate tickerId in qs (where it is a key)
+            q = self.qs.pop(tickerId, None)  # invalidate old
+            iscash = self.iscash.pop(tickerId, None)
 
+            # Update ts: q -> ticker
+            tickerId = self.nextTickerId()  # get new tickerId
+            self.ts[q] = tickerId  # Update ts: q -> tickerId
+            self.qs[tickerId] = q  # Update qs: tickerId -> q
+            self.iscash[tickerId] = iscash
+
+        return tickerId, q
+
+    def getTickerQueue(self, start=False):
+        '''Creates ticker/Queue for data delivery to a data feed'''
         q = queue.Queue()
         if start:
             q.put(None)
@@ -474,20 +532,40 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             tickerId = self.nextTickerId()
             self.qs[tickerId] = q  # can be managed from other thread
             self.ts[q] = tickerId
-            self.tzs[tickerId] = tz
+            self.iscash[tickerId] = False
 
         return tickerId, q
 
-    def cancelQueue(self, q):
+    def cancelQueue(self, q, sendnone=False):
         '''Cancels a Queue for data delivery'''
         # pop ts (tickers) and with the result qs (queues)
         tickerId = self.ts.pop(q, None)
         self.qs.pop(tickerId, None)
-        # sets don't have a pop with default argument
-        if tickerId in self.iscash:
-            self.iscash.remove(tickerId)
 
-        self.tzs.pop(tickerId, None)  # remove timezone
+        self.iscash.pop(tickerId, None)
+
+        if sendnone:
+            q.put(None)
+
+    def validQueue(self, q):
+        '''Returns (bool)  if a queue is still valid'''
+        return q in self.ts  # queue -> ticker
+
+    def getContractDetails(self, contract, maxcount=None):
+        cds = list()
+        q = self.reqContractDetails(contract)
+        while True:
+            msg = q.get()
+            if msg is None:
+                break
+            cds.append(msg)
+
+        if not cds or (maxcount and len(cds) > maxcount):
+            err = 'Ambiguous contract: none/multiple answers received'
+            self.notifs.put((err, cds, {}))
+            return None
+
+        return cds
 
     def reqContractDetails(self, contract):
         # get a ticker/queue for identification/data delivery
@@ -496,29 +574,123 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         return q
 
     @ibregister
-    def contractDetails(self, msg):
-        q = self.qs[msg.reqId]
-        q.put(msg)
-        self.cancelQueue(q)
+    def contractDetailsEnd(self, msg):
+        '''Signal end of contractdetails'''
+        self.cancelQueue(self.qs[msg.reqId], True)
 
-    def reqHistoricalData(self, contract, enddate, barsize, duration,
-                          useRTH=False):
+    @ibregister
+    def contractDetails(self, msg):
+        '''Receive answer and pass it to the queue'''
+        self.qs[msg.reqId].put(msg)
+
+    def reqHistoricalDataEx(self, contract, enddate, begindate,
+                            timeframe, compression,
+                            what='TRADES', useRTH=False,
+                            tickerId=None):
+        '''
+        Extension of the raw reqHistoricalData proxy, which takes two dates
+        rather than a duration, barsize and date
+
+        It uses the IB published valid duration/barsizes to make a mapping and
+        spread a historical request over several historical requests if needed
+        '''
+        # Keep a copy for error reporting purposes
+        kwargs = locals().copy()
+        kwargs.pop('self', None)  # remove self, no need to report it
+
+        if timeframe < TimeFrame.Seconds:
+            # Ticks are not supported
+            return self.getTickerQueue(start=True)
+
+        if enddate is None:
+            enddate = datetime.now()
+
+        if begindate is None:
+            duration = self.getmaxduration(timeframe, compression)
+            if duration is None:
+                err = ('No duration for historical data request for '
+                       'timeframe/compresison')
+                self.notifs.put((err, (), kwargs))
+                return self.getTickerQueue(start=True)
+            barsize = self.tfcomp_to_size(timeframe, compression)
+            if barsize is None:
+                err = ('No supported barsize for historical data request for '
+                       'timeframe/compresison')
+                self.notifs.put((err, (), kwargs))
+                return self.getTickerQueue(start=True)
+
+            return self.reqHistoricalData(
+                contract, enddate, duration, barsize, what, useRTH)
+
+        # Check if the requested timeframe/compression is supported by IB
+        durations = self.getdurations(timeframe, compression)
+        if not durations:  # return a queue and put a None in it
+            return self.getTickerQueue(start=True)
+
+        # Get or reuse a queue
+        if tickerId is None:
+            tickerId, q = self.getTickerQueue()
+        else:
+            tickerId, q = self.reuseQueue(tickerId)  # reuse q for old tickerId
+
+        # Get the best possible duration to reduce number of requests
+        duration = None
+        for dur in durations:
+            intdate = self.dt_plus_duration(begindate, dur)
+            if intdate >= enddate:
+                intdate = enddate
+                duration = dur  # begin -> end fits in single request
+                break
+
+        if duration is None:  # no duration large enough to fit the request
+            duration = durations[-1]
+
+            # Store the calculated data
+            self.histexreq[tickerId] = (
+                contract, enddate, intdate,
+                timeframe, compression,
+                what, useRTH)
+
+        barsize = self.tfcomp_to_size(timeframe, compression)
+
+        if contract.m_secType == 'CASH':
+            self.iscash[tickerId] = True
+            what = 'BID'  # TRADES doesn't work
+
+        # No timezone is passed -> request in local time
+        self.conn.reqHistoricalData(
+            tickerId,
+            contract,
+            bytes(intdate.strftime('%Y%m%d %H:%M:%S')),
+            bytes(duration),
+            bytes(barsize),
+            bytes(what),
+            int(useRTH),
+            1)  # dateformat 1 for string, 2 for unix time in seconds
+
+        return q
+
+    def reqHistoricalData(self, contract, enddate, duration, barsize,
+                          what='TRADES', useRTH=False):
         '''Proxy to reqHistorical Data'''
 
         # get a ticker/queue for identification/data delivery
         tickerId, q = self.getTickerQueue()
 
-        # process enddate
-        enddate_str = num2date(enddate).strftime('%Y%m%d %H:%M:%S')
+        if contract.m_secType == 'CASH':
+            self.iscash[tickerId] = True
+            what = 'BID'  # TRADES doesn't work
 
+        # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            enddate_str,
-            duration,
-            barsize,
-            bytes('TRADES'),
-            int(useRTH))
+            bytes(enddate.strftime('%Y%m%d %H:%M:%S')),
+            bytes(duration),
+            bytes(barsize),
+            bytes(what),
+            int(useRTH),
+            1)
 
         return q
 
@@ -530,7 +702,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         '''
         with self._lock_q:
             self.conn.cancelHistoricalData(self.ts[q])
-            self.cancelQueue(q)
+            self.cancelQueue(q, True)
 
     def reqRealTimeBars(self, contract, useRTH=False, duration=5):
         '''Creates a request for (5 seconds) Real Time Bars
@@ -567,9 +739,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             if tickerId is not None:
                 self.conn.cancelRealTimeBars(tickerId)
 
-            self.cancelQueue(q)
+            self.cancelQueue(q, True)
 
-    def reqMktData(self, contract, tz=None):
+    def reqMktData(self, contract):
         '''Creates a MarketData subscription
 
         Params:
@@ -579,13 +751,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
           - a Queue the client can wait on to receive a RTVolume instance
         '''
         # get a ticker/queue for identification/data delivery
-        tickerId, q = self.getTickerQueue(tz)
+        tickerId, q = self.getTickerQueue()
         ticks = '233'  # request RTVOLUME tick delivered over tickString
 
         if contract.m_secType == 'CASH':
-            self.iscash.add(tickerId)
+            self.iscash[tickerId] = True
             ticks = ''  # cash markets do not get RTVOLUME
 
+        # q.put(None)  # to kickstart backfilling
         # Can request 233 also for cash ... nothing will arrive
         self.conn.reqMktData(tickerId, contract, bytes(ticks), False)
         return q
@@ -601,14 +774,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             if tickerId is not None:
                 self.conn.cancelMktData(tickerId)
 
-            self.cancelQueue(q)
+            self.cancelQueue(q, True)
 
     @ibregister
     def tickString(self, msg):
         # Receive and process a tickString message
         if msg.tickType == 48:  # RTVolume
             try:
-                rtvol = RTVolume(msg.value, tz=self.tzs[msg.tickerId])
+                rtvol = RTVolume(msg.value)
             except ValueError:  # price not in message ...
                 pass
             else:
@@ -624,22 +797,15 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         queue to have a consistent cross-market interface
         '''
         # Used for "CASH" markets
-        if msg.tickerId in self.iscash:
+        tickerId = msg.tickerId
+        if self.iscash[tickerId]:
             if msg.field == 1:  # Bid Price
                 try:
                     rtvol = RTVolume(price=msg.price)
                 except ValueError:  # price not in message ...
                     pass
                 else:
-                    self.qs[msg.tickerId].put(rtvol)
-
-    def _parsemsgtime(self, msg):
-        # Parse datetime of RealTimeBars/HistoricalData using tz if not None
-        tz = self.tzs[msg.tickerId]
-        dt = datetime.utcfromtimestamp(msgtime)
-        if tz is not None:
-            dt = dt.replace(tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
-        return dt
+                    self.qs[tickerId].put(rtvol)
 
     @ibregister
     def realtimeBar(self, msg):
@@ -648,132 +814,164 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         Not valid for cash markets
         '''
-        msg.time = self._parsemsgtime(msg)
+        # Get a naive localtime object
+        msg.time = datetime.fromtimestamp(float(msg.time))
         self.qs[msg.reqId].put(msg)
 
     @ibregister
     def historicalData(self, msg):
         '''Receives the events of a historical data request'''
-        if msg.time.startswith('finished-'):
-            msg = None
-        else:
-            msg.time = self._parsemsgtime(msg)
+        # For multi-tiered downloads we'd need to rebind the queue to a new
+        # tickerId (in case tickerIds are not reusable) and instead of putting
+        # None, issue a new reqHistData with the new data and move formward
+        tickerId = msg.reqId
+        q = self.qs[tickerId]
+        if msg.date.startswith('finished-'):
+            args = self.histexreq.pop(tickerId, None)
+            if args is not None:
+                self.reqHistoricalDataEx(*args, tickerId=tickerId)
+                return
 
-        self.qs[msg.reqId].put(msg)
+            msg.date = None
+            self.cancelQueue(q)
+        else:
+            dtstr = msg.date  # Format when string req: YYYYMMDD[  HH:MM:SS]
+            dtformat = '%Y%m%d  %H:%M:%S' if len(dtstr) > 8 else '%Y%m%d'
+            msg.date = datetime.strptime(dtstr, dtformat)
+
+        q.put(msg)
 
     # The _durations are meant to calculate the needed historical data to
     # perform backfilling at the start of a connetion or a connection is lost.
     # Using a timedelta as a key allows to quickly find out which bar size
     # bar size (values in the tuples int the dict) can be used.
 
-    _durations = [
+    _durations = dict([
         # 60 seconds - 1 min
-        (timedelta(seconds=60),
-         ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs', '1 min')),
+        ('60 S',
+         ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
+          '1 min')),
 
         # 120 seconds - 2 mins
-        (timedelta(seconds=120),
+        ('120 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins')),
 
         # 180 seconds - 3 mins
-        (timedelta(seconds=180),
+        ('180 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins')),
 
         # 300 seconds - 5 mins
-        (timedelta(seconds=300),
+        ('300 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins')),
 
         # 600 seconds - 10 mins
-        (timedelta(seconds=600),
+        ('600 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins')),
 
         # 900 seconds - 15 mins
-        (timedelta(seconds=900),
+        ('900 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins')),
 
         # 1200 seconds - 20 mins
-        (timedelta(seconds=1200),
+        ('1200 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
           '20 mins')),
 
         # 1800 seconds - 30 mins
-        (timedelta(seconds=1800),
+        ('1800 S',
          ('1 secs', '5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
           '20 mins', '30 mins')),
 
         # 3600 seconds - 1 hour
-        (timedelta(seconds=3600),
+        ('3600 S',
          ('5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
-          '20 mins', '30 mins', '1 hour')),
+          '20 mins', '30 mins',
+          '1 hour')),
 
         # 7200 seconds - 2 hours
-        (timedelta(seconds=7200),
+        ('7200 S',
          ('5 secs', '10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
-          '20 mins', '30 mins', '1 hour', '2 hours')),
+          '20 mins', '30 mins',
+          '1 hour', '2 hours')),
 
         # 10800 seconds - 3 hours
-        (timedelta(seconds=10800),
+        ('10800 S',
          ('10 secs', '15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
-          '20 mins', '30 mins', '1 hour', '2 hours', '3 hours')),
+          '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours')),
 
         # 14400 seconds - 4 hours
-        (timedelta(seconds=14400),
+        ('14400 S',
          ('15 secs', '30 secs',
           '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
-          '20 mins', '30 mins', '1 hour', '2 hours', '3 hours', '4 hours')),
+          '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours')),
 
         # 28800 seconds - 8 hours
-        (timedelta(seconds=28800),
-         ('30 secs', '1 min', '2 mins', '3 mins', '5 mins', '10 mins',
-          '15 mins', '20 mins', '30 mins',
+        ('28800 S',
+         ('30 secs',
+          '1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
+          '20 mins', '30 mins',
           '1 hour', '2 hours', '3 hours', '4 hours', '8 hours')),
 
         # 1 days
-        (timedelta(days=1),
+        ('1 D',
          ('1 min', '2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
-          '20 mins', '30 mins', '1 hour', '2 hours', '3 hours', '4 hours',
+          '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours', '8 hours',
           '1 day')),
 
         # 2 days
-        (timedelta(days=2),
-         ('2 mins', '3 mins', '5 mins', '10 mins', '15 mins', '20 mins',
-          '30 mins', '1 hour', '2 hours', '3 hours', '4 hours',
+        ('2 D',
+         ('2 mins', '3 mins', '5 mins', '10 mins', '15 mins',
+          '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours', '8 hours',
           '1 day')),
 
         # 1 weeks
-        (timedelta(days=7),
-         ('3 mins', '5 mins', '10 mins', '15 mins', '20 mins', '30 mins',
-          '1 hour', '2 hours', '3 hours', '4 hours',
+        ('1 W',
+         ('3 mins', '5 mins', '10 mins', '15 mins',
+          '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours', '8 hours',
           '1 day', '1 W')),
 
         # 2 weeks
-        (timedelta(days=2 * 7),
-         ('15 mins', '20 mins', '30 mins', '1 hour', '2 hours', '3 hours',
-          '4 hours', '1 day', '1 W')),
+        ('2 W',
+         ('15 mins', '20 mins', '30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours', '8 hours',
+          '1 day', '1 W')),
 
         # 1 months
-        (timedelta(days=1 * 31),
-         ('30 mins', '1 hour', '2 hours', '3 hours', '4 hours',
+        ('1 M',
+         ('30 mins',
+          '1 hour', '2 hours', '3 hours', '4 hours', '8 hours',
           '1 day', '1 W', '1 M')),
 
         # 2+ months
-        (timedelta(days=2 * 31),
-         ('1 day', '1 W', '1 M')),
+        ('2 M', ('1 day', '1 W', '1 M')),
+        ('3 M', ('1 day', '1 W', '1 M')),
+        ('4 M', ('1 day', '1 W', '1 M')),
+        ('5 M', ('1 day', '1 W', '1 M')),
+        ('6 M', ('1 day', '1 W', '1 M')),
+        ('7 M', ('1 day', '1 W', '1 M')),
+        ('8 M', ('1 day', '1 W', '1 M')),
+        ('9 M', ('1 day', '1 W', '1 M')),
+        ('10 M', ('1 day', '1 W', '1 M')),
+        ('11 M', ('1 day', '1 W', '1 M')),
 
         # 1+ years
-        (timedelta(days=365),
-         ('1 day', '1 W', '1 M')),
-    ]
+        ('1 Y',  ('1 day', '1 W', '1 M')),
+    ])
 
     # Sizes allow for quick translation from bar sizes above to actual
     # timeframes to make a comparison with the actual data
@@ -785,21 +983,158 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         'hours': (TimeFrame.Minutes, 60),
         'day': (TimeFrame.Days, 1),
         'W': (TimeFrame.Weeks, 1),
-        'W': (TimeFrame.Months, 1),
+        'M': (TimeFrame.Months, 1),
     }
 
-    def calcdurations(self, dtbegin, dtend):
-        '''Calculate a diration in between 2 datetimes'''
-        td = dtend - dtbegin
+    _dur2tf = {
+        'S': TimeFrame.Seconds,
+        'D': TimeFrame.Days,
+        'W': TimeFrame.Weeks,
+        'M': TimeFrame.Months,
+        'Y': TimeFrame.Years,
+    }
 
-        index = bisect.bisect_left(self._durations, (td, ('',)))
-        index = min(index, len(self._durations) - 1)  # cap at last item
-        duration, sizes = self_durations[index]
+    def getdurations(self,  timeframe, compression):
+        key = (timeframe, compression)
+        if key not in self.revdur:
+            return []
+
+        return self.revdur[key]
+
+    def getmaxduration(self, timeframe, compression):
+        key = (timeframe, compression)
+        try:
+            return self.revdur[key][-1]
+        except (KeyError, IndexError):
+            pass
+
+        return None
+
+    def tfcomp_to_size(self, timeframe, compression):
+        if timeframe == TimeFrame.Months:
+            return '{} M'.format(compression)
+
+        if timeframe == TimeFrame.Weeks:
+            return '{} W'.format(compression)
+
+        if timeframe == TimeFrame.Days:
+            if not compression % 7:
+                return '{} W'.format(compression // 7)
+
+            return '{} day'.format(compression)
+
+        if timeframe == TimeFrame.Minutes:
+            if not compression % 60:
+                hours = compression // 60
+                return ('{} hour'.format(hours)) + ('s' * (hours > 1))
+
+            return ('{} min'.format(compression)) + ('s' * (compression > 1))
+
+        if timeframe == TimeFrame.Seconds:
+            return '{} secs'.format(compression)
+
+        # Microseconds or ticks
+        return None
+
+    def dt_plus_duration(self, dt, duration):
+        size, dim = duration.split()
+        size = int(size)
+        if dim == 'S':
+            return dt + timedelta(seconds=size)
+
+        if dim == 'D':
+            return dt + timedelta(days=size)
+
+        if dim == 'W':
+            return dt + timedelta(days=size * 7)
+
+        if dim == 'M':
+            month = dt.month - 1 + size  # -1 to make it 0 based, readd below
+            years, month = divmod(month, 12)
+            return dt.replace(year=dt.year + years, month=month + 1)
+
+        if dim == 'Y':
+            return dt.replace(year=dt.year + size)
+
+        return dt  # could do nothing with it ... return it intact
+
+    def calcdurations(self, dtbegin, dtend):
+        '''Calculate a duration in between 2 datetimes'''
+        duration = self.histduration(dtbegin, dtend)
+
+        if duration[-1] == 'M':
+            m = int(duration.split()[0])
+            m1 = min(2, m)  # (2, 1) -> 1, (2, 7) -> 2. Bottomline: 1 or 2
+            m2 = max(1, m1)  # m1 can only be 1 or 2
+            checkdur = '{} M'.format(m2)
+        elif duration[-1] == 'Y':
+            checkdur = '1 Y'
+        else:
+            checkdur = duration
+
+        sizes = self._durations[checkduration]
+        return duration, sizes
 
     def calcduration(self, dtbegin, dtend):
-        '''Calculate a diration in between 2 datetimes. Returns single size'''
+        '''Calculate a duration in between 2 datetimes. Returns single size'''
         duration, sizes = self._calcdurations(dtbegin, dtend)
         return duration, sizes[0]
+
+    def histduration(self, dt1, dt2):
+        # Given two dates calculates the smallest possible duration according
+        # to the table from the Historical Data API limitations provided by IB
+        #
+        # Seconds: 'x S' (x: [60, 120, 180, 300, 600, 900, 1200, 1800, 3600,
+        #                     7200, 10800, 14400, 28800])
+        # Days: 'x D' (x: [1, 2]
+        # Weeks: 'x W' (x: [1, 2])
+        # Months: 'x M' (x: [1, 11])
+        # Years: 'x Y' (x: [1])
+
+        td = dt2 - dt1  # get a timedelta for calculations
+
+        # First: array of secs
+        tsecs = td.total_seconds()
+        secs = [60, 120, 180, 300, 600, 900, 1200, 1800, 3600, 7200, 10800,
+                14400, 28800]
+
+        idxsec = bisect.bisect_left(secs, tsecs)
+        if idxsec < len(secs):
+            return '{} S'.format(secs[idxsec])
+
+        tdextra = bool(td.seconds or td.microseconds)  # over days/weeks
+
+        # Next: 1 or 2 days
+        days = td.days + tdextra
+        if td.days <= 2:
+            return '{} D'.format(days)
+
+        # Next: 1 or 2 weeks
+        weeks, d = divmod(td.days, 7)
+        weeks += bool(d or tdextra)
+        if weeks <= 2:
+            return '{} W'.format(weeks)
+
+        # Get references to dt components
+        y2, m2, d2 = dt2.year, dt2.month, dt2.day
+        y1, m1, d1 = dt1.year, dt1.month, dt2.day
+
+        H2, M2, S2, US2 = dt2.hour, dt2.minute, dt2.second, dt2.microsecond
+        H1, M1, S1, US1 = dt1.hour, dt1.minute, dt1.second, dt1.microsecond
+
+        # Next: 1 -> 11 months (11 incl)
+        months = (y2 * 12 + m2) - (y1 * 12 + m1) + (
+            (d2, H2, M2, S2, US2) > (d1, H1, M1, S1, US1))
+        if months <= 1:  # months <= 11
+            return '1 M'  # return '{} M'.format(months)
+        elif months <= 11:
+            return '2 M'  # cap at 2 months to keep the table clean
+
+        # Next: years
+        # y = y2 - y1 + (m2, d2, H2, M2, S2, US2) > (m1, d1, H1, M1, S1, US1)
+        # return '{} Y'.format(y)
+
+        return '1 Y'  # to keep the table clean
 
     def makecontract(self, symbol, sectype, exch, curr,
                      expiry='', strike=0.0, right='', mult=1):
@@ -840,24 +1175,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def execDetails(self, msg):
         '''Receive execDetails'''
-        ex = msg.execution
-        print('-*' * 10, 'EXECUTION')
-        for f in ['m_orderId', 'm_clientId', 'm_execId', 'm_time',
-                  'm_acctNumber', 'm_exchange', 'm_side', 'm_shares',
-                  'm_price', 'm_permId', 'm_liquidation', 'm_cumQty',
-                  'm_avgPrice', 'm_orderRef', 'm_evRule',
-                  'm_evMultiplier']:
-
-            print(f, ':', getattr(ex, f))
-        print('-*' * 10)
-
-        self.broker.push_execution(ex)
-
-        if False:
-            @ibregister
-            def execDetails(self, msg):
-                '''Receive execDetails'''
-                self.broker.push_execution(msg.execution)
+        self.broker.push_execution(msg.execution)
 
     @ibregister
     def orderStatus(self, msg):
@@ -867,21 +1185,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def commissionReport(self, msg):
         '''Receive the event commissionReport'''
-        cr = msg.commissionReport
-        print('-*' * 10, 'COMMISSION REPORT')
-        for f in ['m_execId', 'm_commission', 'm_currency',
-                  'm_realizedPNL', 'm_yield', 'm_yieldRedemptionDate']:
-
-            print(f, ':', getattr(cr, f))
-        print('-*' * 10)
-
-        self.broker.push_commissionreport(cr)
-
-    if False:
-        @ibregister
-        def commissionReport(self, msg):
-            '''Receive the event commissionReport'''
-            self.broker.push_commissionreport(msg.commissionReport)
+        self.broker.push_commissionreport(msg.commissionReport)
 
     def reqPositions(self):
         '''Proxy to reqPositions'''
@@ -890,7 +1194,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def position(self, msg):
         '''Receive event positions'''
-        pass
+        pass  # Not implemented yet
 
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
@@ -906,7 +1210,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @ibregister
     def accountDownloadEnd(self, msg):
-        # Signas the end of an account update
+        # Signals the end of an account update
         # the event indicates it's over. It's only false once, and can be used
         # to find out if it has at least been downloaded once
         self._event_accdownload.set()

@@ -458,7 +458,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         pass
 
     def notify_store(self, msg, *args, **kwargs):
-        '''Receives a notification from real feed (1 feed -> n datas)'''
+        '''Receives a notification from a store provider'''
+        pass
+
+    def notify_data(self, data, status, *args, **kwargs):
+        '''Receives a notification from data'''
         pass
 
     def getdatanames(self):

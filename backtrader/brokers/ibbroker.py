@@ -137,12 +137,12 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
                 tif = 'DAY'
             else:
                 tif = 'GTD'  # Good til date
-                valid = datetime.now() + self.valid
+                valid = datetime.now() + self.valid  # .now, using localtime
                 self.m_goodTillDate = bytes(valid.strftime('%Y%m%d %H:%M:%S'))
 
         elif self.valid == 0:
             tif = 'DAY'
-        else:  # assume it is a float
+        else:
             tif = 'GTD'  # Good til date
             valid = num2date(self.valid)
             self.m_goodTillDate = bytes(valid.strftime('%Y%m%d %H:%M:%S'))
@@ -441,6 +441,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             # pnl = comminfo.profitandloss(-closed, pprice_orig, price)
 
             # Use the actual time provided by the execution object
+            # The report from TWS is in actual local time, not the data's tz
             dt = date2num(datetime.strptime(ex.m_time, '%Y%m%d  %H:%M:%S'))
 
             # Need to simulate a margin, but it plays no role, because it is
@@ -455,7 +456,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
             if ostatus.status == self.FILLED:
                 order.completed()
-                self.ostatus.pop(oid)  # nothing left to be reported
+                self.ordstatus.pop(oid)  # nothing left to be reported
             else:
                 order.partial()
 

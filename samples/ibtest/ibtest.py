@@ -35,6 +35,7 @@ from backtrader.utils import flushfile
 class EmptyStrategy(bt.Strategy):
     params = dict(
         smaperiod=5,
+        trade=False,
         stake=10,
         exectype=bt.Order.Market,
     )
@@ -50,6 +51,9 @@ class EmptyStrategy(bt.Strategy):
         print('--------------------------------------------------')
         print('Strategy Created')
         print('--------------------------------------------------')
+
+    def notify_data(self, data, status, *args, **kwargs):
+        print('*' * 5, 'DATA NOTIF:', data._getstatusname(status))
 
     def notify_store(self, msg, *args, **kwargs):
         print('*' * 5, 'STORE NOTIF:', msg)
@@ -75,13 +79,13 @@ class EmptyStrategy(bt.Strategy):
         txt.append('%04d' % len(self))
         dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
         txt.append('%s' % self.data.datetime.datetime(0).strftime(dtfmt))
-        txt.append('%.2f' % self.data.open[0])
-        txt.append('%.2f' % self.data.high[0])
-        txt.append('%.2f' % self.data.low[0])
-        txt.append('%.2f' % self.data.close[0])
-        txt.append('%d' % self.data.volume[0])
-        txt.append('%d' % self.data.openinterest[0])
-        txt.append('%.2f' % (self.sma[0]))
+        txt.append('{}'.format(self.data.open[0]))
+        txt.append('{}'.format(self.data.high[0]))
+        txt.append('{}'.format(self.data.low[0]))
+        txt.append('{}'.format(self.data.close[0]))
+        txt.append('{}'.format(self.data.volume[0]))
+        txt.append('{}'.format(self.data.openinterest[0]))
+        txt.append('{}'.format(self.sma[0]))
         print(', '.join(txt))
 
         if len(self.datas) > 1:
@@ -89,17 +93,19 @@ class EmptyStrategy(bt.Strategy):
             txt.append('%04d' % len(self))
             dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
             txt.append('%s' % self.data1.datetime.datetime(0).strftime(dtfmt))
-            txt.append('%.2f' % self.data1.open[0])
-            txt.append('%.2f' % self.data1.high[0])
-            txt.append('%.2f' % self.data1.low[0])
-            txt.append('%.2f' % self.data1.close[0])
-            txt.append('%d' % self.data1.volume[0])
-            txt.append('%d' % self.data1.openinterest[0])
-            # txt.append('%.2f' % (self.sma1[0]))
-            txt.append('%.2f' % float('NaN'))
+            txt.append('{}'.format(self.data1.open[0]))
+            txt.append('{}'.format(self.data1.high[0]))
+            txt.append('{}'.format(self.data1.low[0]))
+            txt.append('{}'.format(self.data1.close[0]))
+            txt.append('{}'.format(self.data1.volume[0]))
+            txt.append('{}'.format(self.data1.openinterest[0]))
+            txt.append('{}'.format(float('NaN')))
             print(', '.join(txt))
 
-        print('Position size is:', self.position.size)
+        # print('Position size is:', self.position.size)
+        if not self.p.trade:
+            return
+
         if not self.position and len(self.orderid) < 1:
             self.order = self.buy(size=self.p.stake,
                                   exectype=self.p.exectype,
@@ -132,20 +138,28 @@ def runstrategy():
         b = btbrokers.IBBroker(port=args.port, _debug=args.debug)
         cerebro.setbroker(b)
 
-    # Create the 1st data
-    if args.tz:
-        import pytz
-        tz = pytz.timezone(args.tz)
+    timeframe = bt.TimeFrame.TFrame(args.timeframe.capitalize())
+    if args.resample or args.replay:
+        datatf = bt.TimeFrame.Ticks
+        datacomp = 1
     else:
-        tz = None
+        datatf = timeframe
+        datacomp = args.compression
+
+    fromdate = None
+    if args.fromdate:
+        dtformat = '%Y-%m-%d' + ('T%H:%M:%S' * ('T' in args.fromdate))
+        fromdate = datetime.datetime.strptime(args.fromdate, dtformat)
 
     data0 = btfeeds.IBData(dataname=args.data0,
                            port=args.port,
                            useRT=args.rtbar,
-                           tz=tz,
                            _debug=args.debug,
                            notifyall=args.notifyall,
-                           timeframe=bt.TimeFrame.Ticks)
+                           fromdate=fromdate,
+                           historical=args.historical,
+                           timeframe=datatf,
+                           compression=datacomp)
 
     if args.data1 is None:
         data1 = None
@@ -153,34 +167,34 @@ def runstrategy():
         data1 = btfeeds.IBData(dataname='AAPL-STK-SMART-USD',
                                port=args.port,
                                useRT=args.rtbar,
-                               tz=tz,
                                _debug=args.debug,
                                notifyall=args.notifyall,
-                               timeframe=bt.TimeFrame.Ticks)
+                               fromdate=fromdate,
+                               historical=args.historical,
+                               timeframe=datatf,
+                               compression=datacomp)
 
     bar2edge = not args.nobar2edge
     adjbartime = not args.noadjbartime
     rightedge = not args.norightedge
 
-    if args.replay is not None:
-        tframe = bt.TimeFrame.TFrame(args.replay.capitalize())
+    if args.replay:
         cerebro.replaydata(dataname=data0,
-                           timeframe=tframe,
+                           timeframe=timeframe,
                            compression=args.compression,
                            bar2edge=bar2edge,
                            adjbartime=adjbartime,
                            rightedge=rightedge)
         if data1 is not None:
             cerebro.replaydata(dataname=data1,
-                               timeframe=tframe,
+                               timeframe=timeframe,
                                compression=args.compression,
                                bar2edge=bar2edge,
                                adjbartime=adjbartime,
                                rightedge=rightedge)
-    elif args.resample is not None:
-        tframe = bt.TimeFrame.TFrame(args.resample.capitalize())
+    elif args.resample:
         cerebro.resampledata(dataname=data0,
-                             timeframe=tframe,
+                             timeframe=timeframe,
                              compression=args.compression,
                              bar2edge=bar2edge,
                              adjbartime=adjbartime,
@@ -188,7 +202,7 @@ def runstrategy():
 
         if data1 is not None:
             cerebro.resampledata(dataname=data1,
-                                 timeframe=tframe,
+                                 timeframe=timeframe,
                                  compression=args.compression,
                                  bar2edge=bar2edge,
                                  adjbartime=adjbartime,
@@ -201,6 +215,7 @@ def runstrategy():
     # Add the strategy
     cerebro.addstrategy(EmptyStrategy,
                         smaperiod=args.smaperiod,
+                        trade=args.trade,
                         stake=args.stake,
                         exectype=bt.Order.ExecType(args.exectype))
 
@@ -237,6 +252,9 @@ def parse_args():
     parser.add_argument('--stake', default=10, type=int,
                         help='Stake to use')
 
+    parser.add_argument('--trade', required=False, action='store_true',
+                        help='Do Buy/Sell operations')
+
     parser.add_argument('--exectype', required=False, action='store',
                         default=bt.Order.ExecTypes[0],
                         choices=bt.Order.ExecTypes,
@@ -244,16 +262,26 @@ def parse_args():
 
     pgroup = parser.add_mutually_exclusive_group(required=False)
 
-    pgroup.add_argument('--replay', default=None, required=False,
-                        action='store', choices=bt.TimeFrame.Names,
+    pgroup.add_argument('--replay', required=False, action='store_true',
                         help='replay to chosen timeframe')
 
-    pgroup.add_argument('--resample', default=None, required=False,
-                        action='store', choices=bt.TimeFrame.Names,
+    pgroup.add_argument('--resample', required=False, action='store_true',
                         help='resample to chosen timeframe')
 
+    parser.add_argument('--historical', required=False, action='store_true',
+                        help='do only historical download')
+
+    parser.add_argument('--fromdate', required=False, action='store',
+                        help=('Starting date for historical or backfilling '
+                              'with format: YYYY-MM-DD[THH:MM:SS]'))
+
+    parser.add_argument('--timeframe',
+                        default=bt.TimeFrame.Names[0], required=False,
+                        action='store', choices=bt.TimeFrame.Names,
+                        help='TimeFrame')
+
     parser.add_argument('--compression', default=1, type=int,
-                        help='Compression level for resample/replay')
+                        help='Compression level')
 
     parser.add_argument('--nobar2edge', required=False, action='store_true',
                         help='no bar2edge')
@@ -263,9 +291,6 @@ def parse_args():
 
     parser.add_argument('--norightedge', required=False, action='store_true',
                         help='rightedge')
-
-    parser.add_argument('--tz', required=False,
-                        help='Timezone in pytz format. Ex: "US/Eastern"')
 
     parser.add_argument('--broker', required=False, action='store_true',
                         help='Use IB as broker')
