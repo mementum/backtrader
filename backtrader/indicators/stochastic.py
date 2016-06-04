@@ -27,7 +27,8 @@ from . import Indicator, Max, MovAv, Highest, Lowest, DivByZero
 class _StochasticBase(Indicator):
     lines = ('percK', 'percD',)
     params = (('period', 14), ('period_dfast', 3), ('movav', MovAv.Simple),
-              ('upperband', 80.0), ('lowerband', 20.0),('safediv', True))
+              ('upperband', 80.0), ('lowerband', 20.0),
+              ('safediv', False), ('safezero', 0.0))
 
     plotlines = dict(percD=dict(_name='%D', ls='--'),
                      percK=dict(_name='%K'))
@@ -46,7 +47,7 @@ class _StochasticBase(Indicator):
         knum = self.data.close - lowestlow
         kden = highesthigh - lowestlow
         if self.p.safediv:
-            self.k = 100.0 * DivByZero(knum, kden)
+            self.k = 100.0 * DivByZero(knum, kden, zero=self.p.safezero)
         else:
             self.k = 100.0 * (knum / kden)
         self.d = self.p.movav(self.k, period=self.p.period_dfast)
