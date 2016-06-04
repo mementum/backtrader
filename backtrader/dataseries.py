@@ -26,7 +26,6 @@ import inspect
 
 from .utils.py3 import with_metaclass
 from .lineseries import LineSeries
-from . import num2date
 from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
@@ -81,7 +80,7 @@ class DataSeries(LineSeries):
     def getwritervalues(self):
         values = [self._name, len(self)]
 
-        dtstr = num2date(self.datetime[0])
+        dtstr = self.datetime.datetime(0)
         values.append(dtstr)
 
         for line in self.LineOrder[1:]:
@@ -168,7 +167,7 @@ class _Bar(AutoOrderedDict):
         self.volume = 0.0
         self.openinterest = 0.0
         if maxdate:
-            # Without - 1 ... fromordinal (inside num2date) will not work
+            # Without - 1 ... converting back to time will not work
             self.datetime = date2num(datetime.datetime.max) - 1
         else:
             self.datetime = None
