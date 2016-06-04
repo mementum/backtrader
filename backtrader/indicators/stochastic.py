@@ -21,13 +21,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from . import Indicator, Max, MovAv, Highest, Lowest
+from . import Indicator, Max, MovAv, Highest, Lowest, DivByZero
 
 
 class _StochasticBase(Indicator):
     lines = ('percK', 'percD',)
     params = (('period', 14), ('period_dfast', 3), ('movav', MovAv.Simple),
-              ('upperband', 80.0), ('lowerband', 20.0),)
+              ('upperband', 80.0), ('lowerband', 20.0),('safediv', True))
 
     plotlines = dict(percD=dict(_name='%D', ls='--'),
                      percK=dict(_name='%K'))
@@ -45,7 +45,10 @@ class _StochasticBase(Indicator):
         lowestlow = Lowest(self.data.low, period=self.p.period)
         knum = self.data.close - lowestlow
         kden = highesthigh - lowestlow
-        self.k = 100.0 * (knum / kden)
+        if self.p.safediv:
+            self.k = 100.0 * DivByZero(knum, kden)
+        else:
+            self.k = 100.0 * (knum / kden)
         self.d = self.p.movav(self.k, period=self.p.period_dfast)
 
         super(_StochasticBase, self).__init__()
