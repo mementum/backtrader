@@ -79,17 +79,27 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.fromdate = datetime.datetime.combine(
-                _obj.p.fromdate, _obj.p.sessionstart)
+            if not hasattr(_obj.p.fromdate, 'hour'):
+                _obj.p.fromdate = datetime.datetime.combine(
+                    _obj.p.fromdate, _obj.p.sessionstart)
 
         if isinstance(_obj.p.todate, datetime.date):
             # push it to the end of the day, or else intraday
             # values before the end of the day would be gone
-            _obj.p.todate = datetime.datetime.combine(
-                _obj.p.todate, _obj.p.sessionend)
+            if not hasattr(_obj.p.todate, 'hour'):
+                _obj.p.todate = datetime.datetime.combine(
+                    _obj.p.todate, _obj.p.sessionend)
 
-        _obj.fromdate = date2num(_obj.p.fromdate)
-        _obj.todate = date2num(_obj.p.todate)
+        if _obj.p.fromdate is None:
+            _obj.fromdate = float('-inf')
+        else:
+            _obj.fromdate = date2num(_obj.p.fromdate)
+
+        if _obj.p.todate is None:
+            _obj.todate = float('inf')
+        else:
+            _obj.todate = date2num(_obj.p.todate)
+
         _obj.sessionstart = time2num(_obj.p.sessionstart)
         _obj.sessionend = time2num(_obj.p.sessionend)
 
@@ -113,12 +123,13 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                                       dataseries.OHLCDateTime)):
+
     params = (('dataname', None),
-              ('fromdate', datetime.datetime.min),
-              ('todate', datetime.datetime.max),
               ('name', ''),
               ('compression', 1),
               ('timeframe', TimeFrame.Days),
+              ('fromdate', None),
+              ('todate', None),
               ('sessionstart', None),
               ('sessionend', None),
               ('filters', []),)
@@ -156,6 +167,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def setenvironment(self, env):
         '''Keep a reference to the environment'''
         self._env = self
+
+    def getenvironment(self):
+        return self._env
 
     def addfilter_simple(self, f, *args, **kwargs):
         fp = SimpleFilterWrapper(self, f, *args, **kwargs)
@@ -230,8 +244,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
             if datamaster is None:
                 # bar is there and no master ... return load's result
+                # self._tick_fill()
                 return ret
-
         else:
             self.advance()
 
