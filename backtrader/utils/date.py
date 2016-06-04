@@ -21,21 +21,14 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
-import time
 
-from .dateintern import _num2date, _date2num, time2num, num2time, UTC, TZLocal
+from .dateintern import (_num2date, _num2dt, _date2num, time2num, num2time,
+                         UTC, TZLocal)
 
-__all__ = ('num2date', 'date2num', 'time2num', 'num2time', 'UTC', 'TZLocal')
+__all__ = ('num2date', 'num2dt', 'date2num', 'time2num', 'num2time',
+           'UTC', 'TZLocal')
 
-try:
-    import matplotlib.dates as mdates
 
-except ImportError:
-    num2date = _num2date
-    date2num = _date2num
-else:
-    num2date = _num2date
-    date2num = _date2num
-    # num2date = mdates.num2date
-    # date2num = mdates.date2num
+num2date = _num2date
+date2num = _date2num
+num2dt = _num2dt
