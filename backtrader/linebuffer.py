@@ -381,10 +381,10 @@ class LineBuffer(LineSingle):
     def datetime(self, ago=0):
         return num2date(self.array[self.idx + ago])
 
-    def date(self, ago=0, tz=None):
+    def date(self, ago=0):
         return num2dt(self.array[self.idx + ago])
 
-    def time(self, ago=0, tz=None):
+    def time(self, ago=0):
         return num2date(self.array[self.idx + ago])
 
     def dt(self, ago=0):
