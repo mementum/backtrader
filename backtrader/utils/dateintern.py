@@ -117,7 +117,7 @@ def _num2date(x, tz=None):
     if tz is not None:
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
-            microsecond, tzinfo=UTC).astimezone(tz)
+            microsecond, tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
     else:
         # If not tz has been passed return a non-timezoned dt
         dt = datetime.datetime(
