@@ -22,12 +22,37 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-import datetime
+from datetime import datetime, date
 
 from .dataseries import TimeFrame, _Bar
 from .utils.py3 import with_metaclass
 from . import metabase
 from .utils import num2date, date2num, num2time
+
+
+class DTFaker(object):
+
+    def __init__(self, sessionend):
+        self.datetime = self
+        self.sessionend = sessionend
+        self._dtime = datetime.now()
+        self._dt = date2num(self._dtime)
+
+    def dt(self):
+        return int(self._dt)
+
+    def date(self):
+        return self._dtime.date()
+
+    def datetime(self):
+        return self._dtime
+
+    def time(self):
+        return self._dtime.time()
+
+    def __getitem__(self, idx):
+        # idx always 0
+        return self._dt
 
 
 class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
@@ -53,9 +78,29 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
                              self.subdays)
 
-    def _checkbarover(self, data):
+    def _checkbarover_orig(self, data, fromcheck=False):
+        chkdata = data
+
         isover = False
-        if not self._barover(data):
+        if not self._barover(chkdata):
+            return isover
+
+        if self.subdays and self.p.bar2edge:
+            isover = True
+        else:
+            # over time/date limit - increase number of bars completed
+            self.compcount += 1
+            if not (self.compcount % self.p.compression):
+                # boundary crossed and enough bars for compression ... proceed
+                isover = True
+
+        return isover
+
+    def _checkbarover(self, data, fromcheck=False):
+        chkdata = DTFaker(sessionend=data.sessionend) if fromcheck else data
+
+        isover = False
+        if not self._barover(chkdata):
             return isover
 
         if self.subdays and self.p.bar2edge:
@@ -262,6 +307,14 @@ class Resampler(_BaseResampler):
 
     replaying = False
 
+    def check(self, data):
+        if not self.bar.isopen():
+            return
+
+        return self(data, fromcheck=True)
+
+        # Ideally ... simulate a bar update
+
     def last(self, data):
         '''Called when the data is no longer producing bars
 
@@ -279,17 +332,18 @@ class Resampler(_BaseResampler):
 
         return False
 
-    def __call__(self, data):
+    def __call__(self, data, fromcheck=False):
         '''Called for each set of values produced by the data source'''
-        if self._checkbarover(data):
+        if self._checkbarover(data, fromcheck=fromcheck):
             if self.doadjusttime:
                 self._adjusttime()
 
             data._add2stack(self.bar.lvalues())
             self.bar.bstart(maxdate=True)  # bar delivered -> restart
 
-        self.bar.bupdate(data)  # update new or existing bar
-        data.backwards()  # remove used bar
+        if not fromcheck:
+            self.bar.bupdate(data)  # update new or existing bar
+            data.backwards()  # remove used bar
 
         return True  # tell the system to fetch a new bar (stack or source)
 

@@ -29,11 +29,6 @@ backtrader
 
 BackTesting platform written in Python to test trading strategies.
 
-With Live Data Feeds/Trading also available.
-
-`Release Post (1.4.0.92):
-<http://www.backtrader.com/posts/2016-05-09-memory-savings/memory-savings/>`_
-
 
 Documentation
 =============

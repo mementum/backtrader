@@ -121,6 +121,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         ('historical', False),  # only historical download
         ('what', 'TRADES'),  # historical - what to show
         ('useRTH', False),  # historical - download only Regular Trading Hours
+        ('startbackfill', True),  # do initial backfilling
+        ('reconnbackfill', True),  # backfill attempt on reconnection
     )
 
     _store = ibstore.IBStore
@@ -292,7 +294,6 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self.put_notification(self.DISCONNECTED)
                     return False  # failed
 
-                # else only live wished
                 self.put_notification(self.DELAYED)
                 self._statelivereconn = True  # attempt backfilling
                 self._state = self._ST_LIVE
@@ -321,7 +322,14 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 continue
 
             elif self._state == self._ST_LIVE:
-                msg = self._storedmsg.pop(None, self.qlive.get())
+                try:
+                    # FIXME: timeout as parameter and automatically calculated
+                    # with a potentially top limit
+                    msg = self._storedmsg.pop(
+                        None, self.qlive.get(timeout=2.0))
+                except queue.Empty:
+                    return None  # indicate timeout situation
+
                 if msg is None:  # Conn broken during historical/backfilling
                     self.put_notification(self.CONNBROKEN)
                     # Try to reconnect
@@ -330,6 +338,15 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                         return False  # failed
 
                     self._statelivereconn = True
+                    continue
+
+                if msg == -1102:  # conn broken/restored / tickerId maintained
+                    self._statelivereconn = True  # backfill and live again
+                    continue
+
+                elif msg == -1101:  # conn broken/restored tickerId gone
+                    self._statelivereconn = True  # backfill and live again
+                    self.reqdata()  # resubscribe
                     continue
 
                 # Process the message according to expected return type
@@ -344,8 +361,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     return self._load_rtbar(msg)
 
                 # Fall through to processing reconnect - try to backfill
-                self.put_notification(self.DELAYED)
                 self._storedmsg[None] = msg  # keep the msg
+
+                # else do a backfill
+                self.put_notification(self.DELAYED)
 
                 dtend = None
                 if len(self) > 1:
@@ -373,13 +392,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     def _load_rtbar(self, rtbar, hist=False):
         # A complete 5 second bar made of real-time ticks is delivered and
         # contains open/high/low/close/volume prices
-        # Datetime transformation
-        if not hist:
-            self.lines.datetime[0] = date2num(rtbar.time)
-        else:
-            dt = date2num(rtbar.date)
-            if dt <= self.lines.datetime[0]:
-                return False  # cannot deliver earlier than already delivered
+        # The historical data has the same data but with 'date' instead of
+        # 'time' for datetime
+        dt = date2num(rbar.time if not hist else rtbar.date)
+        if dt <= self.lines.datetime[0]:
+            return False  # cannot deliver earlier than already delivered
 
         self.lines.datetime[0] = dt
         # Put the tick into the bar
@@ -397,7 +414,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         # of prices. Ideally the
         # contains open/high/low/close/volume prices
         # Datetime transformation
-        self.lines.datetime[0] = date2num(rtvol.datetime)
+        dt = date2num(rtvol.datetime)
+        if dt <= self.lines.datetime[0]:
+            return False  # cannot deliver earlier than already delivered
+
+        self.lines.datetime[0] = dt
 
         # Put the tick into the bar
         tick = rtvol.price

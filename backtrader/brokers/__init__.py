@@ -24,4 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 # The modules below should/must define __all__ with the objects wishes
 # or prepend an "_" (underscore) to private classes/variables
 
-from .ibbroker import IBBroker
+try:
+    from .ibbroker import IBBroker
+except ImportError:
+    pass  # The user may not have ibpy installed

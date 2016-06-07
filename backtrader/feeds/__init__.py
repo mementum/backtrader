@@ -29,4 +29,7 @@ from .vchart import *
 from .yahoo import *
 from .sierrachart import *
 from .pandafeed import *
-from .ibdata import *
+try:
+    from .ibdata import *
+except ImportError:
+    pass  # The user may not have ibpy installed

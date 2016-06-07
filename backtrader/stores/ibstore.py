@@ -187,6 +187,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.datas = list()  # datas that have registered over start
         self.ccount = 0  # requests to start (from cerebro or datas)
 
+        self.deltatime = timedelta()  # to control time difference with server
+
         # Structures to hold datas requests
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
         self.ts = collections.OrderedDict()  # key: queue -> tickerId
@@ -455,10 +457,25 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             pass  # don't need to manage it
 
         elif msg.errorCode == 1300:
-            # Connection has been lost. The port for a new connection is there
+            # TWS has been closed. The port for a new connection is there
             # newport = int(msg.errorMsg.split('-')[-1])  # bla bla bla -7496
             self.conn.disconnect()
             self.stopdatas()
+
+        elif msg.errorCode == 1100:
+            # Connection lost - Do nothing ... datas will wait on the queue
+            # with no messages arriving
+            pass
+
+        elif msg.errorCode == 1101:
+            # Connection restored and tickerIds are gone
+            for q in self.ts:  # key: queue -> ticker
+                q.put(-msg.errorCode)
+
+        elif msg.errorCode == 1102:
+            # Connection restored and tickerIds maintained
+            for q in self.ts:  # key: queue -> ticker
+                q.put(-msg.errorCode)
 
         elif msg.errorCode < 500:
             # Given the myriad of errorCodes, start by assuming is an order
@@ -482,15 +499,18 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     def managedAccounts(self, msg):
         # 1st message in the stream
         self.managed_accounts = msg.accountsList.split(',')
-
         self._event_managed_accounts.set()
+
+        # Request time to avoid synchronization issues
+        self.reqCurrentTime()
 
     def reqCurrentTime(self):
         self.conn.reqCurrentTime()
 
     @ibregister
     def currentTime(self, msg):
-        pass
+        currenttime = datetime.fromtimestamp(float(msg.time))
+        self.deltatime = datetime.now() - currenttime
 
     def nextTickerId(self):
         # Get the next ticker using next on the itertools.count
@@ -785,6 +805,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             except ValueError:  # price not in message ...
                 pass
             else:
+                # If the time difference between the timestamp and the local
+                # clock is large enough, the resampler (outside of this
+                # ecosystem) may yield false results
+                rtvol.datetime += self.deltatime
                 self.qs[msg.tickerId].put(rtvol)
 
     @ibregister
@@ -805,6 +829,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 except ValueError:  # price not in message ...
                     pass
                 else:
+                    rtvol.datetime += self.deltatime
                     self.qs[tickerId].put(rtvol)
 
     @ibregister

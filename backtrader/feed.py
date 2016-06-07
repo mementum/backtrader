@@ -267,12 +267,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             # not preloaded - request next bar
             ret = self.load()
             if not ret:
-                # if load cannot produce more bars - forward the result
+                # if load cannot produce bars - forward the result
                 return ret
 
             if datamaster is None:
                 # bar is there and no master ... return load's result
-                # self._tick_fill()
+                self._tick_fill()
                 return ret
         else:
             self.advance()
@@ -316,6 +316,13 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         return bool(ret)
 
+    def _check(self):
+        ret = 0
+        for ff, fargs, fkwargs in self._filters:
+            if not hasattr(ff, 'check'):
+                continue
+            ff.check(self, *fargs, **fkwargs)
+
     def load(self):
         while True:
             # move data pointer forward for new bar
@@ -324,13 +331,18 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if self._fromstack():  # bar is available
                 return True
 
-            if not self._load():  # no bar
+            _loadret = self._load()
+            if not _loadret:  # no bar
                 # use force to make sure in exactbars the pointer is undone
                 # this covers especially (but not uniquely) the case in which
                 # the last bar has been seen and a backwards would ruin pointer
                 # accounting in the "stop" method of the strategy
                 self.backwards(force=True)  # undo data pointer
-                break  # finally no bar available from stack or _load
+
+                # return the actual returned value which may be None to signal
+                # no bar is available, but the data feed is not done. False
+                # means game over
+                return _loadret
 
             # Check standard date from/to filters
             dt = self.lines.datetime[0]
