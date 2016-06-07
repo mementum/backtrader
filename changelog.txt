@@ -1,3 +1,6 @@
+1.3.3.92
+  - Fixes #99 by conditionally importing ib modules
+
 1.3.2.92
   - safediv added to Stochastic from Pull Request #97
   - Initial integration fo ib feed/broker. Can operate but it is not yet fully
