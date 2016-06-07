@@ -654,14 +654,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 break
             order.owner._addnotification(order)
 
-    def _runnext(self, runstrats):
+    def _runnext_orig(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
         data0 = self.datas[0]
         d0ret = True
-        while d0ret:
+        while d0ret or d0ret is None:
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
             self._storenotify()
@@ -671,6 +671,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if d0ret:
                 for data in self.datas[1:]:
                     data.next(datamaster=data0)
+
             else:
                 lastret = data0._last()
                 for data in self.datas[1:]:
@@ -686,6 +687,53 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 strat._next()
 
                 self._next_writers(runstrats)
+
+        # Last notification chance before stopping
+        self._datanotify()
+        self._storenotify()
+
+    def _runnext(self, runstrats):
+        '''
+        Actual implementation of run in full next mode. All objects have its
+        ``next`` method invoke on each data arrival
+        '''
+        data0 = self.datas[0]
+        d0ret = True
+        while d0ret or d0ret is None:
+            lastret = False
+            # Notify anything from the store even before moving datas
+            # because datas may not move due to an error reported by the store
+            self._storenotify()
+            self._datanotify()
+
+            d0ret = data0.next()
+            if d0ret:
+                for data in self.datas[1:]:
+                    data.next(datamaster=data0)
+
+            elif d0ret is None:
+                # meant for things like live feeds which may not produce a bar
+                # at the moment but need the loop to run for notifications and
+                # getting resample and others to produce timely bars
+                data0._check()
+                for data in self.datas[1:]:
+                    data._check()
+            else:
+                lastret = data0._last()
+                for data in self.datas[1:]:
+                    lastret += data._last(datamaster=data0)
+
+                if not lastret:
+                    # Only go extra round if something was changed by "lasts"
+                    break
+
+            self._brokernotify()
+
+            if d0ret or lastret:  # bars produced by data or filters
+                for strat in runstrats:
+                    strat._next()
+
+                    self._next_writers(runstrats)
 
         # Last notification chance before stopping
         self._datanotify()

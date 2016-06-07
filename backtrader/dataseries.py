@@ -21,7 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+import datetime as _datetime
+from datetime import datetime
 import inspect
 
 from .utils.py3 import with_metaclass
@@ -168,7 +169,7 @@ class _Bar(AutoOrderedDict):
         self.openinterest = 0.0
         if maxdate:
             # Without - 1 ... converting back to time will not work
-            self.datetime = date2num(datetime.datetime.max) - 1
+            self.datetime = date2num(_datetime.datetime.max) - 1
         else:
             self.datetime = None
 
