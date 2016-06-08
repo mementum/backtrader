@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from .dataseries import TimeFrame, _Bar
 from .utils.py3 import with_metaclass
@@ -32,22 +32,23 @@ from .utils import num2date, date2num, num2time
 
 class DTFaker(object):
 
-    def __init__(self, sessionend):
+    def __init__(self, sessionend, offset=timedelta()):
         self.datetime = self
         self.sessionend = sessionend
-        self._dtime = datetime.now()
+        print('++++++++++++ OFFSET IS:', offset)
+        self._dtime = datetime.now() - offset
         self._dt = date2num(self._dtime)
 
     def dt(self):
         return int(self._dt)
 
-    def date(self):
+    def date(self, idx=0):
         return self._dtime.date()
 
-    def datetime(self):
+    def __call__(self, idx=0):
         return self._dtime
 
-    def time(self):
+    def time(self, idx=0):
         return self._dtime.time()
 
     def __getitem__(self, idx):
@@ -97,7 +98,11 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return isover
 
     def _checkbarover(self, data, fromcheck=False):
-        chkdata = DTFaker(sessionend=data.sessionend) if fromcheck else data
+        if fromcheck:
+            chkdata = DTFaker(sessionend=data.sessionend,
+                              offset=data._timeoffset())
+        else:
+            chkdata = data
 
         isover = False
         if not self._barover(chkdata):
@@ -186,7 +191,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             # Next session is on (defaults to next day)
             return True
 
-        if data.datetime[0] <= self.bar.datetime:
+        if data.datetime.datetime() <= num2date(self.bar.datetime):
             return False
 
         # Get time objects for the comparisons

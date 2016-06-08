@@ -130,6 +130,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     # States for the Finite State Machine in _load
     _ST_START, _ST_LIVE, _ST_HISTORBACK = range(3)
 
+    def _timeoffset(self):
+        return self.ib.timeoffset()
+
     def islive(self):
         '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
         should be deactivated'''
@@ -341,13 +344,17 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     continue
 
                 if msg == -1102:  # conn broken/restored / tickerId maintained
-                    self._statelivereconn = True  # backfill and live again
-                    continue
+                    # The message may be duplicated
+                    if not self._statelivereconn:
+                        self._statelivereconn = True  # backfill and live again
+                        continue
 
                 elif msg == -1101:  # conn broken/restored tickerId gone
-                    self._statelivereconn = True  # backfill and live again
-                    self.reqdata()  # resubscribe
-                    continue
+                    # The message may be duplicated
+                    if not self._statelivereconn:
+                        self._statelivereconn = True  # backfill and live again
+                        self.reqdata()  # resubscribe
+                        continue
 
                 # Process the message according to expected return type
                 if not self._statelivereconn:
@@ -364,7 +371,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 self._storedmsg[None] = msg  # keep the msg
 
                 # else do a backfill
-                self.put_notification(self.DELAYED)
+                if self._laststatus != self.DELAYED:
+                    self.put_notification(self.DELAYED)
 
                 dtend = None
                 if len(self) > 1:
@@ -394,7 +402,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         # contains open/high/low/close/volume prices
         # The historical data has the same data but with 'date' instead of
         # 'time' for datetime
-        dt = date2num(rbar.time if not hist else rtbar.date)
+        dt = date2num(rtbar.time if not hist else rtbar.date)
         if dt <= self.lines.datetime[0]:
             return False  # cannot deliver earlier than already delivered
 

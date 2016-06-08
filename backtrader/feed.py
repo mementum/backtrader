@@ -145,8 +145,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return cls._NOTIFNAMES[status]
 
     _feed = None
+    _tmoffset = datetime.timedelta()
 
     resampling = 0
+
+    def _timeoffset(self):
+        return self._tmoffset
 
     def islive(self):
         '''If this returns True, ``Cerebro`` will deactivate ``preload`` and

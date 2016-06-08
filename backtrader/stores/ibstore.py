@@ -187,7 +187,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.datas = list()  # datas that have registered over start
         self.ccount = 0  # requests to start (from cerebro or datas)
 
-        self.deltatime = timedelta()  # to control time difference with server
+        self._lock_tmoffset = threading.Lock()
+        self.tmoffset = timedelta()  # to control time difference with server
 
         # Structures to hold datas requests
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
@@ -510,7 +511,12 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def currentTime(self, msg):
         currenttime = datetime.fromtimestamp(float(msg.time))
-        self.deltatime = datetime.now() - currenttime
+        with self._lock_tmoffset:
+            self.tmoffset = datetime.now() - currenttime
+
+    def timeoffset(self):
+        with self._lock_tmoffset:
+            return self.tmoffset
 
     def nextTickerId(self):
         # Get the next ticker using next on the itertools.count
@@ -808,7 +814,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 # If the time difference between the timestamp and the local
                 # clock is large enough, the resampler (outside of this
                 # ecosystem) may yield false results
-                rtvol.datetime += self.deltatime
+                rtvol.datetime += self.tmoffset
                 self.qs[msg.tickerId].put(rtvol)
 
     @ibregister
@@ -829,7 +835,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 except ValueError:  # price not in message ...
                     pass
                 else:
-                    rtvol.datetime += self.deltatime
+                    rtvol.datetime -= self.tmoffset
                     self.qs[tickerId].put(rtvol)
 
     @ibregister
