@@ -87,7 +87,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         Default value to apply as *currency* if not provided in the
         ``dataname`` specification
 
-      - ``useRT`` (default: ``False``)
+      - ``rtbar`` (default: ``False``)
 
         If ``True`` the ``5 Seconds Realtime bars`` provided by Interactive
         Brokers will be used as the smalles tick. According to the
@@ -117,15 +117,17 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         ('sectype', 'STK'),  # usual industry value
         ('exchange', 'SMART'),  # usual industry value
         ('currency', ''),
-        ('useRT', False),  # use RealTime 5 seconds bars
+        ('rtbar', False),  # use RealTime 5 seconds bars
         ('historical', False),  # only historical download
         ('what', 'TRADES'),  # historical - what to show
         ('useRTH', False),  # historical - download only Regular Trading Hours
-        ('startbackfill', True),  # do initial backfilling
-        ('reconnbackfill', True),  # backfill attempt on reconnection
+        ('qcheck', 0.5),  # timeout in seconds (float) to check for events
     )
 
     _store = ibstore.IBStore
+
+    # Minimum size supported by real-time bars
+    RTBAR_MINSIZE = (TimeFrame.Seconds, 5)
 
     # States for the Finite State Machine in _load
     _ST_START, _ST_LIVE, _ST_HISTORBACK = range(3)
@@ -225,6 +227,13 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.qlive = self.ib.start(data=self)
         self.qhist = None
 
+        self._usertvol = self.p.rtbar or self.cashtype
+        tfcomp = (self._timeframe, self._compression)
+        if tfcomp < self.RTBAR_MINSIZE:
+            # Requested timeframe/compression not supported by rtbars
+            self._usertvol = True
+
+
         self.contract = None
         self.contractdetails = None
 
@@ -250,7 +259,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         if self.contract is None:
             return
 
-        if not self.p.useRT or self.cashtype:
+        if self._usertvol:
             self.qlive = self.ib.reqMktData(self.contract)
         else:
             self.qlive = self.ib.reqRealTimeBars(self.contract)
@@ -258,11 +267,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return self.qlive
 
     def canceldata(self):
-        '''Cancels Market Data subscription, checking asset type and useRT'''
+        '''Cancels Market Data subscription, checking asset type and rtbar'''
         if self.contract is None:
             return
 
-        if not self.p.useRT or self.cashtype:
+        if self._usertvol:
             self.ib.cancelMktData(self.qlive)
         else:
             self.ib.cancelRealTimeBars(self.qlive)
@@ -308,6 +317,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self.put_notification(self.DISCONNECTED)
                     return False  # error management cancelled the queue
 
+                elif msg == -354:
+                    self.put_notification(self.NOTSUBSCRIBED)
+                    return False
+
                 if msg.date is not None:
                     if self._load_rtbar(msg, hist=True):
                         return True  # loading worked
@@ -326,10 +339,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
             elif self._state == self._ST_LIVE:
                 try:
-                    # FIXME: timeout as parameter and automatically calculated
-                    # with a potentially top limit
-                    msg = self._storedmsg.pop(
-                        None, self.qlive.get(timeout=2.0))
+                    msg = (self._storedmsg.pop(None, None) or
+                           self.qlive.get(timeout=self.p.qcheck))
                 except queue.Empty:
                     return None  # indicate timeout situation
 
@@ -343,7 +354,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self._statelivereconn = True
                     continue
 
-                if msg == -1102:  # conn broken/restored / tickerId maintained
+                if msg == -354:
+                    self.put_notification(self.NOTSUBSCRIBED)
+                    return False
+
+                elif msg == -1102:  # conn broken/restored tickerId maintained
                     # The message may be duplicated
                     if not self._statelivereconn:
                         self._statelivereconn = True  # backfill and live again
@@ -362,10 +377,15 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                         if self.qlive.qsize() <= 1:  # very short live queue
                             self.put_notification(self.LIVE)
 
-                    if not self.p.useRT or self.cashtype:
-                        return self._load_rtvolume(msg)
+                    if self._usertvol:
+                        ret = self._load_rtvolume(msg)
+                    else:
+                        ret = self._load_rtbar(msg)
+                    if ret:
+                        return True
 
-                    return self._load_rtbar(msg)
+                    # could not load bar ... go and get new one
+                    continue
 
                 # Fall through to processing reconnect - try to backfill
                 self._storedmsg[None] = msg  # keep the msg
@@ -384,8 +404,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     # passing None to fetch max possible in 1 request
                     dtbegin = None
 
-                rtvolume = not self.p.useRT or self.cashtype
-                dtend = msg.datetime if rtvolume else msg.time
+                dtend = msg.datetime if self._usertvol else msg.time
 
                 self.qhist = self.ib.reqHistoricalDataEx(
                     self.contract, dtend, dtbegin,

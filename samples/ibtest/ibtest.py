@@ -27,6 +27,7 @@ import datetime
 # The above could be sent to an independent module
 import backtrader as bt
 import backtrader.feeds as btfeeds
+import backtrader.stores as btstores
 import backtrader.brokers as btbrokers
 import backtrader.indicators as btind
 from backtrader.utils import flushfile
@@ -134,11 +135,25 @@ def runstrategy():
     # Create a cerebro
     cerebro = bt.Cerebro()
 
-    if args.broker:
-        b = btbrokers.IBBroker(port=args.port, _debug=args.debug)
-        cerebro.setbroker(b)
+    storekwargs = dict(
+        host=args.host, port=args.port,
+        clientId=args.clientId, timeoffset=args.timeoffset,
+        reconnect=args.reconnect, timeout=args.timeout,
+        notifyall=args.notifyall, _debug=args.debug
+    )
 
-    timeframe = bt.TimeFrame.TFrame(args.timeframe.capitalize())
+    if args.usestore:
+        ibstore = btstores.IBStore(**storekwargs)
+
+    if args.broker:
+        if args.usestore:
+            broker = ibstore.getbroker()
+        else:
+            broker = btbrokers.IBBroker(**storekwargs)
+
+        cerebro.setbroker(broker)
+
+    timeframe = bt.TimeFrame.TFrame(args.timeframe)
     if args.resample or args.replay:
         datatf = bt.TimeFrame.Ticks
         datacomp = 1
@@ -151,62 +166,43 @@ def runstrategy():
         dtformat = '%Y-%m-%d' + ('T%H:%M:%S' * ('T' in args.fromdate))
         fromdate = datetime.datetime.strptime(args.fromdate, dtformat)
 
-    data0 = btfeeds.IBData(dataname=args.data0,
-                           port=args.port,
-                           useRT=args.rtbar,
-                           _debug=args.debug,
-                           notifyall=args.notifyall,
-                           fromdate=fromdate,
-                           historical=args.historical,
-                           timeframe=datatf,
-                           compression=datacomp)
+    IBDataFactory = ibstore.getdata if args.usestore else btfeeds.IBData
 
-    if args.data1 is None:
-        data1 = None
-    else:
-        data1 = btfeeds.IBData(dataname='AAPL-STK-SMART-USD',
-                               port=args.port,
-                               useRT=args.rtbar,
-                               _debug=args.debug,
-                               notifyall=args.notifyall,
-                               fromdate=fromdate,
-                               historical=args.historical,
-                               timeframe=datatf,
-                               compression=datacomp)
+    datakwargs = dict(
+        timeframe=datatf, compression=datacomp,
+        historical=args.historical, fromdate=fromdate,
+        rtbar=args.rtbar,
+        qcheck=args.qcheck,
+    )
 
-    bar2edge = not args.nobar2edge
-    adjbartime = not args.noadjbartime
-    rightedge = not args.norightedge
+    if not args.usestore and not args.broker:   # neither store nor broker
+        datakwargs.update(storekwargs)  # pass the store args over the data
+
+    data0 = IBDataFactory(dataname=args.data0, **datakwargs)
+
+    data1 = None
+    if args.data1 is not None:
+        data1 = IBDataFactory(dataname=args.data1, **datakwargs)
+
+    rekwargs = dict(
+        timeframe=timeframe, compression=args.compression,
+        bar2edge=not args.nobar2edge,
+        adjbartime=not args.noadjbartime,
+        rightedge=not args.norightedge,
+    )
 
     if args.replay:
-        cerebro.replaydata(dataname=data0,
-                           timeframe=timeframe,
-                           compression=args.compression,
-                           bar2edge=bar2edge,
-                           adjbartime=adjbartime,
-                           rightedge=rightedge)
-        if data1 is not None:
-            cerebro.replaydata(dataname=data1,
-                               timeframe=timeframe,
-                               compression=args.compression,
-                               bar2edge=bar2edge,
-                               adjbartime=adjbartime,
-                               rightedge=rightedge)
-    elif args.resample:
-        cerebro.resampledata(dataname=data0,
-                             timeframe=timeframe,
-                             compression=args.compression,
-                             bar2edge=bar2edge,
-                             adjbartime=adjbartime,
-                             rightedge=rightedge)
+        cerebro.replaydata(dataname=data0, **rekwargs)
 
         if data1 is not None:
-            cerebro.resampledata(dataname=data1,
-                                 timeframe=timeframe,
-                                 compression=args.compression,
-                                 bar2edge=bar2edge,
-                                 adjbartime=adjbartime,
-                                 rightedge=rightedge)
+            cerebro.replaydata(dataname=data1, **rekwargs)
+
+    elif args.resample:
+        cerebro.resampledata(dataname=data0, **rekwargs)
+
+        if data1 is not None:
+            cerebro.resampledata(dataname=data1, **rekwargs)
+
     else:
         cerebro.adddata(data0)
         if data1 is not None:
@@ -216,87 +212,144 @@ def runstrategy():
     cerebro.addstrategy(EmptyStrategy,
                         smaperiod=args.smaperiod,
                         trade=args.trade,
-                        stake=args.stake,
-                        exectype=bt.Order.ExecType(args.exectype))
+                        exectype=bt.Order.ExecType(args.exectype),
+                        stake=args.stake)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
-    cerebro.run(exactbars=1)
+    cerebro.run(exactbars=args.exactbars)
+
+    if args.plot and args.exactbars < 1:  # plot if possible
+        cerebro.plot()
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Test IB Realtime Data Feed')
+        description='Test Interactive Brokers integration')
 
-    parser.add_argument('--data0', required=False, default='IBKR',
-                        help='data into the system')
+    parser.add_argument('--exactbars', default=1, type=int,
+                        required=False, action='store',
+                        help='exactbars level, use 0/-1/-2 to enable plotting')
 
-    parser.add_argument('--data1', action='store', default=None,
-                        help='data into the system')
+    parser.add_argument('--plot',
+                        required=False, action='store_true',
+                        help='Plot if possible')
 
-    parser.add_argument('--port', default=7496, type=int,
-                        help='Port for the Interactive Brokers TWS Connection')
+    parser.add_argument('--usestore',
+                        required=False, action='store_true',
+                        help='Use the store pattern')
 
-    parser.add_argument('--rtbar', required=False, action='store_true',
-                        help='Use 5 seconds real time bar updates')
+    parser.add_argument('--notifyall',
+                        required=False, action='store_true',
+                        help='Notify all messages to strategy as store notifs')
 
-    parser.add_argument('--debug', required=False, action='store_true',
+    parser.add_argument('--debug',
+                        required=False, action='store_true',
                         help='Display all info received form IB')
 
-    parser.add_argument('--seeprint', required=False, action='store_true',
-                        help='See IbPy initial print messages')
+    parser.add_argument('--host', default='127.0.0.1',
+                        required=False, action='store',
+                        help='Host for the Interactive Brokers TWS Connection')
+
+    parser.add_argument('--qcheck', default=0.5, type=float,
+                        required=False, action='store',
+                        help=('Timeout for periodic '
+                              'notification/resampling/replaying check'))
+
+    parser.add_argument('--port', default=7496, type=int,
+                        required=False, action='store',
+                        help='Port for the Interactive Brokers TWS Connection')
+
+    parser.add_argument('--clientId', default=None, type=int,
+                        required=False, action='store',
+                        help='Client Id to connect to TWS (default: random)')
+
+    parser.add_argument('--timeoffset',
+                        required=False, action='store_true',
+                        help=('For non-timestamped data, use local timestamps '
+                              'plus offset to IB server'))
+
+    parser.add_argument('--reconnect', default=3, type=int,
+                        required=False, action='store',
+                        help='Number of recconnection attempts to TWS')
+
+    parser.add_argument('--timeout', default=3.0, type=float,
+                        required=False, action='store',
+                        help='Timeout between reconnection attempts to TWS')
+
+    parser.add_argument('--data0', default=None,
+                        required=True, action='store',
+                        help='data 0 into the system')
+
+    parser.add_argument('--data1', default=None,
+                        required=False, action='store',
+                        help='data 1 into the system')
+
+    parser.add_argument('--rtbar', default=False,
+                        required=False, action='store_true',
+                        help='Use 5 seconds real time bar updates if possible')
+
+    parser.add_argument('--historical',
+                        required=False, action='store_true',
+                        help='do only historical download')
+
+    parser.add_argument('--fromdate',
+                        required=False, action='store',
+                        help=('Starting date for historical download '
+                              'with format: YYYY-MM-DD[THH:MM:SS]'))
 
     parser.add_argument('--smaperiod', default=5, type=int,
+                        required=False, action='store',
                         help='Period to apply to the Simple Moving Average')
-
-    parser.add_argument('--stake', default=10, type=int,
-                        help='Stake to use')
-
-    parser.add_argument('--trade', required=False, action='store_true',
-                        help='Do Buy/Sell operations')
-
-    parser.add_argument('--exectype', required=False, action='store',
-                        default=bt.Order.ExecTypes[0],
-                        choices=bt.Order.ExecTypes,
-                        help='Execution to Use when opening position')
 
     pgroup = parser.add_mutually_exclusive_group(required=False)
 
-    pgroup.add_argument('--replay', required=False, action='store_true',
+    pgroup.add_argument('--replay',
+                        required=False, action='store_true',
                         help='replay to chosen timeframe')
 
-    pgroup.add_argument('--resample', required=False, action='store_true',
+    pgroup.add_argument('--resample',
+                        required=False, action='store_true',
                         help='resample to chosen timeframe')
 
-    parser.add_argument('--historical', required=False, action='store_true',
-                        help='do only historical download')
-
-    parser.add_argument('--fromdate', required=False, action='store',
-                        help=('Starting date for historical or backfilling '
-                              'with format: YYYY-MM-DD[THH:MM:SS]'))
-
-    parser.add_argument('--timeframe',
-                        default=bt.TimeFrame.Names[0], required=False,
-                        action='store', choices=bt.TimeFrame.Names,
-                        help='TimeFrame')
+    parser.add_argument('--timeframe', default=bt.TimeFrame.Names[0],
+                        choices=bt.TimeFrame.Names,
+                        required=False, action='store',
+                        help='TimeFrame for Resample/Replay')
 
     parser.add_argument('--compression', default=1, type=int,
-                        help='Compression level')
+                        required=False, action='store',
+                        help='Compression for Resample/Replay')
 
-    parser.add_argument('--nobar2edge', required=False, action='store_true',
-                        help='no bar2edge')
+    parser.add_argument('--nobar2edge',
+                        required=False, action='store_true',
+                        help='no bar2edge for resample/replay')
 
-    parser.add_argument('--noadjbartime', required=False, action='store_true',
-                        help='noadjbartime')
+    parser.add_argument('--noadjbartime',
+                        required=False, action='store_true',
+                        help='no adjbartime for resample/replay')
 
-    parser.add_argument('--norightedge', required=False, action='store_true',
-                        help='rightedge')
+    parser.add_argument('--norightedge',
+                        required=False, action='store_true',
+                        help='no rightedge for resample/replay')
 
-    parser.add_argument('--broker', required=False, action='store_true',
+    parser.add_argument('--broker',
+                        required=False, action='store_true',
                         help='Use IB as broker')
 
-    parser.add_argument('--notifyall', required=False, action='store_true',
-                        help='Notify all messages to strategy')
+    parser.add_argument('--trade',
+                        required=False, action='store_true',
+                        help='Do Sample Buy/Sell operations')
+
+    parser.add_argument('--exectype', default=bt.Order.ExecTypes[0],
+                        choices=bt.Order.ExecTypes,
+                        required=False, action='store',
+                        help='Execution to Use when opening position')
+
+    parser.add_argument('--stake', default=10, type=int,
+                        required=False, action='store',
+                        help='Stake to use in buy operations')
+
     return parser.parse_args()
 
 

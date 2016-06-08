@@ -53,7 +53,7 @@ class RTVolume(object):
     '''Parses a tickString tickType 48 (RTVolume) event from the IB API into its
     constituent fields
 
-    Supports using a "price" to simulate an RTVolume from a price event
+    Supports using a "price" to simulate an RTVolume from a tickPrice event
     '''
     _fields = [
         ('price', float),
@@ -64,7 +64,7 @@ class RTVolume(object):
         ('single', bool)
     ]
 
-    def __init__(self, rtvol='', price=None):
+    def __init__(self, rtvol='', price=None, tmoffset=None):
         # Use a provided string or simulate a list of empty tokens
         tokens = iter(rtvol.split(';'))
 
@@ -75,6 +75,9 @@ class RTVolume(object):
         # If price was provided use it
         if price is not None:
             self.price = price
+
+        if tmoffset is not None:
+            self.datetime += tmoffset
 
 
 class MetaSingleton(MetaParams):
@@ -156,15 +159,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('_debug', False),
         ('reconnect', 3),  # -1 forever, 0 No, > 0 number of retries
         ('timeout', 3.0),  # timeout between reconnections
+        ('timeoffset', False),  # Use offset to server for timestamps if needed
     )
 
     @classmethod
-    def getdata(self, *args, **kwargs):
+    def getdata(cls, *args, **kwargs):
         '''Returns ``DataCls`` with args, kwargs'''
         return cls.DataCls(*args, **kwargs)
 
     @classmethod
-    def getbroker(self, *args, **kwargs):
+    def getbroker(cls, *args, **kwargs):
         '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
         return cls.BrokerCls(*args, **kwargs)
 
@@ -441,7 +445,13 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         elif msg.errorCode in [354]:
             # This error means --- No subscription. Need to keep a reference to
             # the calling data to let the data know ... it cannot resub
-            pass
+            try:
+                q = self.qs[msg.id]
+            except KeyError:
+                pass  # should not happend but it can
+            else:
+                q.put(-msg.errorCode)
+                self.cancelQueue(q)
 
         elif msg.errorCode == 326:  # not recoverable, clientId in use
             self.dontreconnect = True
@@ -510,9 +520,12 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @ibregister
     def currentTime(self, msg):
+        if not self.p.timeoffset:  # only if requested applied timeoffset
+            return
+
         currenttime = datetime.fromtimestamp(float(msg.time))
         with self._lock_tmoffset:
-            self.tmoffset = datetime.now() - currenttime
+            self.tmoffset = currentime - datetime.now()
 
     def timeoffset(self):
         with self._lock_tmoffset:
@@ -811,10 +824,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             except ValueError:  # price not in message ...
                 pass
             else:
-                # If the time difference between the timestamp and the local
-                # clock is large enough, the resampler (outside of this
-                # ecosystem) may yield false results
-                rtvol.datetime += self.tmoffset
+                # Don't need to adjust the time, because it is in "timestamp"
+                # form in the message
                 self.qs[msg.tickerId].put(rtvol)
 
     @ibregister
@@ -827,15 +838,24 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         queue to have a consistent cross-market interface
         '''
         # Used for "CASH" markets
+        # The price field has been seen to be missing in some instances even if
+        # "field" is 1
         tickerId = msg.tickerId
         if self.iscash[tickerId]:
             if msg.field == 1:  # Bid Price
                 try:
-                    rtvol = RTVolume(price=msg.price)
+                    if msg.price == -1.0:
+                        # seems to indicate the stream is halted for example in
+                        # between 23:00 - 23:15 CET for FOREX
+                        return
+                except AttributeError:
+                    pass
+
+                try:
+                    rtvol = RTVolume(price=msg.price, tmoffset=self.tmoffset)
                 except ValueError:  # price not in message ...
                     pass
                 else:
-                    rtvol.datetime -= self.tmoffset
                     self.qs[tickerId].put(rtvol)
 
     @ibregister
