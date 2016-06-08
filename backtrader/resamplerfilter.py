@@ -35,8 +35,7 @@ class DTFaker(object):
     def __init__(self, sessionend, offset=timedelta()):
         self.datetime = self
         self.sessionend = sessionend
-        print('++++++++++++ OFFSET IS:', offset)
-        self._dtime = datetime.now() - offset
+        self._dtime = datetime.now() + offset
         self._dt = date2num(self._dtime)
 
     def dt(self):
