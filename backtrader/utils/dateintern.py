@@ -88,7 +88,7 @@ SECONDS_PER_DAY = SECONDS_PER_MINUTE * MINUTES_PER_DAY
 MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY
 
 
-def _num2date(x, tz=None):
+def _num2date(x, tz=None, naive=True):
     # Same as matplotlib except if tz is None a naive datetime object
     # will be returned.
     """
@@ -117,7 +117,9 @@ def _num2date(x, tz=None):
     if tz is not None:
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
-            microsecond, tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
+            microsecond, tzinfo=TZLocal).astimezone(tz)
+        if naive:
+            dt = dt.replace(tzinfo=None)
     else:
         # If not tz has been passed return a non-timezoned dt
         dt = datetime.datetime(
@@ -132,7 +134,7 @@ def _num2date(x, tz=None):
 
 def _num2dt(x, tz=None):
     ix = int(x)
-    return datetime.datetime.fromordinal(ix)
+    return datetime.datetime.fromordinal(ix).date()
 
 
 def _date2num(dt):
@@ -148,11 +150,23 @@ def _date2num(dt):
 
     base = float(dt.toordinal())
     if hasattr(dt, 'hour'):
-        base += (dt.hour / HOURS_PER_DAY +
-                 dt.minute / MINUTES_PER_DAY +
-                 dt.second / SECONDS_PER_DAY +
-                 dt.microsecond / MUSECONDS_PER_DAY
-                 )
+        import math
+        if False:
+
+            base += (dt.hour / HOURS_PER_DAY +
+                     dt.minute / MINUTES_PER_DAY +
+                     dt.second / SECONDS_PER_DAY +
+                     dt.microsecond / MUSECONDS_PER_DAY
+            )
+        else:
+            base = math.fsum(
+                (base,
+                 dt.hour / HOURS_PER_DAY,
+                 dt.minute / MINUTES_PER_DAY,
+                 dt.second / SECONDS_PER_DAY,
+                 dt.microsecond / MUSECONDS_PER_DAY)
+            )
+
     return base
 
 

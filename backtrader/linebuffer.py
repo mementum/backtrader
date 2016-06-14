@@ -378,14 +378,14 @@ class LineBuffer(LineSingle):
     def _makeoperationown(self, operation, _ownerskip=None):
         return LineOwnOperation(self, operation, _ownerskip=None)
 
-    def datetime(self, ago=0):
-        return num2date(self.array[self.idx + ago])
+    def datetime(self, ago=0, tz=None, naive=True):
+        return num2date(self.array[self.idx + ago], tz=tz, naive=naive)
 
-    def date(self, ago=0):
-        return num2dt(self.array[self.idx + ago])
+    def date(self, ago=0, tz=None, naive=True):
+        return num2date(self.array[self.idx + ago], tz=tz, naive=naive).date()
 
-    def time(self, ago=0):
-        return num2date(self.array[self.idx + ago])
+    def time(self, ago=0, tz=None, naive=True):
+        return num2date(self.array[self.idx + ago], tz=tz, naive=naive).time()
 
     def dt(self, ago=0):
         '''
