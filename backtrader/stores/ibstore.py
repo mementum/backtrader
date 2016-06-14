@@ -106,47 +106,64 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     The parameters can also be specified in the classes which use this store,
     like ``IBData`` and ``IBBroker``
 
-    Parameters:
+    Params:
 
-      - ``host`` (default: '127.0.0.1'): where IB TWS or IB Gateway are
+      - ``host`` (default:``127.0.0.1``): where IB TWS or IB Gateway are
         actually running. And although this will usually be the localhost, it
         must not be
 
-      - ``port`` (default: 7496): port to connect to. The demo system uses
+      - ``port`` (default: ``7496``): port to connect to. The demo system uses
         ``7497``
 
-      - ``clientId`` (default: None): which clientId to use to connect to TWS.
+      - ``clientId`` (default: ``None``): which clientId to use to connect to
+        TWS.
 
-        None: generates a random id between 1 and 65535
+        ``None``: generates a random id between 1 and 65535
         An ``integer``: will be passed as the value to use.
 
-      - ``notifyall`` (default: False)
+      - ``notifyall`` (default: ``False``)
 
         If ``False`` only ``error`` messages will be sent to the
         ``notify_store`` methods of ``Cerebro`` and ``Strategy``.
 
         If ``True``, each and every message received from TWS will be notified
 
-      - ``_debug`` (default: False)
+      - ``_debug`` (default: ``False``)
 
         Print all messages received from TWS to standard output
 
-      - ``reconnect`` (default: 3)
+      - ``reconnect`` (default: ``3``)
 
         Number of attempts to try to reconnect after the 1st connection attempt
         fails
 
         Set it to a ``-1`` value to keep on reconnecting forever
 
-      - ``timeout`` (default: 3.0)
+      - ``timeout`` (default: ``3.0``)
 
         Time in seconds between reconnection attemps
+
+      - ``timeoffset`` (default: ``True``)
+
+        If True, the time obtained from ``reqCurrentTime`` (IB Server time)
+        will be used to calculate the offset to localtime and this offset will
+        be used for the price notifications (tickPrice events, for example for
+        CASH markets) to modify the locally calculated timestamp.
+
+        The time offset will propagate to other parts of the ``backtrader
+        ecosystem like the **resampling** to align resampling timestamps using
+        the calculated offset.
+
+      - ``timerefresh`` (default: ``60.0``)
+
+        Time in seconds: how often the time offset has to be refreshed
+
     '''
 
     # Set a base for the data requests (historical/realtime) to distinguish the
     # id in the error notifications from orders, where the basis (usually
     # starting at 1) is set by TWS
-    REQIDBASE = 0x10000000
+    REQIDBASE = 0x01000000
 
     BrokerCls = None  # broker class will autoregister
     DataCls = None  # data class will auto register
@@ -159,7 +176,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('_debug', False),
         ('reconnect', 3),  # -1 forever, 0 No, > 0 number of retries
         ('timeout', 3.0),  # timeout between reconnections
-        ('timeoffset', False),  # Use offset to server for timestamps if needed
+        ('timeoffset', True),  # Use offset to server for timestamps if needed
+        ('timerefresh', 60.0),  # How often to refresh the timeoffset
     )
 
     @classmethod
@@ -442,8 +460,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             else:
                 self.cancelQueue(q, True)
 
-        elif msg.errorCode in [354]:
-            # This error means --- No subscription. Need to keep a reference to
+        elif msg.errorCode in [354, 420]:
+            # 354 no subscription, 420 no real-time bar for contract
             # the calling data to let the data know ... it cannot resub
             try:
                 q = self.qs[msg.id]
@@ -490,7 +508,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         elif msg.errorCode < 500:
             # Given the myriad of errorCodes, start by assuming is an order
-            # error and if not, the checkes there will let it go
+            # error and if not, the checks there will let it go
             if msg.id < self.REQIDBASE:
                 if self.broker is not None:
                     self.broker.push_ordererror(msg)
@@ -520,12 +538,13 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @ibregister
     def currentTime(self, msg):
-        if not self.p.timeoffset:  # only if requested applied timeoffset
+        if not self.p.timeoffset:  # only if requested ... apply timeoffset
             return
-
-        currenttime = datetime.fromtimestamp(float(msg.time))
+        curtime = datetime.fromtimestamp(float(msg.time))
         with self._lock_tmoffset:
-            self.tmoffset = currentime - datetime.now()
+            self.tmoffset = curtime - datetime.now()
+
+        threading.Timer(self.p.timerefresh, self.reqCurrentTime).start()
 
     def timeoffset(self):
         with self._lock_tmoffset:
@@ -624,7 +643,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     def reqHistoricalDataEx(self, contract, enddate, begindate,
                             timeframe, compression,
-                            what='TRADES', useRTH=False,
+                            what=None, useRTH=False,
                             tickerId=None):
         '''
         Extension of the raw reqHistoricalData proxy, which takes two dates
@@ -694,7 +713,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
-            what = 'BID'  # TRADES doesn't work
+            if not what:
+                what = 'BID'  # default for cash unless otherwise specified
+        else:
+            what = what or 'TRADES'
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
@@ -710,7 +732,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         return q
 
     def reqHistoricalData(self, contract, enddate, duration, barsize,
-                          what='TRADES', useRTH=False):
+                          what=None, useRTH=False):
         '''Proxy to reqHistorical Data'''
 
         # get a ticker/queue for identification/data delivery
@@ -718,7 +740,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
-            what = 'BID'  # TRADES doesn't work
+            if not what:
+                what = 'BID'  # TRADES doesn't work
+        else:
+            what = what or 'TRADES'
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
@@ -1217,11 +1242,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def openOrder(self, msg):
         '''Receive the event ``openOrder`` events'''
-        # received when the order is in the system after placeOrder
-        # the message contains: order, contract, orderstate
-        # no need to manage it. wait for orderstatus to notify
-        # self.broker.push_orderstate(msg.orderState)
-        pass
+        self.broker.push_orderstate(msg)
 
     @ibregister
     def execDetails(self, msg):

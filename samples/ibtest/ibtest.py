@@ -26,19 +26,19 @@ import datetime
 
 # The above could be sent to an independent module
 import backtrader as bt
-import backtrader.feeds as btfeeds
-import backtrader.stores as btstores
-import backtrader.brokers as btbrokers
-import backtrader.indicators as btind
-from backtrader.utils import flushfile
+from backtrader.utils import flushfile  # win32 quick stdout flushing
 
 
-class EmptyStrategy(bt.Strategy):
+class TestStrategy(bt.Strategy):
     params = dict(
         smaperiod=5,
         trade=False,
         stake=10,
         exectype=bt.Order.Market,
+        stopafter=0,
+        valid=None,
+        cancel=0,
+        donotsell=False,
     )
 
     def __init__(self):
@@ -46,8 +46,11 @@ class EmptyStrategy(bt.Strategy):
         self.orderid = list()
         self.order = None
 
+        self.counttostop = 0
+        self.datastatus = 0
+
         # Create SMA on 2nd data
-        self.sma = btind.MovAv.SMA(self.data, period=self.p.smaperiod)
+        self.sma = bt.indicators.MovAv.SMA(self.data, period=self.p.smaperiod)
 
         print('--------------------------------------------------')
         print('Strategy Created')
@@ -55,6 +58,9 @@ class EmptyStrategy(bt.Strategy):
 
     def notify_data(self, data, status, *args, **kwargs):
         print('*' * 5, 'DATA NOTIF:', data._getstatusname(status))
+        if status == data.LIVE:
+            self.counttostop = self.p.stopafter
+            self.datastatus = 1
 
     def notify_store(self, msg, *args, **kwargs):
         print('*' * 5, 'STORE NOTIF:', msg)
@@ -63,12 +69,12 @@ class EmptyStrategy(bt.Strategy):
         if order.status in [order.Completed, order.Cancelled, order.Rejected]:
             self.order = None
 
-        print('-' * 50, 'ORDER BEGIN')
+        print('-' * 50, 'ORDER BEGIN', datetime.datetime.now())
         print(order)
         print('-' * 50, 'ORDER END')
 
     def notify_trade(self, trade):
-        print('-' * 50, 'TRADE BEGIN')
+        print('-' * 50, 'TRADE BEGIN', datetime.datetime.now())
         print(trade)
         print('-' * 50, 'TRADE END')
 
@@ -103,23 +109,34 @@ class EmptyStrategy(bt.Strategy):
             txt.append('{}'.format(float('NaN')))
             print(', '.join(txt))
 
-        # print('Position size is:', self.position.size)
+        if self.counttostop:  # stop after x live lines
+            self.counttostop -= 1
+            if not self.counttostop:
+                self.env.runstop()
+                return
+
         if not self.p.trade:
             return
 
-        if not self.position and len(self.orderid) < 1:
+        if self.datastatus and not self.position and len(self.orderid) < 1:
             self.order = self.buy(size=self.p.stake,
                                   exectype=self.p.exectype,
                                   price=round(self.data0.close[0] * 0.90, 2),
-                                  # valid=self.data0.datetime[0] + 2.0)
-                                  # valid=0)
-                                  valid=datetime.timedelta())
+                                  valid=self.p.valid)
+
             self.orderid.append(self.order)
-        elif self.position.size > 0:
+        elif self.position.size > 0 and not self.p.donotsell:
             if self.order is None:
                 self.order = self.sell(size=self.p.stake // 2,
                                        exectype=bt.Order.Market,
                                        price=self.data0.close[0])
+
+        elif self.order is not None and self.p.cancel:
+            if self.datastatus > self.p.cancel:
+                self.cancel(self.order)
+
+        if self.datastatus:
+            self.datastatus += 1
 
     def start(self):
         header = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume',
@@ -137,19 +154,19 @@ def runstrategy():
 
     storekwargs = dict(
         host=args.host, port=args.port,
-        clientId=args.clientId, timeoffset=args.timeoffset,
+        clientId=args.clientId, timeoffset=not args.no_timeoffset,
         reconnect=args.reconnect, timeout=args.timeout,
         notifyall=args.notifyall, _debug=args.debug
     )
 
     if args.usestore:
-        ibstore = btstores.IBStore(**storekwargs)
+        ibstore = bt.stores.IBStore(**storekwargs)
 
     if args.broker:
         if args.usestore:
             broker = ibstore.getbroker()
         else:
-            broker = btbrokers.IBBroker(**storekwargs)
+            broker = bt.brokers.IBBroker(**storekwargs)
 
         cerebro.setbroker(broker)
 
@@ -166,13 +183,17 @@ def runstrategy():
         dtformat = '%Y-%m-%d' + ('T%H:%M:%S' * ('T' in args.fromdate))
         fromdate = datetime.datetime.strptime(args.fromdate, dtformat)
 
-    IBDataFactory = ibstore.getdata if args.usestore else btfeeds.IBData
+    IBDataFactory = ibstore.getdata if args.usestore else bt.feeds.IBData
 
     datakwargs = dict(
         timeframe=datatf, compression=datacomp,
         historical=args.historical, fromdate=fromdate,
         rtbar=args.rtbar,
         qcheck=args.qcheck,
+        what=args.what,
+        backfill_start=not args.no_backfill_start,
+        backfill=not args.no_backfill,
+        latethrough=args.latethrough,
     )
 
     if not args.usestore and not args.broker:   # neither store nor broker
@@ -186,9 +207,10 @@ def runstrategy():
 
     rekwargs = dict(
         timeframe=timeframe, compression=args.compression,
-        bar2edge=not args.nobar2edge,
-        adjbartime=not args.noadjbartime,
-        rightedge=not args.norightedge,
+        bar2edge=not args.no_bar2edge,
+        adjbartime=not args.no_adjbartime,
+        rightedge=not args.no_rightedge,
+        takelate=not args.no_takelate,
     )
 
     if args.replay:
@@ -208,12 +230,20 @@ def runstrategy():
         if data1 is not None:
             cerebro.adddata(data1)
 
+    if args.valid is None:
+        valid = None
+    else:
+        datetime.timedelta(seconds=args.valid)
     # Add the strategy
-    cerebro.addstrategy(EmptyStrategy,
+    cerebro.addstrategy(TestStrategy,
                         smaperiod=args.smaperiod,
                         trade=args.trade,
                         exectype=bt.Order.ExecType(args.exectype),
-                        stake=args.stake)
+                        stake=args.stake,
+                        stopafter=args.stopafter,
+                        valid=valid,
+                        cancel=args.cancel,
+                        donotsell=args.donotsell)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -234,6 +264,10 @@ def parse_args():
     parser.add_argument('--plot',
                         required=False, action='store_true',
                         help='Plot if possible')
+
+    parser.add_argument('--stopafter', default=0, type=int,
+                        required=False, action='store',
+                        help='Stop after x lines of LIVE data')
 
     parser.add_argument('--usestore',
                         required=False, action='store_true',
@@ -264,10 +298,10 @@ def parse_args():
                         required=False, action='store',
                         help='Client Id to connect to TWS (default: random)')
 
-    parser.add_argument('--timeoffset',
+    parser.add_argument('--no-timeoffset',
                         required=False, action='store_true',
-                        help=('For non-timestamped data, use local timestamps '
-                              'plus offset to IB server'))
+                        help=('Do not Use TWS/System time offset for non '
+                              'timestamped prices and to align resampling'))
 
     parser.add_argument('--reconnect', default=3, type=int,
                         required=False, action='store',
@@ -284,6 +318,24 @@ def parse_args():
     parser.add_argument('--data1', default=None,
                         required=False, action='store',
                         help='data 1 into the system')
+
+    parser.add_argument('--what', default=None,
+                        required=False, action='store',
+                        help='specific price type for historical requests')
+
+    parser.add_argument('--no-backfill_start',
+                        required=False, action='store_true',
+                        help='Disable backfilling at the start')
+
+    parser.add_argument('--latethrough',
+                        required=False, action='store_true',
+                        help=('if resampling replaying, adjusting time '
+                              'and disabling time offset, let late samples '
+                              'through'))
+
+    parser.add_argument('--no-backfill',
+                        required=False, action='store_true',
+                        help='Disable backfilling after a disconnection')
 
     parser.add_argument('--rtbar', default=False,
                         required=False, action='store_true',
@@ -321,15 +373,21 @@ def parse_args():
                         required=False, action='store',
                         help='Compression for Resample/Replay')
 
-    parser.add_argument('--nobar2edge',
+    parser.add_argument('--no-takelate',
+                        required=False, action='store_true',
+                        help=('resample/replay, do not accept late samples '
+                              'in new bar if the data source let them through '
+                              '(latethrough)'))
+
+    parser.add_argument('--no-bar2edge',
                         required=False, action='store_true',
                         help='no bar2edge for resample/replay')
 
-    parser.add_argument('--noadjbartime',
+    parser.add_argument('--no-adjbartime',
                         required=False, action='store_true',
                         help='no adjbartime for resample/replay')
 
-    parser.add_argument('--norightedge',
+    parser.add_argument('--no-rightedge',
                         required=False, action='store_true',
                         help='no rightedge for resample/replay')
 
@@ -341,6 +399,10 @@ def parse_args():
                         required=False, action='store_true',
                         help='Do Sample Buy/Sell operations')
 
+    parser.add_argument('--donotsell',
+                        required=False, action='store_true',
+                        help='Do not sell after a buy')
+
     parser.add_argument('--exectype', default=bt.Order.ExecTypes[0],
                         choices=bt.Order.ExecTypes,
                         required=False, action='store',
@@ -349,6 +411,15 @@ def parse_args():
     parser.add_argument('--stake', default=10, type=int,
                         required=False, action='store',
                         help='Stake to use in buy operations')
+
+    parser.add_argument('--valid', default=None, type=int,
+                        required=False, action='store',
+                        help='Seconds to keep the order alive (0 means DAY)')
+
+    parser.add_argument('--cancel', default=0, type=int,
+                        required=False, action='store',
+                        help=('Cancel a buy order after n bars in operation,'
+                              ' to be combined with orders like Limit'))
 
     return parser.parse_args()
 
