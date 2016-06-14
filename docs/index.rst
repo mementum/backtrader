@@ -42,6 +42,7 @@ Contents:
    plotting
    automated-bt-run/automated-bt-run
    memory-savings/memory-savings
+   live/live.rst
    dataautoref
    indautoref
    strategy-reference
