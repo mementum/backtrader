@@ -154,6 +154,9 @@ class _Bar(AutoOrderedDict):
     '''
     replaying = False
 
+    # Without - 1 ... converting back to time will not work
+    MAXDATE = date2num(_datetime.datetime.max) - 1
+
     def __init__(self, maxdate=False):
         super(_Bar, self).__init__()
         self.bstart(maxdate=maxdate)
@@ -167,11 +170,7 @@ class _Bar(AutoOrderedDict):
         self.open = float('NaN')
         self.volume = 0.0
         self.openinterest = 0.0
-        if maxdate:
-            # Without - 1 ... converting back to time will not work
-            self.datetime = date2num(_datetime.datetime.max) - 1
-        else:
-            self.datetime = None
+        self.datetime = self.MAXDATE if maxdate else None
 
     def isopen(self):
         '''Returns if a bar has already been updated
