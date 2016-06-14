@@ -41,6 +41,27 @@ from backtrader.utils import AutoDict, AutoOrderedDict
 from backtrader.comminfo import CommInfoBase
 
 
+class IBOrderState(object):
+    # wraps OrderState object and can print it
+    _fields = ['status', 'initMargin', 'maintMargin', 'equityWithLoan',
+               'commission', 'minCommission', 'maxCommission',
+               'commissionCurrency', 'warningText']
+
+    def __init__(self, orderstate):
+        for f in self._fields:
+            fname = 'm_' + f
+            setattr(self, fname, getattr(orderstate, fname))
+
+    def __str__(self):
+        txt = list()
+        txt.append('--- ORDERSTATE BEGIN')
+        for f in self._fields:
+            fname = 'm_' + f
+            txt.append('{}: {}'.format(f.capitalize(), getattr(self, fname)))
+        txt.append('--- ORDERSTATE END')
+        return '\n'.join(txt)
+
+
 class IBOrder(OrderBase, ib.ext.Order.Order):
     '''Subclasses the IBPy order to provide the minimum extra functionality
     needed to be compatible with the internally defined orders
@@ -93,6 +114,11 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
     }
 
     def __init__(self, action, **kwargs):
+
+        # Marker to indicate an openOrder has been seen with
+        # PendinCancel/Cancelled which is indication of an upcoming
+        # cancellation
+        self._willexpire = False
 
         self.ordtype = self.Buy if action == 'BUY' else self.Sell
 
@@ -368,10 +394,17 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             self.notify(order)
 
         elif msg.status == self.CANCELLED:
-            if order.status == order.Cancelled:  # duplicate detection
+            # duplicate detection
+            if order.status in [order.Cancelled, order.Expired]:
                 return
 
-            order.cancel()
+            if order._willexpire:
+                # An openOrder has been seen with PendingCancel/Cancelled
+                # and this happens when an order expires
+                order.expire()
+            else:
+                # Pure user cancellation happens without an openOrder
+                order.cancel()
             self.notify(order)
 
         elif msg.status == self.PENDINGCANCEL:
@@ -381,8 +414,10 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             if order.status == order.Cancelled:  # duplicate detection
                 return
 
-            order.cancel()
-            self.notify(order)
+            # We do nothing because the situation is handled with the 202 error
+            # code if no orderStatus with CANCELLED is seen
+            # order.cancel()
+            # self.notify(order)
 
         elif msg.status == self.INACTIVE:
             # This is a tricky one, because the instances seen have led to
@@ -481,13 +516,29 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             except (KeyError, AttributeError):
                 return  # no order or no id in error
 
-            if msg.errorCode == 202:  # cancelled (by user?)
-                if order.status == order.Cancelled:
+            if msg.errorCode == 202:
+                if not order.alive():
                     return
+                order.cancel()
+
             elif msg.errorCode == 201:  # rejected
                 if order.status == order.Rejected:
                     return
+                order.reject()
 
-            # Default case for the other codes
-            order.reject()
+            else:
+                order.reject()  # default for all other cases
+
             self.notify(order)
+
+    def push_orderstate(self, msg):
+        with self._lock_orders:
+            try:
+                order = self.orderbyid[msg.orderId]
+            except (KeyError, AttributeError):
+                return  # no order or no id in error
+
+            if msg.orderState.m_status in ['PendingCancel', 'Cancelled',
+                                           'Canceled']:
+                # This is most likely due to an expiration]
+                order._willexpire = True
