@@ -223,8 +223,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
     Cancelled = Canceled  # alias
 
     Status = [
-        'Created', 'Submitted', 'Accepted', 'Partial',
-        'Completed', 'Canceled', 'Expired', 'Margin', 'Rejected',
+        'Created', 'Submitted', 'Accepted', 'Partial', 'Completed',
+        'Canceled', 'Expired', 'Margin', 'Rejected',
     ]
 
     refbasis = itertools.count(1)  # for a unique identifier per order
@@ -435,7 +435,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
     def expire(self):
         '''Marks an order as expired. Returns True if it worked'''
-        order.status = self.Expired
+        self.status = self.Expired
         return True
 
 
