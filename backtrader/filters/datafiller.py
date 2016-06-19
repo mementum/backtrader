@@ -22,9 +22,9 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
-import datetime
+from datetime import datetime, timedelta
 
-from backtrader import AbstractDataBase, TimeFrame, date2num
+from backtrader import AbstractDataBase, TimeFrame
 
 
 class DataFiller(AbstractDataBase):
@@ -90,7 +90,7 @@ class DataFiller(AbstractDataBase):
 
         price = self.p.fill_price or price
 
-        self.lines.datetime[0] = date2num(dtime)
+        self.lines.datetime[0] = self.p.dataname.date2num(dtime)
         self.lines.open[0] = price
         self.lines.high[0] = price
         self.lines.low[0] = price
@@ -102,9 +102,9 @@ class DataFiller(AbstractDataBase):
 
     # Minimum delta unit in between bars
     _tdeltas = {
-        TimeFrame.Minutes: datetime.timedelta(seconds=60),
-        TimeFrame.Seconds: datetime.timedelta(seconds=1),
-        TimeFrame.MicroSeconds: datetime.timedelta(microseconds=1),
+        TimeFrame.Minutes: timedelta(seconds=60),
+        TimeFrame.Seconds: timedelta(seconds=1),
+        TimeFrame.MicroSeconds: timedelta(microseconds=1),
     }
 
     def _load(self):
@@ -142,7 +142,7 @@ class DataFiller(AbstractDataBase):
         dtime_cur = self.p.dataname.datetime.datetime(0)
 
         # Calculate session end for previous bar
-        send = self.lines.datetime.tm2datetime(self.sessionend, ago=-1)
+        send = datetime.combine(dtime_prev.date(), self.p.dataname.sessionend)
 
         if dtime_cur > send:  # if jumped boundary
             # 1. check for missing bars until boundary (end)
@@ -152,7 +152,8 @@ class DataFiller(AbstractDataBase):
                 dtime_prev += self._tdunit
 
             # Calculate session start for new bar
-            sstart = self.p.dataname.datetime.tm2datetime(self.sessionstart)
+            sstart = datetime.combine(
+                dtime_cur.date(), self.p.dataname.sessionstart)
 
             # 2. check for missing bars from new boundary (start)
             # check gap from new sessionstart
