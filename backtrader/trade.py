@@ -23,8 +23,8 @@ from __future__ import (absolute_import, division, print_function,
 
 import itertools
 
-from .import num2date
 from .utils import AutoOrderedDict
+from .utils.date import num2date
 from .utils.py3 import range
 
 
@@ -53,7 +53,8 @@ class TradeHistory(AutoOrderedDict):
         - commission (float): price of the update
     '''
 
-    def __init__(self, status, dt, barlen, size, price, value, pnl, pnlcomm):
+    def __init__(self,
+                 status, dt, barlen, size, price, value, pnl, pnlcomm, tz):
         '''Initializes the object to the current status of the Trade'''
         super(TradeHistory, self).__init__()
         self.status.status = status
@@ -64,6 +65,7 @@ class TradeHistory(AutoOrderedDict):
         self.status.value = value
         self.status.pnl = pnl
         self.status.pnlcomm = pnlcomm
+        self.status.tz = tz
 
     def doupdate(self, order, size, price, commission):
         '''Used to fill the ``update`` part of the history entry'''
@@ -75,9 +77,9 @@ class TradeHistory(AutoOrderedDict):
         # Do not allow updates (avoids typing errors)
         self._close()
 
-    def datetime(self):
+    def datetime(self, tz=None, naive=True):
         '''Returns a datetime for the time the update event happened'''
-        return num2date(self.status.dt)
+        return num2date(self.status.dt, tz or self.status.tz, naive)
 
 
 class Trade(object):
@@ -189,17 +191,17 @@ class Trade(object):
         '''Shortcut to retrieve the name of the data this trade references'''
         return self.data._name
 
-    def open_datetime(self):
+    def open_datetime(self, tz=None, naive=True):
         '''Returns a datetime.datetime object with the datetime in which
         the trade was opened
         '''
-        return num2date(self.dtopen)
+        return self.data.num2date(self.dtopen, tz=tz, naive=naive)
 
-    def close_datetime(self):
+    def close_datetime(self, tz=None, naive=True):
         '''Returns a datetime.datetime object with the datetime in which
         the trade was closed
         '''
-        return num2date(self.dtclose)
+        return self.data.num2date(self.dtclose, tz=tz, naive=naive)
 
     def update(self, order, size, price, value, commission, pnl,
                comminfo):
@@ -289,6 +291,6 @@ class Trade(object):
             histentry = TradeHistory(
                 self.status, self.data.datetime[0], self.barlen,
                 self.size, self.price, self.value,
-                self.pnl, self.pnlcomm)
+                self.pnl, self.pnlcomm, self.data.p.tz)
             histentry.doupdate(order, size, price, commission)
             self.history.append(histentry)
