@@ -27,32 +27,52 @@ from datetime import datetime, date, timedelta
 from .dataseries import TimeFrame, _Bar
 from .utils.py3 import with_metaclass
 from . import metabase
-from .utils import num2date, date2num, num2time
+from .utils.date import date2num
 
 
 class DTFaker(object):
+    # This will only be used for data sources which at some point in time
+    # return None from _load to indicate that a check of the resampler and/or
+    # notification queue is needed
+    # This is meant (at least initially) for real-time feeds, because those are
+    # the ones in need of events like the ones described above.
+    # These data sources should also be producing ``utc`` time directly because
+    # the real-time feed is (more often than not)  timestamped and utc provides
+    # a universal reference
+    # That's why below the timestamp is chosen in UTC and passed directly to
+    # date2num to avoid a localization. But it is extracted from data.num2date
+    # to ensure the returned datetime object is localized according to the
+    # expected output by the user (local timezone or any specified)
 
-    def __init__(self, sessionend, offset=timedelta()):
+    def __init__(self, data):
+        self.data = data
+
+        # Aliases
         self.datetime = self
-        self.sessionend = sessionend
-        self._dtime = datetime.now() + offset
-        self._dt = date2num(self._dtime)
+        self.p = self
 
-    def dt(self):
-        return int(self._dt)
+        _dtime = datetime.utcnow() + data._timeoffset()
+        self._dt = dt = date2num(_dtime)
+        self._dtime = data.num2date(dt)
+        self.sessionend = data.p.sessionend
+
+    def __call__(self, idx=0):
+        return self._dtime  # simulates data.datetime.datetime()
 
     def date(self, idx=0):
         return self._dtime.date()
-
-    def __call__(self, idx=0):
-        return self._dtime
 
     def time(self, idx=0):
         return self._dtime.time()
 
     def __getitem__(self, idx):
-        # idx always 0
         return self._dt if idx == 0 else float('-inf')
+
+    def num2date(self, *args, **kwargs):
+        return self.data.num2date(*args, **kwargs)
+
+    def date2num(self, *args, **kwargs):
+        return self.data.date2num(*args, **kwargs)
 
 
 class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
@@ -97,11 +117,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return len(data) > 1 and data.datetime[0] <= data.datetime[-1]
 
     def _checkbarover(self, data, fromcheck=False):
-        if fromcheck:
-            chkdata = DTFaker(sessionend=data.sessionend,
-                              offset=data._timeoffset())
-        else:
-            chkdata = data
+        chkdata = DTFaker(data) if fromcheck else data
 
         isover = False
         if not self._barover(chkdata):
@@ -141,10 +157,11 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return self._barover_years(data)
 
     def _barover_days(self, data):
-        return data.datetime.dt() > int(self.bar.datetime)
+        # Need to compare using localize times and not utc'd times
+        return data.datetime.date() > data.num2date(self.bar.datetime).date()
 
     def _barover_weeks(self, data):
-        year, week, _ = num2date(self.bar.datetime).isocalendar()
+        year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
         yearweek = year * 100 + week
 
         baryear, barweek, _ = data.datetime.date().isocalendar()
@@ -153,7 +170,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return bar_yearweek > yearweek
 
     def _barover_months(self, data):
-        dt = num2date(self.bar.datetime)
+        dt = data.num2date(self.bar.datetime).date()
         yearmonth = dt.year * 100 + dt.month
 
         bardt = data.datetime.datetime()
@@ -162,7 +179,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return bar_yearmonth > yearmonth
 
     def _barover_years(self, data):
-        return data.datetime.date().year > num2date(self.bar.datetime).year
+        return (data.datetime.datetime().year >
+                data.num2date(self.bar.datetime).year)
 
     def _gettmpoint(self, tm):
         '''Returns the point of time intraday for a given time according to the
@@ -188,17 +206,19 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
     def _barover_subdays(self, data):
         # Put session end in context of last bar datetime
-        sessend = int(self.bar.datetime) + data.sessionend
+        bdtime = data.num2date(self.bar.datetime)
+        bdate = bdtime.date()
+        bsend = data.date2num(datetime.combine(bdate, data.p.sessionend))
 
-        if data.datetime[0] > sessend:
+        if data.datetime[0] > bsend:
             # Next session is on (defaults to next day)
             return True
 
-        if data.datetime.datetime() <= num2date(self.bar.datetime):
+        if data.datetime[0] < self.bar.datetime:
             return False
 
         # Get time objects for the comparisons
-        tm = num2time(self.bar.datetime)
+        tm = bdtime.time()
         bartm = data.datetime.time()
 
         point, _ = self._gettmpoint(tm)
@@ -259,8 +279,9 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         Depending on param ``rightedge`` uses the starting boundary or the
         ending one
         '''
+        dt = self.data.num2date(self.bar.datetime)
         # Get current time
-        tm = num2time(self.bar.datetime)
+        tm = dt.time()
         # Get the point of the day in the time frame unit (ex: minute 200)
         point, _ = self._gettmpoint(tm)
 
@@ -275,6 +296,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         point *= self.p.compression
 
         # Get hours, minutes, seconds and microseconds
+        extradays = 0
         if self.p.timeframe == TimeFrame.Minutes:
             ph, pm = divmod(point, 60)
             ps = 0
@@ -289,21 +311,15 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             ps, pus = divmod(psec, 1e6)
 
         if ph > 23:  # went over midnight:
-            self.bar.datetime += ph // 24
+            extradays = ph // 24
             ph %= 24
 
-        # Get current datetime value which was taken from data
-        dt = num2date(self.bar.datetime)
         # Replace intraday parts with the calculated ones and update it
         dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
-
-        dtnum = date2num(dt)
-
-        if greater:  # request only replace if greater
-            if dtnum > self.bar.datetime:
-                self.bar.datetime = dtnum
-                return True
-
+        if extradays:
+            dt += timedelta(days=extradays)
+        dtnum = self.data.date2num(dt)
+        if greater and dtnum <= self.bar.datetime:
             return False
 
         self.bar.datetime = dtnum
