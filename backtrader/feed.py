@@ -30,8 +30,8 @@ import os.path
 import backtrader as bt
 from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
                         metabase)
-from backtrader.utils.py3 import with_metaclass, zip, range, queue
 from backtrader.utils.date import TZLocal
+from backtrader.utils.py3 import with_metaclass, zip, range
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
