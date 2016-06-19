@@ -21,9 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+from datetime import date, datetime, timedelta
 
-from backtrader import TimeFrame, date2num
+from backtrader import TimeFrame
 from backtrader.utils.py3 import with_metaclass
 from .. import metabase
 
@@ -52,7 +52,8 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
               ('fill_vol', float('NaN')),
               ('fill_oi', float('NaN')),)
 
-    lastdt = int(date2num(datetime.datetime.max))
+    ONEDAY = timedelta(days=1)
+    lastdt = date.max
 
     def __init__(self, data):
         pass
@@ -69,8 +70,8 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
           - False (always): this filter does not remove bars from the stream
 
         '''
-        dt = data.datetime.dt(0)
-        if (dt - self.lastdt) > 1:  # gap in place
+        dt = data.datetime.date()
+        if (dt - self.lastdt) > self.ONEDAY:  # gap in place
             self._fillbars(data, dt, self.lastdt)
 
         self.lastdt = dt
@@ -82,8 +83,7 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
 
         Invalidates the control dtime_prev if requested
         '''
-        tm = data.datetime.tm(0)  # get time part
-        gap = dt - lastdt
+        tm = data.datetime.time(0)  # get time part
 
         # Same price for all bars
         if self.p.fill_price > 0:
@@ -94,11 +94,12 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
             price = (data.high[-1] + data.low[-1]) / 2.0
 
         while lastdt < dt:
-            lastdt += 1
+            lastdt += self.ONEDAY
 
             # Prepare an array of the needed size
             bar = [float('Nan')] * data.size()
-            bar[data.DateTime] = lastdt + tm
+            # Fill the datetime
+            bar[data.DateTime] = data.date2num(datetime.combine(lastdt, tm))
 
             # Fill price fields
             for pricetype in [data.Open, data.High, data.Low, data.Close]:
