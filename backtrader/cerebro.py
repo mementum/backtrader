@@ -27,6 +27,7 @@ import multiprocessing
 import threading
 
 from .utils.py3 import map, range, zip, with_metaclass, string_types
+from .utils import event  # make threading.Event pickable for optimization
 
 from . import linebuffer
 from . import indicator
