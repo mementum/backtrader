@@ -600,7 +600,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             data.reset()
             if self._exactbars < 1:  # datas can be full length
                 data.extend(size=self.params.lookahead)
-            data.start()
+            data._start()
             if self._dopreload:
                 data.preload()
 
