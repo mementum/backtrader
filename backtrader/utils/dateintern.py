@@ -40,7 +40,7 @@ def Localizer(tz):
     def localize(self, dt):
         return dt.replace(tzinfo=self)
 
-    if not hasattr(tz, 'localize'):
+    if tz is not None and not hasattr(tz, 'localize'):
         # patch the tz instance with a bound method
         tz.localize = localize.__get__(tz.__class__, tz)
 
