@@ -29,7 +29,7 @@ import itertools
 from .utils.py3 import range, with_metaclass, iteritems
 
 from .metabase import MetaParams
-from .utils import date2num, AutoOrderedDict
+from .utils import AutoOrderedDict
 
 
 class OrderExecutionBit(object):
@@ -289,9 +289,14 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.executed = OrderData(remsize=self.size)
         self.position = 0
 
-        if isinstance(self.valid, (datetime.datetime, datetime.date)):
+        if isinstance(self.valid, datetime.datetime):
             # comparison will later be done against the raw datetime[0] value
-            self.valid = date2num(self.valid)
+            self.valid = self.data.date2num(self.valid)
+        elif isinstance(self.valid, datetime.timedelta):
+            # offset with regards to now ... get utcnow + offset
+            # when reading with date2num ... it will be automatically localized
+            valid = self.data.datetime.datetime() + self.valid
+            self.valid = self.data.date2num(valid)
 
         # get next session end
         dtime = self.data.datetime.datetime(0)
@@ -302,10 +307,10 @@ class OrderBase(with_metaclass(MetaParams, object)):
         dteos = dtime.replace(hour=h, minute=m, second=s)
 
         if dteos < dtime:
-            # eos before current time ... no ... must be next day
+            # eos before current time ... no ... must be at least next day
             dteos += datetime.timedelta(days=1)
 
-        self.dteos = date2num(dteos)
+        self.dteos = self.data.date2num(dteos)
 
     def clone(self):
         # status, triggered and executed are the only moving parts in order
