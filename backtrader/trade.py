@@ -291,6 +291,6 @@ class Trade(object):
             histentry = TradeHistory(
                 self.status, self.data.datetime[0], self.barlen,
                 self.size, self.price, self.value,
-                self.pnl, self.pnlcomm, self.data.p.tz)
+                self.pnl, self.pnlcomm, self.data._tz)
             histentry.doupdate(order, size, price, commission)
             self.history.append(histentry)
