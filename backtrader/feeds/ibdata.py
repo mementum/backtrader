@@ -189,6 +189,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         ('latethrough', False),  # let late samples through
     )
 
+    # If True, no conversion of _load generated data will be done with tzinput
+    _skiptzinput = True
+
     _store = ibstore.IBStore
 
     # Minimum size supported by real-time bars
