@@ -55,9 +55,9 @@ def runstrategy():
     cerebro.addstrategy(bt.Strategy)
 
     # Get the session times to pass them to the indicator
-    prestart = datetime.datetime.strptime(args.prestart, '%H:%M')
-    start = datetime.datetime.strptime(args.start, '%H:%M')
-    end = datetime.datetime.strptime(args.end, '%H:%M')
+    prestart = datetime.datetime.strptime(args.prestart, '%H:%M').time()
+    start = datetime.datetime.strptime(args.start, '%H:%M').time()
+    end = datetime.datetime.strptime(args.end, '%H:%M').time()
 
     # Add the Relative volume indicator
     cerebro.addindicator(RelativeVolumeByBar,
