@@ -27,7 +27,8 @@ import datetime
 class WeekDaysFiller(object):
     '''Bar Filler to add missing calendar days to trading days'''
     # kickstart value for date comparisons
-    lastdt = datetime.datetime.max.toordinal()
+    ONEDAY = datetime.timedelta(days=1)
+    lastdt = datetime.date.max - ONEDAY
 
     def __init__(self, data, fillclose=False):
         self.fillclose = fillclose
@@ -44,18 +45,19 @@ class WeekDaysFiller(object):
           - True (always): bars are removed (even if put back on the stack)
 
         '''
-        dt = data.datetime.dt()  # current date in int format
-        lastdt = self.lastdt + 1  # move the last seen data once forward
+        dt = data.datetime.date()  # current date in int format
+        lastdt = self.lastdt + self.ONEDAY  # move last seen data once forward
 
         while lastdt < dt:  # loop over gap bars
-            if datetime.date.fromordinal(lastdt).isoweekday() < 6:  # Mon-Fri
+            if lastdt.isoweekday() < 6:  # Mon-Fri
                 # Fill in date and add new bar to the stack
                 if self.fillclose:
                     self.voidbar = [self.lastclose] * data.size()
-                self.voidbar[-1] = float(lastdt) + data.sessionend
+                dtime = datetime.datetime.combine(lastdt, data.p.sessionend)
+                self.voidbar[-1] = data.date2num(dtime)
                 data._add2stack(self.voidbar[:])
 
-            lastdt += 1  # move lastdt forward
+            lastdt += self.ONEDAY  # move lastdt forward
 
         self.lastdt = dt  # keep a record of the last seen date
 
