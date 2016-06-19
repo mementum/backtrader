@@ -22,13 +22,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from .dateintern import (_num2date, _num2dt, _date2num, time2num, num2time,
-                         UTC, TZLocal)
+from .dateintern import (num2date, num2dt, date2num, time2num, num2time,
+                         UTC, TZLocal, Localizer)
 
 __all__ = ('num2date', 'num2dt', 'date2num', 'time2num', 'num2time',
-           'UTC', 'TZLocal')
-
-
-num2date = _num2date
-date2num = _date2num
-num2dt = _num2dt
+           'UTC', 'TZLocal', 'Localizer')
