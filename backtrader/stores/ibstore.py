@@ -42,11 +42,11 @@ from backtrader.utils import AutoDict
 def _ts2dt(tstamp=None):
     # Transforms a RTVolume timestamp to a datetime object
     if not tstamp:
-        return datetime.now()
+        return datetime.utcnow()
 
     sec, msec = divmod(long(tstamp), 1000)
     usec = msec * 1000
-    return datetime.fromtimestamp(sec).replace(microsecond=usec)
+    return datetime.utcfromtimestamp(sec).replace(microsecond=usec)
 
 
 class RTVolume(object):
@@ -891,7 +891,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         Not valid for cash markets
         '''
         # Get a naive localtime object
-        msg.time = datetime.fromtimestamp(float(msg.time))
+        msg.time = datetime.utcfromtimestamp(float(msg.time))
         self.qs[msg.reqId].put(msg)
 
     @ibregister
