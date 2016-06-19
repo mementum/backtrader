@@ -189,9 +189,6 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         ('latethrough', False),  # let late samples through
     )
 
-    # If True, no conversion of _load generated data will be done with tzinput
-    _skiptzinput = True
-
     _store = ibstore.IBStore
 
     # Minimum size supported by real-time bars
@@ -202,6 +199,33 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
     def _timeoffset(self):
         return self.ib.timeoffset()
+
+    def _gettz(self):
+        # If no object has been provided by the user and a timezone can be
+        # found via contractdtails, then try to get it from pytz, which may or
+        # may not be available.
+
+        # The timezone specifications returned by TWS seem to be abbreviations
+        # understood by pytz, but the full list which TWS may return is not
+        # documented and one of the abbreviations may fail
+        if self.p.tz is not None:
+            return bt.utils.date.Localizer(self.p.tz)
+
+        if self.contractdetails is None:
+            return None  # nothing can be done
+
+        try:
+            import pytz  # keep the import very local
+        except ImportError:
+            return None  # nothing can be done
+
+        try:
+            tz = pytz.timezone(self.contractdetails.m_timeZoneId)
+        except pytz.UnknownTimeZoneError:
+            return None  # nothing can be done
+
+        # contractdetails there, import ok, timezone found, return it
+        return tz
 
     def islive(self):
         '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
