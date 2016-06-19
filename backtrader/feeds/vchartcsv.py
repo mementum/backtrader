@@ -63,7 +63,6 @@ class VChartCSVData(feed.CSVDataBase):
             # use the provided time
             hh, mmss = divmod(int(tmtxt), 10000)
             mm, ss = divmod(mmss, 100)
-            tm = datetime.time(hh, mm, ss)
         else:
             # put it at the end of the session parameter
             hh = self.p.sessionend.hour

@@ -34,7 +34,6 @@ from .broker import BrokerBack
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .import num2date
 from .utils import OrderedDict
 from .strategy import Strategy
 
