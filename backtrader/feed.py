@@ -57,7 +57,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
 
-        _obj.notifs = queue.Queue()  # store notifications for cerebro
+        _obj.notifs = collections.deque()  # store notifications for cerebro
 
         return _obj, args, kwargs
 
@@ -193,17 +193,17 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def put_notification(self, status, *args, **kwargs):
         '''Add arguments to notification queue'''
-        self.notifs.put((status, args, kwargs))
+        self.notifs.append((status, args, kwargs))
         self._laststatus = status
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
         # The background thread could keep on adding notifications. The None
         # mark allows to identify which is the last notification to deliver
-        self.notifs.put(None)  # put a mark
+        self.notifs.append(None)  # put a mark
         notifs = list()
         while True:
-            notif = self.notifs.get()
+            notif = self.notifs.popleft()
             if notif is None:  # mark is reached
                 break
             notifs.append(notif)
