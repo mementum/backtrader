@@ -196,6 +196,19 @@ def runstrategy():
         latethrough=args.latethrough,
     )
 
+    if args.timezone is not None:
+        try:
+            import pytz
+        except ImportError:
+            pass
+        else:
+            try:
+                tz = pytz.timezone(args.timezone)
+            except:
+                pass
+            else:
+                datakwargs['tz'] = tz
+
     if not args.usestore and not args.broker:   # neither store nor broker
         datakwargs.update(storekwargs)  # pass the store args over the data
 
@@ -318,6 +331,10 @@ def parse_args():
     parser.add_argument('--data1', default=None,
                         required=False, action='store',
                         help='data 1 into the system')
+
+    parser.add_argument('--timezone', default=None,
+                        required=False, action='store',
+                        help='timezone to get time output into (pytz names)')
 
     parser.add_argument('--what', default=None,
                         required=False, action='store',
