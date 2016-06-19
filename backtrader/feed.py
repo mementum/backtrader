@@ -27,8 +27,11 @@ import inspect
 import io
 import os.path
 
-from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
+import backtrader as bt
+from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
+                        metabase)
 from backtrader.utils.py3 import with_metaclass, zip, range, queue
+from backtrader.utils.date import TZLocal
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -66,17 +69,25 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
+        _obj._tz = bt.utils.date.Localizer(_obj.p.tz or bt.utils.date.TZLocal)
+
+        # Lines have already been create, set the tz
+        _obj.lines.datetime._settz(_obj._tz)
+
+        _tzinput = _obj.p.tzinput or bt.utils.date.TZLocal
+        _obj._tzinput = _tzinput = bt.utils.date.Localizer(_tzinput)
+
         if isinstance(_obj.p.sessionstart, datetime.datetime):
             _obj.p.sessionstart = _obj.p.sessionstart.time()
 
         if _obj.p.sessionstart is None:
-            _obj.p.sessionstart = datetime.time(0, 0, 0)
+            _obj.p.sessionstart = datetime.time.min
 
         if isinstance(_obj.p.sessionend, datetime.datetime):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
         if _obj.p.sessionend is None:
-            _obj.p.sessionend = datetime.time(23, 59, 59)
+            _obj.p.sessionend = datetime.time.max
 
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
@@ -95,12 +106,12 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if _obj.p.fromdate is None:
             _obj.fromdate = float('-inf')
         else:
-            _obj.fromdate = date2num(_obj.p.fromdate)
+            _obj.fromdate = _obj.date2num(_obj.p.fromdate)
 
         if _obj.p.todate is None:
             _obj.todate = float('inf')
         else:
-            _obj.todate = date2num(_obj.p.todate)
+            _obj.todate = _obj.date2num(_obj.p.todate)
 
         _obj.sessionstart = time2num(_obj.p.sessionstart)
         _obj.sessionend = time2num(_obj.p.sessionend)
@@ -134,7 +145,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('todate', None),
               ('sessionstart', None),
               ('sessionend', None),
-              ('filters', []),)
+              ('filters', []),
+              ('tz', TZLocal),
+              ('tzinput', None),
+    )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
      LIVE, NOTSUBSCRIBED) = range(6)
@@ -150,10 +164,26 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     _feed = None
     _tmoffset = datetime.timedelta()
 
+    # Set to non 0 if resampling/replaying
     resampling = 0
+
+    # If True, no conversion of _load generated data will be done with tzinput
+    _skiptzinput = False
 
     def _timeoffset(self):
         return self._tmoffset
+
+    def localize(self, dt):
+        return self._tz.localize(dt)
+
+    def date2num(self, dt):
+        return date2num(self._tz.localize(dt))
+
+    def num2date(self, dt=None, tz=None, naive=True):
+        if dt is None:
+            return num2date(self.lines.datetime[0], tz or self._tz, naive)
+
+        return num2date(dt, tz or self._tz, naive)
 
     def islive(self):
         '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
@@ -351,8 +381,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 # means game over
                 return _loadret
 
-            # Check standard date from/to filters
+            # Get a reference to current loaded time
             dt = self.lines.datetime[0]
+
+            # A bar has been loaded, adapt the time
+            if not self._skiptzinput:  # unless the data has marked itself
+                # Input has been converted at face value but it's not UTC in
+                # the input stream
+                dtime = num2date(dt)  # get it in a naive datetime
+                # localize it
+                dtime = self._tzinput.localize(dtime)  # pytz compatible-ized
+                self.lines.datetime[0] = dt = date2num(dtime)  # keep UTC val
+
+            # Check standard date from/to filters
             if dt < self.fromdate:
                 # discard loaded bar and carry on
                 self.backwards()
