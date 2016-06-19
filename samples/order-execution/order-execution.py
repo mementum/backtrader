@@ -231,7 +231,7 @@ def parse_args():
     parser.add_argument('--todate', '-t', required=False, default=None,
                         help='Ending date in YYYY-MM-DD format')
 
-    parser.add_argument('--plot', '-p', action='store_false', required=False,
+    parser.add_argument('--plot', '-p', action='store_true', required=False,
                         help='Plot the read data')
 
     parser.add_argument('--plotstyle', '-ps', required=False, default='bar',
