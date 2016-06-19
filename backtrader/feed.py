@@ -30,7 +30,7 @@ import os.path
 import backtrader as bt
 from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
                         metabase)
-from backtrader.utils.date import TZLocal
+
 from backtrader.utils.py3 import with_metaclass, zip, range
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
@@ -69,24 +69,16 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
-        _obj._tz = bt.utils.date.Localizer(_obj.p.tz or bt.utils.date.TZLocal)
-
-        # Lines have already been create, set the tz
-        _obj.lines.datetime._settz(_obj._tz)
-
-        _tzinput = _obj.p.tzinput or bt.utils.date.TZLocal
-        _obj._tzinput = _tzinput = bt.utils.date.Localizer(_tzinput)
-
         if isinstance(_obj.p.sessionstart, datetime.datetime):
             _obj.p.sessionstart = _obj.p.sessionstart.time()
 
-        if _obj.p.sessionstart is None:
+        elif _obj.p.sessionstart is None:
             _obj.p.sessionstart = datetime.time.min
 
         if isinstance(_obj.p.sessionend, datetime.datetime):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
-        if _obj.p.sessionend is None:
+        elif _obj.p.sessionend is None:
             _obj.p.sessionend = datetime.time.max
 
         if isinstance(_obj.p.fromdate, datetime.date):
@@ -102,19 +94,6 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             if not hasattr(_obj.p.todate, 'hour'):
                 _obj.p.todate = datetime.datetime.combine(
                     _obj.p.todate, _obj.p.sessionend)
-
-        if _obj.p.fromdate is None:
-            _obj.fromdate = float('-inf')
-        else:
-            _obj.fromdate = _obj.date2num(_obj.p.fromdate)
-
-        if _obj.p.todate is None:
-            _obj.todate = float('inf')
-        else:
-            _obj.todate = _obj.date2num(_obj.p.todate)
-
-        _obj.sessionstart = time2num(_obj.p.sessionstart)
-        _obj.sessionend = time2num(_obj.p.sessionend)
 
         # hold datamaster points corresponding to own
         _obj.mlen = list()
@@ -146,7 +125,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('sessionstart', None),
               ('sessionend', None),
               ('filters', []),
-              ('tz', TZLocal),
+              ('tz', None),
               ('tzinput', None),
     )
 
@@ -167,17 +146,48 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     # Set to non 0 if resampling/replaying
     resampling = 0
 
-    # If True, no conversion of _load generated data will be done with tzinput
-    _skiptzinput = False
+    def _start(self):
+        self.start()
+
+        # A live feed (for example) may have learnt something about the
+        # timezones after the start and that's why the date/time related
+        # parameters are converted at this late stage
+        # Get the output timezone (if any)
+        self._tz = self._gettz()
+        # Lines have already been create, set the tz
+        self.lines.datetime._settz(self._tz)
+
+        # This should probably be also called from an override-able method
+        self._tzinput = bt.utils.date.Localizer(self.p.tzinput)
+
+        # Convert user input times to the output timezone (or min/max)
+        if self.p.fromdate is None:
+            self.fromdate = float('-inf')
+        else:
+            self.fromdate = self.date2num(self.p.fromdate)
+
+        if self.p.todate is None:
+            self.todate = float('inf')
+        else:
+            self.todate = self.date2num(self.p.todate)
+
+        # FIXME: These two are never used and could be removed
+        self.sessionstart = time2num(self.p.sessionstart)
+        self.sessionend = time2num(self.p.sessionend)
 
     def _timeoffset(self):
         return self._tmoffset
 
-    def localize(self, dt):
-        return self._tz.localize(dt)
+    def _gettz(self):
+        '''To be overriden by subclasses which may auto-calculate the
+        timezone'''
+        return bt.utils.date.Localizer(self.p.tz)
 
     def date2num(self, dt):
-        return date2num(self._tz.localize(dt))
+        if self._tz is not None:
+            return date2num(self._tz.localize(dt))
+
+        return date2num(dt)
 
     def num2date(self, dt=None, tz=None, naive=True):
         if dt is None:
@@ -385,7 +395,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             dt = self.lines.datetime[0]
 
             # A bar has been loaded, adapt the time
-            if not self._skiptzinput:  # unless the data has marked itself
+            if self._tzinput:
                 # Input has been converted at face value but it's not UTC in
                 # the input stream
                 dtime = num2date(dt)  # get it in a naive datetime
