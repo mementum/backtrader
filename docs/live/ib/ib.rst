@@ -393,88 +393,53 @@ In this case:
 Time Management
 ===============
 
-The reported ``datetime`` will be that of the local system. Example:
+The data feed will automatically determine the timezone from the
+``ContractDetails`` object reported by *TWS*.
 
-  - Location Berlin:
+.. note::
+   This requires that ``pytz`` be installed. If not installed the user should
+   supply with the ``tz`` parameter to the data source a ``tzinfo`` compatible
+   instance for the desired output timezone
 
-  - Trading venue: NYSE
+.. note::
+   If ``pytz`` is installed and the user feels the automatic timezone
+   determination is not working, the ``tz`` parameter can contain a string with
+   the name of the timezone. ``backtrader`` will try to instantiate a
+   ``pytz.timezone`` with the given name
 
-  - Trading hours at the trading venue: 09:30 - 16:00
+The reported ``datetime`` will be that of the timezone related to the
+product. Some examples:
 
-Most of the year the time difference between Berlin and New York is 6 hours. In
-that case the reported times for the data feed will be:
+  - *Product*: EuroStoxxx 50 in the Eurex (ticker: *ESTX50-YYYYMM-DTB*)
 
-  - 15:30 - 22:00
+    The timezone will be ``CET`` (*Central European Time*) aka
+    ``Europe/Berlin``
 
-Unfortunately the EU and the EU lose the 6 hour difference twice a year due to
-the switch to DST and in that case the reported times will shift 1 hour.
+  - *Product*: ES-Mini (ticker: *ES-YYYYMM-GLOBEX*)
 
-If the trading strategy is not time dependent, this is not really important,
-but some traders like, for example, to wait until 30 minutes are gone at the
-start of the session and then exit all positions 30 minutes before the end of
-the session. As such and given the odd weeks out between Berlin and New York,
-the following code would not always work in your strategy::
+    The timezone will be ``EST5EDT`` aka ``EST`` aka ``US/Eastern``
 
-  def next(self):
-      # ATTENTION: Sometimes in Berlin the comparison time has to be 16:30
-      if self.data.time() < datetime.time(15, 30):  # too early to operate
-          return
+  - *Product*: EUR.JPY forex pair (ticker *EUR.JPY-CASH-IDEALPRO*)
 
-There are 2 ways to overcome this situation.
+    The timezone will be ``EST5EDT`` aka ``EST`` aka ``US/Eastern``
 
-**1st Timezone conversion in usercode**::
-
-  def start(self):
-      # get the localtime in the timezone of
-      self.tzny = pytz.tz('US/Eastern')
-
-  def next(self):
-      # Put the start trading time in the NYSE timezone
-      sstart = datetime.time(9, 30).astimezone(self.tzny)
-      # Make it local and naive
-      sstart = sstart.localize().replace(tzinfo=None)
-
-      if self.data.time() < sstart:  # too early to operate
-          return
-
-Now the comparison will always work.
-
-.. note:: it may seem like an overkill to recalculate the time each and every
-	  time in the ``next`` method, but if a strategy is running unattended
-	  the odd time-difference weeks could kick in.
-
-	  In the case of a strategy restarted everyday, the calculation could
-	  be made once in the ``__init__`` or ``start`` methods
+    Actually this is an Interactive Brokers setting, because Forex pairs trade
+    almost 24 hours without interruption and as such there wouldn't be a real
+    timezone for them.
 
 
-.. note:: a future development in backtrader would allow you to do the
-	  following::
+This behavior makes sure that trading remains consistent regardless of the
+actual location of the trader, given that the computer will most likely have
+the actual location timezone and not the timezone of the trading venue.
 
-	    if self.data.time(tz=self.tzny) < datetime.time(10, 0):
-	        return
+Please read the **Time Management** section of the manual.
 
-	  In this case the returned time would be first *localized*
+.. note:: The TWS Demo is not accurate at reporting timezones for assets for
+	  which no data download permissions are available (The EuroStoxx 50
+	  future is an example of those cases)
 
-**2nd keep your code in local**::
-
-  def start(self):
-      # get the localtime in the timezone of
-      self.tzny = pytz.tz('US/Eastern')
-      # session start + 30 minutes
-      self.tradingstart = datetime.time(09, 30) + datetime.timedelta(seconds=30*60)
-
-  def next(self):
-      # Put the start trading time in the NYSE timezone
-      # Make it local and naive
-      sstart = sstart.localize().replace(tzinfo=None)
-
-      if self.data.time(tz=self.tzny) < sstart:  # too early to operate
-          return
-
-
-
-Internal Time Management - Resampling/Replaying
-===============================================
+Live Feeds and Resampling/Replaying
+===================================
 
 A design decision with regards to when to deliver bars for live feeds is:
 

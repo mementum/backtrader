@@ -150,7 +150,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         be used for the price notifications (tickPrice events, for example for
         CASH markets) to modify the locally calculated timestamp.
 
-        The time offset will propagate to other parts of the ``backtrader
+        The time offset will propagate to other parts of the ``backtrader``
         ecosystem like the **resampling** to align resampling timestamps using
         the calculated offset.
 

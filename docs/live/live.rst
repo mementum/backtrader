@@ -3,7 +3,7 @@
 Live Data Feeds and Live Trading
 ################################
 
-Starting with release **1.4.0.92** ``backtrader`` supports live data and live
+Starting with release **1.5.0** ``backtrader`` supports live data and live
 trading.
 
 .. toctree::

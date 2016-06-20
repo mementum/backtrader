@@ -198,20 +198,8 @@ def runstrategy():
         backfill_start=not args.no_backfill_start,
         backfill=not args.no_backfill,
         latethrough=args.latethrough,
+        tz=args.timezone
     )
-
-    if args.timezone is not None:
-        try:
-            import pytz
-        except ImportError:
-            pass
-        else:
-            try:
-                tz = pytz.timezone(args.timezone)
-            except:
-                pass
-            else:
-                datakwargs['tz'] = tz
 
     if not args.usestore and not args.broker:   # neither store nor broker
         datakwargs.update(storekwargs)  # pass the store args over the data
