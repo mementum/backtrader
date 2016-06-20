@@ -323,9 +323,13 @@ Reference
 
 .. autoclass:: Cerebro
 
-   .. automethod:: addnotifycallback
+   .. automethod:: addstorecb
 
    .. automethod:: notify_store
+
+   .. automethod:: adddatacb
+
+   .. automethod:: notify_data
 
    .. automethod:: adddata
 
@@ -346,6 +350,8 @@ Reference
    .. automethod:: addwriter
 
    .. automethod:: run
+
+   .. automethod:: runstop
 
    .. automethod:: setbroker
 

@@ -29,7 +29,6 @@ import backtrader as bt
 import backtrader.feeds as btfeeds
 
 from backtrader.utils.py3 import with_metaclass
-from backtrader import time2num
 
 
 class St(bt.Strategy):
@@ -74,9 +73,6 @@ class SessionEndFiller(with_metaclass(bt.metabase.MetaParams, object)):
     '''
     params = (('endtime', datetime.time(23, 59, 59)),)
 
-    def __init__(self, data):
-        self.tmnum = time2num(self.p.endtime)
-
     def __call__(self, data):
         '''
         Params:
@@ -87,7 +83,8 @@ class SessionEndFiller(with_metaclass(bt.metabase.MetaParams, object)):
             stream
         '''
         # Get time of current (from data source) bar
-        data.datetime[0] = data.datetime.tm2dtime(self.tmnum)
+        dtime = datetime.combine(data.datetime.date(), self.p.endtime)
+        data.datetime[0] = data.date2num(dtime)
         return False
 
 

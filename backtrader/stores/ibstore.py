@@ -42,18 +42,18 @@ from backtrader.utils import AutoDict
 def _ts2dt(tstamp=None):
     # Transforms a RTVolume timestamp to a datetime object
     if not tstamp:
-        return datetime.now()
+        return datetime.utcnow()
 
     sec, msec = divmod(long(tstamp), 1000)
     usec = msec * 1000
-    return datetime.fromtimestamp(sec).replace(microsecond=usec)
+    return datetime.utcfromtimestamp(sec).replace(microsecond=usec)
 
 
 class RTVolume(object):
     '''Parses a tickString tickType 48 (RTVolume) event from the IB API into its
     constituent fields
 
-    Supports using a "price" to simulate an RTVolume from a price event
+    Supports using a "price" to simulate an RTVolume from a tickPrice event
     '''
     _fields = [
         ('price', float),
@@ -64,7 +64,7 @@ class RTVolume(object):
         ('single', bool)
     ]
 
-    def __init__(self, rtvol='', price=None):
+    def __init__(self, rtvol='', price=None, tmoffset=None):
         # Use a provided string or simulate a list of empty tokens
         tokens = iter(rtvol.split(';'))
 
@@ -75,6 +75,9 @@ class RTVolume(object):
         # If price was provided use it
         if price is not None:
             self.price = price
+
+        if tmoffset is not None:
+            self.datetime += tmoffset
 
 
 class MetaSingleton(MetaParams):
@@ -103,47 +106,64 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     The parameters can also be specified in the classes which use this store,
     like ``IBData`` and ``IBBroker``
 
-    Parameters:
+    Params:
 
-      - ``host`` (default: '127.0.0.1'): where IB TWS or IB Gateway are
+      - ``host`` (default:``127.0.0.1``): where IB TWS or IB Gateway are
         actually running. And although this will usually be the localhost, it
         must not be
 
-      - ``port`` (default: 7496): port to connect to. The demo system uses
+      - ``port`` (default: ``7496``): port to connect to. The demo system uses
         ``7497``
 
-      - ``clientId`` (default: None): which clientId to use to connect to TWS.
+      - ``clientId`` (default: ``None``): which clientId to use to connect to
+        TWS.
 
-        None: generates a random id between 1 and 65535
+        ``None``: generates a random id between 1 and 65535
         An ``integer``: will be passed as the value to use.
 
-      - ``notifyall`` (default: False)
+      - ``notifyall`` (default: ``False``)
 
         If ``False`` only ``error`` messages will be sent to the
         ``notify_store`` methods of ``Cerebro`` and ``Strategy``.
 
         If ``True``, each and every message received from TWS will be notified
 
-      - ``_debug`` (default: False)
+      - ``_debug`` (default: ``False``)
 
         Print all messages received from TWS to standard output
 
-      - ``reconnect`` (default: 3)
+      - ``reconnect`` (default: ``3``)
 
         Number of attempts to try to reconnect after the 1st connection attempt
         fails
 
         Set it to a ``-1`` value to keep on reconnecting forever
 
-      - ``timeout`` (default: 3.0)
+      - ``timeout`` (default: ``3.0``)
 
         Time in seconds between reconnection attemps
+
+      - ``timeoffset`` (default: ``True``)
+
+        If True, the time obtained from ``reqCurrentTime`` (IB Server time)
+        will be used to calculate the offset to localtime and this offset will
+        be used for the price notifications (tickPrice events, for example for
+        CASH markets) to modify the locally calculated timestamp.
+
+        The time offset will propagate to other parts of the ``backtrader``
+        ecosystem like the **resampling** to align resampling timestamps using
+        the calculated offset.
+
+      - ``timerefresh`` (default: ``60.0``)
+
+        Time in seconds: how often the time offset has to be refreshed
+
     '''
 
     # Set a base for the data requests (historical/realtime) to distinguish the
     # id in the error notifications from orders, where the basis (usually
     # starting at 1) is set by TWS
-    REQIDBASE = 0x10000000
+    REQIDBASE = 0x01000000
 
     BrokerCls = None  # broker class will autoregister
     DataCls = None  # data class will auto register
@@ -156,15 +176,17 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('_debug', False),
         ('reconnect', 3),  # -1 forever, 0 No, > 0 number of retries
         ('timeout', 3.0),  # timeout between reconnections
+        ('timeoffset', True),  # Use offset to server for timestamps if needed
+        ('timerefresh', 60.0),  # How often to refresh the timeoffset
     )
 
     @classmethod
-    def getdata(self, *args, **kwargs):
+    def getdata(cls, *args, **kwargs):
         '''Returns ``DataCls`` with args, kwargs'''
         return cls.DataCls(*args, **kwargs)
 
     @classmethod
-    def getbroker(self, *args, **kwargs):
+    def getbroker(cls, *args, **kwargs):
         '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
         return cls.BrokerCls(*args, **kwargs)
 
@@ -187,7 +209,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.datas = list()  # datas that have registered over start
         self.ccount = 0  # requests to start (from cerebro or datas)
 
-        self.deltatime = timedelta()  # to control time difference with server
+        self._lock_tmoffset = threading.Lock()
+        self.tmoffset = timedelta()  # to control time difference with server
 
         # Structures to hold datas requests
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
@@ -437,10 +460,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             else:
                 self.cancelQueue(q, True)
 
-        elif msg.errorCode in [354]:
-            # This error means --- No subscription. Need to keep a reference to
+        elif msg.errorCode in [354, 420]:
+            # 354 no subscription, 420 no real-time bar for contract
             # the calling data to let the data know ... it cannot resub
-            pass
+            try:
+                q = self.qs[msg.id]
+            except KeyError:
+                pass  # should not happend but it can
+            else:
+                q.put(-msg.errorCode)
+                self.cancelQueue(q)
 
         elif msg.errorCode == 326:  # not recoverable, clientId in use
             self.dontreconnect = True
@@ -463,9 +492,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.stopdatas()
 
         elif msg.errorCode == 1100:
-            # Connection lost - Do nothing ... datas will wait on the queue
+            # Connection lost - Notify ... datas will wait on the queue
             # with no messages arriving
-            pass
+            for q in self.ts:  # key: queue -> ticker
+                q.put(-msg.errorCode)
 
         elif msg.errorCode == 1101:
             # Connection restored and tickerIds are gone
@@ -479,7 +509,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         elif msg.errorCode < 500:
             # Given the myriad of errorCodes, start by assuming is an order
-            # error and if not, the checkes there will let it go
+            # error and if not, the checks there will let it go
             if msg.id < self.REQIDBASE:
                 if self.broker is not None:
                     self.broker.push_ordererror(msg)
@@ -509,8 +539,17 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     @ibregister
     def currentTime(self, msg):
-        currenttime = datetime.fromtimestamp(float(msg.time))
-        self.deltatime = datetime.now() - currenttime
+        if not self.p.timeoffset:  # only if requested ... apply timeoffset
+            return
+        curtime = datetime.fromtimestamp(float(msg.time))
+        with self._lock_tmoffset:
+            self.tmoffset = curtime - datetime.now()
+
+        threading.Timer(self.p.timerefresh, self.reqCurrentTime).start()
+
+    def timeoffset(self):
+        with self._lock_tmoffset:
+            return self.tmoffset
 
     def nextTickerId(self):
         # Get the next ticker using next on the itertools.count
@@ -605,7 +644,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     def reqHistoricalDataEx(self, contract, enddate, begindate,
                             timeframe, compression,
-                            what='TRADES', useRTH=False,
+                            what=None, useRTH=False,
                             tickerId=None):
         '''
         Extension of the raw reqHistoricalData proxy, which takes two dates
@@ -675,7 +714,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
-            what = 'BID'  # TRADES doesn't work
+            if not what:
+                what = 'BID'  # default for cash unless otherwise specified
+        else:
+            what = what or 'TRADES'
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
@@ -691,7 +733,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         return q
 
     def reqHistoricalData(self, contract, enddate, duration, barsize,
-                          what='TRADES', useRTH=False):
+                          what=None, useRTH=False):
         '''Proxy to reqHistorical Data'''
 
         # get a ticker/queue for identification/data delivery
@@ -699,7 +741,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
-            what = 'BID'  # TRADES doesn't work
+            if not what:
+                what = 'BID'  # TRADES doesn't work
+        else:
+            what = what or 'TRADES'
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
@@ -805,10 +850,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             except ValueError:  # price not in message ...
                 pass
             else:
-                # If the time difference between the timestamp and the local
-                # clock is large enough, the resampler (outside of this
-                # ecosystem) may yield false results
-                rtvol.datetime += self.deltatime
+                # Don't need to adjust the time, because it is in "timestamp"
+                # form in the message
                 self.qs[msg.tickerId].put(rtvol)
 
     @ibregister
@@ -821,15 +864,24 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         queue to have a consistent cross-market interface
         '''
         # Used for "CASH" markets
+        # The price field has been seen to be missing in some instances even if
+        # "field" is 1
         tickerId = msg.tickerId
         if self.iscash[tickerId]:
             if msg.field == 1:  # Bid Price
                 try:
-                    rtvol = RTVolume(price=msg.price)
+                    if msg.price == -1.0:
+                        # seems to indicate the stream is halted for example in
+                        # between 23:00 - 23:15 CET for FOREX
+                        return
+                except AttributeError:
+                    pass
+
+                try:
+                    rtvol = RTVolume(price=msg.price, tmoffset=self.tmoffset)
                 except ValueError:  # price not in message ...
                     pass
                 else:
-                    rtvol.datetime += self.deltatime
                     self.qs[tickerId].put(rtvol)
 
     @ibregister
@@ -840,7 +892,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         Not valid for cash markets
         '''
         # Get a naive localtime object
-        msg.time = datetime.fromtimestamp(float(msg.time))
+        msg.time = datetime.utcfromtimestamp(float(msg.time))
         self.qs[msg.reqId].put(msg)
 
     @ibregister
@@ -1191,11 +1243,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def openOrder(self, msg):
         '''Receive the event ``openOrder`` events'''
-        # received when the order is in the system after placeOrder
-        # the message contains: order, contract, orderstate
-        # no need to manage it. wait for orderstatus to notify
-        # self.broker.push_orderstate(msg.orderState)
-        pass
+        self.broker.push_orderstate(msg)
 
     @ibregister
     def execDetails(self, msg):

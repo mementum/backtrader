@@ -29,35 +29,6 @@ import math
 import backtrader as bt
 
 
-def time2num(tm):
-    """
-    Convert :mod:`time` to the to the preserving hours, minutes, seconds
-    and microseconds.  Return value is a :func:`float`.
-    """
-    HOURS_PER_DAY = 24.0
-    MINUTES_PER_HOUR = 60.0
-    SECONDS_PER_MINUTE = 60.0
-    MUSECONDS_PER_SECOND = 1e6
-    MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY
-    SECONDS_PER_DAY = SECONDS_PER_MINUTE * MINUTES_PER_DAY
-    MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY
-
-    tm_num = (tm.hour / HOURS_PER_DAY +
-              tm.minute / MINUTES_PER_DAY +
-              tm.second / SECONDS_PER_DAY +
-              tm.microsecond / MUSECONDS_PER_DAY)
-
-    return tm_num
-
-
-def dtime_dt(dt):
-    return math.trunc(dt)
-
-
-def dtime_tm(dt):
-    return math.modf(dt)[0]
-
-
 class RelativeVolumeByBar(bt.Indicator):
     alias = ('RVBB',)
     lines = ('rvbb',)
@@ -85,20 +56,16 @@ class RelativeVolumeByBar(bt.Indicator):
         self.vcount = collections.defaultdict(int)
 
         self.days = 0
-        self.dtlast = 0
-
-        # Keep the start/end times in numeric format for comparison
-        self.start = time2num(self.p.start)
-        self.end = time2num(self.p.end)
+        self.dtlast = datetime.date.min
 
         # Done after calc to ensure coop inheritance and composition work
         super(RelativeVolumeByBar, self).__init__()
 
     def _barisvalid(self, tm):
-        return self.start <= tm <= self.end
+        return self.p.start <= tm <= self.p.end
 
     def _daycount(self):
-        dt = dtime_dt(self.data.datetime[0])
+        dt = self.data.datetime.date()
         if dt > self.dtlast:
             self.days += 1
             self.dtlast = dt
@@ -106,7 +73,7 @@ class RelativeVolumeByBar(bt.Indicator):
     def prenext(self):
         self._daycount()
 
-        tm = dtime_tm(self.data.datetime[0])
+        tm = self.data.datetime.time()
         if self._barisvalid(tm):
             self.pvol[tm] = self.data.volume[0]
             self.vcount[tm] += 1
@@ -114,7 +81,7 @@ class RelativeVolumeByBar(bt.Indicator):
     def next(self):
         self._daycount()
 
-        tm = dtime_tm(self.data.datetime[0])
+        tm = self.data.datetime.time()
         if not self._barisvalid(tm):
             return
 

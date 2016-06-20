@@ -51,12 +51,13 @@ from .analyzer import *
 
 from .cerebro import *
 
-from . import feeds
-from . import indicators
-from . import strategies
-from . import observers
-from . import analyzers
-from . import commissions
-from . import filters
-from . import stores
-from . import brokers
+from . import feeds as feeds
+from . import indicators as indicators
+from . import strategies as strategies
+from . import observers as observers
+from . import analyzers as analyzers
+from . import commissions as commissions
+from . import filters as filters
+from . import stores as stores
+from . import brokers as brokers
+from . import utils as utils

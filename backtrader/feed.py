@@ -27,8 +27,11 @@ import inspect
 import io
 import os.path
 
-from backtrader import date2num, time2num, TimeFrame, dataseries, metabase
-from backtrader.utils.py3 import with_metaclass, zip, range, queue
+import backtrader as bt
+from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
+                        metabase)
+
+from backtrader.utils.py3 import with_metaclass, zip, range
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -54,7 +57,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         # Find the owner and store it
         _obj._feed = metabase.findowner(_obj, FeedBase)
 
-        _obj.notifs = queue.Queue()  # store notifications for cerebro
+        _obj.notifs = collections.deque()  # store notifications for cerebro
 
         return _obj, args, kwargs
 
@@ -69,14 +72,14 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         if isinstance(_obj.p.sessionstart, datetime.datetime):
             _obj.p.sessionstart = _obj.p.sessionstart.time()
 
-        if _obj.p.sessionstart is None:
-            _obj.p.sessionstart = datetime.time(0, 0, 0)
+        elif _obj.p.sessionstart is None:
+            _obj.p.sessionstart = datetime.time.min
 
         if isinstance(_obj.p.sessionend, datetime.datetime):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
-        if _obj.p.sessionend is None:
-            _obj.p.sessionend = datetime.time(23, 59, 59)
+        elif _obj.p.sessionend is None:
+            _obj.p.sessionend = datetime.time.max
 
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
@@ -91,19 +94,6 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             if not hasattr(_obj.p.todate, 'hour'):
                 _obj.p.todate = datetime.datetime.combine(
                     _obj.p.todate, _obj.p.sessionend)
-
-        if _obj.p.fromdate is None:
-            _obj.fromdate = float('-inf')
-        else:
-            _obj.fromdate = date2num(_obj.p.fromdate)
-
-        if _obj.p.todate is None:
-            _obj.todate = float('inf')
-        else:
-            _obj.todate = date2num(_obj.p.todate)
-
-        _obj.sessionstart = time2num(_obj.p.sessionstart)
-        _obj.sessionend = time2num(_obj.p.sessionend)
 
         # hold datamaster points corresponding to own
         _obj.mlen = list()
@@ -134,19 +124,76 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
               ('todate', None),
               ('sessionstart', None),
               ('sessionend', None),
-              ('filters', []),)
+              ('filters', []),
+              ('tz', None),
+              ('tzinput', None),
+    )
 
-    CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED, LIVE = range(5)
+    (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
+     LIVE, NOTSUBSCRIBED, UNKNOWN) = range(7)
+
     _NOTIFNAMES = [
-        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE']
+        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE',
+        'NOTSUBSCRIBED', 'UNKNOWN']
 
     @classmethod
     def _getstatusname(cls, status):
         return cls._NOTIFNAMES[status]
 
     _feed = None
+    _tmoffset = datetime.timedelta()
 
+    # Set to non 0 if resampling/replaying
     resampling = 0
+
+    def _start(self):
+        self.start()
+
+        # A live feed (for example) may have learnt something about the
+        # timezones after the start and that's why the date/time related
+        # parameters are converted at this late stage
+        # Get the output timezone (if any)
+        self._tz = self._gettz()
+        # Lines have already been create, set the tz
+        self.lines.datetime._settz(self._tz)
+
+        # This should probably be also called from an override-able method
+        self._tzinput = bt.utils.date.Localizer(self.p.tzinput)
+
+        # Convert user input times to the output timezone (or min/max)
+        if self.p.fromdate is None:
+            self.fromdate = float('-inf')
+        else:
+            self.fromdate = self.date2num(self.p.fromdate)
+
+        if self.p.todate is None:
+            self.todate = float('inf')
+        else:
+            self.todate = self.date2num(self.p.todate)
+
+        # FIXME: These two are never used and could be removed
+        self.sessionstart = time2num(self.p.sessionstart)
+        self.sessionend = time2num(self.p.sessionend)
+
+    def _timeoffset(self):
+        return self._tmoffset
+
+    def _gettz(self):
+        '''To be overriden by subclasses which may auto-calculate the
+        timezone'''
+        return bt.utils.date.Localizer(self.p.tz)
+
+    def date2num(self, dt):
+        if self._tz is not None:
+            return date2num(self._tz.localize(dt))
+
+        return date2num(dt)
+
+    def num2date(self, dt=None, tz=None, naive=True):
+        if dt is None:
+            return num2date(self.lines.datetime[0], tz or self._tz, naive)
+
+        return num2date(dt, tz or self._tz, naive)
 
     def islive(self):
         '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
@@ -156,17 +203,17 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def put_notification(self, status, *args, **kwargs):
         '''Add arguments to notification queue'''
-        self.notifs.put((status, args, kwargs))
+        self.notifs.append((status, args, kwargs))
         self._laststatus = status
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
         # The background thread could keep on adding notifications. The None
         # mark allows to identify which is the last notification to deliver
-        self.notifs.put(None)  # put a mark
+        self.notifs.append(None)  # put a mark
         notifs = list()
         while True:
-            notif = self.notifs.get()
+            notif = self.notifs.popleft()
             if notif is None:  # mark is reached
                 break
             notifs.append(notif)
@@ -344,8 +391,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 # means game over
                 return _loadret
 
-            # Check standard date from/to filters
+            # Get a reference to current loaded time
             dt = self.lines.datetime[0]
+
+            # A bar has been loaded, adapt the time
+            if self._tzinput:
+                # Input has been converted at face value but it's not UTC in
+                # the input stream
+                dtime = num2date(dt)  # get it in a naive datetime
+                # localize it
+                dtime = self._tzinput.localize(dtime)  # pytz compatible-ized
+                self.lines.datetime[0] = dt = date2num(dtime)  # keep UTC val
+
+            # Check standard date from/to filters
             if dt < self.fromdate:
                 # discard loaded bar and carry on
                 self.backwards()

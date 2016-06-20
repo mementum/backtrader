@@ -27,8 +27,29 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-BackTesting platform written in Python to test trading strategies.
 
+**Release 1.5.0.92**: `Live Data Feeds/Live Trading
+<http://www.backtrader.com/posts/2016-06-21-livedata-feed/live-data-feed/>`_
+
+Features:
+=========
+
+Live Trading and backtesting platform written in Python.
+
+  - Live Data Feed and Trading with Interactive Brokers (needs ``IbPy`` and
+    benefits greatly from an installed ``pytz``)
+  - Data feeds from csv/files or for example *pandas*
+  - Multiple data feeds and multiple strategies supported
+  - Multiple timeframes at once
+  - Integrated Resampling and Replaying
+  - Step by Step backtesting or at once (except in the evaluation of the Strategy)
+  - Integrated battery of indicators
+  - Easy development of custom indicators
+  - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN)
+  - Flexible definition of commission schemes
+  - Integrated broker simulation with Market, Close, Limit, Stop and StopLimit
+    orders
+  - Plotting (requires matplotlib)
 
 Documentation
 =============
@@ -73,32 +94,19 @@ From pypi:
 
 .. note:: The minimum matplotlib version is 1.4.1
 
+For IB Trading:
+
+  - ``IbPy`` doesn't seem to be in PyPi. Do either::
+
+      pip install git+https://github.com/blampe/IbPy.git
+
+    or (if ``git`` is not available in your system)::
+
+      pip install https://github.com/blampe/IbPy/archive/master.zip
+
 From source:
 
   - Place the *backtrader* directory found in the sources inside your project
-
-Features:
-=========
-
-  - Bar by Bar (next) operation or batch mode (once) operation
-  - Indicators and the addition of any custom end-user developed one
-  - Strategies
-  - Data Feeds from Online Sources or CSV Files (other forms could be
-    implemented) - Including ``Pandas Dataframes``
-  - Data Feeds with different timeframes
-  - Data Feed Resampling
-  - Data Feed Replaying
-  - A Broker implementation supporting
-
-    - Commision schemes for stocks and derivatives
-    - Orders: AtClose, AtMarket, AtLimit, Stop, StopLimit
-
-  - Position Sizers for the automatic determination of the stake
-  - Optimization of Strategies with multicore support
-  - Plotting
-
-  - Live Data Feeds/Trading
-      - Interactive Brokers
 
 Version numbering
 =================
@@ -136,6 +144,6 @@ cup of tea, you can always have a look at similar Python platforms:
   - `bt <http://pmorissette.github.io/bt/index.html>`_
 
      ``bt`` slightly pre-dates ``backtrader`` and has a completely different
-     approach but it is funny I chose *bt* as the abbreviation for
+     approach but it is funny *bt* was also chose as the abbreviation for
      ``backtrader`` during imports and that some of the methods have the same
      naming (obvious naming anyhow): "run, plot ..."

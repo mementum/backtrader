@@ -33,7 +33,6 @@ from .broker import BrokerBack
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .import num2date
 from .utils import OrderedDict
 from .strategy import Strategy
 
@@ -452,6 +451,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         return self.runstrategies(iterstrat)
 
+    def runstop(self):
+        '''If invoked from inside a strategy or anywhere else, including other
+        threads the execution will stop as soon as possible.'''
+        self._event_stop = True  # signal a stop has been requested
+
     def run(self, **kwargs):
         '''The core method to perform backtesting. Any ``kwargs`` passed to it
         will affect the value of the standard parameters ``Cerebro`` was
@@ -467,6 +471,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
           - For Optimization: a list of lists which contain instances of the
             Strategy classes added with ``addstrategy``
         '''
+        self._event_stop = False  # Stop is requested
+
         linebuffer.LineActions.cleancache()  # clean cache
         indicator.Indicator.cleancache()  # clean cache
 
@@ -556,6 +562,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if writer.p.csv:
                     writer.addheaders(wheaders)
 
+        for data in self.datas:
+            data.reset()
+            if self._exactbars < 1:  # datas can be full length
+                data.extend(size=self.params.lookahead)
+            data._start()
+            if self._dopreload:
+                data.preload()
+
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
@@ -587,14 +601,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for strat in runstrats:
             strat.qbuffer(self._exactbars)
-
-        for data in self.datas:
-            data.reset()
-            if self._exactbars < 1:  # datas can be full length
-                data.extend(size=self.params.lookahead)
-            data.start()
-            if self._dopreload:
-                data.preload()
 
         for writer in self.runwriters:
             writer.start()
@@ -654,44 +660,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 break
             order.owner._addnotification(order)
 
-    def _runnext_orig(self, runstrats):
-        '''
-        Actual implementation of run in full next mode. All objects have its
-        ``next`` method invoke on each data arrival
-        '''
-        data0 = self.datas[0]
-        d0ret = True
-        while d0ret or d0ret is None:
-            # Notify anything from the store even before moving datas
-            # because datas may not move due to an error reported by the store
-            self._storenotify()
-            self._datanotify()
-
-            d0ret = data0.next()
-            if d0ret:
-                for data in self.datas[1:]:
-                    data.next(datamaster=data0)
-
-            else:
-                lastret = data0._last()
-                for data in self.datas[1:]:
-                    lastret += data._last(datamaster=data0)
-
-                if not lastret:
-                    # Only go extra round if something was changed by "lasts"
-                    break
-
-            self._brokernotify()
-
-            for strat in runstrats:
-                strat._next()
-
-                self._next_writers(runstrats)
-
-        # Last notification chance before stopping
-        self._datanotify()
-        self._storenotify()
-
     def _runnext(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
@@ -704,7 +672,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
             self._storenotify()
+            if self._event_stop:  # stop if requested
+                return
             self._datanotify()
+            if self._event_stop:  # stop if requested
+                return
 
             d0ret = data0.next()
             if d0ret:
@@ -727,17 +699,30 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # Only go extra round if something was changed by "lasts"
                     break
 
+            # Datas may have generated a new notification after next
+            self._datanotify()
+            if self._event_stop:  # stop if requested
+                return
+
             self._brokernotify()
+            if self._event_stop:  # stop if requested
+                return
 
             if d0ret or lastret:  # bars produced by data or filters
                 for strat in runstrats:
                     strat._next()
+                    if self._event_stop:  # stop if requested
+                        return
 
                     self._next_writers(runstrats)
 
         # Last notification chance before stopping
         self._datanotify()
+        if self._event_stop:  # stop if requested
+            return
         self._storenotify()
+        if self._event_stop:  # stop if requested
+            return
 
     def _runonce(self, runstrats):
         '''
@@ -761,9 +746,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 data.advance(datamaster=data0)
 
             self._brokernotify()
+            if self._event_stop:  # stop if requested
+                return
 
             for strat in runstrats:
                 strat._oncepost()
+                if self._event_stop:  # stop if requested
+                    return
 
                 self._next_writers(runstrats)
 

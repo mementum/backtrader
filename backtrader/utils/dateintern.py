@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import datetime
+import math
 import time as _time
 
 ZERO = datetime.timedelta(0)
@@ -33,6 +34,17 @@ else:
     DSTOFFSET = STDOFFSET
 
 DSTDIFF = DSTOFFSET - STDOFFSET
+
+
+def Localizer(tz):
+    def localize(self, dt):
+        return dt.replace(tzinfo=self)
+
+    if tz is not None and not hasattr(tz, 'localize'):
+        # patch the tz instance with a bound method
+        tz.localize = localize.__get__(tz.__class__, tz)
+
+    return tz
 
 
 # A UTC class, same as the one in the Python Docs
@@ -47,6 +59,9 @@ class _UTC(datetime.tzinfo):
 
     def dst(self, dt):
         return ZERO
+
+    def localize(self, dt):
+        return dt.replace(tzinfo=self)
 
 
 class _LocalTimezone(datetime.tzinfo):
@@ -70,9 +85,16 @@ class _LocalTimezone(datetime.tzinfo):
         tt = (dt.year, dt.month, dt.day,
               dt.hour, dt.minute, dt.second,
               dt.weekday(), 0, 0)
-        stamp = _time.mktime(tt)
+        try:
+            stamp = _time.mktime(tt)
+        except (ValueError, OverflowError):
+            return False  # Too far in the future, not relevant
+
         tt = _time.localtime(stamp)
         return tt.tm_isdst > 0
+
+    def localize(self, dt):
+        return dt.replace(tzinfo=self)
 
 
 UTC = _UTC()
@@ -88,7 +110,7 @@ SECONDS_PER_DAY = SECONDS_PER_MINUTE * MINUTES_PER_DAY
 MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY
 
 
-def _num2date(x, tz=None):
+def num2date(x, tz=None, naive=True):
     # Same as matplotlib except if tz is None a naive datetime object
     # will be returned.
     """
@@ -114,10 +136,13 @@ def _num2date(x, tz=None):
     if microsecond < 10:
         microsecond = 0  # compensate for rounding errors
 
-    if tz is not None:
+    if True and tz is not None:
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
-            microsecond, tzinfo=UTC).astimezone(tz).replace(tzinfo=None)
+            microsecond, tzinfo=UTC)
+        dt = dt.astimezone(tz)
+        if naive:
+            dt = dt.replace(tzinfo=None)
     else:
         # If not tz has been passed return a non-timezoned dt
         dt = datetime.datetime(
@@ -130,12 +155,15 @@ def _num2date(x, tz=None):
     return dt
 
 
-def _num2dt(x, tz=None):
-    ix = int(x)
-    return datetime.datetime.fromordinal(ix)
+def num2dt(num, tz=None, naive=True):
+    return num2date(num, tz=tz, naive=naive).date()
 
 
-def _date2num(dt):
+def num2time(num, tz=None, naive=True):
+    return num2date(num, tz=tz, naive=naive).time()
+
+
+def date2num(dt):
     """
     Convert :mod:`datetime` to the Gregorian date as UTC float days,
     preserving hours, minutes, seconds and microseconds.  Return value
@@ -148,18 +176,22 @@ def _date2num(dt):
 
     base = float(dt.toordinal())
     if hasattr(dt, 'hour'):
-        base += (dt.hour / HOURS_PER_DAY +
-                 dt.minute / MINUTES_PER_DAY +
-                 dt.second / SECONDS_PER_DAY +
-                 dt.microsecond / MUSECONDS_PER_DAY
-                 )
+        # base += (dt.hour / HOURS_PER_DAY +
+        #          dt.minute / MINUTES_PER_DAY +
+        #          dt.second / SECONDS_PER_DAY +
+        #          dt.microsecond / MUSECONDS_PER_DAY
+        #         )
+        base = math.fsum(
+            (base, dt.hour / HOURS_PER_DAY, dt.minute / MINUTES_PER_DAY,
+             dt.second / SECONDS_PER_DAY, dt.microsecond / MUSECONDS_PER_DAY))
+
     return base
 
 
 def time2num(tm):
     """
-    Convert :mod:`time` to the to the preserving hours, minutes, seconds
-    and microseconds.  Return value is a :func:`float`.
+    Converts the hour/minute/second/microsecond part of tm (datetime.datetime
+    or time) to a num
     """
     num = (tm.hour / HOURS_PER_DAY +
            tm.minute / MINUTES_PER_DAY +
@@ -167,26 +199,3 @@ def time2num(tm):
            tm.microsecond / MUSECONDS_PER_DAY)
 
     return num
-
-
-def num2time(num):
-    ix = int(num)
-    remainder = float(num) - ix
-
-    hour, remainder = divmod(HOURS_PER_DAY * remainder, 1)
-    minute, remainder = divmod(MINUTES_PER_HOUR * remainder, 1)
-    second, remainder = divmod(SECONDS_PER_MINUTE * remainder, 1)
-    microsecond = int(MUSECONDS_PER_SECOND * remainder)
-    if microsecond < 10:
-        microsecond = 0  # compensate for rounding errors
-
-    # If not tz has been passed return a non-timezoned dt
-    dt = datetime.datetime.min.replace(hour=int(hour),
-                                       minute=int(minute),
-                                       second=int(second),
-                                       microsecond=microsecond)
-
-    if microsecond > 999990:  # compensate for rounding errors
-        dt += datetime.timedelta(microseconds=1e6 - microsecond)
-
-    return dt.time()
