@@ -699,6 +699,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # Only go extra round if something was changed by "lasts"
                     break
 
+            # Datas may have generated a new notification after next
+            self._datanotify()
+            if self._event_stop:  # stop if requested
+                return
+
             self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
