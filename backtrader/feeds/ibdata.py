@@ -25,7 +25,7 @@ import datetime
 
 from backtrader.feed import DataBase
 from backtrader import TimeFrame, date2num, num2date
-from backtrader.utils.py3 import bytes, with_metaclass, queue
+from backtrader.utils.py3 import queue, string_types, with_metaclass
 from backtrader.metabase import MetaParams
 from backtrader.stores import ibstore
 
@@ -208,7 +208,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         # The timezone specifications returned by TWS seem to be abbreviations
         # understood by pytz, but the full list which TWS may return is not
         # documented and one of the abbreviations may fail
-        if self.p.tz is not None:
+        tzstr = isinstance(self.p.tz, string_types)
+        if self.p.tz is not None and not tzstr:
             return bt.utils.date.Localizer(self.p.tz)
 
         if self.contractdetails is None:
@@ -219,8 +220,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         except ImportError:
             return None  # nothing can be done
 
+        tzs = self.p.tz if tzstr else self.contractdetails.m_timeZoneId
         try:
-            tz = pytz.timezone(self.contractdetails.m_timeZoneId)
+            tz = pytz.timezone(tzs)
         except pytz.UnknownTimeZoneError:
             return None  # nothing can be done
 
