@@ -24,10 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 import collections
 import itertools
 import multiprocessing
-import threading
 
 from .utils.py3 import map, range, zip, with_metaclass, string_types
-from .utils import event  # make threading.Event pickable for optimization
 
 from . import linebuffer
 from . import indicator
@@ -456,7 +454,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def runstop(self):
         '''If invoked from inside a strategy or anywhere else, including other
         threads the execution will stop as soon as possible.'''
-        self._event_stop.set()  # signal a stop has been requested
+        self._event_stop = True  # signal a stop has been requested
 
     def run(self, **kwargs):
         '''The core method to perform backtesting. Any ``kwargs`` passed to it
@@ -473,7 +471,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
           - For Optimization: a list of lists which contain instances of the
             Strategy classes added with ``addstrategy``
         '''
-        self._event_stop = threading.Event()  # Stop is requested
+        self._event_stop = False  # Stop is requested
 
         linebuffer.LineActions.cleancache()  # clean cache
         indicator.Indicator.cleancache()  # clean cache
@@ -674,10 +672,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
             self._storenotify()
-            if self._event_stop.is_set():  # stop if requested
+            if self._event_stop:  # stop if requested
                 return
             self._datanotify()
-            if self._event_stop.is_set():  # stop if requested
+            if self._event_stop:  # stop if requested
                 return
 
             d0ret = data0.next()
@@ -702,23 +700,23 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     break
 
             self._brokernotify()
-            if self._event_stop.is_set():  # stop if requested
+            if self._event_stop:  # stop if requested
                 return
 
             if d0ret or lastret:  # bars produced by data or filters
                 for strat in runstrats:
                     strat._next()
-                    if self._event_stop.is_set():  # stop if requested
+                    if self._event_stop:  # stop if requested
                         return
 
                     self._next_writers(runstrats)
 
         # Last notification chance before stopping
         self._datanotify()
-        if self._event_stop.is_set():  # stop if requested
+        if self._event_stop:  # stop if requested
             return
         self._storenotify()
-        if self._event_stop.is_set():  # stop if requested
+        if self._event_stop:  # stop if requested
             return
 
     def _runonce(self, runstrats):
@@ -743,12 +741,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 data.advance(datamaster=data0)
 
             self._brokernotify()
-            if self._event_stop.is_set():  # stop if requested
+            if self._event_stop:  # stop if requested
                 return
 
             for strat in runstrats:
                 strat._oncepost()
-                if self._event_stop.is_set():  # stop if requested
+                if self._event_stop:  # stop if requested
                     return
 
                 self._next_writers(runstrats)
