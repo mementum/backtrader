@@ -139,6 +139,10 @@ class TestStrategy(bt.Strategy):
             self.datastatus += 1
 
     def start(self):
+        if self.data0.contractdetails is not None:
+            print('Timezone from ContractDetails: {}'.format(
+                  self.data0.contractdetails.m_timeZoneId))
+
         header = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume',
                   'OpenInterest', 'SMA']
         print(', '.join(header))
