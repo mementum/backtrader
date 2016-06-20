@@ -562,6 +562,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if writer.p.csv:
                     writer.addheaders(wheaders)
 
+        for data in self.datas:
+            data.reset()
+            if self._exactbars < 1:  # datas can be full length
+                data.extend(size=self.params.lookahead)
+            data._start()
+            if self._dopreload:
+                data.preload()
+
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
@@ -593,14 +601,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for strat in runstrats:
             strat.qbuffer(self._exactbars)
-
-        for data in self.datas:
-            data.reset()
-            if self._exactbars < 1:  # datas can be full length
-                data.extend(size=self.params.lookahead)
-            data._start()
-            if self._dopreload:
-                data.preload()
 
         for writer in self.runwriters:
             writer.start()
