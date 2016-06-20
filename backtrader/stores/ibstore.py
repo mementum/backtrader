@@ -492,9 +492,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.stopdatas()
 
         elif msg.errorCode == 1100:
-            # Connection lost - Do nothing ... datas will wait on the queue
+            # Connection lost - Notify ... datas will wait on the queue
             # with no messages arriving
-            pass
+            for q in self.ts:  # key: queue -> ticker
+                q.put(-msg.errorCode)
 
         elif msg.errorCode == 1101:
             # Connection restored and tickerIds are gone

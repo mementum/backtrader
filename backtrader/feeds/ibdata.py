@@ -25,7 +25,8 @@ import datetime
 
 from backtrader.feed import DataBase
 from backtrader import TimeFrame, date2num, num2date
-from backtrader.utils.py3 import queue, string_types, with_metaclass
+from backtrader.utils.py3 import (integer_types, queue, string_types,
+                                  with_metaclass)
 from backtrader.metabase import MetaParams
 from backtrader.stores import ibstore
 
@@ -403,18 +404,30 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 
+                elif msg == -1100:  # conn broken
+                    # Tell to wait for a message to do a backfill
+                    # self._state = self._ST_DISCONN
+                    self._statelivereconn = self.p.backfill
+                    continue
+
                 elif msg == -1102:  # conn broken/restored tickerId maintained
                     # The message may be duplicated
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
-                        continue
+                    continue
 
                 elif msg == -1101:  # conn broken/restored tickerId gone
                     # The message may be duplicated
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
                         self.reqdata()  # resubscribe
-                        continue
+                    continue
+
+                elif isinstance(msg, integer_types):
+                    # Unexpected notification for historical data skip it
+                    # May be a "not connected not yet processed"
+                    self.put_notification(self.UNKNOWN, msg)
+                    continue
 
                 # Process the message according to expected return type
                 if not self._statelivereconn:
@@ -475,6 +488,12 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 elif msg == -420:  # No permissions for the data
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
+
+                elif isinstance(msg, integer_types):
+                    # Unexpected notification for historical data skip it
+                    # May be a "not connected not yet processed"
+                    self.put_notification(self.UNKNOWN, msg)
+                    continue
 
                 if msg.date is not None:
                     if self._load_rtbar(msg, hist=True):
