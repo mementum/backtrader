@@ -130,11 +130,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
-     LIVE, NOTSUBSCRIBED) = range(6)
+     LIVE, NOTSUBSCRIBED, UNKNOWN) = range(7)
 
     _NOTIFNAMES = [
         'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE',
-        'NOTSUBSCRIBED']
+        'NOTSUBSCRIBED', 'UNKNOWN']
 
     @classmethod
     def _getstatusname(cls, status):
