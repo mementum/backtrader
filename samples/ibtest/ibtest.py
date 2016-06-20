@@ -57,7 +57,7 @@ class TestStrategy(bt.Strategy):
         print('--------------------------------------------------')
 
     def notify_data(self, data, status, *args, **kwargs):
-        print('*' * 5, 'DATA NOTIF:', data._getstatusname(status))
+        print('*' * 5, 'DATA NOTIF:', data._getstatusname(status), *args)
         if status == data.LIVE:
             self.counttostop = self.p.stopafter
             self.datastatus = 1
