@@ -28,12 +28,16 @@ backtrader
    :target: https://pypi.python.org/pypi/backtrader/
 
 
+**Release 1.5.0.92**: `Live Data Feeds/Live Trading
+<http://www.backtrader.com/posts/2016-06-21-livedata-feed/live-data-feed/>`_
+
 Features:
 =========
 
 Live Trading and backtesting platform written in Python.
 
-  - Live Data Feed and Trading with Interactive Brokers (needs IbPy)
+  - Live Data Feed and Trading with Interactive Brokers (needs ``IbPy`` and
+    benefits greatly from an installed ``pytz``)
   - Data feeds from csv/files or for example *pandas*
   - Multiple data feeds and multiple strategies supported
   - Multiple timeframes at once
