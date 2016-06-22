@@ -45,7 +45,8 @@ DATAFORMATS = dict(
     vchart=btfeeds.VChartData,
     sierracsv=btfeeds.SierraChartCSVData,
     yahoocsv=btfeeds.YahooFinanceCSVData,
-    yahoocsv_unreversed=btfeeds.YahooFinanceCSVData
+    yahoocsv_unreversed=btfeeds.YahooFinanceCSVData,
+    yahoo=btfeeds.YahooFinanceData,
 )
 
 
