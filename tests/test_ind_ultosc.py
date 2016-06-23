@@ -27,7 +27,7 @@ import backtrader as bt
 
 chkdatas = 1
 chkvals = [
-    ['41.099065', '53.604023', '39.693413']
+    ['51.991177', '62.334055', '46.707445']
 ]
 
 chkmin = 29  # 28 from longest SumN/Sum + 1 extra from truelow/truerange
