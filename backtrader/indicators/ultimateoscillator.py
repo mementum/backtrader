@@ -59,7 +59,9 @@ class UltimateOscillator(bt.Indicator):
         baseticks = [10.0, 50.0, 90.0]
         hlines = [self.p.upperband, self.p.lowerband]
 
-        self.plotinfo.plotyhlines = hlines
+        # Plot lines at 0 & 100 to make the scale complete + upper/lower/bands
+        self.plotinfo.plotyhlines = hlines + [0.0, 100.0]
+        # Plot ticks at "baseticks" + the user specified upper/lower bands
         self.plotinfo.plotyticks = baseticks + hlines
 
     def __init__(self):
