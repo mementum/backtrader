@@ -67,7 +67,7 @@ class UltimateOscillator(bt.Indicator):
         tr = TrueRange(self.data)
 
         av7 = SumN(bp, period=self.p.p1) / SumN(tr, period=self.p.p1)
-        av14 = SumN(bp, period=self.p.p2) / SumN(tr, period=self.p.p3)
+        av14 = SumN(bp, period=self.p.p2) / SumN(tr, period=self.p.p2)
         av28 = SumN(bp, period=self.p.p3) / SumN(tr, period=self.p.p3)
 
         uo = 100.0 * (4.0 * av7 + 2.0 * av14 + av28) / (4.0 + 2.0 + 1.0)
