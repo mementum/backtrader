@@ -779,7 +779,7 @@ class LinesOperation(LineActions):
         # array range safety check
         realend = min(len(srcb), len(dst), end)
 
-        for i in range(start, end):
+        for i in range(start, realend):
             dst[i] = op(srca, srcb[i])
 
 
