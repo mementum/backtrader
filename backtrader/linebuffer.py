@@ -656,7 +656,11 @@ class _LineDelay(LineActions):
         src = self.a.array
         ago = self.ago
 
-        for i in range(start, end):
+        # array range safety check
+        realend = min(end, len(dst))
+        realend = realend if len(src) > (realend + ago) else len(src)
+
+        for i in range(start, realend):
             dst[i] = src[i + ago]
 
 
@@ -746,7 +750,10 @@ class LinesOperation(LineActions):
         srcb = self.b.array
         op = self.operation
 
-        for i in range(start, end):
+        # array range safety check
+        realend = min(len(srca), len(srcb), len(dst), end)
+
+        for i in range(start, realend):
             dst[i] = op(srca[i], srcb[i])
 
     def _once_val_op(self, start, end):
@@ -755,6 +762,9 @@ class LinesOperation(LineActions):
         srca = self.a.array
         srcb = self.b
         op = self.operation
+
+        # array range safety check
+        realend = min(len(srca), len(dst), end)
 
         for i in range(start, end):
             dst[i] = op(srca[i], srcb)
@@ -765,6 +775,9 @@ class LinesOperation(LineActions):
         srca = self.a
         srcb = self.b.array
         op = self.operation
+
+        # array range safety check
+        realend = min(len(srcb), len(dst), end)
 
         for i in range(start, end):
             dst[i] = op(srca, srcb[i])
