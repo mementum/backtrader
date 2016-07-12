@@ -211,6 +211,12 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
     DAY = datetime.timedelta()  # constant for DAY order identification
 
+    # Time Restrictions for orders
+    T_Close, T_Day, T_Date, T_None = range(4)
+
+    # Volume Restrictions for orders
+    V_None = range(1)
+
     Market, Close, Limit, Stop, StopLimit = range(5)
     ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
 
