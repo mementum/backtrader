@@ -10,3 +10,4 @@ trading.
    :maxdepth: 1
 
    ib/ib.rst
+   vc/vc.rst

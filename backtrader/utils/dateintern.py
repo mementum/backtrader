@@ -37,12 +37,14 @@ DSTDIFF = DSTOFFSET - STDOFFSET
 
 
 def Localizer(tz):
+    import types
+
     def localize(self, dt):
         return dt.replace(tzinfo=self)
 
     if tz is not None and not hasattr(tz, 'localize'):
         # patch the tz instance with a bound method
-        tz.localize = localize.__get__(tz.__class__, tz)
+        tz.localize = types.MethodType(localize, tz)
 
     return tz
 

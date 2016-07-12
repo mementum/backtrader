@@ -145,6 +145,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     # Set to non 0 if resampling/replaying
     resampling = 0
+    replaying = 0
 
     def _start(self):
         self.start()
@@ -158,7 +159,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.lines.datetime._settz(self._tz)
 
         # This should probably be also called from an override-able method
-        self._tzinput = bt.utils.date.Localizer(self.p.tzinput)
+        self._tzinput = bt.utils.date.Localizer(self._gettzinput())
 
         # Convert user input times to the output timezone (or min/max)
         if self.p.fromdate is None:
@@ -177,6 +178,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def _timeoffset(self):
         return self._tmoffset
+
+    def _gettzinput(self):
+        '''Can be overriden by classes to return a timezone for input'''
+        return self.p.tzinput
 
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the

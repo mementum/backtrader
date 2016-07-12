@@ -102,7 +102,7 @@ class BrokerBase(with_metaclass(MetaParams, object)):
 class BrokerBack(BrokerBase):
     '''Broker Simulator
 
-      Parameters:
+      Params:
 
         Note: use the setXXXX to set the value after instance creation
 

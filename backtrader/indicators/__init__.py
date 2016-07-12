@@ -62,4 +62,5 @@ from .priceoscillator import *
 from .rsi import *
 from .stochastic import *
 from .trix import *
+from .ultimateoscillator import *
 from .williams import *

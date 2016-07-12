@@ -28,3 +28,8 @@ try:
     from .ibstore import IBStore
 except ImportError:
     pass  # The user may not have ibpy installed
+
+try:
+    from .vcstore import VCStore
+except ImportError:
+    pass  # The user may not have a module installed
