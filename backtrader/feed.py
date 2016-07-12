@@ -145,6 +145,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     # Set to non 0 if resampling/replaying
     resampling = 0
+    replaying = 0
 
     def _start(self):
         self.start()
