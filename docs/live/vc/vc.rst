@@ -148,8 +148,8 @@ Instantiating the data:
 
 	data = vcstore.getdata(dataname='015ES', ...)
 
-.. note:: *backtrader* will make an effor tna clear out a whitespace located at
-	  the forth position
+.. note:: *backtrader* will make an effort and clear out a whitespace located at
+	  the fourth position if the name is directly pasted from *Visual Chart*
 
 Time management
 ===============
@@ -211,12 +211,10 @@ As such:
 
   - Please pass only **full dates** to ``VCData`` as in::
 
-      data = vcstore.getdata(dataname='001ES',
-                             fromdate=datetime(2016, 5, 15))
+      data = vcstore.getdata(dataname='001ES', fromdate=datetime(2016, 5, 15))
 
     And not::
-      data = vcstore.getdata(dataname='001ES',
-                             fromdate=datetime(2016, 5, 15, 8, 30))
+      data = vcstore.getdata(dataname='001ES', fromdate=datetime(2016, 5, 15, 8, 30))
 
 Backfilling time lengths
 ------------------------
@@ -296,7 +294,7 @@ The data feed will report the current status via one or more of the following
 
 An example inside the *strategy*::
 
-  class IBStrategy(bt.Strategy):
+  class VCStrategy(bt.Strategy):
 
       def notify_data(self, data, status, *args, **kwargs):
 
@@ -447,8 +445,8 @@ Order Validity
 
 The same validity notion available during backtesting (with ``valid`` to
 ``buy`` and ``sell``) is available and with the same meaning. As such, the
-``valid`` parameter is translated as follows for *IB Orders* for the following
-values:
+``valid`` parameter is translated as follows for *Visual Chart Orders* for the
+following values:
 
   - ``None`` translates to *Good Til Cancelled*
 
