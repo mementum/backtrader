@@ -38,6 +38,18 @@ class Position(object):
     is not null
     '''
 
+    def __str__(self):
+        items = list()
+        items.append('--- Position Begin')
+        items.append('- Size: {}'.format(self.size))
+        items.append('- Price: {}'.format(self.price))
+        items.append('- Price orig: {}'.format(self.price_orig))
+        items.append('- Closed: {}'.format(self.upclosed))
+        items.append('- Opened: {}'.format(self.upopened))
+        items.append('- Adjbase: {}'.format(self.adjbase))
+        items.append('--- Position End')
+        return '\n'.join(items)
+
     def __init__(self, size=0, price=0.0):
         self.size = size
         if size:
