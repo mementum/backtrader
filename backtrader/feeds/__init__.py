@@ -33,3 +33,8 @@ try:
     from .ibdata import *
 except ImportError:
     pass  # The user may not have ibpy installed
+
+try:
+    from .vcdata import *
+except ImportError:
+    pass  # The user may not have something installed
