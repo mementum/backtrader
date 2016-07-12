@@ -238,7 +238,7 @@ def runstrategy():
     if args.valid is None:
         valid = None
     else:
-        datetime.timedelta(seconds=args.valid)
+        valid = datetime.timedelta(seconds=args.valid)
     # Add the strategy
     cerebro.addstrategy(TestStrategy,
                         smaperiod=args.smaperiod,
