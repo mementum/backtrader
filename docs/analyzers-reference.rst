@@ -9,6 +9,11 @@ AnnualReturn
 
 .. autoclass:: AnnualReturn
 
+TimeReturn
+**********
+
+.. autoclass:: TimeReturn
+
 
 SharpeRatio
 ***********

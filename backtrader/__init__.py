@@ -33,6 +33,7 @@ from .comminfo import *
 from .trade import *
 from .position import *
 
+from . import broker as broker
 from .broker import *
 
 from .lineseries import *

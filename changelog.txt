@@ -1,3 +1,10 @@
+1.5.2.93
+  - Added support for volume filling strategies in the broker
+  - Added 3 volume fillers: FixedSize, FixedBarPerc, BarPointPerc
+  - Added broker and fillers to the docs
+  - Added TimeReturn to the Analyzers reference
+  - Added DaySteps filter and sample to downsample a day bar in open + rest
+
 1.5.1.93
   - UltimateOscillator added. Requested with ticket #103
   - VisualChart Live Data Feed/Trading integration

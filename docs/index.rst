@@ -18,6 +18,8 @@ Contents:
    operating
    cerebro
    strategy
+   broker
+   fillers
    order
    order-creation-execution/order-creation-execution
    datafeed

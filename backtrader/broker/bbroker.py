@@ -23,12 +23,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 
-from .utils.py3 import with_metaclass
+from backtrader.comminfo import CommInfoBase
+from backtrader.metabase import MetaParams
+from backtrader.order import Order, BuyOrder, SellOrder
+from backtrader.position import Position
+from backtrader.utils.py3 import with_metaclass
 
-from .comminfo import CommInfoBase
-from .position import Position
-from .metabase import MetaParams
-from .order import Order, BuyOrder, SellOrder
+__all__ = ['BrokerBase', 'BrokerBack']
 
 
 class BrokerBase(with_metaclass(MetaParams, object)):
@@ -102,29 +103,106 @@ class BrokerBase(with_metaclass(MetaParams, object)):
 class BrokerBack(BrokerBase):
     '''Broker Simulator
 
-      Params:
+      The simulation supports different order types, checking a submitted order
+      cash requirements against current cash, keeping track of cash and value
+      for each iteration of ``cerebro`` and keeping the current position on
+      different datas.
 
-        Note: use the setXXXX to set the value after instance creation
+      *cash* is adjusted on each iteration for instruments like ``futures`` for
+       which a price change implies in real brokers the addition/substracion of
+       cash.
+
+      Supported order types:
+
+        - ``Market``: to be executed with the 1st tick of the next bar (namely
+          the ``open`` price)
+
+        - ``Close``: meant for intraday in which the order is executed with the
+          closing price of the last bar of the session
+
+        - ``Limit``: executes if the given limit price is seen during the
+          session
+
+        - ``Stop``: executes a ``Market`` order if the given stop price is seen
+
+        - ``StopLimit``: sets a ``Limit`` order in motion if the given stop
+          price is seen
+
+      Because the broker is instantiated by ``Cerebro`` and there should be
+      (mostly) no reason to replace the broker, the params are not controlled
+      by the user for the instance.  To change this there are two options:
+
+        1. Manually create an instance of this class with the desired params
+           and use ``cerebro.broker = instance`` to set the instance as the
+           broker for the ``run`` execution
+
+        2. Use the ``set_xxx`` to set the value using
+           ``cerebro.broker.set_xxx`` where ```xxx`` stands for the name of the
+           parameter to set
+
+        .. note:: ``cerebro.broker`` is a *property* supported by the
+        ``getbroker`` and ``setbroker`` methods of ``Cerebro``
+
+      Params:
 
         - ``cash`` (default: 10000): starting cash
 
         - ``commission`` (default: CommInfoBase(percabs=True))
           base commission scheme which applies to all assets
 
-        - ``checksubmit`` (default: True)
+        - ``checksubmit`` (default: ``True``)
           check margin/cash before accepting an order into the system
 
-        - ``eosbar`` (default: False):
+        - ``eosbar`` (default: ``False``):
           With intraday bars consider a bar with the same ``time`` as the end
           of session to be the end of the session. This is not usually the
           case, because some bars (final auction) are produced by many
           exchanges for many products for a couple of minutes after the end of
           the session
+
+        - ``eosbar`` (default: ``False``):
+          With intraday bars consider a bar with the same ``time`` as the end
+          of session to be the end of the session. This is not usually the
+          case, because some bars (final auction) are produced by many
+          exchanges for many products for a couple of minutes after the end of
+          the session
+
+        - ``filler`` (default: ``None``)
+
+          A callable with signature: ``callable(order, price, ago)``
+
+            - ``order``: obviously the order in execution. This provides access
+              to the *data* (and with it the *ohlc* and *volume* values), the
+              *execution type*, remaining size (``order.executed.remsize``) and
+              others.
+
+              Please check the ``Order`` documentation and reference for things
+              available inside an ``Order`` instance
+
+            - ``price`` the price at which the order is going to be executed in
+              the ``ago`` bar
+
+            - ``ago``: index meant to be used with ``order.data`` for the
+              extraction of the *ohlc* and *volume* prices. In most cases this
+              will be ``0`` but on a corner case for ``Close`` orders, this
+              will be ``-1``.
+
+              In order to get the bar volume (for example) do: ``volume =
+              order.data.voluume[ago]``
+
+          The callable must return the *executed size* (a value >= 0)
+
+          The callable may of course be an object with ``__call__`` matching
+          the aforementioned signature
+
+          With the default ``None`` orders will be completely executed in a
+          single shot
     '''
     params = (
         ('cash', 10000.0),
         ('checksubmit', True),
         ('eosbar', False),
+        ('filler', None),
     )
 
     def init(self):
@@ -147,14 +225,31 @@ class BrokerBack(BrokerBase):
 
         return None
 
-    def seteosbar(self, eosbar):
+    def set_filler(self, filler):
+        '''Sets a volume filler for volume filling execution'''
+        self.p.filler = filler
+
+    def set_checksubmit(self, checksubmit):
+        '''Sets the checksubmit parameter'''
+        self.p.checksubmit = checksubmit
+
+    def set_eosbar(self, eosbar):
+        '''Sets the eosbar parameter'''
         self.p.eosbar = eosbar
 
-    def getcash(self):
+    seteosbar = set_eosbar
+
+    def get_cash(self):
+        '''Returns the current cash'''
         return self.cash
 
-    def setcash(self, cash):
+    getcash = get_cash
+
+    def set_cash(self, cash):
+        '''Sets the cash parameter'''
         self.startingcash = self.cash = self.p.cash = cash
+
+    setcash = set_cash
 
     def cancel(self, order):
         try:
@@ -167,7 +262,9 @@ class BrokerBack(BrokerBase):
         self.notify(order)
         return True
 
-    def getvalue(self, datas=None):
+    def get_value(self, datas=None):
+        '''Returns the portfolio value of the given datas (if datas is
+        ``None``, then the total portfolio value will be returned'''
         pos_value = 0.0
 
         for data in datas or self.positions:
@@ -176,6 +273,8 @@ class BrokerBack(BrokerBase):
             pos_value += comminfo.getvalue(position, data.close[0])
 
         return self.cash + pos_value
+
+    getvalue = get_value
 
     def getposition(self, data):
         return self.positions[data]
@@ -252,15 +351,19 @@ class BrokerBack(BrokerBase):
 
         return self.submit(order)
 
-    def _execute(self, order, dt=None, price=None, cash=None, position=None):
-        # Orders are fully executed, get operation size
-        size = order.executed.remsize
+    def _execute(self, order, ago=None, price=None, cash=None, position=None):
+        if self.p.filler is None or ago is None:
+            # Order gets full size or pseudo-execution
+            size = order.executed.remsize
+        else:
+            # Execution depends on volume filler
+            size = self.p.filler(order, price, ago)
 
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
 
         # Adjust position with operation size
-        if dt is not None:
+        if ago is not None:
             # Real execution with date
             position = self.positions[order.data]
             pprice_orig = position.price
@@ -285,7 +388,7 @@ class BrokerBack(BrokerBase):
             closedcomm = comminfo.getcommission(closed, price)
             cash -= closedcomm
 
-            if dt is not None:
+            if ago is not None:
                 # Cashadjust closed contracts: prev close vs exec price
                 # The operation can inject or take cash out
                 cash += comminfo.cashadjust(-closed,
@@ -310,7 +413,7 @@ class BrokerBack(BrokerBase):
                 opened = 0
                 openedvalue = openedcomm = 0.0
 
-            elif dt is not None:  # real execution
+            elif ago is not None:  # real execution
                 if abs(psize) > abs(opened):
                     # some futures were opened - adjust the cash of the
                     # previously existing futures to the operation price and
@@ -331,7 +434,7 @@ class BrokerBack(BrokerBase):
         else:
             openedvalue = openedcomm = 0.0
 
-        if dt is None:
+        if ago is None:
             # return cash from pseudo-execution
             return cash
 
@@ -345,7 +448,8 @@ class BrokerBack(BrokerBase):
             position.update(execsize, price)
 
             # Execute and notify the order
-            order.execute(dt, execsize, price,
+            order.execute(order.data.datetime[ago],
+                          execsize, price,
                           closed, closedvalue, closedcomm,
                           opened, openedvalue, openedcomm,
                           comminfo.margin, pnl,
@@ -370,13 +474,13 @@ class BrokerBack(BrokerBase):
             if dt0 > order.dteos or (self.p.eosbar and dt0 == order.dteos):
                 # past the end of session or right at it and eosbar is True
                 if order.pannotated and dt0 != order.dteos:
-                    execdt = order.data.datetime[-1]
+                    ago = -1
                     execprice = order.pannotated
                 else:
-                    execdt = dt0
+                    ago = 0
                     execprice = pclose
 
-                self._execute(order, execdt, price=execprice)
+                self._execute(order, ago=0, price=execprice)
 
                 return
 
@@ -387,35 +491,35 @@ class BrokerBack(BrokerBase):
         if order.isbuy():
             if plimit >= popen:
                 # open smaller/equal than requested - buy cheaper
-                self._execute(order, order.data.datetime[0], price=popen)
+                self._execute(order, ago=0, price=popen)
             elif plimit >= plow:
                 # day low below req price ... match limit price
-                self._execute(order, order.data.datetime[0], price=plimit)
+                self._execute(order, ago=0, price=plimit)
 
         else:  # Sell
             if plimit <= popen:
                 # open greater/equal than requested - sell more expensive
-                self._execute(order, order.data.datetime[0], price=popen)
+                self._execute(order, ago=0, price=popen)
             elif plimit <= phigh:
                 # day high above req price ... match limit price
-                self._execute(order, order.data.datetime[0], price=plimit)
+                self._execute(order, ago=0, price=plimit)
 
     def _try_exec_stop(self, order, popen, phigh, plow, pcreated):
         if order.isbuy():
             if popen >= pcreated:
                 # price penetrated with an open gap - use open
-                self._execute(order, order.data.datetime[0], price=popen)
+                self._execute(order, ago=0, price=popen)
             elif phigh >= pcreated:
                 # price penetrated during the session - use trigger price
-                self._execute(order, order.data.datetime[0], price=pcreated)
+                self._execute(order, ago=0, price=pcreated)
 
         else:  # Sell
             if popen <= pcreated:
                 # price penetrated with an open gap - use open
-                self._execute(order, order.data.datetime[0], price=popen)
+                self._execute(order, ago=0, price=popen)
             elif plow <= pcreated:
                 # price penetrated during the session - use trigger price
-                self._execute(order, order.data.datetime[0], price=pcreated)
+                self._execute(order, ago=0, price=pcreated)
 
     def _try_exec_stoplimit(self, order,
                             popen, phigh, plow, pclose,
@@ -425,48 +529,46 @@ class BrokerBack(BrokerBase):
                 order.triggered = True
                 # price penetrated with an open gap
                 if plimit >= popen:
-                    self._execute(order, order.data.datetime[0], price=popen)
+                    self._execute(order, ago=0, price=popen)
                 elif plimit >= plow:
                     # execute in same bar
-                    self._execute(order, order.data.datetime[0], price=plimit)
+                    self._execute(order, ago=0, price=plimit)
 
             elif phigh >= pcreated:
                 # price penetrated upwards during the session
                 order.triggered = True
                 # can calculate execution for a few cases - datetime is fixed
-                dt = order.data.datetime[0]
                 if popen > pclose:
                     if plimit >= pcreated:
-                        self._execute(order, dt, price=pcreated)
+                        self._execute(order, ago=0, price=pcreated)
                     elif plimit >= pclose:
-                        self._execute(order, dt, price=plimit)
+                        self._execute(order, ago=0, price=plimit)
                 else:  # popen < pclose
                     if plimit >= pcreated:
-                        self._execute(order, dt, price=pcreated)
+                        self._execute(order, ago=0, price=pcreated)
         else:  # Sell
             if popen <= pcreated:
                 # price penetrated downwards with an open gap
                 order.triggered = True
                 if plimit <= popen:
-                    self._execute(order, order.data.datetime[0], price=popen)
+                    self._execute(order, ago=0, price=popen)
                 elif plimit <= phigh:
                     # execute in same bar
-                    self._execute(order, order.data.datetime[0], price=plimit)
+                    self._execute(order, ago=0, price=plimit)
 
             elif plow <= pcreated:
                 # price penetrated downwards during the session
                 order.triggered = True
                 # can calculate execution for a few cases - datetime is fixed
-                dt = order.data.datetime[0]
                 if popen <= pclose:
                     if plimit <= pcreated:
-                        self._execute(order, dt, price=pcreated)
+                        self._execute(order, ago=0, price=pcreated)
                     elif plimit <= pclose:
-                        self._execute(order, dt, price=plimit)
+                        self._execute(order, ago=0, price=plimit)
                 else:
                     # popen > pclose
                     if plimit <= pcreated:
-                        self._execute(order, dt, price=pcreated)
+                        self._execute(order, ago=0, price=pcreated)
 
     def _try_exec(self, order):
         data = order.data
@@ -480,7 +582,7 @@ class BrokerBack(BrokerBase):
         plimit = order.created.pricelimit
 
         if order.exectype == Order.Market:
-            self._execute(order, data.datetime[0], price=popen)
+            self._execute(order, ago=0, price=popen)
 
         elif order.exectype == Order.Close:
             self._try_exec_close(order, pclose)
