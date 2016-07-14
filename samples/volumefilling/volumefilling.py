@@ -123,7 +123,7 @@ def runstrat():
 def parse_args():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Sample for pivot point and cross plotting')
+        description='Volume Filling Sample')
 
     parser.add_argument('--data', required=False,
                         default='../../datas/2006-volume-day-001.txt',

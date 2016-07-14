@@ -48,7 +48,7 @@ Where:
 
       barvolume = order.data.volume[ago]
 
-The callalble can be a function or for example an instance of a class
+The callable can be a function or for example an instance of a class
 supporting the ``__call__`` method, like in::
 
   class MyFiller(object):
@@ -80,7 +80,7 @@ portions of the functionality::
 The sample
 ==========
 
-The *backtrader* sources contain a sample named ``volumefilling`` which allow
+The *backtrader* sources contain a sample named ``volumefilling`` which allows
 to test some of the integrated ``fillers`` (initially all)
 
 
