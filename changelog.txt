@@ -1,3 +1,8 @@
+1.5.3.93:
+  - Correct filler implementation in the broker to consider order side for the
+    value returned from a filler
+  - Extend volumefilling sample to cover sell and repetition scenarios
+
 1.5.2.93
   - Added support for volume filling strategies in the broker
   - Added 3 volume fillers: FixedSize, FixedBarPerc, BarPointPerc

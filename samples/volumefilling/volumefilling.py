@@ -34,6 +34,7 @@ import backtrader as bt
 class St(bt.Strategy):
     params = (
         ('stakeperc', 10.0),
+        ('opbreak', 10),
     )
 
     def notify_order(self, order):
@@ -44,6 +45,7 @@ class St(bt.Strategy):
 
         if order.status == order.Completed:
             print('++ ORDER COMPLETED at data.len:', len(order.data))
+            self.doop = -self.p.opbreak
 
     def __init__(self):
         pass
@@ -61,6 +63,8 @@ class St(bt.Strategy):
         txtfields.append('OpenInterest')
         print(','.join(txtfields))
 
+        self.doop = 0
+
     def next(self):
         txtfields = list()
         txtfields.append('%04d' % len(self))
@@ -74,10 +78,16 @@ class St(bt.Strategy):
         print(','.join(txtfields))
 
         # Single order
-        if len(self.data0) == 1:
-            stakevol = (self.data0.volume[0] * self.p.stakeperc) // 100
-            print('++ STAKE VOLUME:', stakevol)
-            self.buy(size=stakevol)
+        if self.doop == 0:
+            if not self.position.size:
+                stakevol = (self.data0.volume[0] * self.p.stakeperc) // 100
+                print('++ STAKE VOLUME:', stakevol)
+                self.buy(size=stakevol)
+
+            else:
+                self.close()
+
+        self.doop += 1
 
 
 FILLERS = {
@@ -113,7 +123,7 @@ def runstrat():
         filler = FILLERS[args.filler](**fillerkwargs)
         cerebro.broker.set_filler(filler)
 
-    cerebro.addstrategy(St, stakeperc=args.stakeperc)
+    cerebro.addstrategy(St, stakeperc=args.stakeperc, opbreak=args.opbreak)
 
     cerebro.run()
     if args.plot:
@@ -146,6 +156,11 @@ def parse_args():
     parser.add_argument('--stakeperc', required=False, action='store',
                         type=float, default=10.0,
                         help=('Percentage of 1st bar to use for stake'))
+
+    parser.add_argument('--opbreak', required=False, action='store',
+                        type=int, default=10,
+                        help=('Bars to wait for new op after completing '
+                              'another'))
 
     parser.add_argument('--fromdate', '-f', required=False, default=None,
                         help='Starting date in YYYY-MM-DD format')

@@ -358,6 +358,8 @@ class BrokerBack(BrokerBase):
         else:
             # Execution depends on volume filler
             size = self.p.filler(order, price, ago)
+            if not order.isbuy():
+                size = -size
 
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
