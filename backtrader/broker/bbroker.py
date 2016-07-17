@@ -270,7 +270,10 @@ class BrokerBack(BrokerBase):
         for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
-            pos_value += comminfo.getvalue(position, data.close[0])
+            dvalue = comminfo.getvalue(position, data.close[0])
+            if datas and len(datas) == 1:
+                return dvalue  # raw data value requested, short selling is neg
+            pos_value += abs(dvalue)  # short selling adds value
 
         return self.cash + pos_value
 
