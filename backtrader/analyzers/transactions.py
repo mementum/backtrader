@@ -29,7 +29,13 @@ from backtrader import Order, Position, TimeFrameAnalyzerBase
 
 class Transactions(TimeFrameAnalyzerBase):
     '''
-    This analyzer reports the positions of the current set of datas
+    This analyzer reports the transactions occurred with each an every data in
+    the system
+
+    It looks at the order execution bits to create a ``Position`` starting from
+    0 during each ``next`` cycle.
+
+    The result is used during next to record the transactions
 
     Params:
 
@@ -44,14 +50,6 @@ class Transactions(TimeFrameAnalyzerBase):
 
         If ``None`` then the compression of the 1st data of the system will be
         used
-
-      - ``prenext`` (default: ``True``)
-        Ideally a strategy shouldn't operate when the minimum period of the
-        indicators has not yet been met and the method ``prenext`` is being
-        called. But this is a *should* and not a prohibition.
-
-        If this parameter is ``True`` the analyzer will report positions even
-        during the ``prenext`` period
 
       - headers (default: ``True``)
 

@@ -32,9 +32,39 @@ from . import TimeReturn, PositionsValue, Transactions, GrossLeverage
 
 class PyFolio(Analyzer):
     '''
-    This analyzer reports the positions of the current set of datas
+    This analyzer uses 4 children analyzers to collect data and transforms it
+    in to a data set compatible with ``pyfolio``
+
+    Children Analyzer
+
+      - ``TimeReturn``
+
+        Used to calculate the returns of the global portfolio value
+
+      - ``PositionsValue``
+
+        Used to calculate the value of the positions per data. It sets the
+        ``headers`` and ``cash`` parameters to ``True``
+
+      - ``Transactions``
+
+        Used to record each transaction on a data (size, price, value). Sets
+        the ``headers`` parameter to ``True``
 
     Params:
+      These are passed transparently to the children
+
+      - timeframe (default: ``None``)
+        If ``None`` then the timeframe of the 1st data of the system will be
+        used
+
+      - compression (default: ``None``)
+
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+
+        If ``None`` then the compression of the 1st data of the system will be
+        used
 
     Methods:
 
@@ -46,10 +76,13 @@ class PyFolio(Analyzer):
     params = ()
 
     def __init__(self):
-        self._returns = TimeReturn()
-        self._positions = PositionsValue(headers=True, cash=True)
-        self._transactions = Transactions(headers=True)
-        self._gross_lev = GrossLeverage()
+        dtfcomp = dict(timeframe=self.p.timeframe,
+                       compression=self.p.compression)
+
+        self._returns = TimeReturn(**dtfcomp)
+        self._positions = PositionsValue(headers=True, cash=True, **dtfcomp)
+        self._transactions = Transactions(headers=True, **dtfcomp)
+        self._gross_lev = GrossLeverage(**dtfcomp)
 
     def stop(self):
         super(PyFolio, self).stop()
@@ -59,6 +92,18 @@ class PyFolio(Analyzer):
         self.rets['gross_lev'] = self._gross_lev.get_analysis()
 
     def get_pf_items(self):
+        '''Returns a tuple of 4 elements which can be used for further processing with
+          ``pyfolio``
+
+          returns, positions, transactions, gross_leverage
+
+        Because the objects are meant to be used as direct input to ``pyfolio``
+        this method makes a local import of ``pandas`` to convert the internal
+        *backtrader* results to *pandas DataFrames* which is the expected input
+        by, for example, ``pyfolio.create_full_tear_sheet``
+
+        The method will break if ``pandas`` is not installed
+        '''
         # keep import local to avoid disturbing installations with no pandas
         import pandas
         from pandas import DataFrame as DF

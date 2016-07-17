@@ -140,8 +140,10 @@ class BrokerBack(BrokerBase):
            ``cerebro.broker.set_xxx`` where ```xxx`` stands for the name of the
            parameter to set
 
-        .. note:: ``cerebro.broker`` is a *property* supported by the
-        ``getbroker`` and ``setbroker`` methods of ``Cerebro``
+        .. note::
+
+           ``cerebro.broker`` is a *property* supported by the ``getbroker``
+           and ``setbroker`` methods of ``Cerebro``
 
       Params:
 

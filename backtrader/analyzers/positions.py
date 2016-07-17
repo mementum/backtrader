@@ -27,7 +27,8 @@ from backtrader import TimeFrameAnalyzerBase
 
 class PositionsValue(TimeFrameAnalyzerBase):
     '''
-    This analyzer reports the positions of the current set of datas
+    This analyzer reports the value of the positions of the current set of
+    datas
 
     Params:
 
@@ -43,7 +44,7 @@ class PositionsValue(TimeFrameAnalyzerBase):
         If ``None`` then the compression of the 1st data of the system will be
         used
 
-      - ``prenext`` (default: ``True``)
+      - ``prenext`` (default: ``False``)
         Ideally a strategy shouldn't operate when the minimum period of the
         indicators has not yet been met and the method ``prenext`` is being
         called. But this is a *should* and not a prohibition.
@@ -56,7 +57,7 @@ class PositionsValue(TimeFrameAnalyzerBase):
         Add an initial key to the dictionary holding the results with the names
         of the datas
 
-      - cash (default: ``True``)
+      - cash (default: ``False``)
 
         Include the actual cash as an extra position
 

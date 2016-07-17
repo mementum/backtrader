@@ -4,15 +4,28 @@ Analyzers Reference
 
 .. currentmodule:: backtrader.analyzers
 
+
 AnnualReturn
 ************
 
 .. autoclass:: AnnualReturn
 
-TimeReturn
-**********
 
-.. autoclass:: TimeReturn
+GrossLeverage
+*************
+.. autoclass:: GrossLeverage
+
+
+PositionsValue
+**************
+.. autoclass:: PositionsValue
+
+
+PyFolio
+*******
+.. autoclass:: PyFolio
+
+  .. automethod:: get_pf_items
 
 
 SharpeRatio
@@ -27,7 +40,19 @@ SQN
 .. autoclass:: SQN
 
 
+TimeReturn
+**********
+
+.. autoclass:: TimeReturn
+
+
 TradeAnalyzer
 *************
 
 .. autoclass:: TradeAnalyzer
+
+
+Transactions
+************
+
+.. autoclass:: Transactions

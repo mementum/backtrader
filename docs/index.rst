@@ -19,7 +19,7 @@ Contents:
    cerebro
    strategy
    broker
-   fillers
+   filler
    order
    order-creation-execution/order-creation-execution
    datafeed
@@ -35,6 +35,8 @@ Contents:
    inddev
    observers-and-statistics/observers-and-statistics
    analyzers/analyzers
+   analyzers/pyfolio
+   analyzers/pyfolio-integration/pyfolio-integration
    writer
    commission-schemes/commission-schemes
    extending-commissions/commission-schemes-extended

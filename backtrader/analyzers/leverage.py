@@ -52,7 +52,4 @@ class GrossLeverage(TimeFrameAnalyzerBase):
     '''
     def notify_cashvalue(self, cash, value):
         if self._dt_over():
-            # print('gross-lev notify: cash {} value {}'.format(cash, value))
-            result = (value - cash) / value
-            # print('gross-lev (value - cash) / value = {}'.format(result))
             self.rets[self.dtkey] = (value - cash) / value  # 0 if 100% in cash
