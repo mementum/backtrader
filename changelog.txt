@@ -1,3 +1,7 @@
+1.6.0.93:
+  - Pyfolio integration
+  - Refactoring/reorganization of analyzers
+
 1.5.3.93:
   - Correct filler implementation in the broker to consider order side for the
     value returned from a filler
