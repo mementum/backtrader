@@ -65,20 +65,23 @@ class TradeAnalyzer(Analyzer):
         - dictname['total']['total'] which will have a value of 0 (the field is
           also reachable with dot notation dictname.total.total
     '''
-    def start(self):
-        self.trades = AutoOrderedDict()
-        self.trades.total.total = 0
+    def create_analysis(self):
+        self.rets = AutoOrderedDict()
+        self.rets.total.total = 0
 
     def stop(self):
-        self.trades._close()
+        super(TradeAnalyzer, self).stop()
+        self.rets._close()
 
     def notify_trade(self, trade):
         if trade.justopened:
             # Trade just opened
-            self.trades.total.total += 1
-            self.trades.total.open += 1
+            self.rets.total.total += 1
+            self.rets.total.open += 1
 
         elif trade.status == trade.Closed:
+            trades = self.rets
+
             res = AutoDict()
             # Trade just closed
 
@@ -86,8 +89,6 @@ class TradeAnalyzer(Analyzer):
             lost = res.lost = not res.won
             tlong = res.tlong = trade.long
             tshort = res.tshort = not trade.long
-
-            trades = self.trades
 
             trades.total.open -= 1
             trades.total.closed += 1
@@ -205,6 +206,3 @@ class TradeAnalyzer(Analyzer):
                     trls_wl.max = max(m, barlen2)
                     m = trls_wl.min or MAXINT
                     trls_wl.min = min(m, barlen2 or m)
-
-    def get_analysis(self):
-        return self.trades
