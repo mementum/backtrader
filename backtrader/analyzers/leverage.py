@@ -21,13 +21,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import TimeFrameAnalyzerBase, TimeFrame
+from backtrader import TimeFrameAnalyzerBase
 
 
-class TimeReturn(TimeFrameAnalyzerBase):
+class GrossLeverage(TimeFrameAnalyzerBase):
     '''
-    This analyzer calculates the Returns by looking at the beginning
-    and end of the timeframe
+    This analyzer calculates the Gross Leverage of the current strategy
+    on a timeframe bases
 
     Params:
 
@@ -50,13 +50,9 @@ class TimeReturn(TimeFrameAnalyzerBase):
         Returns a dictionary with returns as values and the datetime points for
         each return as keys
     '''
-    def start(self):
-        super(TimeReturn, self).start()
-        self.lastvalue = self.strategy.broker.getvalue()
-
     def notify_cashvalue(self, cash, value):
         if self._dt_over():
-            self.value_start = self.lastvalue  # last value before cycle change
-            self.rets[self.dtkey] = (value / self.value_start) - 1.0
-
-        self.lastvalue = value
+            # print('gross-lev notify: cash {} value {}'.format(cash, value))
+            result = (value - cash) / value
+            # print('gross-lev (value - cash) / value = {}'.format(result))
+            self.rets[self.dtkey] = (value - cash) / value  # 0 if 100% in cash

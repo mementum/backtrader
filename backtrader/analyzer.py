@@ -21,9 +21,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import calendar
+from collections import OrderedDict
+import datetime
 import pprint as pp
 
 import backtrader as bt
+from backtrader import TimeFrame
 from backtrader.utils.py3 import with_metaclass
 
 
@@ -213,12 +217,20 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
     def start(self):
         '''Invoked to indicate the start of operations, giving the analyzer
         time to setup up needed things'''
-        pass
+        self.create_analysis()
 
     def stop(self):
         '''Invoked to indicate the end of operations, giving the analyzer
         time to shut down needed things'''
         pass
+
+    def create_analysis(self):
+        '''Meant to be overriden by subclasses. Gives a chance to create the
+        structures that hold the analysis.
+
+        The default behaviour is to create a ``OrderedDict`` named ``rets``
+        '''
+        self.rets = OrderedDict()
 
     def get_analysis(self):
         '''Returns a dict-like object with the results of the analysis
@@ -228,8 +240,11 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
         It is not even enforced that the result is a dict-like object, just the
         convention
+
+        The default implementation returns the default OrderedDict ``rets``
+        created by the default ``create_analysis`` method
         '''
-        return dict()
+        return self.rets
 
     def print(self, *args, **kwargs):
         '''Prints the results returned by ``get_analysis`` via a standard
@@ -248,3 +263,98 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         print Python module (*pprint*)
         '''
         pp.pprint(self.get_analysis(), *args, **kwargs)
+
+
+class TimeFrameAnalyzerBase(Analyzer):
+    params = (
+        ('timeframe', None),
+        ('compression', None),
+    )
+
+    def start(self):
+        super(TimeFrameAnalyzerBase, self).start()
+        self.data = self.strategy.data
+        self.timeframe = self.p.timeframe or self.data._timeframe
+        self.compression = self.p.compression or self.data._compression
+
+        self.dtcmp, self.dtkey = self._get_dt_cmpkey(datetime.datetime.min)
+
+    def _dt_over(self):
+        dt = self.data.datetime.datetime()
+        dtcmp, dtkey = self._get_dt_cmpkey(dt)
+
+        if dtcmp > self.dtcmp:
+            self.dtkey = dtkey
+            self.dtcmp = dtcmp
+            return True
+
+        return False
+
+    def _get_dt_cmpkey(self, dt):
+        if self.timeframe == TimeFrame.Years:
+            dtcmp = dt.year
+            dtkey = datetime.datetime(dt.year, 12, 31)
+
+        elif self.timeframe == TimeFrame.Months:
+            dtcmp = dt.year * 100 + dt.month
+            _, lastday = calendar.monthrange(dt.year, dt.month)
+            dtkey = datetime.datetime(dt.year, dt.month, lastday)
+
+        elif self.timeframe == TimeFrame.Weeks:
+            isoyear, isoweek, isoweekday = dt.isocalendar()
+            dtcmp = isoyear * 100 + isoweek
+            sunday = dt + datetime.timedelta(days=7 - isoweekday)
+            dtkey = datetime.datetime(sunday.year, sunday.month, sunday.day)
+
+        elif self.timeframe == TimeFrame.Days:
+            dtcmp = dt.year * 10000 + dt.month * 100 + dt.day
+            dtkey = datetime.datetime(dt.year, dt.month, dt.day)
+
+        else:
+            dtcmp, dtkey = self._getsubday_cmpkey(dt)
+
+        return dtcmp, dtkey
+
+    def _get_subday_cmpkey(self, dt):
+        # Calculate intraday position
+        point = dt.hour * 60 + dt.minute
+
+        if self.timeframe < TimeFrame.Minutes:
+            point = point * 60 + dt.second
+
+        if self.timeframe < TimeFrame.Seconds:
+            point = point * 1e6 + dt.microsecond
+
+        # Apply compression to update point position (comp 5 -> 200 // 5)
+        point = point // self.compression
+
+        # Move to next boundary
+        point += 1
+
+        # Restore point to the timeframe units by de-applying compression
+        point *= self.compression
+
+        # Get hours, minutes, seconds and microseconds
+        if self.timeframe == TimeFrame.Minutes:
+            ph, pm = divmod(point, 60)
+            ps = 0
+            pus = 0
+        elif self.timeframe == TimeFrame.Seconds:
+            ph, pm = divmod(point, 60 * 60)
+            pm, ps = divmod(pm, 60)
+            pus = 0
+        elif self.timeframe == TimeFrame.MicroSeconds:
+            ph, pm = divmod(point, 60 * 60 * 1e6)
+            pm, psec = divmod(pm, 60 * 1e6)
+            ps, pus = divmod(psec, 1e6)
+
+        # moving 1 minor unit to the left to be in the boundary
+        pm -= self.timeframe == TimeFrame.Minutes
+        ps -= self.timeframe == TimeFrame.Seconds
+        pus -= self.timeframe == TimeFrame.MicroSeconds
+
+        # Replace intraday parts with the calculated ones and update it
+        dtcmp = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+        dtkey = dtcmp
+
+        return dtcmp, dtkey

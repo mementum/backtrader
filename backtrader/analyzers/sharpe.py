@@ -91,8 +91,8 @@ class SharpeRatio(Analyzer):
         TimeFrame.Years: 1,
     }
 
-    def __init__(self):
-        super(SharpeRatio, self).__init__()
+    def start(self):
+        super(SharpeRatio, self).start()
         if self.p.legacyannual:
             self.anret = AnnualReturn()
         else:
@@ -101,6 +101,7 @@ class SharpeRatio(Analyzer):
                 compression=self.p.compression)
 
     def stop(self):
+        super(SharpeRatio, self).stop()
         if self.p.legacyannual:
             retfree = [self.p.riskfreerate] * len(self.anret.rets)
             retavg = average(list(map(operator.sub, self.anret.rets, retfree)))
@@ -128,6 +129,4 @@ class SharpeRatio(Analyzer):
             retdev = standarddev(returns)
 
             self.ratio = ret_free_avg / retdev
-
-    def get_analysis(self):
-        return dict(sharperatio=self.ratio)
+            self.rets[sharperatio] = self.ratio
