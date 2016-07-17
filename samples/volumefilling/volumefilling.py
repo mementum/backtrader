@@ -106,7 +106,7 @@ def runstrat():
         datakwargs['fromdate'] = fromdate
 
     if args.todate:
-        fromdate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
+        todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         datakwargs['todate'] = todate
 
     data = bt.feeds.BacktraderCSVData(dataname=args.data, **datakwargs)
