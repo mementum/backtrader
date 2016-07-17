@@ -56,8 +56,13 @@ class SQN(Analyzer):
     '''
     alias = ('SystemQualityNumber',)
 
+    def create_analysis(self):
+        '''Replace default implementation to instantiate an AutoOrdereDict
+        rather than an OrderedDict'''
+        self.rets = AutoOrderedDict()
+
     def start(self):
-        self.ret = AutoOrderedDict()
+        super(SQN, self).start()
         self.pnl = list()
         self.count = 0
 
@@ -74,8 +79,5 @@ class SQN(Analyzer):
 
         sqn = trades_sqr * pnl_av / pnl_stddev
 
-        self.ret.sqn = sqn
-        self.ret.trades = self.count
-
-    def get_analysis(self):
-        return self.ret
+        self.rets.sqn = sqn
+        self.rets.trades = self.count
