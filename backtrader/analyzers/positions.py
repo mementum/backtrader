@@ -26,8 +26,7 @@ from backtrader import TimeFrameAnalyzerBase
 
 
 class PositionsValue(TimeFrameAnalyzerBase):
-    '''
-    This analyzer reports the value of the positions of the current set of
+    '''This analyzer reports the value of the positions of the current set of
     datas
 
     Params:
@@ -44,7 +43,7 @@ class PositionsValue(TimeFrameAnalyzerBase):
         If ``None`` then the compression of the 1st data of the system will be
         used
 
-      - ``prenext`` (default: ``False``)
+      - ``prenext`` (default: ``True``)
         Ideally a strategy shouldn't operate when the minimum period of the
         indicators has not yet been met and the method ``prenext`` is being
         called. But this is a *should* and not a prohibition.
@@ -52,14 +51,15 @@ class PositionsValue(TimeFrameAnalyzerBase):
         If this parameter is ``True`` the analyzer will report positions even
         during the ``prenext`` period
 
-      - headers (default: ``True``)
+      - headers (default: ``False``)
 
         Add an initial key to the dictionary holding the results with the names
-        of the datas
+        of the datas ('Datetime' as key
 
       - cash (default: ``False``)
 
-        Include the actual cash as an extra position
+        Include the actual cash as an extra position (for the header 'cash'
+        will be used as name)
 
     Methods:
 
@@ -85,9 +85,11 @@ class PositionsValue(TimeFrameAnalyzerBase):
             self.next()
 
     def next(self):
-        if self._dt_over():
-            pvals = [self.strategy.broker.get_value([d]) for d in self.datas]
-            if self.p.cash:
-                pvals.append(self.strategy.broker.get_cash())
+        super(PositionsValue, self).next()  # let dtkey update
+        self._dt_over()  # to udpate dtkey if needed
+        # Updates the positions for "dtkey" (see base class) for each cycle
+        pvals = [self.strategy.broker.get_value([d]) for d in self.datas]
+        if self.p.cash:
+            pvals.append(self.strategy.broker.get_cash())
 
-            self.rets[self.dtkey] = pvals
+        self.rets[self.dtkey] = pvals

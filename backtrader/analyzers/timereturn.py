@@ -21,12 +21,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import TimeFrameAnalyzerBase, TimeFrame
+from backtrader import TimeFrameAnalyzerBase
 
 
 class TimeReturn(TimeFrameAnalyzerBase):
-    '''
-    This analyzer calculates the Returns by looking at the beginning
+    '''This analyzer calculates the Returns by looking at the beginning
     and end of the timeframe
 
     Params:
@@ -55,8 +54,12 @@ class TimeReturn(TimeFrameAnalyzerBase):
         self.lastvalue = self.strategy.broker.getvalue()
 
     def notify_cashvalue(self, cash, value):
-        if self._dt_over():
-            self.value_start = self.lastvalue  # last value before cycle change
-            self.rets[self.dtkey] = (value / self.value_start) - 1.0
+        self._value = value
 
-        self.lastvalue = value
+    def _on_dt_over(self):
+        self.value_start = self.lastvalue
+
+    def next(self):
+        super(TimeReturn, self).next()
+        self.rets[self.dtkey] = (self._value / self.value_start) - 1.0
+        self.lastvalue = self._value

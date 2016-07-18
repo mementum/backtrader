@@ -29,8 +29,7 @@ from backtrader.utils import AutoOrderedDict
 
 
 class SQN(Analyzer):
-    '''
-    SQN or SystemQualityNumber. Defined by Van K. Tharp to categorize trading
+    '''SQN or SystemQualityNumber. Defined by Van K. Tharp to categorize trading
     systems.
 
       - 1.6 - 1.9 Below average
