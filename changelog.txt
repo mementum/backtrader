@@ -1,3 +1,8 @@
+1.6.1.93:
+  - Closes #108 - Plotting documentation
+  - Some updates to analyzer docs
+  - Further refactoring/improvements/corrections to the analyzers
+
 1.6.0.93:
   - Pyfolio integration
   - Refactoring/reorganization of analyzers
