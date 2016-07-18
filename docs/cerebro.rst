@@ -260,7 +260,7 @@ plotted. With the usual pattern being::
 
   cerebro.plot()
 
-See below for the reference and the section :doc:`plotting`
+See below for the reference and the section :doc:`plotting/plotting`
 
 
 Backtesting logic

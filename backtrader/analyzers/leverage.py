@@ -25,9 +25,8 @@ from backtrader import TimeFrameAnalyzerBase
 
 
 class GrossLeverage(TimeFrameAnalyzerBase):
-    '''
-    This analyzer calculates the Gross Leverage of the current strategy
-    on a timeframe bases
+    '''This analyzer calculates the Gross Leverage of the current strategy
+    on a timeframe basis
 
     Params:
 
@@ -51,5 +50,11 @@ class GrossLeverage(TimeFrameAnalyzerBase):
         each return as keys
     '''
     def notify_cashvalue(self, cash, value):
-        if self._dt_over():
-            self.rets[self.dtkey] = (value - cash) / value  # 0 if 100% in cash
+        self._cash = cash
+        self._value = value
+
+    def next(self):
+        super(GrossLeverage, self).next()  # let dtkey update
+        # Updates the leverage for "dtkey" (see base class) for each cycle
+        # 0.0 if 100% in cash, 1.0 if no short selling and fully invested
+        self.rets[self.dtkey] = (self._value - self._cash) / self._value

@@ -28,8 +28,7 @@ from backtrader import Order, Position, TimeFrameAnalyzerBase
 
 
 class Transactions(TimeFrameAnalyzerBase):
-    '''
-    This analyzer reports the transactions occurred with each an every data in
+    '''This analyzer reports the transactions occurred with each an every data in
     the system
 
     It looks at the order execution bits to create a ``Position`` starting from
@@ -55,6 +54,12 @@ class Transactions(TimeFrameAnalyzerBase):
 
         Add an initial key to the dictionary holding the results with the names
         of the datas
+
+        This analyzer was modeled to facilitate the integration with
+        ``pyfolio`` and the header names are taken from the samples used for
+        it::
+
+          'date', 'amount', 'price', 'sid', 'symbol', 'value'
 
     Methods:
 
@@ -87,22 +92,28 @@ class Transactions(TimeFrameAnalyzerBase):
         dname = order.data._name
         for exbit in order.executed.iterpending():
             if exbit is None:
-                break
+                break  # end of pending reached
 
             self._positions[dname].update(exbit.size, exbit.price)
 
     def next(self):
-        if self._dt_over():
-            entries = list()
-            for i, dname in enumerate(self.strategy.getdatanames()):
-                pos = self._positions[dname]
-                size, price = pos.size, pos.price
-                if not size:
-                    continue
+        super(Transactions, self).next()  # let dtkey update
+        # Updates the positions for "dtkey" (see base class) for each cycle
+        entries = list()
+        for i, dname in enumerate(self.strategy.getdatanames()):
+            pos = self._positions.get(dname, None)
+            if pos is None:
+                continue
+            size, price = pos.size, pos.price
+            if not size:
+                continue
 
-                entries.append([size, price, i, dname, -size * price])
+            entries.append([size, price, i, dname, -size * price])
 
-            if entries:
-                self.rets[self.dtkey] = entries
+        if entries:  # only add if something was added
+            self.rets[self.dtkey] = entries
+        else:
+            # remove any previous positions if None are there
+            self.rets.pop(self.dtkey, None)
 
         self._positions.clear()

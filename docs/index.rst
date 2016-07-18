@@ -43,7 +43,7 @@ Contents:
    user-defined-commissions/commission-schemes-subclassing
    position
    trade
-   plotting
+   plotting/plotting
    automated-bt-run/automated-bt-run
    memory-savings/memory-savings
    timemgmt

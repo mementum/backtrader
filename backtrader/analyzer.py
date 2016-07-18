@@ -279,6 +279,13 @@ class TimeFrameAnalyzerBase(Analyzer):
 
         self.dtcmp, self.dtkey = self._get_dt_cmpkey(datetime.datetime.min)
 
+    def next(self):
+        if self._dt_over():
+            self._on_dt_over()
+
+    def _on_dt_over(self):
+        pass
+
     def _dt_over(self):
         dt = self.data.datetime.datetime()
         dtcmp, dtkey = self._get_dt_cmpkey(dt)
@@ -293,7 +300,7 @@ class TimeFrameAnalyzerBase(Analyzer):
     def _get_dt_cmpkey(self, dt):
         if self.timeframe == TimeFrame.Years:
             dtcmp = dt.year
-            dtkey = datetime.datetime(dt.year, 12, 31)
+            dtkey = datetime.date(dt.year, 12, 31)
 
         elif self.timeframe == TimeFrame.Months:
             dtcmp = dt.year * 100 + dt.month

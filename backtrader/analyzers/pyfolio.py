@@ -31,8 +31,7 @@ from . import TimeReturn, PositionsValue, Transactions, GrossLeverage
 
 
 class PyFolio(Analyzer):
-    '''
-    This analyzer uses 4 children analyzers to collect data and transforms it
+    '''This analyzer uses 4 children analyzers to collect data and transforms it
     in to a data set compatible with ``pyfolio``
 
     Children Analyzer
@@ -50,6 +49,10 @@ class PyFolio(Analyzer):
 
         Used to record each transaction on a data (size, price, value). Sets
         the ``headers`` parameter to ``True``
+
+      - ``GrossLeverage``
+
+        Keeps track of the gross leverage (how much the strategy is invested)
 
     Params:
       These are passed transparently to the children
@@ -73,7 +76,10 @@ class PyFolio(Analyzer):
         Returns a dictionary with returns as values and the datetime points for
         each return as keys
     '''
-    params = ()
+    params = (
+        ('timeframe', None),
+        ('compression', None)
+    )
 
     def __init__(self):
         dtfcomp = dict(timeframe=self.p.timeframe,
@@ -115,12 +121,12 @@ class PyFolio(Analyzer):
                                   index=cols[0], columns=cols)
         returns.index = pandas.to_datetime(returns.index)
         returns.index = returns.index.tz_localize('UTC')
-        returns = returns['return']
+        rets = returns['return']
         #
         # Positions
         pss = self.rets['positions']
         ps = [[k] + v for k, v in iteritems(pss)]
-        cols = ps.pop(0)
+        cols = ps.pop(0)  # headers are in the first entry
         positions = DF.from_records(ps, index=cols[0], columns=cols)
         positions.index = pandas.to_datetime(positions.index)
         positions.index = positions.index.tz_localize('UTC')
@@ -129,12 +135,15 @@ class PyFolio(Analyzer):
         # Transactions
         txss = self.rets['transactions']
         txs = list()
+        # The transactions have a common key (date) and can potentially happend
+        # for several assets. The dictionary has a single key and a list of
+        # lists. Each sublist contains the fields of a transaction
+        # Hence the double loop to undo the list indirection
         for k, v in iteritems(txss):
             for v2 in v:
                 txs.append([k] + v2)
 
-        # txs = [[k] + v for k, v in iteritems(txss)]
-        cols = txs.pop(0)
+        cols = txs.pop(0)  # headers are in the first entry
         transactions = DF.from_records(txs, index=cols[0], columns=cols)
         transactions.index = pandas.to_datetime(transactions.index)
         transactions.index = transactions.index.tz_localize('UTC')
@@ -146,7 +155,7 @@ class PyFolio(Analyzer):
 
         gross_lev.index = pandas.to_datetime(gross_lev.index)
         gross_lev.index = gross_lev.index.tz_localize('UTC')
-        gross_lev = gross_lev['gross_lev']
+        glev = gross_lev['gross_lev']
 
         # Return all together
-        return returns, positions, transactions, gross_lev
+        return rets, positions, transactions, glev
