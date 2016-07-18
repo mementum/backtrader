@@ -28,8 +28,8 @@ backtrader
    :target: https://pypi.python.org/pypi/backtrader/
 
 
-**Release 1.5.1.93**: `Live Data Feeds/Live Trading with Visual Chart
-<http://www.backtrader.com/posts/2016-07-12-visualchart-feed/visualchart-feed/>`_
+**Release 1.6.x.93**: `pyfolio integration
+<http://www.backtrader.com/posts/2016-07-17-pyfolio-integration/pyfolio-integration/>`_
 
 Features:
 =========
