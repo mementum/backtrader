@@ -30,17 +30,45 @@ class TimeReturn(TimeFrameAnalyzerBase):
 
     Params:
 
-      - timeframe (default: ``None``)
-        If ``None`` then the timeframe of the 1st data of the system will be
-        used
+      - ``timeframe`` (default: ``None``)
+        If ``None`` then the complete return over the entire backtested period
+        will be reported
 
-      - compression (default: ``None``)
+        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
+        time constraints
+
+      - ``compression`` (default: ``None``)
 
         Only used for sub-day timeframes to for example work on an hourly
         timeframe by specifying "TimeFrame.Minutes" and 60 as compression
 
         If ``None`` then the compression of the 1st data of the system will be
         used
+
+      - ``data`` (default: ``None``)
+
+        Reference asset to track instead of the portfolio value.
+
+        .. note:: this data must have been added to a ``cerebro`` instance with
+        ``addata``, ``resampledata`` or ``replaydata``
+
+      - ``firstopen`` (default: ``True``)
+
+        When tracking the returns of a ``data`` the following is done when
+        crossing a timeframe boundary, for example ``Years``:
+
+          - Last ``close`` of previous year is used as the reference price to
+            see the return in the current year
+
+        The problem is the 1st calculation, because the data has** no
+        previous** closing price. As such and when this parameter is ``True``
+        the *opening* price will be used for the 1st calculation.
+
+        This requires the data feed to have an ``open`` price (for ``close``
+        the standard [0] notation will be used without reference to a field
+        price)
+
+        Else the initial close will be used.
 
     Methods:
 
@@ -49,17 +77,39 @@ class TimeReturn(TimeFrameAnalyzerBase):
         Returns a dictionary with returns as values and the datetime points for
         each return as keys
     '''
+
+    params = (('data', None),
+              ('firstopen', True))
+
     def start(self):
         super(TimeReturn, self).start()
-        self.lastvalue = self.strategy.broker.getvalue()
+        if self.p.data is None:
+            # keep the initial portfolio value if not tracing a data
+            self._new_start = self.strategy.broker.getvalue()
 
     def notify_cashvalue(self, cash, value):
-        self._value = value
+        # Record current value
+        if self.p.data is None:
+            self._value = value  # the portofolio value if tracking no data
+        else:
+            self._value = self.p.data[0]  # the data value if tracking data
 
     def _on_dt_over(self):
-        self.value_start = self.lastvalue
+        # next is called in a new timeframe period
+        if self.p.data is None:
+            self._value_start = self._new_start  # updte value_start to last
+            self._new_start = self._value  # keep current value as new start
+
+        elif len(self.p.data) > 1:
+            self._value_start = self.p.data[-1]  # use last open as reference
+        else:
+            # The 1st tick has no previous reference, use the opening price
+            if self.p.firstopen:
+                self._value_start = self.p.data.open[0]
+            else:
+                self._value_start = self.p.data[0]
 
     def next(self):
+        # Calculate the return
         super(TimeReturn, self).next()
-        self.rets[self.dtkey] = (self._value / self.value_start) - 1.0
-        self.lastvalue = self._value
+        self.rets[self.dtkey] = (self._value / self._value_start) - 1.0
