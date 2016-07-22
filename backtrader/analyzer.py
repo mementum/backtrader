@@ -44,6 +44,11 @@ class MetaAnalyzer(bt.MetaParams):
         _obj.strategy = strategy = bt.metabase.findowner(_obj, bt.Strategy)
         _obj._parent = bt.metabase.findowner(_obj, Analyzer)
 
+        # Register with a master observer if created inside one
+        masterobs = bt.metabase.findowner(_obj, bt.Observer)
+        if masterobs is not None:
+            masterobs._register_analyzer(_obj)
+
         _obj.datas = strategy.datas
 
         # For each data add aliases: for first data: data and data0
