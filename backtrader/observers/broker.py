@@ -25,6 +25,10 @@ from .. import Observer
 
 
 class Cash(Observer):
+    '''This observer keeps track of the current amount of cash in the broker
+
+    Params: None
+    '''
     lines = ('cash',)
 
     plotinfo = dict(plot=True, subplot=True)
@@ -34,6 +38,11 @@ class Cash(Observer):
 
 
 class Value(Observer):
+    '''This observer keeps track of the current portfolio value in the broker
+    including the cash
+
+    Params: None
+    '''
     lines = ('value',)
 
     plotinfo = dict(plot=True, subplot=True)
@@ -43,6 +52,11 @@ class Value(Observer):
 
 
 class Broker(Observer):
+    '''This observer keeps track of the current cash amount and portfolio value in
+    the broker (including the cash)
+
+    Params: None
+    '''
     alias = ('CashValue',)
     lines = ('cash', 'value')
 

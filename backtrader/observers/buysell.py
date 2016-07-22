@@ -27,6 +27,13 @@ from ..observer import Observer
 
 
 class BuySell(Observer):
+    '''
+    This observer keeps track of the individual buy/sell orders (individual
+    executions) and will plot them on the chart along the data around the
+    execution price level
+
+    Params: None
+    '''
     lines = ('buy', 'sell',)
 
     plotinfo = dict(plot=True, subplot=False, plotlinelabels=True)

@@ -52,6 +52,7 @@ Contents:
    indautoref
    strategy-reference
    analyzers-reference
+   observers-reference
 
 Indices and tables
 ==================

@@ -25,6 +25,11 @@ from .. import Observer
 
 
 class DrawDown(Observer):
+    '''This observer keeps track of the current drawdown level (plotted) and
+    the maxdrawdown (not plotted) levels
+
+    Params: None
+    '''
     lines = ('drawdown', 'maxdrawdown',)
 
     plotinfo = dict(plot=True, subplot=True)
@@ -38,7 +43,7 @@ class DrawDown(Observer):
         self.peak = float('-inf')
 
     def next(self):
-        value = self._owner.stats.broker.value[0]
+        value = self._owner.broker.getvalue()
 
         # update the maximum seen peak
         if value > self.peak:
