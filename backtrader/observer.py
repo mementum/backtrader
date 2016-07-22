@@ -23,9 +23,18 @@ from __future__ import (absolute_import, division, print_function,
 
 
 from .lineiterator import LineIterator, ObserverBase, StrategyBase
+from backtrader.utils.py3 import with_metaclass
 
 
-class Observer(ObserverBase):
+class MetaObserver(ObserverBase.__class__):
+    def donew(cls, *args, **kwargs):
+        _obj, args, kwargs = super(MetaObserver, cls).donew(*args, **kwargs)
+        _obj._analyzers = list()  # keep children analyzers
+
+        return _obj, args, kwargs  # return the instantiated object and args
+
+
+class Observer(with_metaclass(MetaObserver, ObserverBase)):
     _OwnerCls = StrategyBase
     _ltype = LineIterator.ObsType
 
@@ -37,3 +46,6 @@ class Observer(ObserverBase):
     # next. The behaviour can be overriden by subclasses
     def prenext(self):
         self.next()
+
+    def _register_analyzer(self, analyzer):
+        self._analyzers.append(analyzer)
