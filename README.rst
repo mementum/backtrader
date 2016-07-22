@@ -39,6 +39,7 @@ Live Trading and backtesting platform written in Python.
   - Live Data Feed and Trading with Interactive Brokers (needs ``IbPy`` and
     benefits greatly from an installed ``pytz``)
   - Data feeds from csv/files or for example *pandas*
+  - Filters for datas (like breaking a daily bar into chunks to simulate intraday)
   - Multiple data feeds and multiple strategies supported
   - Multiple timeframes at once
   - Integrated Resampling and Replaying
@@ -49,7 +50,7 @@ Live Trading and backtesting platform written in Python.
     integration
   - Flexible definition of commission schemes
   - Integrated broker simulation with Market, Close, Limit, Stop and StopLimit
-    orders
+    orders and continuous cash adjustmet for future-like instruments
   - Plotting (requires matplotlib)
 
 Documentation
