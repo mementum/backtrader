@@ -28,7 +28,7 @@ import pprint as pp
 
 import backtrader as bt
 from backtrader import TimeFrame
-from backtrader.utils.py3 import with_metaclass
+from backtrader.utils.py3 import MAXINT, with_metaclass
 
 
 class MetaAnalyzer(bt.MetaParams):
@@ -294,8 +294,11 @@ class TimeFrameAnalyzerBase(Analyzer):
         pass
 
     def _dt_over(self):
-        dt = self.data.datetime.datetime()
-        dtcmp, dtkey = self._get_dt_cmpkey(dt)
+        if self.timeframe == TimeFrame.NoTimeFrame:
+            dtcmp, dtkey = MAXINT, datetime.datetime.max
+        else:
+            dt = self.data.datetime.datetime()
+            dtcmp, dtkey = self._get_dt_cmpkey(dt)
 
         if dtcmp > self.dtcmp:
             self.dtkey = dtkey
@@ -305,6 +308,9 @@ class TimeFrameAnalyzerBase(Analyzer):
         return False
 
     def _get_dt_cmpkey(self, dt):
+        if self.timeframe == TimeFrame.NoTimeFrame:
+            return None, None
+
         if self.timeframe == TimeFrame.Years:
             dtcmp = dt.year
             dtkey = datetime.date(dt.year, 12, 31)
