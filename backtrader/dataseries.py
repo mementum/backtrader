@@ -25,22 +25,22 @@ import datetime as _datetime
 from datetime import datetime
 import inspect
 
-from .utils.py3 import with_metaclass
+from .utils.py3 import range, with_metaclass
 from .lineseries import LineSeries
 from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
 class TimeFrame(object):
-    Ticks, MicroSeconds, Seconds, \
-        Minutes, Days, Weeks, Months, Years = range(8)
+    (Ticks, MicroSeconds, Seconds, Minutes,
+     Days, Weeks, Months, Years, NoTimeFrame) = range(9)
 
-    Names = ['Ticks', 'MicroSeconds', 'Seconds',
-             'Minutes', 'Days', 'Weeks', 'Months', 'Years']
+    Names = ['Ticks', 'MicroSeconds', 'Seconds', 'Minutes',
+             'Days', 'Weeks', 'Months', 'Years', 'NoTimeFrame']
 
     names = Names  # support old naming convention
 
     @classmethod
-    def getname(cls, tframe, compression):
+    def getname(cls, tframe, compression=None):
         if compression == 1:
             # return singular if compression is 1
             return cls.Names[tframe][:-1]
@@ -56,8 +56,7 @@ class TimeFrame(object):
 
 
 class DataSeries(LineSeries):
-    plotinfo = dict(plot=True,
-                    plotind=True)
+    plotinfo = dict(plot=True, plotind=True)
 
     _name = ''
     _compression = 1
