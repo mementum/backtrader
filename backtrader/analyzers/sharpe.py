@@ -125,6 +125,6 @@ class SharpeRatio(Analyzer):
             ret_free = map(operator.sub, returns, retfree)
             ret_free_avg = average(list(ret_free))
             retdev = standarddev(returns)
-
-            self.ratio = ret_free_avg / retdev
+            
+            self.ratio = (ret_free_avg / retdev) * (factor ** .5)
             self.rets['sharperatio'] = self.ratio
