@@ -83,9 +83,10 @@ class TimeReturn(TimeFrameAnalyzerBase):
 
     def start(self):
         super(TimeReturn, self).start()
+        self._value_start = 0.0
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
-            self._new_start = self.strategy.broker.getvalue()
+            self._lastvalue = self.strategy.broker.getvalue()
 
     def notify_cashvalue(self, cash, value):
         # Record current value
@@ -97,11 +98,10 @@ class TimeReturn(TimeFrameAnalyzerBase):
     def _on_dt_over(self):
         # next is called in a new timeframe period
         if self.p.data is None:
-            self._value_start = self._new_start  # updte value_start to last
-            self._new_start = self._value  # keep current value as new start
+            self._value_start = self._lastvalue  # update value_start to last
 
         elif len(self.p.data) > 1:
-            self._value_start = self.p.data[-1]  # use last open as reference
+            self._value_start = self._value  # use last value
         else:
             # The 1st tick has no previous reference, use the opening price
             if self.p.firstopen:
@@ -113,3 +113,4 @@ class TimeReturn(TimeFrameAnalyzerBase):
         # Calculate the return
         super(TimeReturn, self).next()
         self.rets[self.dtkey] = (self._value / self._value_start) - 1.0
+        self._lastvalue = self._value  # keep last value
