@@ -1,3 +1,7 @@
+1.6.3.93:
+  - Correct lastvalue update in TimeReturn
+  - Closes #111 by annualizing the returns if the rate is not downgraded
+
 1.6.2.93:
   - Closes #89 by adding benchmarking to TimeReturn and new observers
     TimeReturn/Benchmark (sample included)
