@@ -204,9 +204,11 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
     def prenext(self):
         '''Invoked for each prenext invocation of the strategy, until the minimum
-        preiod of the strategy has been reached
+        period of the strategy has been reached
+
+        The default behavior for an analyzer is to invoke ``next``
         '''
-        pass
+        self.next()
 
     def nextstart(self):
         '''Invoked exactly once for the nextstart invocation of the strategy,
