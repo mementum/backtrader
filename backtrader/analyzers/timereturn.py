@@ -50,7 +50,7 @@ class TimeReturn(TimeFrameAnalyzerBase):
         Reference asset to track instead of the portfolio value.
 
         .. note:: this data must have been added to a ``cerebro`` instance with
-        ``addata``, ``resampledata`` or ``replaydata``
+                  ``addata``, ``resampledata`` or ``replaydata``
 
       - ``firstopen`` (default: ``True``)
 
@@ -97,11 +97,9 @@ class TimeReturn(TimeFrameAnalyzerBase):
 
     def _on_dt_over(self):
         # next is called in a new timeframe period
-        if self.p.data is None:
+        if self.p.data is None or len(self.p.data) > 1:
             self._value_start = self._lastvalue  # update value_start to last
 
-        elif len(self.p.data) > 1:
-            self._value_start = self._value  # use last value
         else:
             # The 1st tick has no previous reference, use the opening price
             if self.p.firstopen:
