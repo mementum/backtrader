@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+###############################################################################
+#
+# Copyright (C) 2015, 2016 Daniel Rodriguez
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import backtrader as bt
+from . import TimeReturn
+
+
+class Benchmark(TimeReturn):
+    '''This observer stores the *returns* of the strategy and the *return* of a
+    reference asset which is one of the datas passed to the system.
+
+    Params:
+
+      - ``timeframe`` (default: ``None``)
+        If ``None`` then the complete return over the entire backtested period
+        will be reported
+
+      - ``compression`` (default: ``None``)
+
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+
+      - ``data`` (default: ``None``)
+
+        Reference asset to track to allow for comparison.
+
+        .. note:: this data must have been added to a ``cerebro`` instance with
+        ``addata``, ``resampledata`` or ``replaydata``
+
+    Remember that at any moment of a ``run`` the current values can be checked
+    by looking at the *lines* by name at index ``0``
+    '''
+    lines = ('benchmark',)
+    plotlines = dict(benchmark=dict(_name='Benchmark'))
+
+    params = (('data', None),)
+
+    def _plotlabel(self):
+        labels = super(Benchmark, self)._plotlabel()
+        labels.append(self.p.data._name)
+        return labels
+
+    def __init__(self):
+        super(Benchmark, self).__init__()  # treturn including data parameter
+        # Create a time return object without the data
+        kwargs = self.p._getkwargs()
+        kwargs.update(data=None)  # to create a return for the stratey
+        t = self._owner._addanalyzer_slave(bt.analyzers.TimeReturn, **kwargs)
+
+        # swap for consistency
+        self.treturn, self.tbench = t, self.treturn
+
+    def next(self):
+        super(Benchmark, self).next()
+        self.lines.benchmark[0] = self.tbench.rets[self.treturn.dtkey]

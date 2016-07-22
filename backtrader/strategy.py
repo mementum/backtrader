@@ -26,8 +26,8 @@ import inspect
 import itertools
 import operator
 
-from .utils.py3 import (filter, map, with_metaclass, string_types, keys,
-                        iteritems)
+from .utils.py3 import (filter, keys, iteritems, map,  string_types,
+                        with_metaclass)
 
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
@@ -77,6 +77,8 @@ class MetaStrategy(StrategyBase.__class__):
         _obj.stats = _obj.observers = ItemCollection()
         _obj.analyzers = ItemCollection()
         _obj.writers = list()
+
+        _obj._slave_analyzers = list()
 
         _obj._tradehistoryon = False
 
@@ -191,6 +193,21 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _addindicator(self, indcls, *indargs, **indkwargs):
         indcls(*indargs, **indkwargs)
 
+    def _addanalyzer_slave(self, ancls, *anargs, **ankwargs):
+        '''Like _addanalyzer but meant for observers (or other entities) which
+        rely on the output of an analyzer for the data. These analyzers have
+        not been added by the user and are kept separate from the main
+        analyzers
+
+        Returns the created analyzer
+        '''
+        analyzer = ancls(*anargs, **ankwargs)
+        self._slave_analyzers.append(analyzer)
+        return analyzer
+
+    def _getanalyzer_slave(self, idx):
+        return self._slave_analyzers.append[idx]
+
     def _addanalyzer(self, ancls, *anargs, **ankwargs):
         anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
         analyzer = ancls(*anargs, **ankwargs)
@@ -237,8 +254,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext()
 
-        self._next_observers(minperstatus, once=True)
         self._next_analyzers(minperstatus, once=True)
+        self._next_observers(minperstatus, once=True)
 
         self.clear()
 
@@ -246,13 +263,21 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         super(Strategy, self)._next()
 
         minperstatus = self._getminperstatus()
-        self._next_observers(minperstatus)
         self._next_analyzers(minperstatus)
+        self._next_observers(minperstatus)
 
         self.clear()
 
     def _next_observers(self, minperstatus, once=False):
         for observer in self._lineiterators[LineIterator.ObsType]:
+            for analyzer in observer._analyzers:
+                if minperstatus < 0:
+                    analyzer._next()
+                elif minperstatus == 0:
+                    analyzer._nextstart()  # only called for the 1st value
+                else:
+                    analyzer._prenext()
+
             if once:
                 observer.advance()
                 if minperstatus < 0:
@@ -279,7 +304,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         # change operators to stage 2
         self._stage2()
 
-        for analyzer in self.analyzers:
+        for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._start()
 
         self.start()
@@ -338,7 +363,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         ainfo.Value.Begin = self.broker.startingcash
         ainfo.Value.End = self.broker.getvalue()
 
-        for analyzer in self.analyzers:
+        for analyzer in self.analyzers:  # no slave for writer
             aname = analyzer.__class__.__name__
             ainfo[aname].Params = item.p._getkwargs() or None
             ainfo[aname].Analysis = analyzer.get_analysis()
@@ -348,7 +373,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _stop(self):
         self.stop()
 
-        for analyzer in self.analyzers:
+        for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._stop()
 
         # change operators back to stage 1 - allows reuse of datas
@@ -424,19 +449,21 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _notify(self):
         for order in self._orderspending:
             self.notify_order(order)
-            for analyzer in self.analyzers:
+            for analyzer in itertools.chain(self.analyzers,
+                                            self._slave_analyzers):
                 analyzer._notify_order(order)
 
         for trade in self._tradespending:
             self.notify_trade(trade)
-            for analyzer in self.analyzers:
+            for analyzer in itertools.chain(self.analyzers,
+                                            self._slave_analyzers):
                 analyzer._notify_trade(trade)
 
         cash = self.broker.getcash()
         value = self.broker.getvalue()
 
         self.notify_cashvalue(cash, value)
-        for analyzer in self.analyzers:
+        for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
 
     def notify_cashvalue(self, cash, value):

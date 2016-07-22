@@ -149,7 +149,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         backfilling from IB will take place. This is ideally meant to backfill
         from already stored sources like a file on disk, but not limited to.
 
-      - ``latethroough`` (default: ``False``)
+      - ``latethrough`` (default: ``False``)
 
         If the data source is resampled/replayed, some ticks may come in too
         late for the already delivered resampled/replayed bar. If this is

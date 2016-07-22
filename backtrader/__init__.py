@@ -44,11 +44,11 @@ from .resamplerfilter import *
 
 from .lineiterator import *
 from .indicator import *
+from .analyzer import *
 from .observer import *
 from .strategy import *
 
 from .writer import *
-from .analyzer import *
 
 from .cerebro import *
 

@@ -39,16 +39,18 @@ Live Trading and backtesting platform written in Python.
   - Live Data Feed and Trading with Interactive Brokers (needs ``IbPy`` and
     benefits greatly from an installed ``pytz``)
   - Data feeds from csv/files or for example *pandas*
+  - Filters for datas (like breaking a daily bar into chunks to simulate intraday)
   - Multiple data feeds and multiple strategies supported
   - Multiple timeframes at once
   - Integrated Resampling and Replaying
   - Step by Step backtesting or at once (except in the evaluation of the Strategy)
   - Integrated battery of indicators
   - Easy development of custom indicators
-  - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN)
+  - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
+    integration
   - Flexible definition of commission schemes
   - Integrated broker simulation with Market, Close, Limit, Stop and StopLimit
-    orders
+    orders and continuous cash adjustmet for future-like instruments
   - Plotting (requires matplotlib)
 
 Documentation
@@ -62,7 +64,7 @@ Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.io/>`_
 
-List of built-in Indicators (88)
+List of built-in Indicators (93)
 
   - `backtrader indicators <http://backtrader.readthedocs.io/indautoref.html>`_
 
@@ -141,6 +143,7 @@ cup of tea, you can always have a look at similar Python platforms:
     <https://github.com/bpsmith/tia>`_
   - `QuantSoftware Toolkit
     <http://wiki.quantsoftware.org/index.php?title=QuantSoftware_ToolKit>`_
+  - `Pinkfish <http://fja05680.github.io/pinkfish/>`_
   - `bt <http://pmorissette.github.io/bt/index.html>`_
 
      ``bt`` slightly pre-dates ``backtrader`` and has a completely different

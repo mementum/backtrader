@@ -1,3 +1,11 @@
+1.6.2.93:
+  - Closes #89 by adding benchmarking to TimeReturn and new observers
+    TimeReturn/Benchmark (sample included)
+  - Analyzers can be embedded in observers to share functionality
+  - Added TimeFrame.NoTimeFrame
+  - ibpy imported in readthedocs for IBStore/IBBroker/IBData doc generation
+
+
 1.6.1.93:
   - Closes #108 - Plotting documentation
   - Some updates to analyzer docs
