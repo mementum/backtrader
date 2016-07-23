@@ -1,3 +1,9 @@
+1.6.4.94:
+  - Reworked and published sizers interface (addresses #104) with changes
+    in cerebro and Strategy
+  - Observers documentation
+  - Refactor timereturn analyzer logic for better readability
+
 1.6.3.93:
   - Correct lastvalue update in TimeReturn
   - Closes #111 by annualizing the returns if the rate is not downgraded
