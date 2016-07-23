@@ -46,6 +46,8 @@ from .lineiterator import *
 from .indicator import *
 from .analyzer import *
 from .observer import *
+from .sizer import *
+from .sizers import SizerFix  # old sizer for compatibility
 from .strategy import *
 
 from .writer import *
@@ -59,6 +61,7 @@ from . import observers as observers
 from . import analyzers as analyzers
 from . import commissions as commissions
 from . import filters as filters
+from . import sizers as sizers
 from . import stores as stores
 from . import brokers as brokers
 from . import utils as utils
