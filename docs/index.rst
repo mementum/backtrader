@@ -35,6 +35,7 @@ Contents:
    mixing-timeframes/indicators-mixing-timeframes
    inddev
    observers-and-statistics/observers-and-statistics
+   observer-benchmark/benchmarking
    analyzers/analyzers
    analyzers/pyfolio
    analyzers/pyfolio-integration/pyfolio-integration
