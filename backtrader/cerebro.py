@@ -148,6 +148,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.observers = list()
         self.analyzers = list()
         self.indicators = list()
+        self.sizers = dict()
         self.writers = list()
         self.storecbs = list()
         self.datacbs = list()
@@ -180,6 +181,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``run`` time in cerebro
         '''
         self.writers.append((wrtcls, args, kwargs))
+
+    def addsizer(self, sizercls, *args, **kwargs):
+        '''Adds a ``Sizer`` class (and args) which is the default sizer for any
+        strategy added to cerebro
+        '''
+        self.sizers[None] = (sizercls, args, kwargs)
+
+    def addsizer_byidx(self, idx, sizercls, *args, **kwargs):
+        '''Adds a ``Sizer`` class by idx. This idx is a reference compatible to
+        the one returned by ``addstrategy``. Only the strategy referenced by
+        ``idx`` will receive this size
+        '''
+        self.sizers[idx] = (sizercls, args, kwargs)
 
     def addindicator(self, indcls, *args, **kwargs):
         '''
@@ -398,8 +412,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         args and kwargs will be passed to the strategy as they are during
         instantiation.
+
+        Returns the index with which addition of other objects (like sizers)
+        can be referenced
         '''
         self.strats.append([(strategy, args, kwargs)])
+        return len(self.strats) - 1
 
     def setbroker(self, broker):
         '''
@@ -576,7 +594,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             runstrats.append(strat)
 
         # loop separated for clarity
-        for strat in runstrats:
+        defaultsizer = self.sizers.get(None, (None, None, None))
+        for idx, strat in enumerate(runstrats):
             if self.p.stdstats:
                 strat._addobserver(False, observers.Broker)
                 strat._addobserver(True, observers.BuySell)
@@ -590,6 +609,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             for ancls, anargs, ankwargs in self.analyzers:
                 strat._addanalyzer(ancls, *anargs, **ankwargs)
+
+            sizer, sargs, skwargs = self.sizers.get(idx, defaultsizer)
+            if sizer is not None:
+                strat._addsizer(sizer, *sargs, **skwargs)
 
             for writer in self.runwriters:
                 if writer.p.csv:
