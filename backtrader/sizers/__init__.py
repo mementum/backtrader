@@ -21,47 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Observer
+# The modules below should/must define __all__ with the objects wishes
+# or prepend an "_" (underscore) to private classes/variables
 
-
-class Cash(Observer):
-    '''This observer keeps track of the current amount of cash in the broker
-
-    Params: None
-    '''
-    lines = ('cash',)
-
-    plotinfo = dict(plot=True, subplot=True)
-
-    def next(self):
-        self.lines[0][0] = self._owner.broker.getcash()
-
-
-class Value(Observer):
-    '''This observer keeps track of the current portfolio value in the broker
-    including the cash
-
-    Params: None
-    '''
-    lines = ('value',)
-
-    plotinfo = dict(plot=True, subplot=True)
-
-    def next(self):
-        self.lines[0][0] = self._owner.broker.getvalue()
-
-
-class Broker(Observer):
-    '''This observer keeps track of the current cash amount and portfolio value in
-    the broker (including the cash)
-
-    Params: None
-    '''
-    alias = ('CashValue',)
-    lines = ('cash', 'value')
-
-    plotinfo = dict(plot=True, subplot=True)
-
-    def next(self):
-        self.lines.cash[0] = self._owner.broker.getcash()
-        self.lines.value[0] = value = self._owner.broker.getvalue()
+from .fixedsize import *

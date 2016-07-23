@@ -26,31 +26,49 @@ from .utils.py3 import with_metaclass
 from .metabase import MetaParams
 
 
-class SizerBase(with_metaclass(MetaParams, object)):
+class Sizer(with_metaclass(MetaParams, object)):
+    '''This is the base class for *Sizers*. Any *sizer* should subclass this
+    and override the ``_getsizing`` method
 
-    params = (('broker', None,),)
+    Attributes:
+      - ``broker``: will be set by the strategy in which the sizer is working
 
-    def getsizing(self, data, broker=None):
-        broker = broker or self.params.broker
-        return self._getsizing(broker.getcommissioninfo(data),
-                               broker.getcash(),
-                               data)
+        Gives access to information some complex sizers may need like portfolio
+        value, actual data position, ..
+    '''
+    broker = None
 
-    def _getsizing(self, comminfo, cash, data=None):
+    def getsizing(self, data, isbuy):
+        comminfo = self.broker.getcommissioninfo(data)
+        return self._getsizing(comminfo, self.broker.getcash(), data, isbuy)
+
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        '''This method has to be overriden by subclasses of Sizer to provide
+        the sizing functionality
+
+        Params:
+          - ``comminfo``: The CommissionInfo instance that contains
+            information about the commission for the data and allows
+            calculation of position value, operation cost, commision for the
+            operation
+
+          - ``cash``: current available cash in the *broker*
+
+          - ``data``: target of the operation
+
+          - ``isbuy``: will be ``True`` for *buy* operations and ``False``
+            for *sell* operations
+
+        The method has to return the actual size (an int) to be executed. If
+        ``0`` is returned nothing will be executed.
+
+        The absolute value of the returned value will be used
+
+        '''
         raise NotImplementedError
 
     def setbroker(self, broker):
-        self.params.broker = broker
-
-    def getbroker(self):
-        return self.params.broker
+        self.broker = broker
 
 
-class SizerFix(SizerBase):
-    params = (('stake', 1),)
-
-    def _getsizing(self, comminfo, cash, data=None):
-        return self.params.stake
-
-    def setsizing(self, stake):
-        self.params.stake = stake
+SizerBase = Sizer  # alias for old naming

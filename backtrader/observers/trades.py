@@ -26,6 +26,15 @@ from ..trade import Trade
 
 
 class Trades(Observer):
+    '''This observer keeps track of full trades and plot the PnL level achieved
+    when a trade is closed.
+
+    A trade is open when a position goes from 0 (or crossing over 0) to X and
+    is then closed when it goes back to 0 (or crosses over 0 in the opposite
+    direction)
+
+    Params: None
+    '''
     lines = ('pnlplus', 'pnlminus')
 
     plotinfo = dict(plot=True, subplot=True,

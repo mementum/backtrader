@@ -358,3 +358,7 @@ Reference
    .. automethod:: getbroker
 
    .. automethod:: plot
+
+   .. automethod:: addsizer
+
+   .. automethod:: addsizer_byidx

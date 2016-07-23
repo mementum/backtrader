@@ -45,10 +45,11 @@ class Benchmark(TimeReturn):
         Reference asset to track to allow for comparison.
 
         .. note:: this data must have been added to a ``cerebro`` instance with
-        ``addata``, ``resampledata`` or ``replaydata``
+                  ``addata``, ``resampledata`` or ``replaydata``.
 
     Remember that at any moment of a ``run`` the current values can be checked
-    by looking at the *lines* by name at index ``0``
+    by looking at the *lines* by name at index ``0``.
+
     '''
     lines = ('benchmark',)
     plotlines = dict(benchmark=dict(_name='Benchmark'))

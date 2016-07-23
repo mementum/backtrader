@@ -21,47 +21,39 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .. import Observer
+import backtrader as bt
 
 
-class Cash(Observer):
-    '''This observer keeps track of the current amount of cash in the broker
+class FixedSize(bt.Sizer):
+    '''This sizer simply returns a fixed size for any operation
 
-    Params: None
+    Params:
+      - ``stake`` (default: ``1``)
     '''
-    lines = ('cash',)
 
-    plotinfo = dict(plot=True, subplot=True)
+    params = (('stake', 1),)
 
-    def next(self):
-        self.lines[0][0] = self._owner.broker.getcash()
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        return self.params.stake
 
 
-class Value(Observer):
-    '''This observer keeps track of the current portfolio value in the broker
-    including the cash
+SizerFix = FixedSize
 
-    Params: None
+
+class FixedReverser(bt.Sizer):
+    '''This sizer returns the needes fixed size to reverse an open position or
+    the fixed size to open one
+
+      - To open a position: return the param ``stake``
+
+      - To reverse a position: return 2 * ``stake``
+
+    Params:
+      - ``stake`` (default: ``1``)
     '''
-    lines = ('value',)
+    params = (('stake', 1),)
 
-    plotinfo = dict(plot=True, subplot=True)
-
-    def next(self):
-        self.lines[0][0] = self._owner.broker.getvalue()
-
-
-class Broker(Observer):
-    '''This observer keeps track of the current cash amount and portfolio value in
-    the broker (including the cash)
-
-    Params: None
-    '''
-    alias = ('CashValue',)
-    lines = ('cash', 'value')
-
-    plotinfo = dict(plot=True, subplot=True)
-
-    def next(self):
-        self.lines.cash[0] = self._owner.broker.getcash()
-        self.lines.value[0] = value = self._owner.broker.getvalue()
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        position = self.broker.getposition(data)
+        size = self.p.stake * (1 + (position.size != 0))
+        return size

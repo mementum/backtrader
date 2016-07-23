@@ -29,11 +29,11 @@ import operator
 from .utils.py3 import (filter, keys, iteritems, map,  string_types,
                         with_metaclass)
 
+import backtrader as bt
 from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
 from .lineroot import LineSingle
 from .metabase import ItemCollection
-from .sizer import SizerFix
 from .trade import Trade
 from .utils import OrderedDict, AutoOrderedDict, AutoDictList
 
@@ -68,7 +68,7 @@ class MetaStrategy(StrategyBase.__class__):
             super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
         _obj.env = env
         _obj.broker = env.broker
-        _obj._sizer = SizerFix()
+        _obj._sizer = bt.sizers.FixedSize()
         _obj._orders = list()
         _obj._orderspending = list()
         _obj._trades = collections.defaultdict(AutoDictList)
@@ -88,8 +88,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
-        if not _obj._sizer.getbroker():
-            _obj._sizer.setbroker(_obj.broker)
+        _obj._sizer.setbroker(_obj.broker)
 
         return _obj, args, kwargs
 
@@ -613,7 +612,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data)
+        size = size or self.getsizing(data, isbuy=True)
 
         return self.broker.buy(
             self, data,
@@ -634,7 +633,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data)
+        size = size or self.getsizing(data, isbuy=False)
 
         return self.broker.sell(
             self, data,
@@ -733,13 +732,18 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     positionsbyname = property(getpositionsbyname)
 
+    def _addsizer(self, sizer, *args, **kwargs):
+        if sizer is None:
+            self.setsizer(bt.sizers.FixedSize())
+        else:
+            self.setsizer(sizer(*args, **kwargs))
+
     def setsizer(self, sizer):
         '''
         Replace the default (fixed stake) sizer
         '''
         self._sizer = sizer
-        if not sizer.getbroker():
-            sizer.setbroker(self.broker)
+        sizer.setbroker(self.broker)
         return sizer
 
     def getsizer(self):
@@ -753,10 +757,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     sizer = property(getsizer, setsizer)
 
-    def getsizing(self, data=None):
+    def getsizing(self, data=None, isbuy=True):
         '''
         Return the stake calculated by the sizer instance for the current
         situation
         '''
         data = data or self.datas[0]
-        return self._sizer.getsizing(data)
+        return self._sizer.getsizing(data, isbuy=isbuy)

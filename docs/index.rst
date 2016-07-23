@@ -18,6 +18,7 @@ Contents:
    operating
    cerebro
    strategy
+   sizers/sizers
    broker
    filler
    order
@@ -52,6 +53,8 @@ Contents:
    indautoref
    strategy-reference
    analyzers-reference
+   observers-reference
+   sizers-reference
 
 Indices and tables
 ==================

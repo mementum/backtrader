@@ -31,8 +31,7 @@ from backtrader.utils.py3 import MAXINT
 
 
 class TimeReturn(Observer):
-    '''This observer calculates the Returns by looking at the beginning
-    and end of the timeframe
+    '''This observer stores the *returns* of the strategy.
 
     Params:
 
@@ -48,12 +47,11 @@ class TimeReturn(Observer):
         Only used for sub-day timeframes to for example work on an hourly
         timeframe by specifying "TimeFrame.Minutes" and 60 as compression
 
-    Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-    time constraints
-
     Remember that at any moment of a ``run`` the current values can be checked
-    by looking at the *lines* by name at index ``0``
+    by looking at the *lines* by name at index ``0``.
+
     '''
+
     lines = ('timereturn',)
     plotinfo = dict(plot=True, subplot=True)
     plotlines = dict(timereturn=dict(_name='Return'))
