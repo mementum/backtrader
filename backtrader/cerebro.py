@@ -156,8 +156,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     @staticmethod
     def iterize(iterable):
-        '''
-        Handy function which turns things into things that can be iterated upon
+        '''Handy function which turns things into things that can be iterated upon
         including iterables
         '''
         niterable = list()
@@ -177,8 +176,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             self.stores.append(store)
 
     def addwriter(self, wrtcls, *args, **kwargs):
-        '''
-        Adds an ``Writer`` class to the mix. Instantiation will be done at
+        '''Adds an ``Writer`` class to the mix. Instantiation will be done at
         ``run`` time in cerebro
         '''
         self.writers.append((wrtcls, args, kwargs))
