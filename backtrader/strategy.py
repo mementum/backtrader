@@ -88,7 +88,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopostinit(_obj, *args, **kwargs)
 
-        _obj._sizer.setbroker(_obj.broker)
+        _obj._sizer.set(_obj, _obj.broker)
 
         return _obj, args, kwargs
 
@@ -743,7 +743,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         Replace the default (fixed stake) sizer
         '''
         self._sizer = sizer
-        sizer.setbroker(self.broker)
+        sizer.set(self, self.broker)
         return sizer
 
     def getsizer(self):
