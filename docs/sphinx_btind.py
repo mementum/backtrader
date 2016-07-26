@@ -29,6 +29,12 @@ from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.nodes import nested_parse_with_titles
 
 from backtrader import Indicator, Strategy, AutoInfoClass
+try:
+    from backtrader.talib import _TALibIndicator
+except ImportError:
+    _TALibIndicator = None
+    pass  # will not work in readthedocs
+
 import backtrader.feed as feed
 
 
@@ -40,7 +46,6 @@ else:
     string_types = str,
 
 
-
 class BacktraderRef(nodes.General, nodes.Element):
     pass
 
@@ -48,13 +53,15 @@ class BacktraderRef(nodes.General, nodes.Element):
 class BacktraderRefDirective(Directive):
     RefCls = None
     RefPlot = True
+    RefName = '_indcol'
 
     def run(self):
         indnode = []
-        for indname in sorted(self.RefCls._indcol.keys()):
+        refattr = getattr(self.RefCls, self.RefName, {})
+        for indname in sorted(refattr.keys()):
             # indnode.append(nodes.section())
 
-            indcls = self.RefCls._indcol[indname]
+            indcls = refattr[indname]
 
             # Title section (indicator name)
             indname = indcls.__name__
@@ -160,6 +167,16 @@ class StrategyRefDirective(BacktraderRefDirective):
     RefPlot = False
 
 
+class TALibIndRef(BacktraderRef):
+    pass
+
+
+class TALibIndRefDirective(BacktraderRefDirective):
+    RefCls = _TALibIndicator
+    RefPlot = True
+    RefName = '_taindcol'
+
+
 def setup(app):
     app.add_node(IndRef)
     app.add_directive('indref', IndRefDirective)
@@ -170,4 +187,8 @@ def setup(app):
     app.add_node(StrategyRef)
     app.add_directive('stratref', StrategyRefDirective)
 
-    return {'version': '0.1'}  # identifies the version of our extension
+    if TALibIndRefDirective.RefCls is not None:
+        app.add_node(TALibIndRef)
+        app.add_directive('talibindref', TALibIndRefDirective)
+
+    return {'version': '0.2'}  # identifies the version of our extension

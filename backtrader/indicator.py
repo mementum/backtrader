@@ -29,6 +29,7 @@ from .lineseries import LineSeriesMaker
 
 
 class MetaIndicator(IndicatorBase.__class__):
+    _refname = '_indcol'
     _indcol = dict()
 
     _icache = dict()
@@ -59,7 +60,8 @@ class MetaIndicator(IndicatorBase.__class__):
 
         if not cls.aliased and \
            name != 'Indicator' and not name.startswith('_'):
-            cls._indcol[name] = cls
+            refattr = getattr(cls, cls._refname)
+            refattr[name] = cls
 
     def donew(cls, *args, **kwargs):
 
@@ -84,7 +86,7 @@ class MetaIndicator(IndicatorBase.__class__):
         # and later lines in the datas array. This allows things like
         # passing a "Stochastic" to a crossover indicator and it will
         # automatically calculate the crossover of %k and %d
-        if len(_obj.datas) == 1:
+        if False and len(_obj.datas) == 1:
             if _obj.data.size():
                 r = range(1, _obj.data.size())
             else:

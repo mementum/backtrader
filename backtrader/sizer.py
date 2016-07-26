@@ -31,11 +31,19 @@ class Sizer(with_metaclass(MetaParams, object)):
     and override the ``_getsizing`` method
 
     Attributes:
+      - ``strategy``: will be set by the strategy in which the sizer is working
+
+        Gives access to the entire api of the strategy, for example if the
+        actual data position would be needed in ``_getsizing``::
+
+           position = self.strategy.getposition(data)
+
       - ``broker``: will be set by the strategy in which the sizer is working
 
         Gives access to information some complex sizers may need like portfolio
-        value, actual data position, ..
+        value, ..
     '''
+    strategy = None
     broker = None
 
     def getsizing(self, data, isbuy):
@@ -67,7 +75,8 @@ class Sizer(with_metaclass(MetaParams, object)):
         '''
         raise NotImplementedError
 
-    def setbroker(self, broker):
+    def set(self, strategy, broker):
+        self.strategy = strategy
         self.broker = broker
 
 

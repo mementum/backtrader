@@ -116,16 +116,30 @@ Doing it is easy:
 
   1. Subclass from ``backtrader.Sizer``
 
-     This gives you access to ``self.broker`` although it shouldn't be needed
-     in most cases. Things that can be accessed with the ``broker``
+     This gives you access to ``self.strategy`` and ``self.broker`` although it
+     shouldn't be needed in most cases. Things that can be accessed with the
+     ``broker``
 
-       - portfolio value through ``getvalue()``
-       - value of the position of a given data with ``getvalue(data)``
-       - *data* position through ``getposition(data)``
+       - data's position with ``self.strategy.getposition(data)``
+       - complete portfolio value through ``self.broker.getvalue()``
 
-       Some of the other things are already below
+	 Notice this could of course also be done with
+	 ``self.strategy.broker.getvalue()``
+
+       Some of the other things are already below as arguments
 
   2. Override the method ``_getsizing(self, comminfo, cash, data, isbuy)``
+
+     - ``comminfo``: The CommissionInfo instance that contains information
+       about the commission for the data and allows calculation of position
+       value, operation cost, commision for the operation
+
+     - ``cash``: current available cash in the *broker*
+
+     - ``data``: target of the operation
+
+     - ``isbuy``: will be ``True`` for *buy* operations and ``False`` for
+       *sell* operations
 
      This method returns the desired ``size`` for the *buy/sell* operation
 
