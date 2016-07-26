@@ -32,6 +32,7 @@ Contents:
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
    induse
+   talib/talib
    mixing-timeframes/indicators-mixing-timeframes
    inddev
    observers-and-statistics/observers-and-statistics
@@ -52,6 +53,7 @@ Contents:
    live/live
    dataautoref
    indautoref
+   talibindautoref
    strategy-reference
    analyzers-reference
    observers-reference
