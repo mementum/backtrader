@@ -1,4 +1,13 @@
-1.6.4.94:
+1.7.0.93:
+  - Changes to support separate auto-documentation for a branch of an object
+    hierarchy
+  - ta-lib integration: Closes #53
+  - ta-lib documentation
+  - Improve sizers internal interface by having a strategy attribute, which
+    can be used before resorting to the broker
+  - observer and benchmarking documentation update
+
+1.6.4.93:
   - Reworked and published sizers interface (addresses #104) with changes
     in cerebro and Strategy
   - Observers documentation
