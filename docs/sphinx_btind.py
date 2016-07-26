@@ -29,6 +29,7 @@ from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.nodes import nested_parse_with_titles
 
 from backtrader import Indicator, Strategy, AutoInfoClass
+from backtrader.talib import _TALibIndicator
 import backtrader.feed as feed
 
 
@@ -38,7 +39,6 @@ if PY2:
     string_types = str, unicode
 else:
     string_types = str,
-
 
 
 class BacktraderRef(nodes.General, nodes.Element):
@@ -162,6 +162,16 @@ class StrategyRefDirective(BacktraderRefDirective):
     RefPlot = False
 
 
+class TALibIndRef(BacktraderRef):
+    pass
+
+
+class TALibIndRefDirective(BacktraderRefDirective):
+    RefCls = _TALibIndicator
+    RefPlot = True
+    RefName = '_taindcol'
+
+
 def setup(app):
     app.add_node(IndRef)
     app.add_directive('indref', IndRefDirective)
@@ -172,4 +182,7 @@ def setup(app):
     app.add_node(StrategyRef)
     app.add_directive('stratref', StrategyRefDirective)
 
-    return {'version': '0.1'}  # identifies the version of our extension
+    app.add_node(TALibIndRef)
+    app.add_directive('talibindref', TALibIndRefDirective)
+
+    return {'version': '0.2'}  # identifies the version of our extension
