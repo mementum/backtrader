@@ -48,13 +48,15 @@ class BacktraderRef(nodes.General, nodes.Element):
 class BacktraderRefDirective(Directive):
     RefCls = None
     RefPlot = True
+    RefName = '_indcol'
 
     def run(self):
         indnode = []
-        for indname in sorted(self.RefCls._indcol.keys()):
+        refattr = getattr(self.RefCls, self.RefName, {})
+        for indname in sorted(refattr.keys()):
             # indnode.append(nodes.section())
 
-            indcls = self.RefCls._indcol[indname]
+            indcls = refattr[indname]
 
             # Title section (indicator name)
             indname = indcls.__name__
