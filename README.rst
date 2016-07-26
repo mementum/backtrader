@@ -28,8 +28,8 @@ backtrader
    :target: https://pypi.python.org/pypi/backtrader/
 
 
-**Release 1.6.x.93**: `pyfolio integration
-<http://www.backtrader.com/posts/2016-07-17-pyfolio-integration/pyfolio-integration/>`_
+**Release 1.7.0.93**: `TA-Lib integration
+<http://www.backtrader.com/posts/2016-07-26-talib-integration/talib-integration/>`_
 
 Features:
 =========
@@ -45,6 +45,7 @@ Live Trading and backtesting platform written in Python.
   - Integrated Resampling and Replaying
   - Step by Step backtesting or at once (except in the evaluation of the Strategy)
   - Integrated battery of indicators
+  - TA-Lib indicator support
   - Easy development of custom indicators
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
     integration
