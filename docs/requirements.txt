@@ -1,3 +1,2 @@
 sphinxcontrib-images
 git+https://github.com/blampe/IbPy.git
-TA-Lib
