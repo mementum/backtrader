@@ -29,7 +29,12 @@ from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.nodes import nested_parse_with_titles
 
 from backtrader import Indicator, Strategy, AutoInfoClass
-from backtrader.talib import _TALibIndicator
+try:
+    from backtrader.talib import _TALibIndicator
+except ImportError:
+    _TALibIndicator = None
+    pass  # will not work in readthedocs
+
 import backtrader.feed as feed
 
 
@@ -182,7 +187,8 @@ def setup(app):
     app.add_node(StrategyRef)
     app.add_directive('stratref', StrategyRefDirective)
 
-    app.add_node(TALibIndRef)
-    app.add_directive('talibindref', TALibIndRefDirective)
+    if TALibIndRefDirective.RefCls is not None:
+        app.add_node(TALibIndRef)
+        app.add_directive('talibindref', TALibIndRefDirective)
 
     return {'version': '0.2'}  # identifies the version of our extension
