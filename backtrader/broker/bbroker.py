@@ -326,6 +326,7 @@ class BrokerBack(BrokerBase):
 
     def submit_accept(self, order):
         order.pannotated = None
+        order.submit()
         order.accept()
         self.pending.append(order)
         self.notify(order)
