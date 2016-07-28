@@ -487,8 +487,7 @@ class BrokerBack(BrokerBase):
                     ago = 0
                     execprice = pclose
 
-                self._execute(order, ago=0, price=execprice)
-
+                self._execute(order, ago=ago, price=execprice)
                 return
 
         # If no exexcution has taken place ... annotate the closing price
