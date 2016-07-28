@@ -32,14 +32,29 @@ class BuySell(Observer):
     executions) and will plot them on the chart along the data around the
     execution price level
 
-    Params: None
+    Params:
+      - ``barplot`` (default: ``False``) Plot buy signals below the minimum and
+        sell signals above the maximum.
+
+        If ``False`` it will plot on the average price of executions during a
+        bar
+
+      - ``bardist`` (default: ``0.015`` 1.5%) Distance to max/min when
+        ``barplot`` is ``True``
     '''
     lines = ('buy', 'sell',)
 
     plotinfo = dict(plot=True, subplot=False, plotlinelabels=True)
     plotlines = dict(
-        buy=dict(marker='^', markersize=8.0, color='lime', fillstyle='full'),
-        sell=dict(marker='v', markersize=8.0, color='red', fillstyle='full')
+        buy=dict(marker='^', markersize=8.0, color='lime',
+                 fillstyle='full', ls=''),
+        sell=dict(marker='v', markersize=8.0, color='red',
+                  fillstyle='full', ls='')
+    )
+
+    params = (
+        ('barplot', False),  # plot above/below max/min for clarity in bar plot
+        ('bardist', 0.015),  # distance to max/min in absolute perc
     )
 
     def next(self):
@@ -68,7 +83,13 @@ class BuySell(Observer):
 
         buyops = (curbuy + math.fsum(buy))
         buylen = curbuylen + len(buy)
-        self.lines.buy[0] = buyops / float(buylen or 'NaN')
+
+        value = buyops / float(buylen or 'NaN')
+        if not self.p.barplot:
+            self.lines.buy[0] = value
+        elif value == value:  # Not NaN
+            pbuy = self.data.low[0] * (1 - self.p.bardist)
+            self.lines.buy[0] = pbuy
 
         # Update buylen values
         curbuy = buyops
@@ -84,7 +105,13 @@ class BuySell(Observer):
 
         sellops = (cursell + math.fsum(sell))
         selllen = curselllen + len(sell)
-        self.lines.sell[0] = sellops / float(selllen or 'NaN')
+
+        value = sellops / float(selllen or 'NaN')
+        if not self.p.barplot:
+            self.lines.sell[0] = value
+        elif value == value:  # Not NaN
+            psell = self.data.high[0] * (1 + self.p.bardist)
+            self.lines.sell[0] = psell
 
         # Update selllen values
         cursell = sellops
