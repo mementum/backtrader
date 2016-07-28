@@ -1,3 +1,18 @@
+1.7.1.93:
+  - Pinkfish challange sample
+  - Add stash to feeds to allow filtered output to be resent to filters
+  - Restore deprecated setsizing method in FixedSize sizer for old quickstart
+    guide
+  - Rework quickstart tutorial and samples to use addsizer and deprecate
+    setsizing
+  - Allow BuySell observer to plot above / below high / low for clarity,
+    especially when plotting ohlc/candles bars
+  - Add support for observer orders during replay
+  - Improve Close order execution logic
+  - Fix microsecond precision errors in end of session calculations in order
+    and feed
+  - Docstrings cosmetic changes
+
 1.7.0.93:
   - Changes to support separate auto-documentation for a branch of an object
     hierarchy
