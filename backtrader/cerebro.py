@@ -72,6 +72,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Trades and BuySell
 
       - ``exactbars`` (default: False)
+      - ``oldbuysell`` (default: ``False``)
+
+        If ``stdstats`` is ``True`` and observers are getting automatically
+        added, this switch controls the main behavior of the ``BuySell``
+        observer
+
+        - ``False``: use the modern behavior in which the buy / sell signals
+          are plotted below / above the low / high prices respectively to avoid
+          cluttering the plot
+
+        - ``True``: use the deprecated behavior in which the buy / sell signals
+          are plotted where the average price of the order executions for the
+          given moment in time is. This will of course be ON an OHLC bar or on
+          a Line on Cloe bar, difficulting the recognition of the plot.
+
+      - ``exactbars`` (default: ``False``)
 
         With the default value each and every value stored in a line is kept in
         memory
@@ -129,6 +145,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('runonce', True),
         ('maxcpus', None),
         ('stdstats', True),
+        ('oldbuysell', False),
         ('lookahead', 0),
         ('exactbars', False),
         ('live', False),
@@ -607,7 +624,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for idx, strat in enumerate(runstrats):
             if self.p.stdstats:
                 strat._addobserver(False, observers.Broker)
-                strat._addobserver(True, observers.BuySell)
+                if self.p.oldbuysell:
+                    strat._addobserver(True, observers.BuySell)
+                else:
+                    strat._addobserver(True, observers.BuySell, barplot=True)
                 strat._addobserver(False, observers.Trades)
 
             for multi, obscls, obsargs, obskwargs in self.observers:
