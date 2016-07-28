@@ -217,6 +217,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.observers.append((False, obscls, args, kwargs))
 
     def addobservermulti(self, obscls, *args, **kwargs):
+        '''
+        Adds an ``Observer`` class to the mix. Instantiation will be done at
+        ``run`` time
+
+        It will be added once per "data" in the system. A use case is a
+        buy/sell observer which observes individual datas.
+
+        A counter-example is the CashValue, which observes system-wide values
+        '''
         self.observers.append((True, obscls, args, kwargs))
 
     def addstorecb(self, callback):
