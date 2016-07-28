@@ -55,6 +55,37 @@ class BuySell(Observer):
             else:
                 sell.append(order.executed.price)
 
+        # Take into account replay ... something could already be in there
         # Write down the average buy/sell price
-        self.lines.buy[0] = math.fsum(buy)/float(len(buy) or 'NaN')
-        self.lines.sell[0] = math.fsum(sell)/float(len(sell) or 'NaN')
+
+        # BUY
+        curbuy = self.lines.buy[0]
+        if curbuy != curbuy:  # NaN
+            curbuy = 0.0
+            self.curbuylen = curbuylen = 0
+        else:
+            curbuylen = self.curbuylen
+
+        buyops = (curbuy + math.fsum(buy))
+        buylen = curbuylen + len(buy)
+        self.lines.buy[0] = buyops / float(buylen or 'NaN')
+
+        # Update buylen values
+        curbuy = buyops
+        self.curbuylen = buylen
+
+        # SELL
+        cursell = self.lines.sell[0]
+        if cursell != cursell:  # NaN
+            cursell = 0.0
+            self.curselllen = curselllen = 0
+        else:
+            curselllen = self.curselllen
+
+        sellops = (cursell + math.fsum(sell))
+        selllen = curselllen + len(sell)
+        self.lines.sell[0] = sellops / float(selllen or 'NaN')
+
+        # Update selllen values
+        cursell = sellops
+        self.curselllen = selllen
