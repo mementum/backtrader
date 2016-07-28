@@ -309,8 +309,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # provisional end-of-session
         session = self.data.p.sessionend
-        h, m, s = session.hour, session.minute, session.second
-        dteos = dtime.replace(hour=h, minute=m, second=s)
+        dteos = dtime.replace(hour=session.hour, minute=session.minute,
+                              second=session.second,
+                              microsecond=session.microsecond)
 
         if dteos < dtime:
             # eos before current time ... no ... must be at least next day

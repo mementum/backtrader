@@ -326,6 +326,7 @@ class BrokerBack(BrokerBase):
 
     def submit_accept(self, order):
         order.pannotated = None
+        order.submit()
         order.accept()
         self.pending.append(order)
         self.notify(order)
@@ -475,20 +476,26 @@ class BrokerBack(BrokerBase):
         self.notifs.append(order.clone())
 
     def _try_exec_close(self, order, pclose):
-        if len(order.data) > order.plen:
-            dt0 = order.data.datetime[0]
+        # pannotated allows to keep track of the closing bar if there is no
+        # information which lets us know that the current bar is the closing
+        # bar (like matching end of session bar)
+        # The actual matching will be done one bar afterwards but using the
+        # information from the actual closing bar
 
-            if dt0 > order.dteos or (self.p.eosbar and dt0 == order.dteos):
+        dt0 = order.data.datetime[0]
+        # don't use "len" -> in replay the close can be reached with same len
+        if dt0 > order.created.dt:  # can only execute after creation time
+            # or (self.p.eosbar and dt0 == order.dteos):
+            if dt0 >= order.dteos:
                 # past the end of session or right at it and eosbar is True
-                if order.pannotated and dt0 != order.dteos:
+                if order.pannotated and dt0 > order.dteos:
                     ago = -1
                     execprice = order.pannotated
                 else:
                     ago = 0
                     execprice = pclose
 
-                self._execute(order, ago=0, price=execprice)
-
+                self._execute(order, ago=ago, price=execprice)
                 return
 
         # If no exexcution has taken place ... annotate the closing price

@@ -36,6 +36,9 @@ class FixedSize(bt.Sizer):
     def _getsizing(self, comminfo, cash, data, isbuy):
         return self.params.stake
 
+    def setsizing(self, stake):
+        self.p.stake = stake  # OLD METHOD FOR SAMPLE COMPATIBILITY
+
 
 SizerFix = FixedSize
 

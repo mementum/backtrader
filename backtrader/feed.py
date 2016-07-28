@@ -79,7 +79,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
         elif _obj.p.sessionend is None:
-            _obj.p.sessionend = datetime.time.max
+            # remove 9 to avoid precision rounding errors
+            _obj.p.sessionend = datetime.time(23, 59, 59, 999990)
 
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
@@ -99,6 +100,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj.mlen = list()
 
         _obj._barstack = collections.deque()  # for filter operations
+        _obj._barstash = collections.deque()  # for filter operations
 
         _obj._filters = list()
         _obj._ffilters = list()
@@ -235,6 +237,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def start(self):
         self._barstack = collections.deque()
+        self._barstash = collections.deque()
         self.mlen = list()
         self._laststatus = self.CONNECTED
 
@@ -383,18 +386,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if self._fromstack():  # bar is available
                 return True
 
-            _loadret = self._load()
-            if not _loadret:  # no bar
-                # use force to make sure in exactbars the pointer is undone
-                # this covers especially (but not uniquely) the case in which
-                # the last bar has been seen and a backwards would ruin pointer
-                # accounting in the "stop" method of the strategy
-                self.backwards(force=True)  # undo data pointer
+            if not self._fromstack(stash=True):
+                _loadret = self._load()
+                if not _loadret:  # no bar use force to make sure in exactbars
+                    # the pointer is undone this covers especially (but not
+                    # uniquely) the case in which the last bar has been seen
+                    # and a backwards would ruin pointer accounting in the
+                    # "stop" method of the strategy
+                    self.backwards(force=True)  # undo data pointer
 
-                # return the actual returned value which may be None to signal
-                # no bar is available, but the data feed is not done. False
-                # means game over
-                return _loadret
+                    # return the actual returned value which may be None to
+                    # signal no bar is available, but the data feed is not
+                    # done. False means game over
+                    return _loadret
 
             # Get a reference to current loaded time
             dt = self.lines.datetime[0]
@@ -444,9 +448,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _load(self):
         return False
 
-    def _add2stack(self, bar):
+    def _add2stack(self, bar, stash=False):
         '''Saves given bar (list of values) to the stack for later retrieval'''
-        self._barstack.append(bar)
+        if not stash:
+            self._barstack.append(bar)
+        else:
+            self._barstash.append(bar)
 
     def _save2stack(self, erase=False, force=False):
         '''Saves current bar to the bar stack for later retrieval
@@ -470,16 +477,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         for line, val in zip(self.itersize(), bar):
             line[0 + ago] = val
 
-    def _fromstack(self, forward=False):
+    def _fromstack(self, forward=False, stash=False):
         '''Load a value from the stack onto the lines to form the new bar
 
         Returns True if values are present, False otherwise
         '''
-        if self._barstack:
+
+        coll = self._barstack if not stash else self._barstash
+
+        if coll:
             if forward:
                 self.forward()
 
-            for line, val in zip(self.itersize(), self._barstack.popleft()):
+            for line, val in zip(self.itersize(), coll.popleft()):
                 line[0] = val
 
             return True

@@ -466,13 +466,13 @@ have no chance to change them easily. *Parameters* come in handy to help.
 
 Definition of parameters is easy and looks like::
 
-  params = (('stake', 10), ('exitbars', 5),)
+  params = (('myparam', 27), ('exitbars', 5),)
 
 Being this a standard Python tuple with some tuples inside it, the following may
 look more appealling to some::
 
   params = (
-      ('stake', 10),
+      ('myparam', 27),
       ('exitbars', 5),
   )
 
@@ -480,14 +480,23 @@ With either formatting parametrization of the strategy is allowed when adding
 the strategy to the Cerebro engine::
 
   # Add a strategy
-  cerebro.addstrategy(TestStrategy, stake=20, exitbars=7)
+  cerebro.addstrategy(TestStrategy, myparam=20, exitbars=7)
+
+
+.. note:: The ``setsizing`` method below is deprecated. This content is kept
+	  here for anyone looking at old samples of the sources. The sources
+	  have been update to use::
+
+	    cerebro.addsizer(bt.sizers.FixedSize, stake=10)``
+
+	  Please read the section about *sizers*
 
 Using the parameters in the strategy is easy, as they are stored in a "params"
 attribute. If we for example want to set the stake fix, we can pass the stake
 parameter to the *position sizer* like this durint __init__::
 
   # Set the sizer stake from the params
-  self.sizer.setstake(self.params.stake)
+  self.sizer.setsizing(self.params.stake)
 
 We could have also called *buy* and *sell* with a *stake* parameter and
 *self.params.stake* as the value.

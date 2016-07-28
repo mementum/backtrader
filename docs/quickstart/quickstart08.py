@@ -32,7 +32,6 @@ import backtrader as bt
 # Create a Stratey
 class TestStrategy(bt.Strategy):
     params = (
-        ('stake', 10),
         ('exitbars', 5),
     )
 
@@ -44,9 +43,6 @@ class TestStrategy(bt.Strategy):
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
         self.dataclose = self.datas[0].close
-
-        # Set the sizer stake from the params
-        self.sizer.setsizing(self.params.stake)
 
         # To keep track of pending orders and buy price/commission
         self.order = None
@@ -149,6 +145,9 @@ if __name__ == '__main__':
 
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)
+
+    # Add a FixedSize sizer according to the stake
+    cerebro.addsizer(bt.sizers.FixedSize, stake=10)
 
     # Set the commission - 0.1% ... divide by 100 to remove the %
     cerebro.broker.setcommission(commission=0.001)

@@ -6,10 +6,12 @@ backtrader
    :alt: PyPi Version
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
-.. image:: https://img.shields.io/pypi/dm/backtrader.svg
-   :alt: PyPi Monthly Donwloads
-   :scale: 100%
-   :target: https://pypi.python.org/pypi/backtrader/
+
+..  .. image:: https://img.shields.io/pypi/dm/backtrader.svg
+       :alt: PyPi Monthly Donwloads
+       :scale: 100%
+       :target: https://pypi.python.org/pypi/backtrader/
+
 .. image:: https://img.shields.io/pypi/l/backtrader.svg
    :alt: License
    :scale: 100%
