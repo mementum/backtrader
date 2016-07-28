@@ -40,17 +40,17 @@ from .strategy import Strategy
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
 
-      - ``preload`` (default: True)
+      - ``preload`` (default: ``True``)
 
         Whether to preload the different ``datas`` passed to cerebro for the
         Strategies
 
-      - ``runonce`` (default: True)
+      - ``runonce`` (default: ``True``)
 
         Run ``Indicators`` in vectorized mode to speed up the entire system.
         Strategies and Observers will always be run on an event based basis
 
-      - ``live`` (default: False)
+      - ``live`` (default: ``False``)
 
         If no data has reported itself as *live* (via the data's ``islive``
         method but the end user still want to run in ``live`` mode, this
@@ -66,12 +66,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
          How many cores to use simultaneously for optimization
 
-      - stdstats (default: True)
+      - ``stdstats`` (default: ``True``)
 
         If True default Observers will be added: Broker (Cash and Value),
         Trades and BuySell
 
-      - ``exactbars`` (default: False)
       - ``oldbuysell`` (default: ``False``)
 
         If ``stdstats`` is ``True`` and observers are getting automatically
@@ -129,12 +128,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             - ``runonce`` will be deactivated
 
-      - ``writer`` (default: False)
+      - ``writer`` (default: ``False``)
         If set to True a default WriterFile will be created which will print to
         stdout. It will be added to the strategy (in addition to any other
         writers added by the user code)
 
-      - ``tradehistory`` (default: False)
+      - ``tradehistory`` (default: ``False``)
         If set to True, it will activate update event logging in each trade for
         all strategies. This can also be accomplished on a per strategy basis
         with the strategy method ``set_tradehistory``
