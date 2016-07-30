@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .version import __version__
+from .version import __version__, __btversion__
 
 from .utils import num2date, date2num, time2num, num2time
 

@@ -1,3 +1,9 @@
+1.7.2.93:
+  - Added getsize to CommissionInfo API to allow, for example, a sizer to
+    calculate the size of a trade using percentages
+  - Add __btversion__ which is a tuple of ints for easy version comparison
+  - Add macd-settings sample
+
 1.7.1.93:
   - Pinkfish challange sample
   - Add stash to feeds to allow filtered output to be resent to filters
