@@ -23,3 +23,5 @@ from __future__ import (absolute_import, division, print_function,
 
 
 __version__ = '1.7.1.93'
+
+__btversion__ = tuple(int(x) for x in __version__.split('.'))
