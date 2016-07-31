@@ -362,3 +362,9 @@ Reference
    .. automethod:: addsizer
 
    .. automethod:: addsizer_byidx
+
+   .. automethod:: add_signal
+
+   .. automethod:: signal_concurrent
+
+   .. automethod:: signal_accumulate
