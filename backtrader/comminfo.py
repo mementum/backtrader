@@ -106,6 +106,9 @@ class CommInfoBase(with_metaclass(MetaParams)):
                 self._stocklike = True
                 self._commtype = self.COMM_PERC
 
+        if not self._stocklike and not self.p.margin:
+            self.p.margin = 1.0  # avoid having None/0
+
         if self._commtype == self.COMM_PERC and not self.p.percabs:
             self.p.commission /= 100.0
 
