@@ -764,3 +764,158 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         data = data or self.datas[0]
         return self._sizer.getsizing(data, isbuy=isbuy)
+
+
+class SignalStrategy(Strategy):
+    '''This subclass of ``Strategy`` is meant to to auto-operate using
+    **signals**.
+
+    *Signals* are usually indicators and the expected output values:
+
+      - ``> 0`` is a ``long`` indication
+
+      - ``< 0`` is a ``short`` indication
+
+    There are 5 types of *Signals*, broken in 2 groups.
+
+    **Main Group**:
+
+      - ``LONGSHORT``: both ``long`` and ``short`` indications from this signal
+        are taken
+
+      - ``LONG``:
+        - ``long`` indications are taken to go long
+        - ``short`` indications are taken to *close* the long position. But:
+
+          - If a ``LONGEXIT`` (see below) signal is in the system it will be
+            used to exit the long
+
+          - If a ``SHORT`` signal is available and no ``LONGEXIT`` is available
+            , it will be used to close a ``long`` before opening a ``short``
+
+      - ``SHORT``:
+        - ``short`` indications are taken to go short
+        - ``long`` indications are taken to *close* the short position. But:
+
+          - If a ``SHORTEXIT`` (see below) signal is in the system it will be
+            used to exit the short
+
+          - If a ``LONG`` signal is available and no ``SHORTEXIT`` is available
+            , it will be used to close a ``short`` before opening a ``long``
+
+    **Exit Group**:
+
+      This 2 signals are meant to override others and provide criteria for
+      exitins a ``long``/``short`` position
+
+      - ``LONGEXIT``: ``short`` indications are taken to exit ``long``
+        positions
+
+      - ``SHORTEXIT``: ``long`` indications are taken to exit ``short``
+        positions
+
+    **Order Issuing**
+
+      Orders execution type is ``Market`` and validity is ``None`` (*Good until
+      Canceled*)
+
+    Params:
+
+      - ``signals`` (default: ``[]``): a list/tuple of lists/tuples that allows
+        the instantiation of the signals and allocation to the right type
+
+        This parameter is expected to be managed through ``cerebro.add_signal``
+
+      - ``_accumulate`` (default: ``False``): allow to enter the market
+        (long/short) even if already in the market
+
+      - ``_concurrent`` (default: ``False``): allow orders to be issued even if
+        orders are already pending execution
+
+    '''
+
+    params = (
+        ('signals', []),
+        ('_accumulate', False),
+        ('_concurrent', False),
+    )
+
+    def __init__(self, **kwargs):
+        self._signals = collections.defaultdict(list)
+
+        for sigtype, sigcls, sigargs, sigkwargs in self.p.signals:
+            self._signals[sigtype].append(sigcls(*sigargs, **sigkwargs))
+
+        # Record types of signals
+        self._longshort = bool(self._signals[bt.SIGNAL_LONGSHORT])
+
+        self._long = bool(self._signals[bt.SIGNAL_LONG])
+        self._short = bool(self._signals[bt.SIGNAL_SHORT])
+
+        self._longexit = bool(self._signals[bt.SIGNAL_LONGEXIT])
+        self._shortexit = bool(self._signals[bt.SIGNAL_SHORTEXIT])
+
+    def start(self):
+        self.order = None  # sentinel for order concurrency
+
+    def next(self):
+        if self.order is not None and not self._concurrent:
+            return  # order active and more than 1 not allowed
+
+        sigs = self._signals
+        nosig = [[0.0]]
+
+        # Calculate current status of the signals
+        ls_long = all(x[0] > 0.0 for x in sigs[bt.SIGNAL_LONGSHORT] or nosig)
+        ls_short = all(x[0] < 0.0 for x in sigs[bt.SIGNAL_LONGSHORT] or nosig)
+
+        l_enter = all(x[0] > 0.0 for x in sigs[bt.SIGNAL_LONG] or nosig)
+        s_enter = all(x[0] < 0.0 for x in sigs[bt.SIGNAL_SHORT] or nosig)
+
+        l_exit = all(x[0] < 0.0 for x in sigs[bt.SIGNAL_LONGEXIT] or nosig)
+        s_exit = all(x[0] > 0.0 for x in sigs[bt.SIGNAL_SHORTEXIT] or nosig)
+
+        # Use oppossite signales to start reversal (by closing)
+        # but only if no "xxxExit" exists
+        l_rev = not self._longexit and s_enter
+        s_rev = not self._shortexit and l_enter
+
+        # Opposite of individual long and short
+        l_leave = all(x[0] < 0.0 for x in sigs[bt.SIGNAL_LONG] or nosig)
+        s_leave = all(x[0] > 0.0 for x in sigs[bt.SIGNAL_SHORT] or nosig)
+
+        # Invalidate long leave if longexit signals are available
+        l_leave = not self._longexit and l_leave
+        # Invalidate short leave if shortexit signals are available
+        s_leave = not self._shortexit and s_leave
+
+        # Take size and start logic
+        size = self.position.size
+        if not size:
+            if ls_long or l_enter:
+                self.buy()
+
+            elif ls_short or s_enter:
+                self.sell()
+
+        elif size > 0:  # current long position
+            if ls_short or l_exit or l_rev or l_leave:
+                self.close()
+
+            if ls_short or l_rev:
+                self.sell()
+
+            if ls_long or l_enter:
+                if self.p._accumulate:
+                    self.buy()
+
+        elif size < 0:  # current short position
+            if ls_long or s_exit or s_rev or s_leave:
+                self.close()
+
+            if ls_long or s_rev:
+                self.buy()
+
+            if ls_short or s_enter:
+                if self.p._accumulate:
+                    self.sell()
