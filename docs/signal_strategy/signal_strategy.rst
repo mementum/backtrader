@@ -187,3 +187,140 @@ The sample
 ==========
 
 The *backtrader* sources contain a sample to test the functionality.
+
+Main signal to be used.
+
+.. literalinclude:: ../../samples/signals-strategy/signals-strategy.py
+   :language: python
+   :lines: 43-49
+
+And the *Exit Signal* in case the option is specified.
+
+.. literalinclude:: ../../samples/signals-strategy/signals-strategy.py
+   :language: python
+   :lines: 51-59
+
+First run: long and short
+-------------------------
+::
+
+  $ ./signals-strategy.py --plot --signal longshort
+
+The output
+
+.. thumbnail:: signal-longshort.png
+
+To notice:
+
+  - The *Signal* is plotted. This is normal given it is simply an indicator and
+    the plotting rules for it apply
+
+  - The strategy is really ``long`` and ``short``. This can be seen because the
+    *cash* level never goes back to be the *value* level
+
+  - Side note: even for a dumb idea ... (and without commission) the strategy
+    hasn't lost money ...
+
+
+Second run: long only
+---------------------
+::
+
+  $ ./signals-strategy.py --plot --signal longonly
+
+The output
+
+.. thumbnail:: signal-longonly.png
+
+To notice:
+
+  - Here the cash level goes back to be the *value* level after each *sell*,
+    which means the strategy is out of the market
+
+  - Side note: Again no money has been lost ...
+
+Third run: short only
+---------------------
+::
+
+  $ ./signals-strategy.py --plot --signal shortonly
+
+The output
+
+.. thumbnail:: signal-shortonly.png
+
+To notice:
+
+  - The 1st operation is a *sell* as expected and takes place later than the
+    1st operationa in the 2 examples above. Not until the ``close`` is below
+    the ``SMA`` and the simple substraction yields a minus
+
+  - Here the cash level goes back to be the *value* level after each *buy*,
+    which means the strategy is out of the market
+
+  - Side note: Finally the system loses money
+
+
+Fourth run: long + longexit
+---------------------------
+::
+
+  $ ./signals-strategy.py --plot --signal longonly --exitsignal longexit
+
+The output
+
+.. thumbnail:: signal-long-longexit.png
+
+To notice:
+
+  - Many of the trades are the same, but some are interrupted earlier because
+    the fast movin average in the *exit* signal crosses the slow moving average
+    to the downside
+
+  - The system shows its *longonly* property with the cash becoming the value
+    at the end of each trade
+
+  - Side note: Again money ... even with some modified trades
+
+Usage
+-----
+::
+
+  $ ./signals-strategy.py --help
+  usage: signals-strategy.py [-h] [--data DATA] [--fromdate FROMDATE]
+                             [--todate TODATE] [--cash CASH]
+                             [--smaperiod SMAPERIOD] [--exitperiod EXITPERIOD]
+                             [--signal {longshort,longonly,shortonly}]
+                             [--exitsignal {longexit,shortexit}]
+                             [--plot [kwargs]]
+
+  Sample for Signal concepts
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    --data DATA           Specific data to be read in (default:
+                          ../../datas/2005-2006-day-001.txt)
+    --fromdate FROMDATE   Starting date in YYYY-MM-DD format (default: None)
+    --todate TODATE       Ending date in YYYY-MM-DD format (default: None)
+    --cash CASH           Cash to start with (default: 50000)
+    --smaperiod SMAPERIOD
+                          Period for the moving average (default: 30)
+    --exitperiod EXITPERIOD
+                          Period for the exit control SMA (default: 5)
+    --signal {longshort,longonly,shortonly}
+                          Signal type to use for the main signal (default:
+                          longshort)
+    --exitsignal {longexit,shortexit}
+                          Signal type to use for the exit signal (default: None)
+    --plot [kwargs], -p [kwargs]
+                          Plot the read data applying any kwargs passed For
+                          example: --plot style="candle" (to plot candles)
+                          (default: None)
+
+
+The code
+--------
+
+.. literalinclude:: ../../samples/signals-strategy/signals-strategy.py
+   :language: python
+   :lines: 21-

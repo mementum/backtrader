@@ -585,8 +585,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if self.signals:  # allow processing of signals
             self.addstrategy(SignalStrategy,
-                             _accumulate=self.signal_accumulate,
-                             _concurrent=self.signal_concurrent,
+                             _accumulate=self._signal_accumulate,
+                             _concurrent=self._signal_concurrent,
                              signals=self.signals)
 
         if not self.strats:  # Datas are present, add a strategy
