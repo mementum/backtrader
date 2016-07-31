@@ -106,6 +106,9 @@ class CommInfoBase(with_metaclass(MetaParams)):
                 self._stocklike = True
                 self._commtype = self.COMM_PERC
 
+        if not self._stocklike and not self.p.margin:
+            self.p.margin = 1.0  # avoid having None/0
+
         if self._commtype == self.COMM_PERC and not self.p.percabs:
             self.p.commission /= 100.0
 
@@ -145,7 +148,14 @@ class CommInfoBase(with_metaclass(MetaParams)):
         if not self._stocklike:
             return abs(position.size) * self.p.margin
 
-        return position.size * price
+        size = position.size
+        if size >= 0:
+            return size * price
+
+        # With stocks, a short position is worth more as the price goes down
+        value = position.price * size  # original value
+        value += (position.price - price) * size  # increased value
+        return value
 
     def _getcommission(self, size, price, pseudoexec):
         '''Calculates the commission of an operation at a given price

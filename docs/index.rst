@@ -19,6 +19,7 @@ Contents:
    cerebro
    strategy
    sizers/sizers
+   signal_strategy/signal_strategy
    broker
    filler
    order

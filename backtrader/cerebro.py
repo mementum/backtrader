@@ -34,7 +34,11 @@ from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
 from .utils import OrderedDict
-from .strategy import Strategy
+from .strategy import Strategy, SignalStrategy
+
+
+(SIGNAL_NONE, SIGNAL_LONGSHORT, SIGNAL_LONG, SIGNAL_SHORT,
+ SIGNAL_LONGEXIT, SIGNAL_SHORTEXIT) = range(6)
 
 
 class Cerebro(with_metaclass(MetaParams, object)):
@@ -168,6 +172,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.writers = list()
         self.storecbs = list()
         self.datacbs = list()
+        self.signals = list()
+        self._signal_concurrent = False
+        self._signal_accumulate = False
 
         self._broker = BrokerBack()
 
@@ -186,6 +193,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def add_signal(self, sigtype, sigcls, *sigargs, **sigkwargs):
+        '''Adds a signal to the system which will be later added to a
+        ``SignalStrategy``'''
+        self.signals.append((sigtype, sigcls, sigargs, sigkwargs))
+
+    def signal_concurrent(self, onoff):
+        '''If signals are added to the system and the ``concurrent`` value is
+        set to True, concurrent orders will be allowed'''
+        self._signal_concurrent = onoff
+
+    def signal_accumulate(self, onoff):
+        '''If signals are added to the system and the ``accumulate`` value is
+        set to True, entering the market when already in the market, will be
+        allowed to increase a position'''
+        self._signal_accumulate = onoff
 
     def addstore(self, store):
         '''Adds an ``Store`` instance to the if not already present'''
@@ -559,6 +582,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
 
         self.runstrats = list()
+
+        if self.signals:  # allow processing of signals
+            self.addstrategy(SignalStrategy,
+                             _accumulate=self._signal_accumulate,
+                             _concurrent=self._signal_concurrent,
+                             signals=self.signals)
 
         if not self.strats:  # Datas are present, add a strategy
             self.addstrategy(Strategy)

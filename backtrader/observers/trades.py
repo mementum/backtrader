@@ -43,10 +43,10 @@ class Trades(Observer):
 
     plotlines = dict(
         pnlplus=dict(_name='Positive',
-                     marker='o', color='blue',
+                     ls='', marker='o', color='blue',
                      markersize=8.0, fillstyle='full'),
         pnlminus=dict(_name='Negative',
-                      marker='o', color='red',
+                      ls='', marker='o', color='red',
                       markersize=8.0, fillstyle='full')
     )
 
