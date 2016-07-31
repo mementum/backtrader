@@ -1,3 +1,9 @@
+1.8.0.93:
+  - Added signals api
+  - Correct value calculation for shorted stocks
+  - Add a symbolic margin to commissioninfo if not specified
+  - Remove line amonst marker in Trades observers
+
 1.7.2.93:
   - Added getsize to CommissionInfo API to allow, for example, a sizer to
     calculate the size of a trade using percentages
