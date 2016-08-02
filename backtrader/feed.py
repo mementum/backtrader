@@ -118,17 +118,18 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                                       dataseries.OHLCDateTime)):
 
-    params = (('dataname', None),
-              ('name', ''),
-              ('compression', 1),
-              ('timeframe', TimeFrame.Days),
-              ('fromdate', None),
-              ('todate', None),
-              ('sessionstart', None),
-              ('sessionend', None),
-              ('filters', []),
-              ('tz', None),
-              ('tzinput', None),
+    params = (
+        ('dataname', None),
+        ('name', ''),
+        ('compression', 1),
+        ('timeframe', TimeFrame.Days),
+        ('fromdate', None),
+        ('todate', None),
+        ('sessionstart', None),
+        ('sessionend', None),
+        ('filters', []),
+        ('tz', None),
+        ('tzinput', None),
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
