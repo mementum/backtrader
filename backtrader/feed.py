@@ -617,9 +617,36 @@ class CSVFeedBase(FeedBase):
 
 class DataClone(AbstractDataBase):
 
+    def __init__(self):
+        self.data = self.p.dataname
+
+        # Copy date/session parameters
+        self.p.fromdate = self.p.fromdate
+        self.p.todate = self.p.todate
+        self.p.sessionstart = self.data.p.sessionstart
+        self.p.sessionend = self.data.p.sessionend
+
+    def _start(self):
+        # redefine to copy data bits from guest data
+        self.start()
+
+        # Copy tz infos
+        self._tz = self.data._tz
+        self.lines.datetime._settz(self._tz)
+
+        # input has already been converted by guest data
+        self._tzinput = None  # no need to further converr
+
+        # Copy dates/session infos
+        self.fromdate = self.data.fromdate
+        self.todate = self.data.todate
+
+        # FIXME: if removed from guest, remove here too
+        self.sessionstart = self.data.sessionstart
+        self.sessionend = self.data.sessionend
+
     def start(self):
         super(DataClone, self).start()
-        self.data = self.p.dataname
         self._dlen = 0
         self._preloading = False
 
