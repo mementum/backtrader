@@ -371,12 +371,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         return bool(ret)
 
-    def _check(self):
+    def _check(self, forcedata=None):
         ret = 0
         for ff, fargs, fkwargs in self._filters:
             if not hasattr(ff, 'check'):
                 continue
-            ff.check(self, *fargs, **fkwargs)
+            ff.check(self, _forcedata=forcedata, *fargs, **fkwargs)
 
     def load(self):
         while True:

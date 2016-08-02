@@ -1,3 +1,7 @@
+1.8.1.93:
+  - Addresses #115 - improvement in ib multiple data handling
+  - Improvements in vcdata multiple data handling
+
 1.8.0.93:
   - Added signals api
   - Correct value calculation for shorted stocks

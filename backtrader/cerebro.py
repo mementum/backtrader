@@ -759,7 +759,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
             d0ret = data0.next()
             if d0ret:
                 for data in self.datas[1:]:
-                    data.next(datamaster=data0)
+                    if not data.next(datamaster=data0):  # no delivery
+                        data._check(forcedata=data0)  # check forcing output
+                        data.next(datamaster=data0)  # retry
 
             elif d0ret is None:
                 # meant for things like live feeds which may not produce a bar

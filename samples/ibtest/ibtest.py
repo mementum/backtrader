@@ -83,7 +83,8 @@ class TestStrategy(bt.Strategy):
 
     def next(self, frompre=False):
         txt = list()
-        txt.append('%04d' % len(self))
+        txt.append('Data0')
+        txt.append('%04d' % len(self.data0))
         dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
         txt.append('%s' % self.data.datetime.datetime(0).strftime(dtfmt))
         txt.append('{}'.format(self.data.open[0]))
@@ -95,9 +96,10 @@ class TestStrategy(bt.Strategy):
         txt.append('{}'.format(self.sma[0]))
         print(', '.join(txt))
 
-        if len(self.datas) > 1:
+        if len(self.datas) > 1 and len(self.data1):
             txt = list()
-            txt.append('%04d' % len(self))
+            txt.append('Data1')
+            txt.append('%04d' % len(self.data1))
             dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
             txt.append('%s' % self.data1.datetime.datetime(0).strftime(dtfmt))
             txt.append('{}'.format(self.data1.open[0]))
@@ -175,12 +177,20 @@ def runstrategy():
         cerebro.setbroker(broker)
 
     timeframe = bt.TimeFrame.TFrame(args.timeframe)
+    # Manage data1 parameters
+    tf1 = args.timeframe1
+    tf1 = bt.TimeFrame.TFrame(tf1) if tf1 is not None else timeframe
+    cp1 = args.compression1
+    cp1 = cp1 if cp1 is not None else args.compression
+
     if args.resample or args.replay:
-        datatf = bt.TimeFrame.Ticks
-        datacomp = 1
+        datatf = datatf1 = bt.TimeFrame.Ticks
+        datacomp = datacomp1 = 1
     else:
         datatf = timeframe
         datacomp = args.compression
+        datatf1 = tf1
+        datacomp1 = cp1
 
     fromdate = None
     if args.fromdate:
@@ -208,7 +218,12 @@ def runstrategy():
 
     data1 = None
     if args.data1 is not None:
-        data1 = IBDataFactory(dataname=args.data1, **datakwargs)
+        if args.data1 != args.data0:
+            datakwargs['timeframe'] = datatf1
+            datakwargs['compression'] = datacomp1
+            data1 = IBDataFactory(dataname=args.data1, **datakwargs)
+        else:
+            data1 = data0
 
     rekwargs = dict(
         timeframe=timeframe, compression=args.compression,
@@ -222,12 +237,16 @@ def runstrategy():
         cerebro.replaydata(dataname=data0, **rekwargs)
 
         if data1 is not None:
+            rekwargs['timeframe'] = tf1
+            rekwargs['compression'] = cp1
             cerebro.replaydata(dataname=data1, **rekwargs)
 
     elif args.resample:
         cerebro.resampledata(dataname=data0, **rekwargs)
 
         if data1 is not None:
+            rekwargs['timeframe'] = tf1
+            rekwargs['compression'] = cp1
             cerebro.resampledata(dataname=data1, **rekwargs)
 
     else:
@@ -381,6 +400,15 @@ def parse_args():
     parser.add_argument('--compression', default=1, type=int,
                         required=False, action='store',
                         help='Compression for Resample/Replay')
+
+    parser.add_argument('--timeframe1', default=None,
+                        choices=bt.TimeFrame.Names,
+                        required=False, action='store',
+                        help='TimeFrame for Resample/Replay - Data1')
+
+    parser.add_argument('--compression1', default=None, type=int,
+                        required=False, action='store',
+                        help='Compression for Resample/Replay - Data1')
 
     parser.add_argument('--no-takelate',
                         required=False, action='store_true',

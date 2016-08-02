@@ -196,7 +196,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     RTBAR_MINSIZE = (TimeFrame.Seconds, 5)
 
     # States for the Finite State Machine in _load
-    _ST_FROM, _ST_START, _ST_LIVE, _ST_HISTORBACK = range(4)
+    _ST_FROM, _ST_START, _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(5)
 
     def _timeoffset(self):
         return self.ib.timeoffset()
@@ -339,17 +339,23 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self._statelivereconn = False  # if reconnecting in live state
         self._storedmsg = dict()  # keep pending live message (under None)
 
-        if self.ib.connected():
-            self.put_notification(self.CONNECTED)
-            # get real contract details with real conId (contractId)
-            cds = self.ib.getContractDetails(self.precontract, maxcount=1)
-            if cds is not None:
-                cdetails = cds[0]
-                self.contract = cdetails.contractDetails.m_summary
-                self.contractdetails = cdetails.contractDetails
-            else:
-                # no contract can be found (or many)
-                self.put_notification(self.DISCONNECTED)
+        if not self.ib.connected():
+            return
+
+        self.put_notification(self.CONNECTED)
+        # get real contract details with real conId (contractId)
+        cds = self.ib.getContractDetails(self.precontract, maxcount=1)
+        if cds is not None:
+            cdetails = cds[0]
+            self.contract = cdetails.contractDetails.m_summary
+            self.contractdetails = cdetails.contractDetails
+        else:
+            # no contract can be found (or many)
+            self.put_notification(self.DISCONNECTED)
+            return
+
+        if self._state == self._ST_START:
+            self._st_start()
 
     def stop(self):
         '''Stops and tells the store to stop'''
@@ -379,7 +385,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             self.ib.cancelRealTimeBars(self.qlive)
 
     def _load(self):
-        if self.contract is None:
+        if self.contract is None or self._state == self._ST_OVER:
             return False  # nothing can be done
 
         while True:
@@ -511,36 +517,6 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 self._state = self._ST_LIVE
                 continue
 
-            elif self._state == self._ST_START:
-                if self.p.historical:
-                    self.put_notification(self.DELAYED)
-                    dtend = None
-                    if self.todate < float('inf'):
-                        dtend = num2date(self.todate)
-
-                    dtbegin = None
-                    if self.fromdate > float('-inf'):
-                        dtbegin = num2date(self.fromdate)
-
-                    self.qhist = self.ib.reqHistoricalDataEx(
-                        self.contract, dtend, dtbegin,
-                        self._timeframe, self._compression,
-                        what=self.p.what, useRTH=self.p.useRTH)
-
-                    self._state = self._ST_HISTORBACK
-                    continue
-
-                # Live is requested
-                if not self.ib.reconnect(resub=True):
-                    self.put_notification(self.DISCONNECTED)
-                    return False  # failed
-
-                self._statelivereconn = self.p.backfill_start
-                if not self.p.backfill_start:
-                    self.put_notification(self.DELAYED)
-
-                self._state = self._ST_LIVE
-
             elif self._state == self._ST_FROM:
                 if not self.p.backfill_from.next():
                     # additional data source is consumed
@@ -555,6 +531,42 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     ldst[0] = lsrc[0]
 
                 return True
+
+            elif self._state == self._ST_START:
+                if not self._st_start():
+                    return False
+
+    def _st_start(self):
+        if self.p.historical:
+            self.put_notification(self.DELAYED)
+            dtend = None
+            if self.todate < float('inf'):
+                dtend = num2date(self.todate)
+
+            dtbegin = None
+            if self.fromdate > float('-inf'):
+                dtbegin = num2date(self.fromdate)
+
+            self.qhist = self.ib.reqHistoricalDataEx(
+                self.contract, dtend, dtbegin,
+                self._timeframe, self._compression,
+                what=self.p.what, useRTH=self.p.useRTH)
+
+            self._state = self._ST_HISTORBACK
+            return True  # continue before
+
+        # Live is requested
+        if not self.ib.reconnect(resub=True):
+            self.put_notification(self.DISCONNECTED)
+            self._state = self._ST_OVER
+            return False  # failed - was so
+
+        self._statelivereconn = self.p.backfill_start
+        if not self.p.backfill_start:
+            self.put_notification(self.DELAYED)
+
+        self._state = self._ST_LIVE
+        return True  # no return before - implicit continue
 
     def _load_rtbar(self, rtbar, hist=False):
         # A complete 5 second bar made of real-time ticks is delivered and

@@ -346,6 +346,19 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
 
         self._mktoffdiff = self._mktoffset - self._mktoff1
 
+        if self._state == self._ST_START:
+            self.put_notification(self.DELAYED)
+
+            # Now request the data and get a comms queue for it
+            self.q = self.store._directdata(
+                self,
+                self._dataname,
+                self._tf, self._comp,
+                self.p.fromdate, self.p.todate,
+                self.p.historical)
+
+            self._state = self._ST_FEEDING
+
     def stop(self):
         '''Stops and tells the store to stop'''
         super(VCData, self).stop()
@@ -359,19 +372,6 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
     def _load(self):
         if self._state == self._ST_NOTFOUND:
             return False  # nothing can be done
-
-        if self._state == self._ST_START:
-            self.put_notification(self.DELAYED)
-
-            # Now request the data and get a comms queue for it
-            self.q = self.store._directdata(
-                self,
-                self._dataname,
-                self._tf, self._comp,
-                self.p.fromdate, self.p.todate,
-                self.p.historical)
-
-            self._state = self._ST_FEEDING
 
         while True:
             try:
