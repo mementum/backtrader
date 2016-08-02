@@ -244,7 +244,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
         return ret
 
-    def check(self, data):
+    def check(self, data, _forcedata=None):
         '''Called to check if the current stored bar has to be delivered in
         spite of the data not having moved forward. If no ticks from a live
         feed come in, a 5 second resampled bar could be delivered 20 seconds
@@ -255,7 +255,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         if not self.bar.isopen():
             return
 
-        return self(data, fromcheck=True)
+        return self(data, fromcheck=True, forcedata=_forcedata)
 
     def _dataonedge(self, data):
         if not self.subdays:  # only for subdays
@@ -271,15 +271,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         # if no extra and decomp bound is point
         return brest == 0 and point == (bound * self.p.compression)
 
-    def _adjusttime(self, greater=False):
-        '''
-        Adjusts the time of calculated bar (from underlying data source) by
-        using the timeframe to the appropriate boundary, with compression taken
-        into account
-
-        Depending on param ``rightedge`` uses the starting boundary or the
-        ending one
-        '''
+    def _calcadjtime(self, greater=False):
         dt = self.data.num2date(self.bar.datetime)
         # Get current time
         tm = dt.time()
@@ -320,6 +312,22 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         if extradays:
             dt += timedelta(days=extradays)
         dtnum = self.data.date2num(dt)
+        return dtnum
+
+    def _adjusttime(self, greater=False, forcedata=None):
+        '''
+        Adjusts the time of calculated bar (from underlying data source) by
+        using the timeframe to the appropriate boundary, with compression taken
+        into account
+
+        Depending on param ``rightedge`` uses the starting boundary or the
+        ending one
+        '''
+        if forcedata is not None:
+            self.bar.datetime = forcedata.datetime[0]
+            return True
+
+        dtnum = self._calcadjtime(greater=greater)
         if greater and dtnum <= self.bar.datetime:
             return False
 
@@ -387,7 +395,7 @@ class Resampler(_BaseResampler):
 
         return False
 
-    def __call__(self, data, fromcheck=False):
+    def __call__(self, data, fromcheck=False, forcedata=None):
         '''Called for each set of values produced by the data source'''
         consumed = False
         onedge = False
@@ -414,12 +422,27 @@ class Resampler(_BaseResampler):
             self.bar.bupdate(data)  # update new or existing bar
             data.backwards()  # remove used bar
 
-        if onedge or self._checkbarover(data, fromcheck=fromcheck):
-            if not onedge and self.doadjusttime:
-                self._adjusttime(greater=True)
+        if onedge or forcedata is not None or \
+           self._checkbarover(data, fromcheck=fromcheck):
 
-            data._add2stack(self.bar.lvalues())
-            self.bar.bstart(maxdate=True)  # bar delivered -> restart
+            dodeliver = False
+            if forcedata is not None:
+                # check our delivery time is not larger than that of forcedata
+                tframe = self.p.timeframe
+                if tframe == TimeFrame.Ticks:  # Ticks is already the lowest
+                    dodeliver = True
+                elif tframe == TimeFrame.Minutes:
+                    dtnum = self._calcadjtime(greater=True)
+                    dodeliver = dtnum <= forcedata.datetime[0]
+            else:
+                dodeliver = True
+
+            if dodeliver:
+                if not onedge and self.doadjusttime:
+                    self._adjusttime(greater=True, forcedata=forcedata)
+
+                data._add2stack(self.bar.lvalues())
+                self.bar.bstart(maxdate=True)  # bar delivered -> restart
 
         if not fromcheck:
             if not consumed:
@@ -482,7 +505,7 @@ class Replayer(_BaseResampler):
 
     replaying = True
 
-    def __call__(self, data, fromcheck=False):
+    def __call__(self, data, fromcheck=False, forcedata=None):
         consumed = False
         onedge = False
         takinglate = False
