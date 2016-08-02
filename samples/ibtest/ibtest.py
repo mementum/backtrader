@@ -86,6 +86,7 @@ class TestStrategy(bt.Strategy):
         txt.append('Data0')
         txt.append('%04d' % len(self.data0))
         dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
+        txt.append('{}'.format(self.data.datetime[0]))
         txt.append('%s' % self.data.datetime.datetime(0).strftime(dtfmt))
         txt.append('{}'.format(self.data.open[0]))
         txt.append('{}'.format(self.data.high[0]))
@@ -101,6 +102,7 @@ class TestStrategy(bt.Strategy):
             txt.append('Data1')
             txt.append('%04d' % len(self.data1))
             dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
+            txt.append('{}'.format(self.data1.datetime[0]))
             txt.append('%s' % self.data1.datetime.datetime(0).strftime(dtfmt))
             txt.append('{}'.format(self.data1.open[0]))
             txt.append('{}'.format(self.data1.high[0]))
