@@ -38,3 +38,8 @@ try:
     from .vcdata import *
 except ImportError:
     pass  # The user may not have something installed
+
+try:
+    from .oanda import OandaData
+except ImportError:
+    pass  # The user may not have something installed

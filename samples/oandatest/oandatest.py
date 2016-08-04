@@ -28,6 +28,10 @@ import datetime
 import backtrader as bt
 from backtrader.utils import flushfile  # win32 quick stdout flushing
 
+StoreCls = bt.stores.OandaStore
+DataCls = bt.feeds.OandaData
+# BrokerCls = bt.brokers.OandaBroker
+
 
 class TestStrategy(bt.Strategy):
     params = dict(
@@ -86,15 +90,15 @@ class TestStrategy(bt.Strategy):
         txt.append('Data0')
         txt.append('%04d' % len(self.data0))
         dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
-        txt.append('{}'.format(self.data.datetime[0]))
+        txt.append('{:f}'.format(self.data.datetime[0]))
         txt.append('%s' % self.data.datetime.datetime(0).strftime(dtfmt))
-        txt.append('{}'.format(self.data.open[0]))
-        txt.append('{}'.format(self.data.high[0]))
-        txt.append('{}'.format(self.data.low[0]))
-        txt.append('{}'.format(self.data.close[0]))
-        txt.append('{}'.format(self.data.volume[0]))
-        txt.append('{}'.format(self.data.openinterest[0]))
-        txt.append('{}'.format(self.sma[0]))
+        txt.append('{:f}'.format(self.data.open[0]))
+        txt.append('{:f}'.format(self.data.high[0]))
+        txt.append('{:f}'.format(self.data.low[0]))
+        txt.append('{:f}'.format(self.data.close[0]))
+        txt.append('{:6d}'.format(int(self.data.volume[0])))
+        txt.append('{:d}'.format(int(self.data.openinterest[0])))
+        txt.append('{:f}'.format(self.sma[0]))
         print(', '.join(txt))
 
         if len(self.datas) > 1 and len(self.data1):
@@ -144,8 +148,8 @@ class TestStrategy(bt.Strategy):
 
     def start(self):
         if self.data0.contractdetails is not None:
-            print('Timezone from ContractDetails: {}'.format(
-                  self.data0.contractdetails.m_timeZoneId))
+            print('-- Contract Details:')
+            print(self.data0.contractdetails)
 
         header = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume',
                   'OpenInterest', 'SMA']
@@ -161,20 +165,19 @@ def runstrategy():
     cerebro = bt.Cerebro()
 
     storekwargs = dict(
-        host=args.host, port=args.port,
-        clientId=args.clientId, timeoffset=not args.no_timeoffset,
-        reconnect=args.reconnect, timeout=args.timeout,
-        notifyall=args.notifyall, _debug=args.debug
+        token=args.token,
+        account=args.account,
+        practice=not args.live
     )
 
-    if args.usestore:
-        ibstore = bt.stores.IBStore(**storekwargs)
+    if not args.no_store:
+        store = StoreCls(**storekwargs)
 
     if args.broker:
-        if args.usestore:
-            broker = ibstore.getbroker()
+        if args.no_store:
+            broker = BrokerCls(**storekwargs)
         else:
-            broker = bt.brokers.IBBroker(**storekwargs)
+            broker = store.getbroker()
 
         cerebro.setbroker(broker)
 
@@ -199,31 +202,31 @@ def runstrategy():
         dtformat = '%Y-%m-%d' + ('T%H:%M:%S' * ('T' in args.fromdate))
         fromdate = datetime.datetime.strptime(args.fromdate, dtformat)
 
-    IBDataFactory = ibstore.getdata if args.usestore else bt.feeds.IBData
+    DataFactory = DataCls if args.no_store else store.getdata
 
     datakwargs = dict(
         timeframe=datatf, compression=datacomp,
-        historical=args.historical, fromdate=fromdate,
-        rtbar=args.rtbar,
         qcheck=args.qcheck,
-        what=args.what,
+        historical=args.historical,
+        fromdate=fromdate,
+        bidask=args.bidask,
+        useask=args.useask,
         backfill_start=not args.no_backfill_start,
         backfill=not args.no_backfill,
-        latethrough=args.latethrough,
         tz=args.timezone
     )
 
-    if not args.usestore and not args.broker:   # neither store nor broker
+    if args.no_store and not args.broker:   # neither store nor broker
         datakwargs.update(storekwargs)  # pass the store args over the data
 
-    data0 = IBDataFactory(dataname=args.data0, **datakwargs)
+    data0 = DataFactory(dataname=args.data0, **datakwargs)
 
     data1 = None
     if args.data1 is not None:
         if args.data1 != args.data0:
             datakwargs['timeframe'] = datatf1
             datakwargs['compression'] = datacomp1
-            data1 = IBDataFactory(dataname=args.data1, **datakwargs)
+            data1 = DataFactory(dataname=args.data1, **datakwargs)
         else:
             data1 = data0
 
@@ -273,69 +276,53 @@ def runstrategy():
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
+    if args.exactbars < 1:  # plotting is possible
+        if args.plot:
+            pkwargs = dict(style='line')
+            if args.plot is not True:  # evals to True but is not True
+                npkwargs = eval('dict(' + args.plot + ')')  # args were passed
+                pkwargs.update(npkwargs)
 
-    if args.plot and args.exactbars < 1:  # plot if possible
-        cerebro.plot()
+            cerebro.plot(**pkwargs)
 
 
-def parse_args():
+def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='Test Interactive Brokers integration')
+        description='Test Oanda integration')
 
     parser.add_argument('--exactbars', default=1, type=int,
                         required=False, action='store',
                         help='exactbars level, use 0/-1/-2 to enable plotting')
 
-    parser.add_argument('--plot',
-                        required=False, action='store_true',
-                        help='Plot if possible')
-
     parser.add_argument('--stopafter', default=0, type=int,
                         required=False, action='store',
                         help='Stop after x lines of LIVE data')
 
-    parser.add_argument('--usestore',
+    parser.add_argument('--no-store',
                         required=False, action='store_true',
-                        help='Use the store pattern')
-
-    parser.add_argument('--notifyall',
-                        required=False, action='store_true',
-                        help='Notify all messages to strategy as store notifs')
+                        help='Do not use the store pattern')
 
     parser.add_argument('--debug',
                         required=False, action='store_true',
-                        help='Display all info received form IB')
+                        help='Display all info received from source')
 
-    parser.add_argument('--host', default='127.0.0.1',
+    parser.add_argument('--token', default=None,
+                        required=True, action='store',
+                        help='Access token to use')
+
+    parser.add_argument('--account', default=None,
+                        required=True, action='store',
+                        help='Account identifier to use')
+
+    parser.add_argument('--live', default=None,
                         required=False, action='store',
-                        help='Host for the Interactive Brokers TWS Connection')
+                        help='Go to live server rather than practice')
 
     parser.add_argument('--qcheck', default=0.5, type=float,
                         required=False, action='store',
                         help=('Timeout for periodic '
                               'notification/resampling/replaying check'))
-
-    parser.add_argument('--port', default=7496, type=int,
-                        required=False, action='store',
-                        help='Port for the Interactive Brokers TWS Connection')
-
-    parser.add_argument('--clientId', default=None, type=int,
-                        required=False, action='store',
-                        help='Client Id to connect to TWS (default: random)')
-
-    parser.add_argument('--no-timeoffset',
-                        required=False, action='store_true',
-                        help=('Do not Use TWS/System time offset for non '
-                              'timestamped prices and to align resampling'))
-
-    parser.add_argument('--reconnect', default=3, type=int,
-                        required=False, action='store',
-                        help='Number of recconnection attempts to TWS')
-
-    parser.add_argument('--timeout', default=3.0, type=float,
-                        required=False, action='store',
-                        help='Timeout between reconnection attempts to TWS')
 
     parser.add_argument('--data0', default=None,
                         required=True, action='store',
@@ -349,27 +336,21 @@ def parse_args():
                         required=False, action='store',
                         help='timezone to get time output into (pytz names)')
 
-    parser.add_argument('--what', default=None,
-                        required=False, action='store',
-                        help='specific price type for historical requests')
+    parser.add_argument('--bidask', default=None,
+                        required=False, action='store_true',
+                        help='Use bidask ... if False use midpoint')
+
+    parser.add_argument('--useask', default=None,
+                        required=False, action='store_true',
+                        help='Use the "ask" of bidask prices/streaming')
 
     parser.add_argument('--no-backfill_start',
                         required=False, action='store_true',
                         help='Disable backfilling at the start')
 
-    parser.add_argument('--latethrough',
-                        required=False, action='store_true',
-                        help=('if resampling replaying, adjusting time '
-                              'and disabling time offset, let late samples '
-                              'through'))
-
     parser.add_argument('--no-backfill',
                         required=False, action='store_true',
                         help='Disable backfilling after a disconnection')
-
-    parser.add_argument('--rtbar', default=False,
-                        required=False, action='store_true',
-                        help='Use 5 seconds real time bar updates if possible')
 
     parser.add_argument('--historical',
                         required=False, action='store_true',
@@ -414,9 +395,7 @@ def parse_args():
 
     parser.add_argument('--no-takelate',
                         required=False, action='store_true',
-                        help=('resample/replay, do not accept late samples '
-                              'in new bar if the data source let them through '
-                              '(latethrough)'))
+                        help=('resample/replay, do not accept late samples'))
 
     parser.add_argument('--no-bar2edge',
                         required=False, action='store_true',
@@ -432,7 +411,7 @@ def parse_args():
 
     parser.add_argument('--broker',
                         required=False, action='store_true',
-                        help='Use IB as broker')
+                        help='Use Oanda as broker')
 
     parser.add_argument('--trade',
                         required=False, action='store_true',
@@ -459,6 +438,18 @@ def parse_args():
                         required=False, action='store',
                         help=('Cancel a buy order after n bars in operation,'
                               ' to be combined with orders like Limit'))
+
+    # Plot options
+    parser.add_argument('--plot', '-p', nargs='?', required=False,
+                        metavar='kwargs', const=True,
+                        help=('Plot the read data applying any kwargs passed\n'
+                              '\n'
+                              'For example (escape the quotes if needed):\n'
+                              '\n'
+                              '  --plot style="candle" (to plot candles)\n'))
+
+    if pargs is not None:
+        return parser.parse_args(pargs)
 
     return parser.parse_args()
 

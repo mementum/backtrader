@@ -33,3 +33,8 @@ try:
     from .vcstore import VCStore
 except ImportError:
     pass  # The user may not have a module installed
+
+try:
+    from .oandastore import OandaStore
+except ImportError:
+    pass  # The user may not have a module installed

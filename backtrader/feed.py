@@ -59,6 +59,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
         _obj.notifs = collections.deque()  # store notifications for cerebro
 
+        _obj._dataname = _obj.p.dataname
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -118,25 +119,26 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                                       dataseries.OHLCDateTime)):
 
-    params = (('dataname', None),
-              ('name', ''),
-              ('compression', 1),
-              ('timeframe', TimeFrame.Days),
-              ('fromdate', None),
-              ('todate', None),
-              ('sessionstart', None),
-              ('sessionend', None),
-              ('filters', []),
-              ('tz', None),
-              ('tzinput', None),
+    params = (
+        ('dataname', None),
+        ('name', ''),
+        ('compression', 1),
+        ('timeframe', TimeFrame.Days),
+        ('fromdate', None),
+        ('todate', None),
+        ('sessionstart', None),
+        ('sessionend', None),
+        ('filters', []),
+        ('tz', None),
+        ('tzinput', None),
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
-     LIVE, NOTSUBSCRIBED, UNKNOWN) = range(7)
+     LIVE, NOTSUBSCRIBED, NOTSUPPORTED_TF, UNKNOWN) = range(8)
 
     _NOTIFNAMES = [
-        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED', 'LIVE',
-        'NOTSUBSCRIBED', 'UNKNOWN']
+        'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED',
+        'LIVE', 'NOTSUBSCRIBED', 'NOTSUPPORTED_TIMEFRAME' 'UNKNOWN']
 
     @classmethod
     def _getstatusname(cls, status):
@@ -210,8 +212,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def put_notification(self, status, *args, **kwargs):
         '''Add arguments to notification queue'''
-        self.notifs.append((status, args, kwargs))
-        self._laststatus = status
+        if self._laststatus != status:
+            self.notifs.append((status, args, kwargs))
+            self._laststatus = status
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
@@ -616,9 +619,37 @@ class CSVFeedBase(FeedBase):
 
 class DataClone(AbstractDataBase):
 
+    def __init__(self):
+        self.data = self.p.dataname
+        self._dataname = self.data._dataname
+
+        # Copy date/session parameters
+        self.p.fromdate = self.p.fromdate
+        self.p.todate = self.p.todate
+        self.p.sessionstart = self.data.p.sessionstart
+        self.p.sessionend = self.data.p.sessionend
+
+    def _start(self):
+        # redefine to copy data bits from guest data
+        self.start()
+
+        # Copy tz infos
+        self._tz = self.data._tz
+        self.lines.datetime._settz(self._tz)
+
+        # input has already been converted by guest data
+        self._tzinput = None  # no need to further converr
+
+        # Copy dates/session infos
+        self.fromdate = self.data.fromdate
+        self.todate = self.data.todate
+
+        # FIXME: if removed from guest, remove here too
+        self.sessionstart = self.data.sessionstart
+        self.sessionend = self.data.sessionend
+
     def start(self):
         super(DataClone, self).start()
-        self.data = self.p.dataname
         self._dlen = 0
         self._preloading = False
 
