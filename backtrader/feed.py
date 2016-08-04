@@ -212,8 +212,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def put_notification(self, status, *args, **kwargs):
         '''Add arguments to notification queue'''
-        self.notifs.append((status, args, kwargs))
-        self._laststatus = status
+        if self._laststatus != status:
+            self.notifs.append((status, args, kwargs))
+            self._laststatus = status
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
