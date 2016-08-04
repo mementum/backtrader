@@ -562,7 +562,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return False  # failed - was so
 
         self._statelivereconn = self.p.backfill_start
-        if not self.p.backfill_start:
+        if self.p.backfill_start:
             self.put_notification(self.DELAYED)
 
         self._state = self._ST_LIVE
