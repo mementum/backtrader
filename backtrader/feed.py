@@ -59,6 +59,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
         _obj.notifs = collections.deque()  # store notifications for cerebro
 
+        _obj._dataname = _obj.p.dataname
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -619,6 +620,7 @@ class DataClone(AbstractDataBase):
 
     def __init__(self):
         self.data = self.p.dataname
+        self._dataname = self.data._dataname
 
         # Copy date/session parameters
         self.p.fromdate = self.p.fromdate
