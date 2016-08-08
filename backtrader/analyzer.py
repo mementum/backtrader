@@ -301,8 +301,8 @@ class TimeFrameAnalyzerBase(Analyzer):
             dtcmp, dtkey = self._get_dt_cmpkey(dt)
 
         if dtcmp > self.dtcmp:
-            self.dtkey = dtkey
-            self.dtcmp = dtcmp
+            self.dtkey, self.dtkey1 = dtkey, self.dtkey
+            self.dtcmp, self.dtcmp1 = dtcmp, self.dtcmp
             return True
 
         return False
