@@ -173,6 +173,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.storecbs = list()
         self.datacbs = list()
         self.signals = list()
+        self._signal_strat = (None, None, None)
         self._signal_concurrent = False
         self._signal_accumulate = False
 
@@ -198,6 +199,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''Adds a signal to the system which will be later added to a
         ``SignalStrategy``'''
         self.signals.append((sigtype, sigcls, sigargs, sigkwargs))
+
+    def signal_strategy(self, stratcls, *args, **kwargs):
+        self.signal_strat = (stratcls, args, kwargs)
 
     def signal_concurrent(self, onoff):
         '''If signals are added to the system and the ``concurrent`` value is
@@ -584,10 +588,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.runstrats = list()
 
         if self.signals:  # allow processing of signals
-            self.addstrategy(SignalStrategy,
+            signalst, sargs, skwargs = self.signal_strat
+            if signalst is None:
+                signalst, sargs, skwargs = SignalStrategy, tuple(), dict()
+
+            self.addstrategy(signalst,
                              _accumulate=self._signal_accumulate,
                              _concurrent=self._signal_concurrent,
-                             signals=self.signals)
+                             signals=self.signals,
+                             *sargs,
+                             **skwargs)
 
         if not self.strats:  # Datas are present, add a strategy
             self.addstrategy(Strategy)
