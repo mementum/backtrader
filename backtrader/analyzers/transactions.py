@@ -24,10 +24,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 
-from backtrader import Order, Position, TimeFrameAnalyzerBase
+import backtrader as bt
+from backtrader import Order, Position
 
 
-class Transactions(TimeFrameAnalyzerBase):
+class Transactions(bt.Analyzer):
     '''This analyzer reports the transactions occurred with each an every data in
     the system
 
@@ -37,18 +38,6 @@ class Transactions(TimeFrameAnalyzerBase):
     The result is used during next to record the transactions
 
     Params:
-
-      - timeframe (default: ``None``)
-        If ``None`` then the timeframe of the 1st data of the system will be
-        used
-
-      - compression (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
 
       - headers (default: ``True``)
 
@@ -70,14 +59,16 @@ class Transactions(TimeFrameAnalyzerBase):
     '''
     params = (
         ('headers', False),
+        ('_pfheaders', ('date', 'amount', 'price', 'sid', 'symbol', 'value')),
     )
 
     def start(self):
         super(Transactions, self).start()
         if self.p.headers:
-            self.rets['date'] = [['amount', 'price', 'sid', 'symbol', 'value']]
+            self.rets[self.p._pfheaders[0]] = [list(self.p._pfheaders[1:])]
 
         self._positions = collections.defaultdict(Position)
+        self._idnames = list(enumerate(self.strategy.getdatanames()))
 
     def notify_order(self, order):
         # An order could have several partial executions per cycle (unlikely
@@ -89,31 +80,24 @@ class Transactions(TimeFrameAnalyzerBase):
         if order.status not in [Order.Partial, Order.Completed]:
             return  # It's not an execution
 
-        dname = order.data._name
+        pos = self._positions[order.data._name]
         for exbit in order.executed.iterpending():
             if exbit is None:
                 break  # end of pending reached
 
-            self._positions[dname].update(exbit.size, exbit.price)
+            pos.update(exbit.size, exbit.price)
 
     def next(self):
-        super(Transactions, self).next()  # let dtkey update
-        # Updates the positions for "dtkey" (see base class) for each cycle
-        entries = list()
-        for i, dname in enumerate(self.strategy.getdatanames()):
+        # super(Transactions, self).next()  # let dtkey update
+        entries = []
+        for i, dname in self._idnames:
             pos = self._positions.get(dname, None)
-            if pos is None:
-                continue
-            size, price = pos.size, pos.price
-            if not size:
-                continue
+            if pos is not None:
+                size, price = pos.size, pos.price
+                if size:
+                    entries.append([size, price, i, dname, -size * price])
 
-            entries.append([size, price, i, dname, -size * price])
-
-        if entries:  # only add if something was added
-            self.rets[self.dtkey] = entries
-        else:
-            # remove any previous positions if None are there
-            self.rets.pop(self.dtkey, None)
+        if entries:
+            self.rets[self.data0.datetime.datetime()] = entries
 
         self._positions.clear()

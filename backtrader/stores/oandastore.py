@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
 from datetime import datetime
 import time as _time
 import json
@@ -29,6 +30,7 @@ import threading
 import oandapy
 import requests  # oandapy depdendency
 
+import backtrader as bt
 from backtrader import TimeFrame, Position
 from backtrader.metabase import MetaParams
 from backtrader.utils.py3 import queue, with_metaclass
@@ -151,6 +153,8 @@ class Streamer(oandapy.Streamer):
     def on_success(self, data):
         if 'tick' in data:
             self.q.put(data['tick'])
+        elif 'transaction' in data:
+            self.q.put(data['transaction'])
 
     def on_error(self, data):
         self.disconnect()
@@ -215,6 +219,9 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         self.broker = None  # broker instance
         self.datas = list()  # datas that have registered over start
 
+        self.orders = collections.OrderedDict()  # map order.ref to oid
+        self.orderrev = collections.OrderedDict()  # map oid to order.ref
+
         self._oenv = self._ENVPRACTICE if self.p.practice else self._ENVLIVE
         self.oapi = API(environment=self._oenv,
                         access_token=self.p.token,
@@ -222,6 +229,10 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
     def start(self, data=None, broker=None):
         # Datas require some processing to kickstart data reception
+        if data is None and broker is None:
+            self.cash = None
+            return
+
         if data is not None:
             self._env = data._env
             # For datas simulate a queue with None to kickstart co
@@ -232,11 +243,6 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
     def stop(self):
         pass  # nothing to do
-
-    def logmsg(self, *args):
-        # for logging purposes
-        if self.p._debug:
-            print(*args)
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
@@ -290,6 +296,36 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         i = insts.get('instruments', [{}])
         return i[0] or None
 
+    def streaming_events(self):
+        q = queue.Queue()
+        kwargs = {'q': q}
+
+        t = threading.Thread(target=self._t_streaming_listener, kwargs=kwargs)
+        t.daemon = True
+        t.start()
+
+        t = threading.Thread(target=self._t_streaming_events, kwargs=kwargs)
+        t.daemon = True
+        t.start()
+        return q
+
+    def _t_streaming_listener(self, q):
+        trans = q.get()
+        newcash = trans.get('accountBalance', None)
+        if newcash is not None:
+            self.cash = newcash
+        self._transaction(trans)
+
+    def _t_streaming_events(self, dataname, q):
+        if tmout is not None:
+            _time.sleep(tmout)
+
+        streamer = StreamerEvents(q, environment=self._oenv,
+                                  access_token=self.p.token,
+                                  headers={'X-Accept-Datetime-Format': 'UNIX'})
+
+        streamer.events(ignore_heartbeat=False)
+
     def candles(self, dataname, dtbegin, dtend, timeframe, compression,
                 candleFormat, includeFirst):
 
@@ -302,13 +338,12 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         return q
 
     def _t_candles(self, dataname, dtbegin, dtend, timeframe, compression,
-                  candleFormat, includeFirst, q):
+                   candleFormat, includeFirst, q):
 
         granularity = self.get_granularity(timeframe, compression)
         if granularity is None:
             e = OandaTimeFrameError()
             q.put(e.error_response)
-            q.put(None)  # CHECK
             return
 
         dtkwargs = {}
@@ -352,13 +387,113 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
         streamer.rates(self.p.account, instruments=dataname)
 
-    if False:
-        def getposition(self, contract, clone=False):
-            # Lock access to the position dicts. This is called from main
-            # thread and updates could be happening in the background
-            with self._lock_pos:
-                position = self.positions[contract.m_conId]
-                if clone:
-                    return copy(position)
+    def get_cash(self):
+        if self.cash is None:
+            try:
+                account = oanda.get_account(account_id=accid)
+            except:  # no matter what
+                self.cash = 0.0
+            else:
+                self.cash = float(account['balance'])
 
-                return position
+        return self.cash
+
+    def get_value(self):
+        # FIXME:
+        return 0.0
+
+    def getposition(self, instrument, clone=False):
+        # Lock access to the position dicts. This is called from main
+        # thread and updates could be happening in the background
+        with self._lock_pos:
+            position = self.positions[instrument]
+            if clone:
+                return position.clone()
+
+            return position
+
+    _ORDEREXECS = {
+        bt.Order.Market: 'market',
+        bt.Order.Limit: 'limit',
+        bt.Order.Stop: 'stop',
+    }
+
+    def order_create(self, order, **kwargs):
+        okwargs = dict()
+        okwargs['instruments'] = order.data._dataname
+        okwargs['units'] = abs(order.created.size)
+        okwargs['side'] = 'buy' if order.isbuy() else 'sell'
+        okwargs['type'] = self._ORDEREXECS[order.exectype]
+        if order.exectype != bt.order.Market:
+            okwargs['price'] = order.created.price
+            if order.valid is None:
+                valid = datetime.datetime.max
+            else:
+                valid = order.data.num2date(order.valid)
+
+            # To timestamp with seconds precision
+            okwargs['expiry'] = int((valid - self._DTEPOCH).total_seconds())
+
+        okwargs.update(**kwargs)  # anything from the user
+
+        t = threading.Thread(target=self._t_order_reate, args=(order,),
+                             kwargs=okwargs)
+        t.daemon = True
+        t.start()
+        return order
+
+    def _t_order_create(self, order, **kwwargs):
+        try:
+            o = self.oapi.create_order(self.p.account, **kwargs)
+        except Exception as e:
+            order._o = {}
+            self.broker._reject(order)
+        else:
+            order._o = _o = o.get('orderOpened', {})
+            oref, oid = order.ref, _o['id']
+            self._orders[oref] = oid
+            self._ordersrev[oid] = oref
+            self.broker._submit(order)
+
+    def order_cancel(self, order):
+        t = threading.Thread(target=self._t_order_cancel, args=(order,))
+        t.daemon = True
+        t.start()
+        return order
+
+    def _t_order_cancel(self, order, **kwwargs):
+        oid = self.orders.get(order.ref, None)
+        try:
+            if oid is None:
+                raise Exception
+
+            o = self.oapi.close_order(self.p.account, oid)
+        except Exception as e:
+            pass
+        else:
+            order._o = o.get('orderOpened', {})
+            self.broker._t_cancel()
+
+    _X_ORDER_CREATE = ['MARKET_ORDER_CREATE', 'STOP_ORDER_CREATE',
+                       'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE']
+
+    _X_ORDER_CANCEL = ['ORDER_CANCEL']
+
+    _X_ORDER_FILLED = ['ORDER_FILLED', 'TAKE_PROFIT_FILLED',
+                       'STOP_LOSS_FILLED', 'TRAILING_STOP_FILLED']
+
+    def _transaction(self, trans):
+        oid = trans['id']
+        ttype = trans['type']
+
+        oref = self.order_refs[oid]
+
+        if ttype in self._X_ORDER_CREATE:
+            self.broker._accept(oref)
+
+        elif ttype in self._X_ORDER_CANCEL:
+            self.broker._cancel(oref)
+
+        elif ttype in self._X_ORDER_FILLED:
+            # FIXME: parse parameters
+            self.broker._fill(oref, size, price)

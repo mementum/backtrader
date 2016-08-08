@@ -22,10 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from backtrader import TimeFrameAnalyzerBase
+import backtrader as bt
 
 
-class PositionsValue(TimeFrameAnalyzerBase):
+class PositionsValue(bt.Analyzer):
     '''This analyzer reports the value of the positions of the current set of
     datas
 
@@ -42,14 +42,6 @@ class PositionsValue(TimeFrameAnalyzerBase):
 
         If ``None`` then the compression of the 1st data of the system will be
         used
-
-      - ``prenext`` (default: ``True``)
-        Ideally a strategy shouldn't operate when the minimum period of the
-        indicators has not yet been met and the method ``prenext`` is being
-        called. But this is a *should* and not a prohibition.
-
-        If this parameter is ``True`` the analyzer will report positions even
-        during the ``prenext`` period
 
       - headers (default: ``False``)
 
@@ -69,7 +61,6 @@ class PositionsValue(TimeFrameAnalyzerBase):
         each return as keys
     '''
     params = (
-        ('prenext', True),
         ('headers',  False),
         ('cash', False),
     )
@@ -80,16 +71,16 @@ class PositionsValue(TimeFrameAnalyzerBase):
             headers = self.strategy.getdatanames() + ['cash'] * self.p.cash
             self.rets['Datetime'] = headers
 
-    def prenext(self):
-        if self.p.prenext():
-            self.next()
+        self._usedate = self.data0._timeframe >= bt.TimeFrame.Days
 
     def next(self):
-        super(PositionsValue, self).next()  # let dtkey update
-        self._dt_over()  # to udpate dtkey if needed
+        # super(PositionsValue, self).next()  # let dtkey update
         # Updates the positions for "dtkey" (see base class) for each cycle
         pvals = [self.strategy.broker.get_value([d]) for d in self.datas]
         if self.p.cash:
             pvals.append(self.strategy.broker.get_cash())
 
-        self.rets[self.dtkey] = pvals
+        if self._usedate:
+            self.rets[self.data0.datetime.date()] = pvals
+        else:
+            self.rets[self.data0.datetime.datetime()] = pvals

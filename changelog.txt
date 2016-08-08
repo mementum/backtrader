@@ -1,3 +1,9 @@
+1.8.3.93:
+  - Refactoring of pyfolio and children analyzers following #116 to try to
+    support future intraday support in *pyfolio*
+  - Allow adding a specific signal strategy subclass to cerebro
+  - Refactor SignalStrategy to ease up subclassing
+
 1.8.2.93:
   - #106 Oanda Data Feed
   - Adding _dataname to always be able to identify a data by symbol, including

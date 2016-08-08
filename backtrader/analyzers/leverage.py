@@ -21,26 +21,14 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from backtrader import TimeFrameAnalyzerBase
+import backtrader as bt
 
 
-class GrossLeverage(TimeFrameAnalyzerBase):
+class GrossLeverage(bt.Analyzer):
     '''This analyzer calculates the Gross Leverage of the current strategy
     on a timeframe basis
 
-    Params:
-
-      - timeframe (default: ``None``)
-        If ``None`` then the timeframe of the 1st data of the system will be
-        used
-
-      - compression (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
+    Params: None
 
     Methods:
 
@@ -54,7 +42,7 @@ class GrossLeverage(TimeFrameAnalyzerBase):
         self._value = value
 
     def next(self):
-        super(GrossLeverage, self).next()  # let dtkey update
         # Updates the leverage for "dtkey" (see base class) for each cycle
         # 0.0 if 100% in cash, 1.0 if no short selling and fully invested
-        self.rets[self.dtkey] = (self._value - self._cash) / self._value
+        lev = (self._value - self._cash) / self._value
+        self.rets[self.data0.datetime.datetime()] = lev
