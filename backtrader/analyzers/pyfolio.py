@@ -24,13 +24,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 
-from backtrader import Analyzer
+import backtrader as bt
 from backtrader.utils.py3 import items, iteritems
 
 from . import TimeReturn, PositionsValue, Transactions, GrossLeverage
 
 
-class PyFolio(Analyzer):
+class PyFolio(bt.Analyzer):
     '''This analyzer uses 4 children analyzers to collect data and transforms it
     in to a data set compatible with ``pyfolio``
 
@@ -57,17 +57,19 @@ class PyFolio(Analyzer):
     Params:
       These are passed transparently to the children
 
-      - timeframe (default: ``None``)
+      - timeframe (default: ``bt.TimeFrame.Days``)
+
         If ``None`` then the timeframe of the 1st data of the system will be
         used
 
-      - compression (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+      - compression (default: `1``)
 
         If ``None`` then the compression of the 1st data of the system will be
         used
+
+    Both ``timeframe`` and ``compression`` are set following the default
+    behavior of ``pyfolio`` which is working with *daily* data and upsample it
+    to obtaine values like yearly returns.
 
     Methods:
 
@@ -77,8 +79,8 @@ class PyFolio(Analyzer):
         each return as keys
     '''
     params = (
-        ('timeframe', None),
-        ('compression', None)
+        ('timeframe', bt.TimeFrame.Days),
+        ('compression', 1)
     )
 
     def __init__(self):
@@ -86,9 +88,9 @@ class PyFolio(Analyzer):
                        compression=self.p.compression)
 
         self._returns = TimeReturn(**dtfcomp)
-        self._positions = PositionsValue(headers=True, cash=True, **dtfcomp)
-        self._transactions = Transactions(headers=True, **dtfcomp)
-        self._gross_lev = GrossLeverage(**dtfcomp)
+        self._positions = PositionsValue(headers=True, cash=True)
+        self._transactions = Transactions(headers=True)
+        self._gross_lev = GrossLeverage()
 
     def stop(self):
         super(PyFolio, self).stop()
