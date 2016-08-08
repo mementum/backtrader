@@ -766,7 +766,35 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self._sizer.getsizing(data, isbuy=isbuy)
 
 
-class SignalStrategy(Strategy):
+class MetaSigStrategy(Strategy.__class__):
+
+    def dopreinit(cls, _obj, env, *args, **kwargs):
+        _obj, args, kwargs = \
+            super(MetaSigStrategy, cls).dopreinit(_obj, env, *args, **kwargs)
+
+        _obj._signals = collections.defaultdict(list)
+        return _obj, args, kwargs
+
+    def dopostinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = \
+            super(MetaSigStrategy, cls).dopostinit(_obj, *args, **kwargs)
+
+        for sigtype, sigcls, sigargs, sigkwargs in _obj.p.signals:
+            _obj._signals[sigtype].append(sigcls(*sigargs, **sigkwargs))
+
+        # Record types of signals
+        _obj._longshort = bool(_obj._signals[bt.SIGNAL_LONGSHORT])
+
+        _obj._long = bool(_obj._signals[bt.SIGNAL_LONG])
+        _obj._short = bool(_obj._signals[bt.SIGNAL_SHORT])
+
+        _obj._longexit = bool(_obj._signals[bt.SIGNAL_LONGEXIT])
+        _obj._shortexit = bool(_obj._signals[bt.SIGNAL_SHORTEXIT])
+
+        return _obj, args, kwargs
+
+
+class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
     '''This subclass of ``Strategy`` is meant to to auto-operate using
     **signals**.
 
@@ -840,23 +868,11 @@ class SignalStrategy(Strategy):
         ('_concurrent', False),
     )
 
-    def __init__(self, **kwargs):
-        self._signals = collections.defaultdict(list)
-
-        for sigtype, sigcls, sigargs, sigkwargs in self.p.signals:
-            self._signals[sigtype].append(sigcls(*sigargs, **sigkwargs))
-
-        # Record types of signals
-        self._longshort = bool(self._signals[bt.SIGNAL_LONGSHORT])
-
-        self._long = bool(self._signals[bt.SIGNAL_LONG])
-        self._short = bool(self._signals[bt.SIGNAL_SHORT])
-
-        self._longexit = bool(self._signals[bt.SIGNAL_LONGEXIT])
-        self._shortexit = bool(self._signals[bt.SIGNAL_SHORTEXIT])
-
     def start(self):
         self.order = None  # sentinel for order concurrency
+
+    def signal_add(self, sigtype, signal):
+        self._signals[sigtype].append(signal)
 
     def next(self):
         if self.order is not None and not self._concurrent:
