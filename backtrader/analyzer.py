@@ -331,7 +331,7 @@ class TimeFrameAnalyzerBase(Analyzer):
             dtkey = datetime.datetime(dt.year, dt.month, dt.day)
 
         else:
-            dtcmp, dtkey = self._getsubday_cmpkey(dt)
+            dtcmp, dtkey = self._get_subday_cmpkey(dt)
 
         return dtcmp, dtkey
 
