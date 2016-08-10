@@ -32,6 +32,7 @@ Contents:
    data-resampling/data-resampling
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
+   filters
    induse
    talib/talib
    mixing-timeframes/indicators-mixing-timeframes
@@ -59,6 +60,7 @@ Contents:
    analyzers-reference
    observers-reference
    sizers-reference
+   filters-reference
 
 Indices and tables
 ==================

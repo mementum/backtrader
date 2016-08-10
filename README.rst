@@ -29,7 +29,6 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-
 **Release 1.7.0.93**: `TA-Lib integration
 <http://www.backtrader.com/posts/2016-07-26-talib-integration/talib-integration/>`_
 
@@ -38,22 +37,28 @@ Features:
 
 Live Trading and backtesting platform written in Python.
 
-  - Live Data Feed and Trading with Interactive Brokers (needs ``IbPy`` and
-    benefits greatly from an installed ``pytz``)
-  - Data feeds from csv/files or for example *pandas*
+  - Live Data Feed and Trading with
+    - Interactive Brokers (needs ``IbPy`` and benefits greatly from an
+      installed ``pytz``)
+    - *Visual Chart* (needs a fork of ``comtypes`` until a pull request is
+      integrated in the release and benefits from ``pytz``)
+    - *Oanda* (Live feed only, needs ``oandapy``)
+
+  - Data feeds from csv/files, online sources or from *pandas* and *blaze*
   - Filters for datas (like breaking a daily bar into chunks to simulate intraday)
   - Multiple data feeds and multiple strategies supported
   - Multiple timeframes at once
   - Integrated Resampling and Replaying
   - Step by Step backtesting or at once (except in the evaluation of the Strategy)
   - Integrated battery of indicators
-  - TA-Lib indicator support
+  - *TA-Lib* indicator support
   - Easy development of custom indicators
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
     integration
   - Flexible definition of commission schemes
-  - Integrated broker simulation with Market, Close, Limit, Stop and StopLimit
-    orders and continuous cash adjustmet for future-like instruments
+  - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop* and
+    *StopLimit* orders and continuous cash adjustmet for future-like
+    instruments
   - Plotting (requires matplotlib)
 
 Documentation
@@ -153,3 +158,5 @@ cup of tea, you can always have a look at similar Python platforms:
      approach but it is funny *bt* was also chose as the abbreviation for
      ``backtrader`` during imports and that some of the methods have the same
      naming (obvious naming anyhow): "run, plot ..."
+
+  - `PyThalesians <https://github.com/thalesians/pythalesians>`_
