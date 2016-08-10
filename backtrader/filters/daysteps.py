@@ -22,7 +22,20 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-class DayStepsFilter(object):
+class BarReplayer_Open(object):
+    '''
+    This filters splits a bar in two parts:
+
+      - ``Open``: the opening price of the bar will be used to deliver an
+        initial price bar in which the four components (OHLC) are equal
+
+        The volume/openinterest fields are 0 for this initial bar
+
+      - ``OHLC``: the original bar is delivered complete with the original
+        ``volume``/``openinterest``
+
+    The split simulates a replay without the need to use the *replay* filter.
+    '''
     def __init__(self, data):
         self.pendingbar = None
 
@@ -60,3 +73,7 @@ class DayStepsFilter(object):
             return True  # something delivered
 
         return False  # nothing delivered here
+
+
+# Alias
+DayStepsFilter = BarReplayer_Open
