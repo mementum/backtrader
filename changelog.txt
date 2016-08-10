@@ -1,3 +1,9 @@
+1.8.4.93:
+  - Filters documentation and reference
+  - Add pinkfish ohl + o filter
+  - Some filter refactoring
+  - README Updates
+
 1.8.3.93:
   - Refactoring of pyfolio and children analyzers following #116 to try to
     support future intraday support in *pyfolio*
