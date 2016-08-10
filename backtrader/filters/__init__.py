@@ -27,3 +27,4 @@ from .datafiller import *
 from .session import *
 from .calendardays import *
 from .daysteps import *
+from .bsplitter import *
