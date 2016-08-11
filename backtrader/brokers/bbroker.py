@@ -130,12 +130,40 @@ class BackBroker(bt.BrokerBase):
 
           With the default ``None`` orders will be completely executed in a
           single shot
+
+        - ``slip_perc`` (default: ``0.0``) Percentage in absolute termns (and
+          positive) that should be used to slip prices up/down for buy/sell
+          orders
+
+          Note:
+
+            - ``0.01`` is ``1%``
+
+            - ``0.001`` is ``0.1%``
+
+        - ``slip_abs`` (default: ``0.0``) Percentage in units (and positive)
+          that should be used to slip prices up/down for buy/sell orders
+
+          Note: if ``slip_perc`` is non zero, it takes precendence over this.
+
+        - ``slip_open`` (default: ``False``) whether to slip prices for order
+          execution which would specifically used the *opening* price of the
+          next bar. An example would be ``Market`` order which is executed with
+          the next available tick, i.e: the opening price of the bar.
+
+          This also applies to some of the other executions, because the logic
+          tries to detect if the *opening* price would match the requested
+          price/execution type when moving to a new bar.
     '''
     params = (
         ('cash', 10000.0),
         ('checksubmit', True),
         ('eosbar', False),
         ('filler', None),
+        # slippage options
+        ('slip_perc', 0.0),
+        ('slip_abs', 0.0),
+        ('slip_open', False),
     )
 
     def init(self):
@@ -289,6 +317,10 @@ class BackBroker(bt.BrokerBase):
         return self.submit(order)
 
     def _execute(self, order, ago=None, price=None, cash=None, position=None):
+        # ago = None is used a flag for pseudo execution
+        if ago is not None and price is None:
+            return  # no psuedo exec no price - no execution
+
         if self.p.filler is None or ago is None:
             # Order gets full size or pseudo-execution
             size = order.executed.remsize
@@ -436,35 +468,43 @@ class BackBroker(bt.BrokerBase):
         if order.isbuy():
             if plimit >= popen:
                 # open smaller/equal than requested - buy cheaper
-                self._execute(order, ago=0, price=popen)
+                p = self._slip_up(phigh, popen, doslip=self.p.slip_open)
+                self._execute(order, ago=0, price=p)
             elif plimit >= plow:
                 # day low below req price ... match limit price
-                self._execute(order, ago=0, price=plimit)
+                p = self._slip_up(phigh, plimit)
+                self._execute(order, ago=0, price=p)
 
         else:  # Sell
             if plimit <= popen:
                 # open greater/equal than requested - sell more expensive
-                self._execute(order, ago=0, price=popen)
+                p = self._slip_down(plow, popen, doslip=self.p.slip_open)
+                self._execute(order, ago=0, price=p)
             elif plimit <= phigh:
                 # day high above req price ... match limit price
-                self._execute(order, ago=0, price=plimit)
+                p = self._slip_down(plow, plimit)
+                self._execute(order, ago=0, price=p)
 
     def _try_exec_stop(self, order, popen, phigh, plow, pcreated):
         if order.isbuy():
             if popen >= pcreated:
                 # price penetrated with an open gap - use open
-                self._execute(order, ago=0, price=popen)
+                p = self._slip_up(phigh, popen, doslip=self.p.slip_open)
+                self._execute(order, ago=0, price=p)
             elif phigh >= pcreated:
                 # price penetrated during the session - use trigger price
-                self._execute(order, ago=0, price=pcreated)
+                p = self._slip_up(phigh, pcreated)
+                self._execute(order, ago=0, price=p)
 
         else:  # Sell
             if popen <= pcreated:
                 # price penetrated with an open gap - use open
-                self._execute(order, ago=0, price=popen)
+                p = self._slip_down(plow, popen, doslip=self.p.slip_open)
+                self._execute(order, ago=0, price=p)
             elif plow <= pcreated:
                 # price penetrated during the session - use trigger price
-                self._execute(order, ago=0, price=pcreated)
+                p = self._slip_down(plow, pcreated)
+                self._execute(order, ago=0, price=p)
 
     def _try_exec_stoplimit(self, order,
                             popen, phigh, plow, pclose,
@@ -474,10 +514,12 @@ class BackBroker(bt.BrokerBase):
                 order.triggered = True
                 # price penetrated with an open gap
                 if plimit >= popen:
-                    self._execute(order, ago=0, price=popen)
+                    p = self._slip_up(phigh, popen, doslip=self.p.slip_open)
+                    self._execute(order, ago=0, price=p)
                 elif plimit >= plow:
                     # execute in same bar
-                    self._execute(order, ago=0, price=plimit)
+                    p = self._slip_up(phigh, plimit)
+                    self._execute(order, ago=0, price=p)
 
             elif phigh >= pcreated:
                 # price penetrated upwards during the session
@@ -485,21 +527,26 @@ class BackBroker(bt.BrokerBase):
                 # can calculate execution for a few cases - datetime is fixed
                 if popen > pclose:
                     if plimit >= pcreated:
-                        self._execute(order, ago=0, price=pcreated)
+                        p = self._slip_up(phigh, pcreated)
+                        self._execute(order, ago=0, price=p)
                     elif plimit >= pclose:
-                        self._execute(order, ago=0, price=plimit)
+                        p = self._slip_up(phigh, plimit)
+                        self._execute(order, ago=0, price=p)
                 else:  # popen < pclose
                     if plimit >= pcreated:
-                        self._execute(order, ago=0, price=pcreated)
+                        p = self._slip_up(phigh, pcreated)
+                        self._execute(order, ago=0, price=p)
         else:  # Sell
             if popen <= pcreated:
                 # price penetrated downwards with an open gap
                 order.triggered = True
                 if plimit <= popen:
-                    self._execute(order, ago=0, price=popen)
+                    p = self._slip_down(plow, popen, doslip=self.p.slip_open)
+                    self._execute(order, ago=0, price=p)
                 elif plimit <= phigh:
                     # execute in same bar
-                    self._execute(order, ago=0, price=plimit)
+                    p = self._slip_down(plow, plimit)
+                    self._execute(order, ago=0, price=p)
 
             elif plow <= pcreated:
                 # price penetrated downwards during the session
@@ -507,13 +554,46 @@ class BackBroker(bt.BrokerBase):
                 # can calculate execution for a few cases - datetime is fixed
                 if popen <= pclose:
                     if plimit <= pcreated:
-                        self._execute(order, ago=0, price=pcreated)
+                        p = self._slip_down(plow, pcreated)
+                        self._execute(order, ago=0, price=p)
                     elif plimit <= pclose:
-                        self._execute(order, ago=0, price=plimit)
+                        p = self._slip_down(plow, plimit)
+                        self._execute(order, ago=0, price=p)
                 else:
                     # popen > pclose
                     if plimit <= pcreated:
-                        self._execute(order, ago=0, price=pcreated)
+                        p = self._slip_down(plow, pcreated)
+                        self._execute(order, ago=0, price=p)
+
+    def _slip_up(self, pmax, price, doslip=True):
+        if not doslip:
+            return price
+
+        slip_perc = self.p.slip_perc
+        slip_abs = self.p.slip_abs
+        if slip_perc:
+            pslip = price * (1 + slip_perc)
+        elif slip_abs:
+            pslip = price + slip_abs
+        else:
+            return price
+
+        return pslip if pslip <= pmax else None
+
+    def _slip_down(self, pmin, price, doslip=True):
+        if not doslip:
+            return price
+
+        slip_perc = self.p.slip_perc
+        slip_abs = self.p.slip_abs
+        if slip_perc:
+            pslip = price * (1 - slip_perc)
+        elif slip_abs:
+            pslip = price - slip_abs
+        else:
+            return price
+
+        return pslip if pslip >= pmin else None
 
     def _try_exec(self, order):
         data = order.data
@@ -527,7 +607,12 @@ class BackBroker(bt.BrokerBase):
         plimit = order.created.pricelimit
 
         if order.exectype == Order.Market:
-            self._execute(order, ago=0, price=popen)
+            if order.isbuy():
+                p = self._slip_up(phigh, popen, doslip=self.p.slip_open)
+            else:
+                p = self._slip_down(plow, popen, doslip=self.p.slip_open)
+
+            self._execute(order, ago=0, price=p)
 
         elif order.exectype == Order.Close:
             self._try_exec_close(order, pclose)
