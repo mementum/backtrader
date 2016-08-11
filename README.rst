@@ -74,7 +74,7 @@ Read the full documentation at readthedocs.org:
 
 List of built-in Indicators (93)
 
-  - `backtrader indicators <http://backtrader.readthedocs.io/indautoref.html>`_
+  - `backtrader indicators <http://backtrader.readthedocs.io/en/latest/indautoref.html>`_
 
 Python 2/3 Support
 ==================
