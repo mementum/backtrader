@@ -23,84 +23,15 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 
+import backtrader as bt
 from backtrader.comminfo import CommInfoBase
-from backtrader.metabase import MetaParams
 from backtrader.order import Order, BuyOrder, SellOrder
 from backtrader.position import Position
-from backtrader.utils.py3 import with_metaclass
 
-__all__ = ['BrokerBase', 'BrokerBack']
-
-
-class BrokerBase(with_metaclass(MetaParams, object)):
-    params = (
-        ('commission', CommInfoBase(percabs=True)),
-    )
-
-    def __init__(self):
-        self.comminfo = dict()
-        self.init()
-
-    def init(self):
-        # called from init and from start
-        if None not in self.comminfo:
-            self.comminfo = dict({None: self.p.commission})
-
-    def start(self):
-        self.init()
-
-    def stop(self):
-        pass
-
-    def getcommissioninfo(self, data):
-        if data._name in self.comminfo:
-            return self.comminfo[data._name]
-
-        return self.comminfo[None]
-
-    def setcommission(self,
-                      commission=0.0, margin=None, mult=1.0,
-                      commtype=None, percabs=True, stocklike=False,
-                      name=None):
-
-        comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
-                            commtype=commtype, stocklike=stocklike,
-                            percabs=percabs)
-        self.comminfo[name] = comm
-
-    def addcommissioninfo(self, comminfo, name=None):
-        self.comminfo[name] = comminfo
-
-    def getcash(self):
-        raise NotImplementedError
-
-    def getvalue(self, datas=None):
-        raise NotImplementedError
-
-    def getposition(self, data):
-        raise NotImplementedError
-
-    def submit(self, order):
-        raise NotImplementedError
-
-    def cancel(self, order):
-        raise NotImplementedError
-
-    def buy(self, owner, data, size, price=None, plimit=None, exectype=None,
-            valid=None, tradeid=0, **kwargs):
-
-        raise NotImplementedError
-
-    def sell(self, owner, data, size, price=None, plimit=None, exectype=None,
-             valid=None, tradeid=0, **kwargs):
-
-        raise NotImplementedError
-
-    def next(self):
-        pass
+__all__ = ['BackBroker', 'BrokerBack']
 
 
-class BrokerBack(BrokerBase):
+class BackBroker(bt.BrokerBase):
     '''Broker Simulator
 
       The simulation supports different order types, checking a submitted order
@@ -208,7 +139,7 @@ class BrokerBack(BrokerBase):
     )
 
     def init(self):
-        super(BrokerBack, self).init()
+        super(BackBroker, self).init()
         self.startingcash = self.cash = self.p.cash
 
         self.orders = list()  # will only be appending
@@ -643,3 +574,7 @@ class BrokerBack(BrokerBase):
                                                  data.close[0])
                 # record the last adjustment price
                 pos.adjbase = data.close[0]
+
+
+# Alias
+BrokerBack = BackBroker

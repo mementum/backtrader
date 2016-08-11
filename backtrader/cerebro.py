@@ -29,7 +29,7 @@ from .utils.py3 import map, range, zip, with_metaclass, string_types
 
 from . import linebuffer
 from . import indicator
-from .broker import BrokerBack
+from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
@@ -177,7 +177,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._signal_concurrent = False
         self._signal_accumulate = False
 
-        self._broker = BrokerBack()
+        self._broker = BackBroker()
 
     @staticmethod
     def iterize(iterable):

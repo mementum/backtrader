@@ -30,7 +30,6 @@ from .utils.py3 import (filter, keys, iteritems, map,  string_types,
                         with_metaclass)
 
 import backtrader as bt
-from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
 from .lineroot import LineSingle
 from .metabase import ItemCollection
