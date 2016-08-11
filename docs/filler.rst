@@ -63,7 +63,7 @@ The most straightforward method is to use the ``set_filler``::
   import backtrader as bt
 
   cerebro = Cerebro()
-  cerebro.broker.set_filler(bt.broker.filler.FixedSize())
+  cerebro.broker.set_filler(bt.broker.fillers.FixedSize())
 
 The second choice is to completely replace the ``broker``, although this is
 probably only meant for subclasses of ``BrokerBack`` which have rewritten
@@ -72,7 +72,7 @@ portions of the functionality::
   import backtrader as bt
 
   cerebro = Cerebro()
-  filler = bt.broker.filler.FixedSize()
+  filler = bt.broker.fillers.FixedSize()
   newbroker = bt.broker.BrokerBack(filler=filler)
   cerebro.broker = newbroker
 
@@ -87,7 +87,7 @@ to test some of the integrated ``fillers`` (initially all)
 Reference
 =========
 
-.. currentmodule:: backtrader.broker.filler
+.. currentmodule:: backtrader.broker.fillers
 
 .. autoclass:: FixedSize
 .. autoclass:: FixedBarPerc
