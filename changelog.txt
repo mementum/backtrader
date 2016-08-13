@@ -1,3 +1,9 @@
+1.8.5.93:
+  - Slippage implementation in broker, documented and with sample
+  - Refactoring/File Reordering of broker and volume fillers
+  - Documentation updates/corrections/cleanup
+  - Merge #120
+
 1.8.4.93:
   - Filters documentation and reference
   - Add pinkfish ohl + o filter
