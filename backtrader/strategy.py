@@ -299,11 +299,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _start(self):
         self._periodset()
 
-        # change operators to stage 2
-        self._stage2()
-
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._start()
+
+        # change operators to stage 2
+        self._stage2()
 
         self.start()
 
