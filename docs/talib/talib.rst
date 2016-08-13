@@ -26,9 +26,9 @@ The installation details are on the *GitHub* repository
 Using *ta-lib*
 **************
 
-As easys as using any of the indicators already built-in in
-*backtrader*. Example of a *Simple Moving Average*. First the
-backtrader* one::
+As easy as using any of the indicators already built-in in
+*backtrader*. Example of a *Simple Moving Average*. First the *backtrader*
+one::
 
   import backtrader as bt
 
@@ -104,14 +104,14 @@ Which offers some information:
 
   - Which *parameters* and which default values
 
-  - Which outpu *lines* offers the indicator
+  - Which output *lines* the indicator actually offers
 
 Moving Averages and MA_Type
 ===========================
 
 To select a specific *moving average* for indicators like ``bt.talib.STOCH``,
 the standard *ta-lib* ``MA_Type`` is accesible with
-``bactrader.talib.MA_Type``. For example::
+``backtrader.talib.MA_Type``. For example::
 
   import backtrader as bt
   print('SMA:', bt.talib.MA_Type.SMA)
@@ -357,7 +357,7 @@ Sample Usage
                       [--ind {sma,ema,stoc,rsi,macd,bollinger,aroon,ultimate,trix,kama,adxr,dema,tema,ppo,williamsr,roc}]
                       [--no-doji] [--use-next] [--plot [kwargs]]
 
-  Sample for sizer
+  Sample for ta-lib
 
   optional arguments:
     -h, --help            show this help message and exit

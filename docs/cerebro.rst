@@ -25,7 +25,7 @@ Gathering input
      Some ``**kwargs`` to control execution are supported, see the reference
      (the same arguments can be applied later to the ``run`` method)
 
-  1. Add ``Datas``
+  1. Add *Data feeds*
 
      The most usual pattern is ``cerebro.adddata(data)``, where ``data`` is a
      *data feed* already instantiated. Example::
@@ -43,7 +43,7 @@ Gathering input
        data = bt.BacktraderCSVData(dataname='mypath.min', timeframe=bt.TimeFrame.Minutes)
        cerebro.replaydatadata(data, timeframe=bt.TimeFrame.Days)
 
-     The system can accept any number of datas, including mixing regular data
+     The system can accept any number of data feeds, including mixing regular data
      with resampled and/or replayed data. Of course some of this combinationns
      will for sure make no sense and a restriction apply in order to be able to
      combine datas: *time aligment*. See the
@@ -53,10 +53,10 @@ Gathering input
 
   2. Add ``Strategies``
 
-     Unlike the ``datas`` which are already an instance of a class, ``cerebro``
-     takes directly the ``Strategy`` class and the arguments to pass to it. The
-     rationale behind:  *in an optimization scenario the class will be
-     instantiated several times and passed different arguments*
+     Unlike the ``datas feeds`` which are already an instance of a class,
+     ``cerebro`` takes directly the ``Strategy`` class and the arguments to
+     pass to it. The rationale behind: *in an optimization scenario the class
+     will be instantiated several times and passed different arguments*
 
      Even if no *optimization* is run, the pattern still applies::
 
@@ -70,6 +70,7 @@ Gathering input
      Which will run ``MyStrategy`` 10 times with ``myparam1`` taking values
      from 10 to 19 (remember ranges in Python are half-open and ``20`` will not
      be reached)
+
 
   3. Other elements
 
@@ -93,7 +94,7 @@ Gathering input
 
   5. Receive notifications
 
-     If *datas* and/or *brokers* send notifications (or a *store* provider
+     If *data feeds* and/or *brokers* send notifications (or a *store* provider
      which creates them) they will be received through the
      ``Cerebro.notify_store`` method. There are three (3) ways to work with
      these notifications
@@ -128,94 +129,7 @@ be also specified when instantiating) to decide how to run::
 
   result = cerebro.run(**kwargs)
 
-The arguments for the different supported ways of execuing the backtesting:
-
-  - ``preload`` (default: ``True``)
-
-    Whether to preload the different ``datas`` passed to cerebro for the
-    Strategies
-
-  - ``runonce`` (default: ``True``)
-
-    Calculate ``Indicators`` in a single pass in a tight inner *for loop* to
-    speed up the entire system.  Strategies and Observers will always be run on
-    an event based (next) basis to ensure the logic is executed for each and
-    every step
-
-  - ``maxcpus`` (default: ``None`` -> all available cores)
-
-    How many cores to use simultaneously for optimization
-
-  - ``stdstats`` (default: ``True``)
-
-    If ``True`` default Observers will be added: Broker (Cash and Value),
-    Trades and BuySell
-
-  - ``live`` (default: False)
-
-    If no data has reported itself as *live* (via the data's ``islive``
-    method but the end user still want to run in ``live`` mode, this
-    parameter can be set to true
-
-    This will simulatenously deactivate ``preload`` and ``runonce``. It
-    will have no effect on memory saving schemes.
-
-    Run ``Indicators`` in vectorized mode to speed up the entire system.
-    Strategies and Observers will always be run on an event based basis
-
-  - ``exactbars`` (default: False)
-
-    With the default value each and every value stored in a line is kept in
-    memory
-
-    Possible values:
-      - ``True`` or ``1``: all "lines" objects reduce memory usage to the
-        automatically calculated minimum period.
-
-        If a Simple Moving Average has a period of 30, the underlying data
-        will have always a running buffer of 30 bars to allow the
-        calculation of the Simple Moving Average
-
-        - This setting will deactivate ``preload`` and ``runonce``
-        - Using this setting also deactivates **plotting**
-
-      - ``-1``: datas and indicators/operations at strategy level will keep
-        all data in memory.
-
-        For example: a ``RSI`` internally uses the indicator ``UpDay`` to
-        make calculations. This subindicator will not keep all data in
-        memory
-
-        - This allows to keep ``plotting`` and ``preloading`` active.
-
-        - ``runonce`` will be deactivated
-
-      - ``-2``: datas and indicators kept as attributes of the strategy
-        will keep all data in memory.
-
-        For example: a ``RSI`` internally uses the indicator ``UpDay`` to
-        make calculations. This subindicator will not keep all data in
-        memory
-
-        If in the ``__init__`` something like
-        ``a = self.data.close - self.data.high`` is defined, then ``a``
-        will not keep all data in memory
-
-        - This allows to keep ``plotting`` and ``preloading`` active.
-
-        - ``runonce`` will be deactivated
-
-  - ``writer`` (default: ``False``)
-
-    If set to True a default WriterFile will be created which will print to
-    stdout. It will be added to the strategy (in addition to any other
-    writers added by the user code)
-
-  - ``tradehistory`` (default: ``False``)
-
-    If set to True, it will activate update event logging in each trade for
-    all strategies. This can also be accomplished on a per strategy basis
-    with the strategy method ``set_tradehistory``
+See the reerence below to understand which arguments are available.
 
 Standard Observers
 ==================
@@ -270,20 +184,20 @@ Brief outline of the flow of things:
 
   0. Deliver any store notifications
 
-  1. Ask datas to deliver the next set of ticks/bars
+  1. Ask data feeds to deliver the next set of ticks/bars
 
      The 1st data inserted into the system is the ``datamaster`` and the system
      will wait for it to deliver a tick
 
-     The other datas are, more or less, slaves to the ``datamaster`` and:
+     The other data feeds are, more or less, slaves to the ``datamaster`` and:
 
        - If the next tick to deliver is newer (datetime-wise) than the one
 	 delivered by the ``datamaster`` it will not be delivered
 
        - May return without delivering a new tick for a number of reasons
 
-       The logic was designed to easily synchronize multiple datas and datas
-       with different timeframes
+       The logic was designed to easily synchronize multiple data feeds and
+       data feeds with different timeframes
 
   2. Notify the strategy about queued broker notifications of orders, trades
      and cash/value
@@ -304,7 +218,7 @@ Brief outline of the flow of things:
 
 Important to take into account:
 
-.. note::  In step ``1`` above when the *datas* deliver the new set of bars,
+.. note::  In step ``1`` above when the *data feeds* deliver the new set of bars,
 	   those bars are **closed**. This means the data has already happened.
 
 	   As such, *orders* issued by the strategy in step ``4`` cannot be
@@ -368,3 +282,5 @@ Reference
    .. automethod:: signal_concurrent
 
    .. automethod:: signal_accumulate
+
+   .. automethod:: signal_strategy

@@ -20,9 +20,9 @@ The key to iteration, just like with regular Python iterators, is:
 
   - The ``next`` method
 
-    It will be called for each iteration. The ``datas`` which the `line
-    iterator` has and serve as basis for logic/calculations will have already
-    been moved to the `next` by the platform (barring `data replay`)
+    It will be called for each iteration. The ``datas`` array which the *line
+    iterator* has and serve as basis for logic/calculations will have already
+    been moved to the next index by the platform (barring `data replay`)
 
     Called when the **minimum period** for the `line iterator` has been met. A
     bit more on this below.
@@ -41,7 +41,7 @@ But because they are not regular iterators, two additional methods exist:
     The default behavior is to forward the call to ``next``, but can of course
     be overriden if needed.
 
-Extra methods for `Indicators`
+Extra methods for *Indicators*
 ==============================
 
 To speed up operations, `Indicators` support a batch operation mode which has
@@ -172,11 +172,12 @@ Data Feeds
 These objects, obviously, provide the data which will be backtested by applying
 calculations (direct and/or with Indicators)
 
-The platform provides (at the time of writing this documentation) 2 types of
-data feeds:
+The platform provides several data feeds:
 
-  - Yahoo Finance CSV
-  - Visual Chart CSV (see www.visualchart.com)
+  - Several CSV Format and a Generic CSV reader
+  - Yahoo online fetcher
+  - Support for receiving *Pandas DataFrames* and *blaze* objects
+  - Live Data Feeds with *Interacive Brokers*, *Visual Chart* and *Oanda*
 
 The platform makes no assumption about the content of the data feed such as
 timeframe and compression. Those values, together with a name, can be supplied
@@ -196,7 +197,7 @@ Example of setting up a Yahoo Finance Data Feed::
       dataname=datapath,
       reversed=True)
 
-The optional "reversed" parameter for Yahoo is shown, because the CSV files
+The optional ``reversed`` parameter for Yahoo is shown, because the CSV files
 directly downloaded from Yahoo start with the latest date, rather than with the
 oldest.
 
@@ -229,6 +230,10 @@ If the data is plotted, those values will be used.
 A Strategy (derived) class
 **************************
 
+.. note:: Before going on and for a more simplified approach, please check the
+	  *Signals* section of the documentation if subclassing a strategy is
+	  not wished.
+
 The goal of anyone using the platform is backtesting the data and this is done
 inside a Strategy (derived class).
 
@@ -243,10 +248,10 @@ prepared to later apply the logic.
 The next method is later called to apply the logic for each and every bar of the
 data.
 
-.. note:: If datas of different timeframes (and thus different bar counts) are
-	  passed the ``next`` method will be called for the master data (the 1st
-	  one passed to cerebro, see below) which must be the the data with the
-	  smaller timeframe
+.. note:: If data feeds of different timeframes (and thus different bar counts)
+	  are passed the ``next`` method will be called for the master data
+	  (the 1st one passed to cerebro, see below) which must be the the data
+	  with the smaller timeframe
 
 .. note:: If the Data Replay functionality is used, the ``next`` method will be
 	  called several time for the same bar as the development of the bar is
@@ -290,16 +295,16 @@ Strategies have other methods (or hook points) which can be overriden::
       def stop(self):
           print('Backtesting is finished')
 
-      def notify(self, order):
+      def notify_order(self, order):
           print('An order new/changed/executed/canceled has been received')
 
-The start and stop methods should be self-explanatory. As expected and following
-the text in the print function, the *notify* method will be called when the
-strategy needs a notification. Use case:
+The ``start`` and ``stop`` methods should be self-explanatory. As expected and
+following the text in the print function, the ``notify_order`` method will be
+called when the strategy needs a notification. Use case:
 
   - A buy or sell is requested (as seen in next)
 
-    buy/sell will return an order which is submitted to the broker. Keeping a
+    buy/sell will return an *order* which is submitted to the broker. Keeping a
     reference to this submitted order is up to the caller.
 
     It can for example be used to ensure that no new orders are submitted if an
@@ -310,25 +315,25 @@ strategy needs a notification. Use case:
     the notify method
 
 The QuickStart guide has a complete and functional example of order management
-in the *notify* method.
+in the ``notify_order`` method.
 
 More can be done with other Strategy classes:
 
-  - buy/sell/close
+  - ``buy`` / ``sell`` / ``close``
 
-    Use the underlying broker and stake Sizer to send the broker a buy/sell
+    Use the underlying *broker* and *sizer* to send the broker a buy/sell
     order
 
     The same could be done by manually creating an Order and passing it over to
     the broker. But the platform is about making it easy for those using it.
 
-    "close" will get the current market position and close it immediately.
+    ``close`` will get the current market position and close it immediately.
 
-  - getposition (or the property "position")
+  - ``getposition`` (or the property "position")
 
     Returns the current market position
 
-  - setsizer/getsizer (or the property "sizer")
+  - ``setsizer``/``getsizer`` (or the property "sizer")
 
     These allow setting/getting the underlying stake Sizer. The same logic can
     be checked against Sizers which provide different stakes for the same
@@ -336,7 +341,6 @@ More can be done with other Strategy classes:
 
     There is plenty of literature but Van K. Tharp has excellent books on the
     subject.
-
 
 A Strategy is a *Lines* object and these support parameters, which are collected
 using the standard Python kwargs argument::
@@ -352,9 +356,9 @@ using the standard Python kwargs argument::
       ...
       ...
 
-Notice how the SimpleMovingAverage is no longer instantiated with a fixed value
-of 20, but rather with the parameter "period" which has been defined for the
-strategy.
+Notice how the ``SimpleMovingAverage`` is no longer instantiated with a fixed
+value of 20, but rather with the parameter "period" which has been defined for
+the strategy.
 
 A Cerebro
 *********
@@ -373,11 +377,13 @@ Defaults are taking care of if nothing special is wished.
   - The default execution mode will be runonce (batch operation) which is the
     faster
 
-    All indicators must support the runonce mode for full speed. The ones
-    included in the platform do. Custom indicators do not need to implement the
-    runonce functionality. Cerebro will simulate, which means those non-runonce
-    compatible indicators will run slower. But still most of the system will run
-    in batch mode.
+    All indicators must support the ``runonce`` mode for full speed. The ones
+    included in the platform do.
+
+    Custom indicators do not need to implement the runonce
+    functionality. ``Cerebro`` will simulate it, which means those non-runonce
+    compatible indicators will run slower. But still most of the system will
+    run in batch mode.
 
 Since a Data feed is already available and a Strategy too (created earlier) the
 standard way to put it all together and get it up and running is::
@@ -406,11 +412,11 @@ Of course a Cerebro offers additional possibilities:
 
       cerebro = bt.Cerebro(runonce=True, preload=True)
 
-    There is a constraint here: *runonce* needs preloading (if not a batch
+    There is a constraint here: ``runonce`` needs preloading (if not, a batch
     operation cannot be run) Of course preloading Data Feeds does not enforce
-    runonce
+    ``runonce``
 
-  - setbroker/getbroker (and the *broker* property)
+  - ``setbroker`` / ``getbroker`` (and the *broker* property)
 
     A custom broker can be set if wished. The actual broker instance can also be
     accesed
@@ -422,20 +428,20 @@ Of course a Cerebro offers additional possibilities:
 
     plot takes some arguments for the customization
 
-      - numfigs=1
+      - ``numfigs=1``
 
 	If the plot is too dense it may be broken down into several plots
 
-      - plotter=None
+      - ``plotter=None``
 
 	A customer plotter instance can be passed and cerebro will not
 	instantiate a default one
 
-      - kwargs - standard keyword arguments
+      - ``**kwargs`` - standard keyword arguments
 
 	Which will get passed to the plotter.
 
-    Please see the plotting section.
+    Please see the plotting section for more information.
 
   - Optimization of strategies.
 
@@ -451,16 +457,16 @@ Of course a Cerebro offers additional possibilities:
 
       cerebro.optstrategy(MyStrategy, period=xrange(10, 20))
 
-    The method *optstrategy* has the same signature as *addstrategy* but does
-    extra housekeeping to ensure optimization runs as expected. A strategy could
-    be expecting a "range" as a normal parameter for a strategy and
-    *addstrategy* will make no assumptions about the passed parameter.
+    The method ``optstrategy`` has the same signature as ``addstrategy`` but
+    does extra housekeeping to ensure optimization runs as expected. A strategy
+    could be expecting a *range* as a normal parameter for a strategy and
+    ``addstrategy`` will make no assumptions about the passed parameter.
 
-    On the other hand, *optstrategy* will understand that an iterable is a set
+    On the other hand, ``optstrategy`` will understand that an iterable is a set
     of values that has to be passed in sequence to each instantiation of the
     Strategy class.
 
-    Notice that instead of a single value a "range" of values is passed. In this
+    Notice that instead of a single value a *range* of values is passed. In this
     simple case 10 values 10 -> 19 (20 is the upper limit) will be tried for
     this strategy.
 
@@ -471,5 +477,10 @@ Of course a Cerebro offers additional possibilities:
 
       cerebro.optstrategy(MyStrategy, period=xrange(10, 20), factor=3.5)
 
-    The *optstrategy* method sees factor and creates (a needed) dummy iterable
+    The ``optstrategy`` method sees factor and creates (a needed) dummy iterable
     in the background for factor which has a single element (in the example 3.5)
+
+    .. note:: Interactive Python shells and some types of frozen executables
+       under *Windows* have problems with the Python ``multiprocessing`` module
+
+       Please read the Python documentation about ``multiprocessing``.

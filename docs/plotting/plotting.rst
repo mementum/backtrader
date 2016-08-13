@@ -7,7 +7,7 @@ visualize what's going on. Be it with an existing algorithm which has undergone
 a backtesting run or looking at what really indicators (built-in or custom)
 deliver with the data.
 
-And because everything has a human being behind it, charting the datas,
+And because everything has a human being behind it, charting the data feeds,
 indicators, operations, evolution of cash and portfolio value can help the
 humans to better appreciate what's going on, discard/modify/create ideas and
 whatever the human looking at the chart may do with the visual information.
@@ -23,7 +23,7 @@ Any backtesting run can be plotted with the invocation of a single method::
   cerebro.plot()
 
 Of course this is usually the last command issued like in this simple code
-which uses one of the sample datas from the *backtrader* sources.
+which uses one of the sample data from the *backtrader* sources.
 
 .. literalinclude:: ./01-sample-code.py
    :language: python
@@ -68,11 +68,11 @@ Although the ``Observers`` have already been mentioned above in the
 introduction, they are not the only elements to get plotted. These 3 things get
 plotted:
 
-  - *Datas* added to Cerebro with ``adddata``, ``replaydata`` and
+  - *Data Feeds* added to Cerebro with ``adddata``, ``replaydata`` and
     ``resampledata``
   - *Indicators* declared at strategy level (or added to cerebro with
-    ``addindicator`` which is purely menat meant for experimentation purposes
-    and has the indicator added to a dummy strategy)
+    ``addindicator`` which is purely meant for experimentation purposes and has
+    the indicator added to a dummy strategy)
   - *Observers* added to cerebro with ``addobserver``
 
     The Observers are *lines* objects which run in sync with the *strategy* and
@@ -87,7 +87,7 @@ be plotted on the chart. There are 3 big groups:
 
   - Options affecting the plotting behavior of the entire object
 
-  - Options affecting the plotting behavior of indididual lines
+  - Options affecting the plotting behavior of individual lines
 
   - Options affecting the SYSTEM wide plotting options
 
@@ -171,7 +171,7 @@ The meaning of the options
   - ``plotymargin``: margin to add to the top and bottom of individual
     subcharts on the graph
 
-    It is percentage but 1 based. For example: 0.05 -> 5%
+    It is a percentage but 1 based. For example: 0.05 -> 5%
 
   - ``plothlines``: an *iterable* containing values (within the scale) at
     which *horizontal* lines have to be plotted.
@@ -199,9 +199,9 @@ The meaning of the options
     If any of the above are defined they have precedence over the values
     present in this option
 
-  - ``plotforce``: sometimes and thus the complex process of matching datas to
-    indicators and bla, bla, bla ... a custom indicator may fail to plot. This
-    is a last resort mechanism to try to enforce plotting.
+  - ``plotforce``: sometimes and thus the complex process of matching data
+    feeds to indicators and bla, bla, bla ... a custom indicator may fail to
+    plot. This is a last resort mechanism to try to enforce plotting.
 
     Use it if all else fails
 
@@ -218,7 +218,7 @@ Line specific plotting options
 ==============================
 
 *Indicators*/*Observers* have *lines* and how this *lines* are plotted can be
-influeced with the ``plotlines`` object. Most of options specified in
+influenced with the ``plotlines`` object. Most of options specified in
 ``plotlines`` are meant to be directly passed over to ``matplotlib`` when
 plotting. The documentation relies therefore on examples of things that have
 been done.
@@ -263,7 +263,7 @@ A use case from ``OscillatorMixIn``::
 As the name implies, this is a *mixin* class intended to be used in multiple
 inheritance schemes (specifically on the right hand side). The *mixin* has no
 knowledge of the actual name of the 1st line (index is zero-based) from the
-other indicator that will make the multiple inherticance mix.
+other indicator that will be part of  the multiple inheritance mix.
 
 And that's why the options are specified to be for: ``_0``. After the
 subclassing has taken place the 1st line of the resulting class will have the
@@ -351,7 +351,7 @@ Which means:
     If ``None`` is passed a default ``PlotScheme`` object (see below) will be
     instantiated
 
-  - ``numfigs``: in how many independent charts a plotting has to be broken
+  - ``numfigs``: in how many independent charts a plot has to be broken
 
     Sometimes a chart contains too many bars and will not be easily readable if
     packed in a single figure. This breaks it down in as many pieces as

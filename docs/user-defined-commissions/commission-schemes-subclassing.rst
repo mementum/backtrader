@@ -12,7 +12,7 @@ incarnation involved:
   - Making the format xx% the default for new commission schemes instead of 0.xx
     (just a matter of taste), keeping the behavior configurable
 
-.. note:: See below he docstring of ``CommInfoBase`` for parameters reference
+.. note:: See below the docstring of ``CommInfoBase`` for parameters reference
 
 Defining a Commission Scheme
 ++++++++++++++++++++++++++++
@@ -158,7 +158,7 @@ The purpose of the ``pseudoexec`` arg may seem obscure but it serves a purpose.
     once with the same parameters
 
 ``pseudoexec`` indicates whether the call corresponds to the actual execution of
-an order. Although at first sight this may not seem "relevant" it is if
+an order. Although at first sight this may not seem "relevant", it is if
 scenarios like the following are considered:
 
   - A broker offers a 50% discount on futures round-trip commission once the
@@ -205,65 +205,5 @@ The purpose and being of ``pseudoexec`` are hopefully clear now.
 CommInfoBase docstring and params
 +++++++++++++++++++++++++++++++++
 
-Here it is::
-
-  class CommInfoBase(with_metaclass(MetaParams)):
-      '''Base Class for the Commission Schemes.
-
-      Params:
-
-        - commission (def: 0.0): base commission value in percentage or monetary
-          units
-
-        - mult (def 1.0): multiplier applied to the asset for value/profit
-
-        - margin (def: None): amount of monetary units needed to open/hold an
-          operation. It only applies if the final ``_stocklike`` attribute in the
-          class is set to False
-
-        - commtype (def: None): Supported values are CommInfoBase.COMM_PERC
-          (commission to be understood as %) and CommInfoBase.COMM_FIXED
-          (commission to be understood as monetary units)
-
-          The default value of ``None`` is a supported value to retain
-          compatibility with the legacy ``CommissionInfo`` object. If
-          ``commtype`` is set to None, then the following applies:
-
-            - margin is None: Internal _commtype is set to COMM_PERC and
-              _stocklike is set to True (Operating %-wise with Stocks)
-
-            - margin is not None: _commtype set to COMM_FIXED and _stocklike set
-              to False (Operating with fixed rount-trip commission with Futures)
-
-          If this param is set to something else than None, then it will be
-          passed to the internal ``_commtype`` attribute and the same will be
-          done with the param ``stocklike`` and the internal attribute
-          ``_stocklike``
-
-        - stocklike (def: False):  Indicates if the instrument is Stock-like or
-          Futures-like (see the ``commtype`` discussion above)
-
-        - percabs (def: False): when ``commtype`` is set to COMM_PERC, whether
-          the parameter ``commission`` has to be understood as XX% or 0.XX
-
-          If this param is True: 0.XX
-          If this param is False: XX%
-
-      Attributes:
-
-        - _stocklike: Final value to use for Stock-like/Futures-like behavior
-        - _commtype: Final value to use for PERC vs FIXED commissions
-
-        This two are used internally instead of the declared params to enable the
-        compatibility check described above for the legacy ``CommissionInfo``
-        object
-      '''
-
-      COMM_PERC, COMM_FIXED = range(2)
-
-      params = (
-          ('commission', 0.0), ('mult', 1.0), ('margin', None),
-          ('commtype', None),
-          ('stocklike', False),
-          ('percabs', False),
-      )
+See :doc:`../commission-schemes/commission-schemes` for the reference of
+``CommInfoBase``

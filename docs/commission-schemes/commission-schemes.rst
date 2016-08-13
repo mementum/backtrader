@@ -1,17 +1,6 @@
 Commissions: Stocks vs Futures
 ------------------------------
 
-``backtrader`` has been born out of necessity. My own ... to have the feeling I
-control my own backtesting platform and can experiment new ideas. But in doing
-so and fully open sourcing it from the very beginning it was clear it has to
-have a way to fulfill the needs and wishes of others.
-
-Being a traders future I could have chosen to code point based calculations and
-fixed price per round commissions, but it would have been a mistake.
-
-Instead, ``backtrader`` offers the possibility to play with regular % size/price
-based schemes and fixed price/point schemes. The choice is yours.
-
 Agnosticity
 ===========
 
@@ -25,10 +14,11 @@ Using the broker shortcuts
 ==========================
 
 This keeps the end user away from ``CommissionInfo`` objects because a
-commission scheme can be created/set with a single function call. Within the
-regular ``cerebro`` creation/set-up process, just add a call to ``setcomission``
-over the ``broker`` member variable. The following call sets a usual commission
-scheme for **Eurostoxx50** futures when working with *InteractiveBrokers*::
+commission scheme can be *created/set* with a single function call. Within the
+regular ``cerebro`` creation/set-up process, just add a call to
+``setcomission`` over the ``broker`` member attribute. The following call sets
+a usual commission scheme for **Eurostoxx50** futures when working with
+*Interactive Brokers*::
 
    cerebro.broker.setcommission(commission=2.0, margin=2000.0, mult=10.0)
 
@@ -45,7 +35,7 @@ whose name matches ``Eurostoxx50``.
 The meaning of the setcommission parameters
 ===========================================
 
-  - ``commission`` (default: 0.0)
+  - ``commission`` (default: ``0.0``)
 
     Monetary units in absolute or percentage terms each **action** costs.
 
@@ -62,7 +52,7 @@ The meaning of the setcommission parameters
 	happenning on a ``futures`` like intstrument and ``commission`` is a
 	fixed price per ``size`` contracts
 
-  - ``margin`` (default: None)
+  - ``margin`` (default: ``None``)
 
     Margin money needed when operating with ``futures`` like instruments. As
     expressed above
@@ -103,6 +93,14 @@ A example for stocks::
 
    cerebro.broker.setcommission(commission=0.005)  # 0.5% of the operation value
 
+.. note::
+
+   The 2nd syntax doesn't set *margin* and *mult* and *backtrader* attempts a
+   smart approach by considering the commission to be ``%`` based.
+
+   To fully specify commission schemes, a subclass of ``CommissionInfo`` needs
+   to be created
+
 Creating permanent Commission schemes
 =====================================
 
@@ -110,9 +108,9 @@ A more permanent commission scheme can be created by working directly with
 ``CommissionInfo`` classes. The user could choose to have this definition
 somewhere::
 
-  from bt import CommissionInfo
+  import backtrader as bt
 
-  commEurostoxx50 = CommissionInfo(commission=2.0, margin=2000.0, mult=10.0)
+  commEurostoxx50 = bt.CommissionInfo(commission=2.0, margin=2000.0, mult=10.0)
 
 To later apply it in another Python module with ``addcommissioninfo``::
 
@@ -126,9 +124,9 @@ To later apply it in another Python module with ``addcommissioninfo``::
 other objects in the ``backtrader`` environment. As such the above can be also
 expressed as::
 
-  from bt import CommissionInfo
+  import backtrader as bt
 
-  class CommEurostoxx50(CommissionInfo):
+  class CommEurostoxx50(bt.CommissionInfo):
       params = dict(commission=2.0, margin=2000.0, mult=10.0)
 
 And later::
@@ -197,22 +195,22 @@ The 1st operation has the following prices:
     - Futures Profit & Loss (with comission): 324.0
     - Stocks Profit & Loss (with commission): -4.91
 
-    Hey!! Commission has fully eaten up any profit on the ``stocks`` operation
-    but has only meant a small dent to the ``futures`` one.
+  Hey!! Commission has fully eaten up any profit on the ``stocks`` operation
+  but has only meant a small dent to the ``futures`` one.
 
 The 2nd operation:
 
-  - BUY (Execution) -> 3863.57 / SELL (Execution) -> 3389.24
+  - BUY (Execution) -> ``3863.57`` / SELL (Execution) -> ``3389.24``
 
-    - Futures Profit & Loss (with commission): -247.30
-    - Stocks Profit & Loss (with commission): -62.84
+    - Futures Profit & Loss (with commission): ``-247.30``
+    - Stocks Profit & Loss (with commission): ``-62.84``
 
-    The bite has been sensibly larger for this negative operation with ``futures``
+  The bite has been sensibly larger for this negative operation with ``futures``
 
 But:
 
-  - Futures accumulated net profit & loss: 324.00 + (-247.30) = 76.70
-  - Stocks accumulated net profit & loss: (-4.91) + (-62.84) = -67.75
+  - Futures accumulated net profit & loss: ``324.00 + (-247.30) = 76.70``
+  - Stocks accumulated net profit & loss: ``(-4.91) + (-62.84) = -67.75``
 
 The accumulated effect can be seen on the charts below, where it can also be
 seen that at the end of the full year, futures have produced a larger profit,

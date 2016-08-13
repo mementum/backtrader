@@ -1,13 +1,9 @@
 
-.. post:: Jul 22, 2016
-   :author: mementum
-   :image: 1
-
 Benchmarking
 ############
 
 `Ticket #89 <https://github.com/mementum/backtrader/issues/89>`_ is about
-adding benchmarking aginst an asset. Sensible as one may actually have a
+adding benchmarking against an asset. Sensible as one may actually have a
 strategy that even if positive is below what simply tracking the asset would
 have delivered.
 
@@ -24,14 +20,15 @@ This could have also obviously been an *Observer*, so whilst adding some
 *benchmarking* some work has also gone into being able to plug together an
 *Observer* and an *Analyzer* which are meant to track the same thing.
 
-.. note:: The major difference between *Observers* and *Analyzers* is the
-	  *lines* nature of *observers*, which is recording every value and
-	  makes them suitable for plotting and always for real time
-	  querying. This of course consumes memory.
+.. note::
 
-	  *Analyzers* on the other hand return a set of results via
-	  ``get_analysis`` and the implementation may not deliver any result
-	  until the very end of a *run*.
+   The major difference between *Observers* and *Analyzers* is the *lines*
+   nature of *observers*, which record every value and this makes them suitable
+   for plotting and real time querying. This of course consumes memory.
+
+   *Analyzers* on the other hand return a set of results via ``get_analysis``
+   and the implementation may not deliver any result until the very end of a
+   *run*.
 
 Analyzers - Benchmarking
 ************************
@@ -53,10 +50,12 @@ The standard ``TimeReturn`` analyzer has been extended to support tracking a
      .. note:: this data must have been added to a ``cerebro`` instance with
                ``addata``, ``resampledata`` or ``replaydata``
 
-(For more details and parameters go to the reference in the docs)
+For more details and parameters: :doc:`../analyzers-reference`
 
 As such, the returns of the porftolio on a yearly basis can be tracked like
-this::
+this
+
+.. code-block:: python
 
   import backtrader as bt
 
@@ -73,7 +72,9 @@ this::
   print(tret_analyzer.get_analysis())
 
 
-If we wanted to track the returns of a *data*::
+If we wanted to track the returns of a *data*
+
+.. code-block:: python
 
   import backtrader as bt
 
@@ -94,7 +95,9 @@ If we wanted to track the returns of a *data*::
   tret_analyzer = strat0.analyzers.getbyname('timereturn')
   print(tret_analyzer.get_analysis())
 
-If both are to be tracked, the best is to assign names to the *analyzers*::
+If both are to be tracked, the best is to assign names to the *analyzers*
+
+.. code-block:: python
 
   import backtrader as bt
 
@@ -142,20 +145,18 @@ Execution::
 
   $ ./observer-benchmark.py --plot --timereturn --timeframe notimeframe
 
-Output.
-
 .. thumbnail:: 01-benchmarking-timereturn-no-timeframe.png
 
 Notice the execution options:
 
-  - ``--timereturn``: we are telling the sample to do just that
+  - ``--timereturn`` telling the sample to do just that
 
-  - ``--timeframe notimeframe``: telling the analyzer to consider the entire
+  - ``--timeframe notimeframe`` telling the analyzer to consider the entire
     data set disregarding timeframe boundaries.
 
 The last plotted value is ``-0.26``.
 
-  - The starting cash (obvious from the chart) is ``50,000`` monetary units and the strategy ends
+  - The starting cash (obvious from the chart) are ``50K`` monetary units and the strategy ends
     up with ``36,970`` monetary units and hence a ``-26%`` value decrement.
 
 Observing Benchmarking
@@ -166,13 +167,11 @@ the same thing but with *benchmarking* active::
 
   $ ./observer-benchmark.py --plot --timeframe notimeframe
 
-Output.
-
 .. thumbnail:: 02-benchmarking-no-timeframe.png
 
 Hey, hey hey!!!
 
-  - The strategy is better as the asset: ``-0.26`` vs ``-0.33``
+  - The strategy is better than the asset: ``-0.26`` vs ``-0.33``
 
     It shouldn't be a matter for celebration but at least is clear the strategy
     is not even as bad as the asset.
@@ -180,8 +179,6 @@ Hey, hey hey!!!
 Moving down to track things on a *yearly* basis::
 
   $ ./observer-benchmark.py --plot --timeframe years
-
-Output::
 
 .. thumbnail:: 03-benchmarking-years.png
 
@@ -195,13 +192,11 @@ Watch out!
 
 The reason for values so close to each other is that when moving from 2005 to
 2006, both the strategy and the benchmarking asset were almost at the starting
-level in 2005.
+level from the beginning of 2005.
 
-Switching to a lower timeframe like *weeks* the entire picture changes::
+Switching to a lower timeframe like *weeks*, the entire picture changes::
 
   $ ./observer-benchmark.py --plot --timeframe weeks
-
-Output::
 
   .. thumbnail:: 04-benchmarking-weeks.png
 
@@ -224,8 +219,6 @@ benchmark against *Oracle* when using ``--benchdata1``. Considering the entire
 dataset with ``--timeframe notimeframe``::
 
   $ ./observer-benchmark.py --plot --timeframe notimeframe --benchdata1
-
-Output:
 
 .. thumbnail:: 05-benchmarking-data1-no-timeframe.png
 

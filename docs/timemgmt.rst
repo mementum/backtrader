@@ -19,8 +19,8 @@ the following were always *true*:
   - A trader in New York trades the ES-Mini. The time zone for both in
     ``US/Eastern`` (or one of the aliases)
 
-  - A trader in Berlin trades the DAX future. In this case for both the CET
-    timezone applies
+  - A trader in Berlin trades the DAX future. In this case for both the ``CET``
+    (or ``Europe/Berling``) timezone applies
 
 The direct input-output datetime approach from above would work, becase the
 trader, in Berlin for example, could always do something like this::
@@ -110,7 +110,7 @@ Datetime output
 
 .. note::
 
-   Input fromt the user like form example the parameters ``fromdate`` or
+   Input fromt the user like for example the parameters ``fromdate`` or
    ``sessionstart`` are expected to be in sync with the actual ``tz``, be it
    automatically calculated by the *data source*, supplied by the user or left
    as default (``None``, which means direct input-output of *datetime*)

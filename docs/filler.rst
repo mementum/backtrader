@@ -1,8 +1,8 @@
 Fillers
 #######
 
-The *bactrader* broker simulation has a default strategy when it comes to using
-volume for order execution:
+The *backtrader* broker simulation has a default strategy when it comes to
+using volume for order execution:
 
   - Ignore volume
 
@@ -87,7 +87,7 @@ to test some of the integrated ``fillers`` (initially all)
 Reference
 =========
 
-.. currentmodule:: backtrader.broker.fillers
+.. currentmodule:: backtrader.fillers
 
 .. autoclass:: FixedSize
 .. autoclass:: FixedBarPerc

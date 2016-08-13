@@ -226,12 +226,12 @@ Member Attributes:
 ==================
 
   - ``env``: the cerebro entity in which this Strategy lives
-  - ``datas``: array of datas which have been passed to cerebro
+  - ``datas``: array of data feeds which have been passed to cerebro
 
     - ``data/data0`` is an alias for datas[0]
     - ``dataX`` is an alias for datas[X]
 
-    *datas* can also be accessed by name (see the reference) if one has been
+    *data feeds* can also be accessed by name (see the reference) if one has been
     assigned to it
 
   - ``broker``: reference to the broker associated to this strategy

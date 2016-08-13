@@ -32,7 +32,7 @@ decision which was made for ``backtrader``:
     inside a *Raspberry Pi* or something even more limited like an ADSL Router
     (AVM Frit!Box 7490 with a *Freetz* image)
 
-Hence the need to have ``backtrader`` support dynamid memory schemes. Now
+Hence the need to have ``backtrader`` support dynamic memory schemes. Now
 ``Cerebro`` can be instantiated or ``run`` with the following semantics:
 
       - exactbars (default: False)

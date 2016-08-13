@@ -78,6 +78,10 @@ From *Cerebro*
 		*Sizer* instance. Each *strategy* receives a different instance
 		of the *default* sizer
 
+		To share a single instance, the sizer to be shared should be a
+		singleton class. How to define one is outside of the scope of
+		*backtrader*
+
 From *Strategy*
 ===============
 

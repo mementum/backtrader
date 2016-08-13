@@ -10,12 +10,8 @@ The concept was limited to futures with margin and a fixed commission per
 contract and stocks with a price/size percentage based commission. Not the most
 flexible of schemes even if it has served its purpose.
 
-There was only 1 thing I didn't like about my own implementation and that was
-that ``CommissionInfo`` took the percentage value in absolute terms (0.xx)
-rather than in relative terms (xx%)
-
 A request for enhancement on GitHub `#29
-<https://github.com/mementum/backtrader/issues/29>`_ has led to some rework in
+<https://github.com/mementum/backtrader/issues/29>`_ led to some rework in
 order to:
 
   - Keep ``CommissionInfo`` and ``broker.setcommission`` compatible with the
@@ -26,7 +22,9 @@ order to:
   - Make the Commission scheme flexible to support the enhancement request and
     further possibilities
 
-The actual work before getting to the sample::
+The actual work before getting to the sample
+
+.. code-block:: python
 
     class CommInfoBase(with_metaclass(MetaParams)):
         COMM_PERC, COMM_FIXED = range(2)
@@ -41,7 +39,7 @@ The actual work before getting to the sample::
 A base class for ``CommissionInfo`` has been introduced which add new parameters
 to the mix:
 
-  - ``commtype`` (default: None)
+  - ``commtype`` (default: ``None``)
 
     This is the key to compatibility. If the value is ``None``, the behavior of
     the ``CommissionInfo`` object and ``broker.setcommission`` will work as
@@ -56,7 +54,7 @@ to the mix:
     If the value is ``COMM_PERC`` or ``COMM_FIXED`` (or any other from derived
     classes) this obviously decides if the commission if fixed or percent based
 
-  - ``stocklike`` (default: False)
+  - ``stocklike`` (default: ``False``)
 
     As explained above, the actual behavior in the old ``CommissionInfo`` object
     is determined by the parameter ``margin``
@@ -66,7 +64,7 @@ to the mix:
     used and bar based cash adjustment will be performed9 or else this a
     stocks-like asset
 
-  - ``percabs`` (default: False)
+  - ``percabs`` (default: ``False``)
 
     If ``False`` then the percentage must be passed in relative terms (xx%)
 

@@ -14,22 +14,21 @@ obvious goal.
 When installed ``backtrader`` provides 2 entry points in the form of
 scripts/executables which which automates most tasks:
 
-  - ``bt-run-py`` (script)
+  - ``bt-run-py`` a script which uses the codebase from the next item
 
-    This was the original script which now relies completely on the internal
-    ``backtrader`` call named after the executable below
+  and
 
   - ``btrun`` (executable)
 
     Entry point created by ``setuptools`` during packaging. The executable
     offers advantages under Windows where in theory no errors about "path/file
-    not found" will not happen.
+    not found" will happen.
 
 The description below applies equally to both tools.
 
 ``btrun`` allows the end user to:
 
-  - Say which datas have to be loaded
+  - Say which data feeds have to be loaded
   - Set the format to load the datas
   - Specify the date range for the datas
   - Pass parameters to Cerebro
@@ -40,7 +39,7 @@ The description below applies equally to both tools.
       Standard Observers is passed, this will be ignored (parameter ``stdstats``
       to Cerebro)
 
-  - Load one or more observers (example: DrawDown) from the built-in ones or
+  - Load one or more observers (example: ``DrawDown``) from the built-in ones or
     from a python module
   - Set the cash and commission scheme parameters for the broker (commission,
     margin, mult)
@@ -53,7 +52,7 @@ And finally what should be the core competence:
   - Load a strategy (a built-in one or from a Python module)
   - Pass parameters to the loaded strategy
 
-See below for the **Usage*** of the script.
+See below for the **Usage** of the script.
 
 Applying a User Defined Strategy
 ================================
@@ -62,7 +61,7 @@ Let's consider the following strategy which:
 
   - Simply loads a SimpleMovingAverage (default period 15)
   - Prints outs
-  - Is in a fily with the name mymod.py
+  - Is in a file named ``mymod.py``
 
 .. literalinclude:: ./mymod.py
    :language: python
@@ -121,8 +120,8 @@ is included. The name:
 
   - Parameters
 
-    - fast (default 10) period of the fast moving average
-    - slow (default 30) period of the slow moving average
+    - ``fast`` (default ``10``) period of the fast moving average
+    - ``slow`` (default ``30``) period of the slow moving average
 
 The strategy buys if the fast moving average crosses up the fast and sells (only
 if it has bought before) upon the fast moving average crossing down the slow
@@ -141,9 +140,9 @@ Standard execution::
         --plot \
         --strategy :SMA_CrossOver
 
-Notice the ':'. The standard notation (see below) to load a strategy is:
+Notice the ``:``. The standard notation (see below) to load a strategy is:
 
-  - module:stragegy:kwargs
+  - ``module:stragegy:kwargs``
 
 With the following rules:
 
@@ -164,9 +163,9 @@ With the following rules:
    The same notation and rules apply to ``--observer``, ``--analyzer`` and
    ``--indicator`` options
 
-   Obvioously for the corresponding objects type
+   Obviously for the corresponding object types
 
-The output.
+The output
 
 .. thumbnail:: ./bt-run-sma-crossover.png
 
@@ -181,7 +180,7 @@ One last example adding commission schemes, cash and changing the parameters::
         --margin 2000 \
         --strategy :SMA_CrossOver:fast=5,slow=20
 
-The output.
+The output
 
 .. thumbnail:: ./bt-run-sma-crossover-params-commission.png
 
@@ -250,9 +249,9 @@ The console output is **nothing**.
 
 If a printout of the ``Analyzer`` results is wished, it must be specified with:
 
-  - ``--pranalyze`` which defaults to calling the next one (unless the Analyzer
+  - ``--pranalyzer`` which defaults to calling the next one (unless the Analyzer
     has overriden the proper method)
-  - ``-ppranalyzer`` which uses the ``pprint`` module to print the results
+  - ``--ppranalyzer`` which uses the ``pprint`` module to print the results
 
 .. note::
 
@@ -375,7 +374,7 @@ a look at the plot (we'll change some parameters)::
 	--indicator :Stochastic:period_dslow=5 \
 	--plot
 
-The chart::
+The chart
 
 .. thumbnail:: ./bt-run-observer-indicator.png
 
@@ -384,7 +383,7 @@ Plotting Control
 
 Most of the above examples have used the following option:
 
-  - ``--plot`` which has activated creating a default plot
+  - ``--plot`` which has activated the creation a default plot
 
 More control can be achieved by adding ``kwargs`` to the ``--plot``
 option
@@ -403,13 +402,14 @@ The invocation::
 
 .. note::
 
-   The quotes around ``candle`` are quoted because the example is being run in a
-   bash shell which removes that before passing the arguments to the script.
+   The quotes around ``candle`` are quoted with backslashed ``\`` because the
+   example is being run in a bash shell which removes that before passing the
+   arguments to the script.
 
    Backslash quoting is needed in this case to ensure "bar" makes it to the
    script and can be evaluated as a string
 
-The chart::
+The chart
 
 .. thumbnail:: ./bt-run-plot-candle.png
 

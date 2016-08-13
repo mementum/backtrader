@@ -30,51 +30,56 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
     Params:
 
-      - commission (def: 0.0): base commission value in percentage or monetary
-        units
+      - ``commission`` (def: ``0.0``): base commission value in percentage or
+        monetary units
 
-      - mult (def 1.0): multiplier applied to the asset for value/profit
+      - ``mult`` (def ``1.0``): multiplier applied to the asset for
+        value/profit
 
-      - margin (def: None): amount of monetary units needed to open/hold an
-        operation. It only applies if the final ``_stocklike`` attribute in the
-        class is set to False
+      - ``margin`` (def: ``None``): amount of monetary units needed to
+        open/hold an operation. It only applies if the final ``_stocklike``
+        attribute in the class is set to ``False``
 
-      - commtype (def: None): Supported values are CommInfoBase.COMM_PERC
-        (commission to be understood as %) and CommInfoBase.COMM_FIXED
-        (commission to be understood as monetary units)
+      - ``commtype`` (def: ``None``): Supported values are
+        ``CommInfoBase.COMM_PERC`` (commission to be understood as %) and
+        ``CommInfoBase.COMM_FIXED`` (commission to be understood as monetary
+        units)
 
         The default value of ``None`` is a supported value to retain
         compatibility with the legacy ``CommissionInfo`` object. If
         ``commtype`` is set to None, then the following applies:
 
-          - margin is None: Internal _commtype is set to COMM_PERC and
-            _stocklike is set to True (Operating %-wise with Stocks)
+          - ``margin`` is ``None``: Internal ``_commtype`` is set to
+            ``COMM_PERC`` and ``_stocklike`` is set to ``True`` (Operating
+            %-wise with Stocks)
 
-          - margin is not None: _commtype set to COMM_FIXED and _stocklike set
-            to False (Operating with fixed rount-trip commission with Futures)
+          - ``margin`` is not ``None``: ``_commtype`` set to ``COMM_FIXED`` and
+            ``_stocklike`` set to ``False`` (Operating with fixed rount-trip
+            commission with Futures)
 
-        If this param is set to something else than None, then it will be
+        If this param is set to something else than ``None``, then it will be
         passed to the internal ``_commtype`` attribute and the same will be
         done with the param ``stocklike`` and the internal attribute
         ``_stocklike``
 
-      - stocklike (def: False):  Indicates if the instrument is Stock-like or
+      - ``stocklike`` (def: ``False``):  Indicates if the instrument is Stock-like or
         Futures-like (see the ``commtype`` discussion above)
 
-      - percabs (def: False): when ``commtype`` is set to COMM_PERC, whether
+      - ``percabs`` (def: ``False``): when ``commtype`` is set to COMM_PERC, whether
         the parameter ``commission`` has to be understood as XX% or 0.XX
 
-        If this param is True: 0.XX
-        If this param is False: XX%
+        If this param is ``True``: 0.XX
+        If this param is ``False``: XX%
 
     Attributes:
 
-      - _stocklike: Final value to use for Stock-like/Futures-like behavior
-      - _commtype: Final value to use for PERC vs FIXED commissions
+      - ``_stocklike``: Final value to use for Stock-like/Futures-like behavior
+      - ``_commtype``: Final value to use for PERC vs FIXED commissions
 
       This two are used internally instead of the declared params to enable the
       compatibility check described above for the legacy ``CommissionInfo``
       object
+
     '''
 
     COMM_PERC, COMM_FIXED = range(2)
@@ -189,14 +194,14 @@ class CommissionInfo(CommInfoBase):
     '''Base Class for the actual Commission Schemes.
 
     CommInfoBase was created to keep suppor for the original, incomplete,
-    support provided by ``backtrader``. New commission schemes derive from this
-    class which subclasses CommInfoBase.
+    support provided by *backtrader*. New commission schemes derive from this
+    class which subclasses ``CommInfoBase``.
 
     The default value of ``percabs`` is also changed to ``True``
 
     Params:
 
-      - percabs (def: True): when ``commtype`` is set to COMM_PERC, whether
+      - ``percabs`` (def: True): when ``commtype`` is set to COMM_PERC, whether
         the parameter ``commission`` has to be understood as XX% or 0.XX
 
         If this param is True: 0.XX

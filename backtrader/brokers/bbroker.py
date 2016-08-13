@@ -78,9 +78,9 @@ class BackBroker(bt.BrokerBase):
 
       Params:
 
-        - ``cash`` (default: 10000): starting cash
+        - ``cash`` (default: ``10000``): starting cash
 
-        - ``commission`` (default: CommInfoBase(percabs=True))
+        - ``commission`` (default: ``CommInfoBase(percabs=True)``)
           base commission scheme which applies to all assets
 
         - ``checksubmit`` (default: ``True``)
@@ -247,19 +247,19 @@ class BackBroker(bt.BrokerBase):
         self.p.checksubmit = checksubmit
 
     def set_eosbar(self, eosbar):
-        '''Sets the eosbar parameter'''
+        '''Sets the eosbar parameter (alias: ``seteosbar``'''
         self.p.eosbar = eosbar
 
     seteosbar = set_eosbar
 
     def get_cash(self):
-        '''Returns the current cash'''
+        '''Returns the current cash (alias: ``getcash``)'''
         return self.cash
 
     getcash = get_cash
 
     def set_cash(self, cash):
-        '''Sets the cash parameter'''
+        '''Sets the cash parameter (alias: ``setcash``)'''
         self.startingcash = self.cash = self.p.cash = cash
 
     setcash = set_cash
@@ -276,8 +276,9 @@ class BackBroker(bt.BrokerBase):
         return True
 
     def get_value(self, datas=None):
-        '''Returns the portfolio value of the given datas (if datas is
-        ``None``, then the total portfolio value will be returned'''
+        '''Returns the portfolio value of the given datas (if datas is ``None``, then
+        the total portfolio value will be returned (alias: ``getvalue``)
+        '''
         pos_value = 0.0
 
         for data in datas or self.positions:

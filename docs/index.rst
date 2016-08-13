@@ -21,6 +21,7 @@ Contents:
    sizers/sizers
    signal_strategy/signal_strategy
    broker
+   slippage/slippage
    filler
    order
    order-creation-execution/order-creation-execution

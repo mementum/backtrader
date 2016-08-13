@@ -41,7 +41,7 @@ values once a **full month** has gone by, which is roughly equivalent to 22
 values of ``self.data0.close``. During this 22 *closes* there isn't yet a value
 for ``s1`` and the attempt to fetch it from the underlying array fails.
 
-*Lines* objects support the ``()`` operator (``__call__`` special method in
+*Lines* objects support the ``(ago)`` operator (``__call__`` special method in
 *Python*) for deliver a delayed version of itself::
 
   close1 = self.data.close(-1)
@@ -58,7 +58,7 @@ See how the ``()`` is executed with no arguments (in the background a ``None``
 is being supplied). The following is happening:
 
   ``pivotpoint.s1()`` is returning an internal ``LinesCoupler`` object which
-  follows the rigthm of the larger scope. This coupler fills itself with the
+  follows the rythm of the larger scope. This coupler fills itself with the
   latest delivered value from the real ``s1`` (starting with a default value of
   ``NaN``)
 
@@ -88,7 +88,7 @@ With output::
   0074,0074,0003,2005-04-18,2947.79,3010.76,1.00
   ...
 
-At trading 74 the 1st instance of ``close < s1`` takes palce.
+At length 74 the 1st instance of ``close < s1`` takes palce.
 
 The script also provides insight into the additional possiblity: *couple all
 lines of an indicator*. Before we had::
@@ -156,7 +156,7 @@ indicator ``PivotPoint``):
 Conclusion
 ^^^^^^^^^^
 
-Integrated in the regular ``()`` syntax, datas from different timeframes can be
+Integrated in the regular ``()`` syntax, data feeds from different timeframes can be
 mixed in indicators, taking always into account that ``cerebro`` needs to be
 instantiated or created with ``runonce=False``.
 
