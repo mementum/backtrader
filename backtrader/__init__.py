@@ -25,6 +25,9 @@ from .version import __version__, __btversion__
 
 from .utils import num2date, date2num, time2num, num2time
 
+from .signals import *
+from . import signals as signals
+
 from .linebuffer import *
 from .functions import *
 

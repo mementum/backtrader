@@ -37,10 +37,6 @@ from .utils import OrderedDict
 from .strategy import Strategy, SignalStrategy
 
 
-(SIGNAL_NONE, SIGNAL_LONGSHORT, SIGNAL_LONG, SIGNAL_SHORT,
- SIGNAL_LONGEXIT, SIGNAL_SHORTEXIT) = range(6)
-
-
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
 
