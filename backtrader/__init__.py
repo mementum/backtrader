@@ -25,9 +25,6 @@ from .version import __version__, __btversion__
 
 from .utils import num2date, date2num, time2num, num2time
 
-from .signals import *
-from . import signals as signals
-
 from .linebuffer import *
 from .functions import *
 
@@ -55,6 +52,8 @@ from .strategy import *
 
 from .writer import *
 
+from .signal import *
+
 from .cerebro import *
 
 from . import feeds as feeds
@@ -64,6 +63,7 @@ from . import observers as observers
 from . import analyzers as analyzers
 from . import commissions as commissions
 from . import filters as filters
+from . import signals as signals
 from . import sizers as sizers
 from . import stores as stores
 from . import brokers as brokers
