@@ -363,7 +363,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         for analyzer in self.analyzers:  # no slave for writer
             aname = analyzer.__class__.__name__
-            ainfo[aname].Params = item.p._getkwargs() or None
+            ainfo[aname].Params = analyzer.p._getkwargs() or None
             ainfo[aname].Analysis = analyzer.get_analysis()
 
         return wrinfo
