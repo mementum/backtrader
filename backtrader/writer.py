@@ -196,7 +196,7 @@ class WriterFile(WriterBase):
                 self.writeline(kline)
                 self.writedict(val, level=level + 1, recurse=True)
             elif isinstance(val, (list, tuple, collections.Iterable)):
-                line = ', '.join(val)
+                line = ', '.join(map(str, val))
                 self.writeline(kline + ' ' + line)
             else:
                 kline += ' ' + str(val)
