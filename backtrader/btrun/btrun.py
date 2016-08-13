@@ -29,24 +29,29 @@ import random
 import string
 import sys
 
-from backtrader.utils.py3 import range
-
 import backtrader as bt
-import backtrader.feeds as btfeeds
-import backtrader.indicators as btinds
-import backtrader.observers as btobs
-import backtrader.strategies as btstrats
-import backtrader.analyzers as btanalyzers
 
 
 DATAFORMATS = dict(
-    btcsv=btfeeds.BacktraderCSVData,
-    vchartcsv=btfeeds.VChartCSVData,
-    vchart=btfeeds.VChartData,
-    sierracsv=btfeeds.SierraChartCSVData,
-    yahoocsv=btfeeds.YahooFinanceCSVData,
-    yahoocsv_unreversed=btfeeds.YahooFinanceCSVData,
-    yahoo=btfeeds.YahooFinanceData,
+    btcsv=bt.feeds.BacktraderCSVData,
+    vchartcsv=bt.feeds.VChartCSVData,
+    vchart=bt.feeds.VChartData,
+    vcdata=bt.feeds.VCData,
+    ibdata=bt.feeds.IBData,
+    sierracsv=bt.feeds.SierraChartCSVData,
+    yahoocsv=bt.feeds.YahooFinanceCSVData,
+    yahoocsv_unreversed=bt.feeds.YahooFinanceCSVData,
+    yahoo=bt.feeds.YahooFinanceData,
+)
+
+TIMEFRAMES = dict(
+    microseconds=bt.TimeFrame.MicroSeconds,
+    seconds=bt.TimeFrame.Seconds,
+    minutes=bt.TimeFrame.Minutes,
+    days=bt.TimeFrame.Days,
+    weeks=bt.TimeFrame.Weeks,
+    months=bt.TimeFrame.Months,
+    years=bt.TimeFrame.Years,
 )
 
 
@@ -62,14 +67,34 @@ def btrun(pargs=''):
 
     cerebro = bt.Cerebro(**cer_kwargs)
 
+    tf, cp = None, None
+    if args.resample is not None:
+        tf, cp = args.resample.split(':')
+    elif args.replay is not None:
+        tf, cp = args.replay.split(':')
+
+    tf = TIMEFRAMES.get(tf, None)
+
     for data in getdatas(args):
-        cerebro.adddata(data)
+        if args.resample is not None:
+            cerebro.resampledata(data, timeframe=tf, compression=cp)
+        elif args.replay is not None:
+            cerebro.replaydata(data, timeframe=tf, compression=cp)
+        else:
+            cerebro.adddata(data)
+
+    # get and add signals
+    signals = getobjects(args.signals, bt.Indicator, bt.signals, issignal=True)
+    for sig, kwargs, sigtype in signals:
+        stype = getattr(bt.signal, 'SIGNAL_' + sigtype.upper())
+        cerebro.add_signal(stype, sig, **kwargs)
 
     # get and add strategies
     strategies = getobjects(args.strategies, bt.Strategy, bt.strategies)
     if not strategies:
         # Add the base Strategy with no args if nothing specified
-        strategies.append((bt.Strategy, dict()))
+        if not signals:  # unless signals have been specified
+            strategies.append((bt.Strategy, dict()))
 
     for strat, kwargs in strategies:
         cerebro.addstrategy(strat, **kwargs)
@@ -110,11 +135,11 @@ def btrun(pargs=''):
                     analyzer.pprint()
 
     if args.plot:
+        pkwargs = dict(style='bar')
         if args.plot is not True:
             # evaluates to True but is not "True" - args were passed
-            pkwargs = eval('dict(' + args.plot + ')')
-        else:
-            pkwargs = dict()
+            ekwargs = eval('dict(' + args.plot + ')')
+            pkwargs.update(ekwargs)
 
         # cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
         cerebro.plot(**pkwargs)
@@ -137,14 +162,25 @@ def setbroker(args, cerebro):
     if commkwargs:
         broker.setcommission(**commkwargs)
 
+    if args.slip_perc is not None:
+        cerebro.broker.set_slippage_perc(args.slip_perc,
+                                         slip_open=args.slip_open,
+                                         slip_match=not args.no_slip_match,
+                                         slip_out=args.slip_out)
+    elif args.slip_fixed is not None:
+        cerebro.broker.set_slippage_fixed(args.slip_fixed,
+                                          slip_open=args.slip_open,
+                                          slip_match=not args.no_slip_match,
+                                          slip_out=args.slip_out)
+
 
 def getdatas(args):
     # Get the data feed class from the global dictionary
-    dfcls = DATAFORMATS[args.csvformat]
+    dfcls = DATAFORMATS[args.format]
 
     # Prepare some args
     dfkwargs = dict()
-    if args.csvformat == 'yahoo_unreversed':
+    if args.format == 'yahoo_unreversed':
         dfkwargs['reverse'] = True
 
     fmtstr = '%Y-%m-%d'
@@ -163,6 +199,12 @@ def getdatas(args):
             fmtstr += 'T%H:%M:%S'
         todate = datetime.datetime.strptime(args.todate, fmtstr)
         dfkwargs['todate'] = todate
+
+    if args.timeframe is not None:
+        dfkwargs['timeframe'] = TIMEFRAMES[args.timeframe]
+
+    if args.compression is not None:
+        dfkwargs['compression'] = args.compression
 
     datas = list()
     for dname in args.data:
@@ -234,10 +276,17 @@ def loadmodule3(modpath, modname):
     return (mod, None)
 
 
-def getobjects(iterable, clsbase, modbase):
+def getobjects(iterable, clsbase, modbase, issignal=False):
     retobjects = list()
 
     for item in iterable or []:
+        if issignal:
+            sigtokens = item.split('+', 1)
+            if len(sigtokens) == 1:  # no + seen
+                sigtype = 'longshort'
+            else:
+                sigtype, item = sigtokens
+
         tokens = item.split(':', 1)
 
         if len(tokens) == 1:
@@ -271,7 +320,10 @@ def getobjects(iterable, clsbase, modbase):
             print('No class %s / module %s' % (str(name), modpath))
             sys.exit(1)
 
-        retobjects.append((loaded[0], kwargs))
+        if issignal:
+            retobjects.append((loaded[0], kwargs, sigtype))
+        else:
+            retobjects.append((loaded[0], kwargs))
 
     return retobjects
 
@@ -306,16 +358,19 @@ def parse_args(pargs=''):
               '  - runonce (default: True)\n'
               '  - maxcpus (default: None)\n'
               '  - stdstats (default: True)\n'
-              '  - exactbars (default: )\n'
+              '  - live (default: False)\n'
+              '  - exactbars (default: False)\n'
               '  - preload (default: True)\n'
-              '  - writer (default False)\n')
+              '  - writer (default False)\n'
+              '  - oldbuysell (default False)\n'
+              '  - tradehistory (default False)\n')
     )
 
     group.add_argument('--nostdstats', action='store_true',
                        help='Disable the standard statistics observers')
 
     datakeys = list(DATAFORMATS)
-    group.add_argument('--csvformat', '-c', required=False,
+    group.add_argument('--format', '--csvformat', '-c', required=False,
                        default='btcsv', choices=datakeys,
                        help='CSV Format')
 
@@ -324,6 +379,22 @@ def parse_args(pargs=''):
 
     group.add_argument('--todate', '-t', required=False, default=None,
                        help='Ending date in YYYY-MM-DD[THH:MM:SS] format')
+
+    group.add_argument('--timeframe', '-tf', required=False, default='days',
+                       choices=TIMEFRAMES.keys(),
+                       help='Ending date in YYYY-MM-DD[THH:MM:SS] format')
+
+    group.add_argument('--compression', '-cp', required=False, default=1,
+                       type=int,
+                       help='Ending date in YYYY-MM-DD[THH:MM:SS] format')
+
+    group = parser.add_mutually_exclusive_group(required=False)
+
+    group.add_argument('--resample', '-rs', required=False, default=None,
+                       help='resample with timeframe:compression values')
+
+    group.add_argument('--replay', '-rp', required=False, default=None,
+                       help='replay with timeframe:compression values')
 
     # Module where to read the strategy from
     group = parser.add_argument_group(title='Strategy options')
@@ -346,10 +417,44 @@ def parse_args(pargs=''):
               '\n'
               '  - :name:kwargs or :name\n'
               '\n'
-              'If name is omitted, then the 1st strategy found in the\n'
+              'If name is omitted, then the 1st strategy found in the mod\n'
               'will be used. Such as in:\n'
               '\n'
               '  - module or module::kwargs')
+    )
+
+    # Module where to read the strategy from
+    group = parser.add_argument_group(title='Signals')
+    group.add_argument(
+        '--signal', '-sig', dest='signals',
+        action='append', required=False,
+        metavar='module:signaltype:name:kwargs',
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - signaltype:module:signaltype:classname:kwargs\n'
+              '\n'
+              '    Example: longshort+mymod:myclass:a=1,b=2\n'
+              '\n'
+              'signaltype may be ommited: longshort will be used\n'
+              '\n'
+              '    Example: mymod:myclass:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+              '\n'
+              'signaltype will be uppercased to match the defintions\n'
+              'fromt the backtrader.signal module\n'
+              '\n'
+              'If module is omitted then class name will be sought in\n'
+              'the built-in signals module. Such as in:\n'
+              '\n'
+              '  - LONGSHORT::name:kwargs or :name\n'
+              '\n'
+              'If name is omitted, then the 1st signal found in the mod\n'
+              'will be used. Such as in:\n'
+              '\n'
+              '  - module or module:::kwargs')
     )
 
     # Observers
@@ -471,9 +576,24 @@ def parse_args(pargs=''):
                        help='Commission value to set')
     group.add_argument('--margin', '-marg', required=False, type=float,
                        help='Margin type to set')
-
     group.add_argument('--mult', '-mul', required=False, type=float,
                        help='Multiplier to use')
+
+    group.add_argument('--slip_perc', required=False, default=None,
+                       type=float,
+                       help='Enable slippage with a percentage value')
+    group.add_argument('--slip_fixed', required=False, default=None,
+                       type=float,
+                       help='Enable slippage with a fixed point value')
+
+    group.add_argument('--slip_open', required=False, action='store_true',
+                       help='enable slippage for when matchin opening prices')
+
+    group.add_argument('--no-slip_match', required=False, action='store_true',
+                       help=('Disable slip_match, ie: matching capped at \n'
+                             'high-low if slippage goes over those limits'))
+    group.add_argument('--slip_out', required=False, action='store_true',
+                       help='with slip_match enabled, match outside high-low')
 
     # Plot options
     parser.add_argument(
