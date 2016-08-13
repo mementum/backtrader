@@ -57,7 +57,7 @@ Live Trading and backtesting platform written in Python.
     integration
   - Flexible definition of commission schemes
   - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop* and
-    *StopLimit* orders and continuous cash adjustmet for future-like
+    *StopLimit* orders, slippage and continuous cash adjustmet for future-like
     instruments
   - Plotting (requires matplotlib)
 
