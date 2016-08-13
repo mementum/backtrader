@@ -73,9 +73,9 @@ def runstrat(args=None):
 
     cerebro.signal_strategy(SlipSt)
     if not args.longonly:
-        stype = bt.signals.SIGNAL_LONGSHORT
+        stype = bt.signal.SIGNAL_LONGSHORT
     else:
-        stype = bt.signals.SIGNAL_LONG
+        stype = bt.signal.SIGNAL_LONG
 
     cerebro.add_signal(stype, SMACrossOver, p1=args.period1, p2=args.period2)
 
