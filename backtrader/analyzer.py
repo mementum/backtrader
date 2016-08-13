@@ -246,11 +246,12 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         The keys and format of analysis results in the dictionary is
         implementation dependent.
 
-        It is not even enforced that the result is a *dict-like object*, just the
-        convention
+        It is not even enforced that the result is a *dict-like object*, just
+        the convention
 
         The default implementation returns the default OrderedDict ``rets``
         created by the default ``create_analysis`` method
+
         '''
         return self.rets
 
