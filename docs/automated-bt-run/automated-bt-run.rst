@@ -419,38 +419,31 @@ Usage of the script
 Directly from the script::
 
   $ btrun --help
-  usage: btrun-script.py [-h] [--cerebro [CEREBRO]] --data DATA
-                         [--csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}]
+  usage: btrun-script.py [-h] --data DATA [--cerebro [kwargs]] [--nostdstats]
+                         [--format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}]
                          [--fromdate FROMDATE] [--todate TODATE]
-                         [--strategy STRATEGIES] [--nostdstats]
-                         [--observer OBSERVERS] [--analyzer ANALYZERS]
+                         [--timeframe {microseconds,seconds,weeks,months,minutes,days,years}]
+                         [--compression COMPRESSION]
+                         [--resample RESAMPLE | --replay REPLAY]
+                         [--strategy module:name:kwargs]
+                         [--signal module:signaltype:name:kwargs]
+                         [--observer module:name:kwargs]
+                         [--analyzer module:name:kwargs]
                          [--pranalyzer | --ppranalyzer]
                          [--indicator module:name:kwargs] [--writer [kwargs]]
                          [--cash CASH] [--commission COMMISSION]
-                         [--margin MARGIN] [--mult MULT] [--plot [kwargs]]
+                         [--margin MARGIN] [--mult MULT] [--slip_perc SLIP_PERC]
+                         [--slip_fixed SLIP_FIXED] [--slip_open]
+                         [--no-slip_match] [--slip_out] [--plot [kwargs]]
 
   Backtrader Run Script
 
   optional arguments:
     -h, --help            show this help message and exit
-    --cerebro [CEREBRO], -cer [CEREBRO]
-                          The argument can be specified with the following form:
-
-                            - kwargs
-
-                              Example: "preload=1" which set its to True
-
-                          The passed kwargs will be passed directly to the cerebro
-                          instance created for the execution
-
-                          The available kwargs to cerebro are:
-                            - preload (default: True)
-                            - runonce (default: True)
-                            - maxcpus (default: None)
-                            - stdstats (default: True)
-                            - exactbars (default: )
-                            - preload (default: True)
-                            - writer (default False)
+    --resample RESAMPLE, -rs RESAMPLE
+                          resample with timeframe:compression values
+    --replay REPLAY, -rp REPLAY
+                          replay with timeframe:compression values
     --pranalyzer, -pralyzer
                           Automatically print analyzers
     --ppranalyzer, -ppralyzer
@@ -464,15 +457,43 @@ Directly from the script::
 
   Data options:
     --data DATA, -d DATA  Data files to be added to the system
-    --csvformat {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}, -c {yahoocsv_unreversed,vchart,sierracsv,yahoocsv,vchartcsv,btcsv}
+
+  Cerebro options:
+    --cerebro [kwargs], -cer [kwargs]
+                          The argument can be specified with the following form:
+
+                            - kwargs
+
+                              Example: "preload=True" which set its to True
+
+                          The passed kwargs will be passed directly to the cerebro
+                          instance created for the execution
+
+                          The available kwargs to cerebro are:
+                            - preload (default: True)
+                            - runonce (default: True)
+                            - maxcpus (default: None)
+                            - stdstats (default: True)
+                            - live (default: False)
+                            - exactbars (default: False)
+                            - preload (default: True)
+                            - writer (default False)
+                            - oldbuysell (default False)
+                            - tradehistory (default False)
+    --nostdstats          Disable the standard statistics observers
+    --format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, --csvformat {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, -c {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}
                           CSV Format
     --fromdate FROMDATE, -f FROMDATE
                           Starting date in YYYY-MM-DD[THH:MM:SS] format
     --todate TODATE, -t TODATE
                           Ending date in YYYY-MM-DD[THH:MM:SS] format
+    --timeframe {microseconds,seconds,weeks,months,minutes,days,years}, -tf {microseconds,seconds,weeks,months,minutes,days,years}
+                          Ending date in YYYY-MM-DD[THH:MM:SS] format
+    --compression COMPRESSION, -cp COMPRESSION
+                          Ending date in YYYY-MM-DD[THH:MM:SS] format
 
   Strategy options:
-    --strategy STRATEGIES, -st STRATEGIES
+    --strategy module:name:kwargs, -st module:name:kwargs
                           This option can be specified multiple times.
 
                           The argument can be specified with the following form:
@@ -488,14 +509,42 @@ Directly from the script::
 
                             - :name:kwargs or :name
 
-                          If name is omitted, then the 1st strategy found in the
+                          If name is omitted, then the 1st strategy found in the mod
                           will be used. Such as in:
 
                             - module or module::kwargs
 
+  Signals:
+    --signal module:signaltype:name:kwargs, -sig module:signaltype:name:kwargs
+                          This option can be specified multiple times.
+
+                          The argument can be specified with the following form:
+
+                            - signaltype:module:signaltype:classname:kwargs
+
+                              Example: longshort+mymod:myclass:a=1,b=2
+
+                          signaltype may be ommited: longshort will be used
+
+                              Example: mymod:myclass:a=1,b=2
+
+                          kwargs is optional
+
+                          signaltype will be uppercased to match the defintions
+                          fromt the backtrader.signal module
+
+                          If module is omitted then class name will be sought in
+                          the built-in signals module. Such as in:
+
+                            - LONGSHORT::name:kwargs or :name
+
+                          If name is omitted, then the 1st signal found in the mod
+                          will be used. Such as in:
+
+                            - module or module:::kwargs
+
   Observers and statistics:
-    --nostdstats          Disable the standard statistics observers
-    --observer OBSERVERS, -ob OBSERVERS
+    --observer module:name:kwargs, -ob module:name:kwargs
                           This option can be specified multiple times.
 
                           The argument can be specified with the following form:
@@ -517,7 +566,7 @@ Directly from the script::
                             - module or module::kwargs
 
   Analyzers:
-    --analyzer ANALYZERS, -an ANALYZERS
+    --analyzer module:name:kwargs, -an module:name:kwargs
                           This option can be specified multiple times.
 
                           The argument can be specified with the following form:
@@ -585,9 +634,11 @@ Directly from the script::
                           Margin type to set
     --mult MULT, -mul MULT
                           Multiplier to use
-
-And the code:
-
-.. literalinclude:: ../../backtrader/btrun/btrun.py
-   :language: python
-   :lines: 21-
+    --slip_perc SLIP_PERC
+                          Enable slippage with a percentage value
+    --slip_fixed SLIP_FIXED
+                          Enable slippage with a fixed point value
+    --slip_open           enable slippage for when matchin opening prices
+    --no-slip_match       Disable slip_match, ie: matching capped at
+                          high-low if slippage goes over those limits
+    --slip_out            with slip_match enabled, match outside high-low
