@@ -94,6 +94,14 @@ ease of use:
 
     - ``self.data_close`` refers to ``self.datas[0].close``
 
+Returning the analysis
+----------------------
+
+The *Analyzer* base class creates a ``self.rets`` (of type
+``collections.OrderedDict``) member attribute to return the analysis. This is
+done in the method ``create_analysis`` which can be overriden by subclasses if
+creating custom analyzers.
+
 
 Modus operandi
 ==============
@@ -138,6 +146,12 @@ additional methods for extracting/outputting information
   - ``pprint`` (*pretty print*) uses the Python ``pprint`` module to print the
     ``get_analysis`` resutls.
 
+And finally:
+
+  - ``get_analysis`` creates a member attribute ``self.ret`` (of type
+    ``collections.OrderedDict``) to which analyzers write the analysis results.
+
+    Subclasses of *Analyzer* can override this method to change this behavior
 
 Analyzer Patterns
 =================
@@ -274,6 +288,8 @@ Reference
    .. automethod:: next
 
    .. automethod:: get_analysis
+
+   .. automethod:: create_analysis
 
    .. automethod:: print
 

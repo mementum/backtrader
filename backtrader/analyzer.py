@@ -70,6 +70,8 @@ class MetaAnalyzer(bt.MetaParams):
                         setattr(_obj, 'data%d_%s' % (d, linealias), line)
                     setattr(_obj, 'data%d_%d' % (d, l), line)
 
+        _obj.create_analysis()
+
         # Return to the normal chain
         return _obj, args, kwargs
 
@@ -225,7 +227,7 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
     def start(self):
         '''Invoked to indicate the start of operations, giving the analyzer
         time to setup up needed things'''
-        self.create_analysis()
+        pass
 
     def stop(self):
         '''Invoked to indicate the end of operations, giving the analyzer
