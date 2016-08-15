@@ -416,7 +416,7 @@ A SimpleMovingAverage can be calculated for the current `get/set` point as
 follows::
 
   def next(self):
-    self.line[0] = math.fsum(self.data.get(0, size=self.p.period) / self.p.period
+    self.line[0] = math.fsum(self.data.get(0, size=self.p.period)) / self.p.period
 
 Accesing previous `set` points has been modeled following the definition Python
 makes for ``-1`` when accesing an array/iterable
@@ -561,7 +561,7 @@ The code inside the SimpleMovingAverage indicator `__init__` could look like::
       av = datasum / self.params.period
 
       # The av *Lines* object can be naturally assigned to the named
-      # line this indicator delivers. Other objects using thi
+      # line this indicator delivers. Other objects using this
       # indicator will have direct access to the calculation
 
       self.line.sma = av
