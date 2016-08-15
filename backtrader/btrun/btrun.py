@@ -91,11 +91,6 @@ def btrun(pargs=''):
 
     # get and add strategies
     strategies = getobjects(args.strategies, bt.Strategy, bt.strategies)
-    if not strategies:
-        # Add the base Strategy with no args if nothing specified
-        if not signals:  # unless signals have been specified
-            strategies.append((bt.Strategy, dict()))
-
     for strat, kwargs in strategies:
         cerebro.addstrategy(strat, **kwargs)
 
