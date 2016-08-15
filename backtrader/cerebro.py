@@ -695,11 +695,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if sizer is not None:
                 strat._addsizer(sizer, *sargs, **skwargs)
 
+            strat._start()
+
             for writer in self.runwriters:
                 if writer.p.csv:
                     writer.addheaders(strat.getwriterheaders())
-
-            strat._start()
 
         for strat in runstrats:
             strat.qbuffer(self._exactbars)
