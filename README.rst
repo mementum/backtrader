@@ -160,3 +160,6 @@ cup of tea, you can always have a look at similar Python platforms:
      naming (obvious naming anyhow): "run, plot ..."
 
   - `PyThalesians <https://github.com/thalesians/pythalesians>`_
+  
+  - `QSTrader <https://github.com/mhallsmoore/qstrader/>`_
+  - `QSForex <https://github.com/mhallsmoore/qsforex>`_
