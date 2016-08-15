@@ -58,6 +58,9 @@ TIMEFRAMES = dict(
 def btrun(pargs=''):
     args = parse_args(pargs)
 
+    if args.flush:
+        import backtrader.utils.flushfile
+
     stdstats = not args.nostdstats
 
     cer_kwargs_str = args.cerebro
@@ -589,6 +592,10 @@ def parse_args(pargs=''):
                              'high-low if slippage goes over those limits'))
     group.add_argument('--slip_out', required=False, action='store_true',
                        help='with slip_match enabled, match outside high-low')
+
+    # Output flushing
+    group.add_argument('--flush', required=False, action='store_true',
+                       help='flush the output - useful under win32 systems')
 
     # Plot options
     parser.add_argument(
