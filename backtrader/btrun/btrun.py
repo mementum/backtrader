@@ -585,7 +585,7 @@ def parse_args(pargs=''):
                        help='Enable slippage with a fixed point value')
 
     group.add_argument('--slip_open', required=False, action='store_true',
-                       help='enable slippage for when matchin opening prices')
+                       help='enable slippage for when matching opening prices')
 
     group.add_argument('--no-slip_match', required=False, action='store_true',
                        help=('Disable slip_match, ie: matching capped at \n'
