@@ -42,6 +42,7 @@ from .kama import *
 from .zlema import *
 from .hma import *
 from .zlind import *
+from .dma import *
 
 # depends on moving averages
 from .deviation import *
