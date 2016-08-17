@@ -45,9 +45,11 @@ class ExponentialMovingAverage(MovingAverageBase):
     def __init__(self):
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = ExponentialSmoothing(
+        self.lines[0] = es = ExponentialSmoothing(
             self.data,
             period=self.p.period,
             alpha=2.0 / (1.0 + self.p.period))
+
+        self.alpha, self.alpha1 = es.alpha, es.alpha1
 
         super(ExponentialMovingAverage, self).__init__()
