@@ -298,7 +298,7 @@ class LineMultiple(LineRoot):
 
     def addminperiod(self, minperiod):
         '''
-        The passed minperiod is fed to the lins
+        The passed minperiod is fed to the lines
         '''
         # pass it down to the lines
         for line in self.lines:
@@ -306,7 +306,7 @@ class LineMultiple(LineRoot):
 
     def incminperiod(self, minperiod):
         '''
-        The passed minperiod is fed to the lins
+        The passed minperiod is fed to the lines
         '''
         # pass it down to the lines
         for line in self.lines:
