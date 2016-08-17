@@ -284,7 +284,11 @@ class ExponentialSmoothing(Average):
 
     def __init__(self):
         self.alpha = self.p.alpha
-        self.alpha1 = 1.0 - self.p.alpha
+        if self.alpha is None:
+            self.alpha = 2.0 / (1.0 + self.p.period)  # def EMA value
+
+        self.alpha1 = 1.0 - self.alpha
+
         super(ExponentialSmoothing, self).__init__()
 
     def nextstart(self):
