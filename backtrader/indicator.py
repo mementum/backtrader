@@ -68,41 +68,15 @@ class MetaIndicator(IndicatorBase.__class__):
             refattr = getattr(cls, cls._refname)
             refattr[name] = cls
 
-    def donew(cls, *args, **kwargs):
+        # Check if next and once have both been overridden
+        next_over = cls.next != IndicatorBase.next
+        once_over = cls.once != IndicatorBase.once
 
-        if IndicatorBase.next == cls.next:
-            # if next has not been overriden, there is no need for a
-            # "once" because the indicator is using indicator composition
-            # and line binding avoid calling the one step at a time "next"
-            cls.once = cls.once_empty
-        else:
-            # next overriden. Either once is from Indicator or
-            # also overriden -> do nothing
-            pass
-
-        if IndicatorBase.prenext == cls.prenext:
-            cls.preonce = cls.preonce_empty
-        else:
-            pass
-
-        _obj, args, kwargs = super(MetaIndicator, cls).donew(*args, **kwargs)
-
-        # If only 1 data was passed and it's multiline, put the 2nd
-        # and later lines in the datas array. This allows things like
-        # passing a "Stochastic" to a crossover indicator and it will
-        # automatically calculate the crossover of %k and %d
-        if False and len(_obj.datas) == 1:
-            if _obj.data.size():
-                r = range(1, _obj.data.size())
-            else:
-                r = range(0, _obj.data.lines.extrasize())
-
-            for l in r:
-                newdata = LineSeriesMaker(_obj.data.lines[l], slave=True)
-                _obj.datas.append(newdata)
-
-        # return the values
-        return _obj, args, kwargs
+        if next_over and not once_over:
+            # No -> need pointer movement to once simulation via next
+            cls.once = cls.once_via_next
+            cls.preonce = cls.preonce_via_prenext
+            cls.oncestart = cls.oncestart_via_nextstart
 
 
 class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
@@ -116,11 +90,8 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
         if len(self) < len(self._clock):
             self.lines.advance(size=size)
 
-    def preonce_empty(self, start, end):
-        return
-
-    def preonce(self, start, end):
-        # generic implementation
+    def preonce_via_prenext(self, start, end):
+        # generic implementation if prenext is overridden but preonce is not
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -131,11 +102,21 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
             self.advance()
             self.prenext()
 
-    def once_empty(self, start, end):
-        return
+    def oncestart_via_nextstart(self, start, end):
+        # nextstart has been overriden, but oncestart has not and the code is
+        # here. call the overriden nextstart
+        for i in range(start, end):
+            for data in self.datas:
+                data.advance()
 
-    def once(self, start, end):
-        # generic implementation
+            for indicator in self._lineiterators[LineIterator.IndType]:
+                indicator.advance()
+
+            self.advance()
+            self.nextstart()
+
+    def once_via_next(self, start, end):
+        # Not overridden, next must be there ...
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
