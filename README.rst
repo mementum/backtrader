@@ -72,7 +72,7 @@ Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.io/>`_
 
-List of built-in Indicators (93)
+List of built-in Indicators (96)
 
   - `backtrader indicators <http://backtrader.readthedocs.io/en/latest/indautoref.html>`_
 
@@ -160,6 +160,6 @@ cup of tea, you can always have a look at similar Python platforms:
      naming (obvious naming anyhow): "run, plot ..."
 
   - `PyThalesians <https://github.com/thalesians/pythalesians>`_
-  
+
   - `QSTrader <https://github.com/mhallsmoore/qstrader/>`_
   - `QSForex <https://github.com/mhallsmoore/qsforex>`_
