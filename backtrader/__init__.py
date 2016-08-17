@@ -56,6 +56,8 @@ from .signal import *
 
 from .cerebro import *
 
+from . import utils as utils
+
 from . import feeds as feeds
 from . import indicators as indicators
 from . import strategies as strategies
@@ -67,6 +69,5 @@ from . import signals as signals
 from . import sizers as sizers
 from . import stores as stores
 from . import brokers as brokers
-from . import utils as utils
 
 from . import talib as talib
