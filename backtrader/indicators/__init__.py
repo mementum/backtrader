@@ -40,6 +40,8 @@ from .wma import *
 from .dema import *
 from .kama import *
 from .zlema import *
+from .hma import *
+from .zlind import *
 
 # depends on moving averages
 from .deviation import *
