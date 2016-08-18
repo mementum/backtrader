@@ -53,9 +53,8 @@ class DicksonMovingAverage(MovingAverageBase):
     alias = ('DMA', 'DicksonMA',)
     lines = ('dma',)
     params = (
-        ('period', 20),
-        ('hperiod', 7),
         ('gainlimit', 50),
+        ('hperiod', 7),
         ('_movav', MovAv.EMA),
         ('_hma', MovAv.HMA),
     )
