@@ -7,7 +7,7 @@ Binary Datafeed Development
    The binary file used in the examples ``goog.fd`` belongs to VisualChart and
    cannot be distributed with ``backtrader``.
 
-   `VisualChart <www.visualchart.com>`_ can be downloaded free of charge for
+   `VisualChart <http://www.visualchart.com>`_ can be downloaded free of charge for
    those interested in directly using the binary files.
 
 CSV Data feed development has shown how to add new CSV based data
@@ -25,7 +25,7 @@ simply do::
 The base class takes care of the parameters, initialization, opening of files,
 reading lines, splitting the lines in tokens and additional things like skipping
 lines which don't fit into the date range (``fromdate``, ``todate``) which the
-en user may have defined.
+end user may have defined.
 
 Developing a non-CSV datafeed follows the same pattern without going down to the
 already splitted line tokens.
@@ -36,7 +36,7 @@ Things to do:
 
   - Add any parameters you may need
 
-  - Should initialization be needed, override ``__init__(self)`` and/or ``start(self9``
+  - Should initialization be needed, override ``__init__(self)`` and/or ``start(self)``
 
   - Should any clean-up code be needed, override ``stop(self)``
 
@@ -81,7 +81,7 @@ Sample binary datafeed
 ======================
 
 ``backtrader`` already defines a CSV datafeed (``VChartCSVData``) for the
-exports of `VisualChart <www.visualchart.com>`_, but it is also possible to
+exports of `VisualChart <http://www.visualchart.com>`_, but it is also possible to
 directly read the binary data files.
 
 Let's do it (full data feed code can be found at the bottom)
