@@ -128,6 +128,21 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             - ``runonce`` will be deactivated
 
+      - ``objcache`` (default: ``False``)
+
+        Experimental option to implement a cache of lines objects and reduce
+        the amount of them. Example from UltimateOscillator::
+
+          bp = self.data.close - TrueLow(self.data)
+          tr = TrueRange(self.data)  # -> creates another TrueLow(self.data)
+
+        If this is ``True`` the 2nd ``TrueLow(self.data)`` inside ``TrueRange``
+        matches the signature of the one in the ``bp`` calculation. It will be
+        reused.
+
+        Corner cases may happen in which this drives a line object off its
+        minimum period and breaks things and it is therefore disabled.
+
       - ``writer`` (default: ``False``)
 
         If set to ``True`` a default WriterFile will be created which will
@@ -150,6 +165,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('oldbuysell', False),
         ('lookahead', 0),
         ('exactbars', False),
+        ('objcache', False),
         ('live', False),
         ('writer', False),
         ('tradehistory', False),
@@ -541,9 +557,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         self._event_stop = False  # Stop is requested
 
-        linebuffer.LineActions.cleancache()  # clean cache
-        indicator.Indicator.cleancache()  # clean cache
-
         if not self.datas:
             return []  # nothing can be run
 
@@ -551,6 +564,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for key, val in kwargs.items():
             if key in pkeys:
                 setattr(self.params, key, val)
+
+        # Manage activate/deactivate object cache
+        linebuffer.LineActions.cleancache()  # clean cache
+        indicator.Indicator.cleancache()  # clean cache
+
+        linebuffer.LineActions.usecache(self.p.objcache)
+        indicator.Indicator.usecache(self.p.objcache)
 
         self._dorunonce = self.p.runonce
         self._dopreload = self.p.preload
