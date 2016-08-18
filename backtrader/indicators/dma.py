@@ -61,7 +61,7 @@ class DicksonMovingAverage(MovingAverageBase):
     )
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.p.hperiod, self.p.gainlimit]
+        plabels = [self.p.period, self.p.gainlimit, self.p.hperiod]
         plabels += [self.p._movav] * self.p.notdefault('_movav')
         plabels += [self.p._hma] * self.p.notdefault('_hma')
         return plabels
