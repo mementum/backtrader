@@ -61,7 +61,7 @@ class ZeroLagIndicator(MovingAverageBase):
     )
 
     def _plotlabel(self):
-        plabels = [self.p.period, self.gainlimit]
+        plabels = [self.p.period, self.p.gainlimit]
         plabels += [self.p._movav] * self.p.notdefault('_movav')
         return plabels
 
