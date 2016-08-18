@@ -28,11 +28,11 @@ import backtrader.indicators as btind
 
 chkdatas = 1
 chkvals = [
-    ['4124.449036', '3647.765377', '3538.928386']
+    ['4121.903804', '3677.634675', '3579.962958']
 ]
 
 
-chkmin = 20
+chkmin = 30
 chkind = btind.DMA
 
 
