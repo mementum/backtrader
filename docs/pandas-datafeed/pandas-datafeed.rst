@@ -5,7 +5,7 @@ Pandas DataFeed Example
 
    ``pandas`` and its dependencies have to be installed
 
-Supporting `Pandas <pandas.pydata.org>`_ Dataframes seems to be of concern to
+Supporting `Pandas <http://pandas.pydata.org>`_ Dataframes seems to be of concern to
 lots of people, who rely on the already available parsing code for different
 data sources (including CSV) and other functionalities offered by Pandas.
 
