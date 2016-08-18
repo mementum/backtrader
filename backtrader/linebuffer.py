@@ -506,14 +506,22 @@ class MetaLineActions(LineBuffer.__class__):
     been found in the base Metaclass for LineRoot)
     '''
     _acache = dict()
+    _acacheuse = False
 
     @classmethod
     def cleancache(cls):
         cls._acache = dict()
 
+    @classmethod
+    def usecache(cls, onoff):
+        cls._acacheuse = onoff
+
     def __call__(cls, *args, **kwargs):
+        if not cls._acacheuse:
+            return super(MetaLineActions, cls).__call__(*args, **kwargs)
+
         # implement a cache to avoid duplicating lines actions
-        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples are hashable
+        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples hashable
         try:
             return cls._acache[ckey]
         except TypeError:  # something not hashable
