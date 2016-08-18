@@ -168,7 +168,7 @@ from the data feed objects which are meant as a *pseudo-API for Filters* are:
     forward, increasing the physical storage if needed be and fills with
     ``value``
 
-  - ``data._addtostack(bar, stash=False)``: àdds ``bar`` to a stack for later
+  - ``data._addtostack(bar, stash=False)``: adds ``bar`` to a stack for later
     processiong. ``bar`` is an iterable containing as many values as ``lines``
     has the data feed.
 
