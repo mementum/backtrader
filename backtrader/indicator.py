@@ -33,28 +33,35 @@ class MetaIndicator(IndicatorBase.__class__):
     _indcol = dict()
 
     _icache = dict()
+    _icacheuse = False
 
     @classmethod
     def cleancache(cls):
         cls._icache = dict()
 
-    if False:
-        # Object cache deactivated on 2016-08-17. If the object is being used
-        # inside another object, the minperiod information carried over
-        # influences the first usage when being modified during the 2nd usage
+    @classmethod
+    def usecache(cls, onoff):
+        cls._icacheuse = onoff
 
-        def __call__(cls, *args, **kwargs):
-            # implement a cache to avoid duplicating lines actions
-            ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples hashable
-            try:
-                return cls._icache[ckey]
-            except TypeError:  # something not hashable
-                return super(MetaIndicator, cls).__call__(*args, **kwargs)
-            except KeyError:
-                pass  # hashable but not in the cache
+    # Object cache deactivated on 2016-08-17. If the object is being used
+    # inside another object, the minperiod information carried over
+    # influences the first usage when being modified during the 2nd usage
 
-            _obj = super(MetaIndicator, cls).__call__(*args, **kwargs)
-            return cls._icache.setdefault(ckey, _obj)
+    def __call__(cls, *args, **kwargs):
+        if not cls._icacheuse:
+            return super(MetaIndicator, cls).__call__(*args, **kwargs)
+
+        # implement a cache to avoid duplicating lines actions
+        ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples hashable
+        try:
+            return cls._icache[ckey]
+        except TypeError:  # something not hashable
+            return super(MetaIndicator, cls).__call__(*args, **kwargs)
+        except KeyError:
+            pass  # hashable but not in the cache
+
+        _obj = super(MetaIndicator, cls).__call__(*args, **kwargs)
+        return cls._icache.setdefault(ckey, _obj)
 
     def __init__(cls, name, bases, dct):
         '''
