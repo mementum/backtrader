@@ -1,7 +1,8 @@
 1.8.7.96:
   - Added indicators (3): Hull MA, ZeroLag Indicator, Dickson MA
-  - Deactivated indicator cache (found use cases with counter indications)
+  - Added control of object cache to cerebro (default deactivated)
   - Refactored the support for "next" only indicators
+  - Typos and Docs updates (also from pull-requests)
 
 1.8.6.93:
   - Refactor bt.signals to bt.signal (keeping compatibility for prev uses)
