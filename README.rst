@@ -25,7 +25,7 @@ backtrader
    :scale: 100%
    :target: https://readthedocs.org/projects/backtrader/
 .. image:: https://img.shields.io/pypi/pyversions/backtrader.svg
-   :alt: Pytghon versions
+   :alt: Python versions
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
