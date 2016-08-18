@@ -91,9 +91,9 @@ class St(bt.Strategy):
 
 
 FILLERS = {
-    'FixedSize': bt.broker.filler.FixedSize,
-    'FixedBarPerc': bt.broker.filler.FixedBarPerc,
-    'BarPointPerc': bt.broker.filler.BarPointPerc,
+    'FixedSize': bt.broker.fillers.FixedSize,
+    'FixedBarPerc': bt.broker.fillers.FixedBarPerc,
+    'BarPointPerc': bt.broker.fillers.BarPointPerc,
 }
 
 

@@ -1,3 +1,18 @@
+1.8.6.93:
+  - Refactor bt.signals to bt.signal (keeping compatibility for prev uses)
+  - Improve writer to write non-string lists and fetch headers after anylzers
+  - Add base bt.Signal strategy class for easier subclassing
+  - Update btrun to support signals/slippage/flushing, update feeds and minors
+  - Correct writer collections of analyzers parameters
+  - Correct reverse overloaded operations in stage2
+  - Some docs/docstrings corrections
+
+1.8.5.93:
+  - Slippage implementation in broker, documented and with sample
+  - Refactoring/File Reordering of broker and volume fillers
+  - Documentation updates/corrections/cleanup
+  - Merge #120
+
 1.8.4.93:
   - Filters documentation and reference
   - Add pinkfish ohl + o filter

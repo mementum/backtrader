@@ -3,15 +3,15 @@ Writer
 
 Write out to a stream the following contents:
 
-  - csv stream with datas, strategies, indicators and observers
+  - csv stream with data feeds, strategies, indicators and observers
 
     Which objects actually go into the csv stream can be controlled with the
-    ``csv`` attribute of each object (defaults to True for ``datas``` and
+    ``csv`` attribute of each object (defaults to True for ``data feeds`` and
     ``observers`` / False for ``indicators``)
 
   - A summary of the properties of
 
-    - Datas
+    - Data Feeds
     - Strategies (lines and parameters)
     - Indicators/Observers: (lines and parameters)
     - Analyzers: (parameters and analysis outcome)

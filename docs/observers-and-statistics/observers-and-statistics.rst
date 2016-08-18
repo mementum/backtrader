@@ -2,15 +2,15 @@
 Observers and Statistics
 ########################
 
-Strateties running inside the ``backtrader`` do mostly deal with **datas** and
-**indicators**.
+Strategies running inside the ``backtrader`` do mostly deal with **data feeds**
+and **indicators**.
 
-Datas are added to **Cerebro** instances and end up being part of the input of
-strategies (parsed and served as attributes of the instance) whereas Indicators
-are declared and managed by the Strategy itself.
+Data feeds are added to **Cerebro** instances and end up being part of the
+input of strategies (parsed and served as attributes of the instance) whereas
+Indicators are declared and managed by the Strategy itself.
 
-All ``backtrader`` sample charts have so far had 3 things which seem to be taken
-for granted because they are not declared anywhere:
+All ``backtrader`` sample charts have so far had 3 things plotted which seem to
+be taken for granted because they are not declared anywhere:
 
   - Cash and Value (what's happening with the money in the broker)
   - Trades (aka Operations)
@@ -20,7 +20,7 @@ They are ``Observers`` and exist within the submodule
 ``backtrader.observers``. They are there because **Cerebro** supports a
 parameter to automatically add (or not) them to the Strategy:
 
-  - ``stdstats`` (default: True)
+  - ``stdstats`` (default: ``True``)
 
 If the default is respected **Cerebro** executes the following equivalent user
 code::
@@ -31,9 +31,9 @@ code::
 
   cerebro = bt.Cerebro()  # default kwarg: stdstats=True
 
-  cerebro.addobserver(backtrader.observers.Broker)
-  cerebro.addobserver(backtrader.observers.Trades)
-  cerebro.addobserver(backtrader.observers.BuySell)
+  cerebro.addobserver(bt.observers.Broker)
+  cerebro.addobserver(bt.observers.Trades)
+  cerebro.addobserver(bt.observers.BuySell)
 
 Let's see the usual chart with those 3 default observers (even if no order is
 issued and therefore no trade happens and there is no change to the cash and
@@ -230,7 +230,7 @@ on a separate axis.
    :language: python
    :lines: 21-
 
-The custom observer only cares about **buy** orders, because this is a stratey
+The custom observer only cares about **buy** orders, because this is a strategy
 which only buys to try to make a profit. Sell orders are Market orders and will
 be executed immediately.
 
@@ -265,7 +265,9 @@ of observers storing them into files. The best way to do it:
 
   - Write the values down in the ``next`` method of the strategy
 
-Considering the ``DrawDown`` observer, it could be done like this::
+Considering the ``DrawDown`` observer, it could be done like this
+
+.. code-block:: python
 
   class MyStrategy(bt.Strategy):
 
@@ -283,3 +285,5 @@ Considering the ``DrawDown`` observer, it could be done like this::
 To save the values of index 0, once all observers have been processed a custom
 observer which writes to a file could be added as the last observer to the
 system to save values to a csv file.
+
+.. note:: The :doc:`../writer` functionality can automate this task.

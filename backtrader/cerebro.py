@@ -29,7 +29,7 @@ from .utils.py3 import map, range, zip, with_metaclass, string_types
 
 from . import linebuffer
 from . import indicator
-from .broker import BrokerBack
+from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
@@ -37,17 +37,13 @@ from .utils import OrderedDict
 from .strategy import Strategy, SignalStrategy
 
 
-(SIGNAL_NONE, SIGNAL_LONGSHORT, SIGNAL_LONG, SIGNAL_SHORT,
- SIGNAL_LONGEXIT, SIGNAL_SHORTEXIT) = range(6)
-
-
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
 
       - ``preload`` (default: ``True``)
 
-        Whether to preload the different ``datas`` passed to cerebro for the
-        Strategies
+        Whether to preload the different ``data feeds`` passed to cerebro for
+        the Strategies
 
       - ``runonce`` (default: ``True``)
 
@@ -87,8 +83,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         - ``True``: use the deprecated behavior in which the buy / sell signals
           are plotted where the average price of the order executions for the
-          given moment in time is. This will of course be ON an OHLC bar or on
-          a Line on Cloe bar, difficulting the recognition of the plot.
+          given moment in time is. This will of course be on top of an OHLC bar
+          or on a Line on Cloe bar, difficulting the recognition of the plot.
 
       - ``exactbars`` (default: ``False``)
 
@@ -106,8 +102,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             - This setting will deactivate ``preload`` and ``runonce``
             - Using this setting also deactivates **plotting**
 
-          - ``-1``: datas and indicators/operations at strategy level will keep
-            all data in memory.
+          - ``-1``: datafreeds and indicators/operations at strategy level will
+            keep all data in memory.
 
             For example: a ``RSI`` internally uses the indicator ``UpDay`` to
             make calculations. This subindicator will not keep all data in
@@ -117,8 +113,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             - ``runonce`` will be deactivated
 
-          - ``-2``: datas and indicators kept as attributes of the strategy
-            will keep all data in memory.
+          - ``-2``: data feeds and indicators kept as attributes of the
+            strategy will keep all points in memory.
 
             For example: a ``RSI`` internally uses the indicator ``UpDay`` to
             make calculations. This subindicator will not keep all data in
@@ -133,14 +129,17 @@ class Cerebro(with_metaclass(MetaParams, object)):
             - ``runonce`` will be deactivated
 
       - ``writer`` (default: ``False``)
-        If set to True a default WriterFile will be created which will print to
-        stdout. It will be added to the strategy (in addition to any other
-        writers added by the user code)
+
+        If set to ``True`` a default WriterFile will be created which will
+        print to stdout. It will be added to the strategy (in addition to any
+        other writers added by the user code)
 
       - ``tradehistory`` (default: ``False``)
-        If set to True, it will activate update event logging in each trade for
-        all strategies. This can also be accomplished on a per strategy basis
-        with the strategy method ``set_tradehistory``
+
+        If set to ``True``, it will activate update event logging in each trade
+        for all strategies. This can also be accomplished on a per strategy
+        basis with the strategy method ``set_tradehistory``
+
     '''
 
     params = (
@@ -177,7 +176,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._signal_concurrent = False
         self._signal_accumulate = False
 
-        self._broker = BrokerBack()
+        self._broker = BackBroker()
 
     @staticmethod
     def iterize(iterable):
@@ -201,7 +200,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.signals.append((sigtype, sigcls, sigargs, sigkwargs))
 
     def signal_strategy(self, stratcls, *args, **kwargs):
-        self.signal_strat = (stratcls, args, kwargs)
+        '''Adds a SignalStrategy subclass which can accept signals'''
+        self._signal_strat = (stratcls, args, kwargs)
 
     def signal_concurrent(self, onoff):
         '''If signals are added to the system and the ``concurrent`` value is
@@ -588,10 +588,24 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.runstrats = list()
 
         if self.signals:  # allow processing of signals
-            signalst, sargs, skwargs = self.signal_strat
+            signalst, sargs, skwargs = self._signal_strat
             if signalst is None:
+                # Try to see if the 1st regular strategy is a signal strategy
+                try:
+                    signalst, sargs, skwargs = self.strats.pop(0)
+                except IndexError:
+                    pass  # Nothing there
+                else:
+                    if not isinstance(signalst, SignalStrategy):
+                        # no signal ... reinsert at the beginning
+                        self.strats.insert(0, (signalst, sargs, skwargs))
+                        signalst = None  # flag as not presetn
+
+            if signalst is None:  # recheck
+                # Still None, create a default one
                 signalst, sargs, skwargs = SignalStrategy, tuple(), dict()
 
+            # Add the signal strategy
             self.addstrategy(signalst,
                              _accumulate=self._signal_accumulate,
                              _concurrent=self._signal_concurrent,
@@ -681,11 +695,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if sizer is not None:
                 strat._addsizer(sizer, *sargs, **skwargs)
 
+            strat._start()
+
             for writer in self.runwriters:
                 if writer.p.csv:
                     writer.addheaders(strat.getwriterheaders())
-
-            strat._start()
 
         for strat in runstrats:
             strat.qbuffer(self._exactbars)

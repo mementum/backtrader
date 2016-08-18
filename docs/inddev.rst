@@ -11,7 +11,7 @@ The following is needed:
   - A class derived from Indicator (either directly or from an already existing
     subclass)
 
-  - Define the "lines" it will hold
+  - Define the *lines* it will hold
 
     An indicator must at least have 1 line. If deriving from an existing one,
     the line(s) may have already be defined
@@ -81,7 +81,7 @@ The same indicator but using the next method::
 Done! Same behavior.
 
 .. note:: Notice how in the ``__init__`` version ``bt.Max`` is used to assign to
-	  the Line object self.lines.dummyline.
+	  the Line object ``self.lines.dummyline``.
 
 	  ``bt.Max`` returns an *lines* object that is automatically iterated for
 	  each bar passed to the indicator.
@@ -90,8 +90,11 @@ Done! Same behavior.
 	  pointless, because instead of a line, the indicator would have a
 	  member variable with a fixed value.
 
-Let's recall that self.lines.dummyline is the long notation and that it can be
-shortened to:
+	  During ``next`` the work is done directly with floating point values
+	  and the standard ``max`` built-in can be used
+
+Let's recall that ``self.lines.dummyline`` is the long notation and that it can
+be shortened to:
 
   - ``self.l.dummyline``
 
@@ -100,9 +103,9 @@ and even to:
   - ``self.dummyline``
 
 The latter being only possible if the code has not obscured this with a member
-variable.
+attribute.
 
-The 3rd and last version provides an additional "once" method to optimize the
+The 3rd and last version provides an additional ``once`` method to optimize the
 calculation::
 
   class DummyInd(bt.Indicator):
@@ -119,18 +122,19 @@ calculation::
 	 for i in xrange(start, end):
 	     dummy_array[i] = max(0.0, self.params.value)
 
-A lot more effective but developing the once method has forced to scratch beyond
+A lot more effective but developing the ``once`` method has forced to scratch beyond
 the surface. Actually the guts have been looked into.
 
 The ``__init__`` version is in any case the best:
 
   - Everything is confined to the initialization
 
-  - ``next`` and ``once`` (both optimized, because bt.Max already has them) are
-    provided automatically with no need to play with indices and/or formulas
+  - ``next`` and ``once`` (both optimized, because ``bt.Max`` already has them)
+    are provided automatically with no need to play with indices and/or
+    formulas
 
-Be it needed for development, the indicator can also override the family methods
-of ``next`` and ``once``:
+Be it needed for development, the indicator can also override the methods
+associated to ``next`` and ``once``:
 
   - ``prenext`` and ``nexstart``
   - ``preonce`` and ``oncestart``
@@ -141,7 +145,7 @@ Manual/Automatic Minimum Period
 
 If possible the platform will calculate it, but manual action may be needed.
 
-Here is a potential implementation of a Simple Moving Average::
+Here is a potential implementation of a *Simple Moving Average*::
 
   class SimpleMovingAverage1(Indicator):
       lines = ('sma',)
@@ -160,9 +164,10 @@ would explode because get cannot return the needed ``self.p.period``.
 
 Before solving the situation something has to be taken into account:
 
-  - The `datas` passed to the indicators may already carry a **minimum period**
+  - The `data feeds` passed to the indicators may already carry a **minimum
+    period**
 
-The sample SimpleMovingAverage may be done on for example:
+The sample *SimpleMovingAverage* may be done on for example:
 
   - A regular data feed
 
@@ -200,7 +205,9 @@ in existence.
 Sometimes this is absolutely not needed, if all calculations are done with
 objects which already communicate its period needs to the system.
 
-A quick MACD implementation with Histogram::
+A quick *MACD* implementation with Histogram::
+
+    from backtrader.indicators import EMA
 
     class MACD(Indicator):
         lines = ('macd', 'signal', 'histo',)
@@ -215,7 +222,7 @@ A quick MACD implementation with Histogram::
 
 Done! No need to think about mininum periods.
 
-  - EMA stands for Exponential Moving Average (a platform built-in alias)
+  - ``EMA`` stands for *Exponential Moving Average* (a platform built-in alias)
 
     And this one (already in the platform) already states what it needs
 
@@ -244,7 +251,7 @@ Let's develop a simple custom indicator which "indicates" if a moving average
 
   class OverUnderMovAv(bt.Indicator):
       lines = ('overunder',)
-      params = dict(period=20, movav=bt.ind.MovAv.Simple)
+      params = dict(period=20, movav=btind.MovAv.Simple)
 
       def __init__(self):
           movav = self.p.movav(self.data, period=self.p.period)
@@ -253,10 +260,10 @@ Let's develop a simple custom indicator which "indicates" if a moving average
 Done! The indicator will have a value of "1" if the average is above the data
 and "-1" if below.
 
-Be the data a regular datafeed the 1s and -1s would be produced comparing with
+Be the data a regular data feed the 1s and -1s would be produced comparing with
 the close price.
 
-Although more can be seen in the "Plotting" section and to have a behaved and
+Although more can be seen in the *Plotting* section and to have a behaved and
 nice citizen in the plotting world, a couple of things can be added::
 
   import backtrader as bt

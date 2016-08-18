@@ -13,14 +13,26 @@ All mini-code examples assume the following imports are available::
   import backtrader.indicators as btind
   import backtrader.feeds as btfeeds
 
+.. note::
+
+   An alternative syntax for accessing sub-modules like *indicators* and *feeds*::
+
+     import backtrader as bt
+
+   And then::
+
+     thefeed = bt.feeds.OneOfTheFeeds(...)
+     theind = bt.indicators.SimpleMovingAverage(...)
+
+
 Data Feeds - Passing them around
 ********************************
 
-The basis of the work with the platform will be done with Strategies. And these
-will get passed Data Feeds (shorthand: Datas) The platform end user does not
-need to care about receiving them:
+The basis of the work with the platform will be done with *Strategies*. And
+these will get passed *Data Feeds* The platform end user does not need to care
+about receiving them:
 
-  *Datas are automagically provided member variables to the strategy in the
+  *Data Feeds are automagically provided member variables to the strategy in the
   form of an array and shortcuts to the array positions*
 
 Quick preview of a Stragegy derived class declaration and running the platform::
@@ -54,18 +66,18 @@ Notice the following:
   - A member variable ``self.datas`` exists which is array/list/iterable holding
     at least one item (hopefully or else an exception will be raised)
 
-So it is. *Datas* get added to the platform and they will show up inside the
-stratey in the sequential order in which they were added to the systems.
+So it is. *Data Feeds* get added to the platform and they will show up inside
+the strategy in the sequential order in which they were added to the system.
 
 .. note:: This also applies to ``Indicators``, should the end user develop his
-	  own customer Indicator or when having a look at the source code for
+	  own custom Indicator or when having a look at the source code for
 	  some of the existing :ref:`indautoref`
 
-Shortcuts for Datas
-===================
+Shortcuts for Data Feeds
+========================
 
 The `self.datas` array items can be directly accessed with additional automatic
-membervariables:
+member variables:
 
   - ``self.data`` targets ``self.datas[0]``
   - ``self.dataX`` targets ``self.datas[X]``
@@ -81,9 +93,8 @@ The example then::
 
       ...
 
-
-Omitting the Datas
-==================
+Omitting the Data Feeds
+=======================
 
 The example above can be further simplfied to::
 
@@ -98,18 +109,18 @@ The example above can be further simplfied to::
 
 ``self.data`` has been completely removed from the invocation of
 ``SimpleMovingAverage``. If this is done, the indicator (in this case the
-``SimpleMovingAverage``) receives the first data of the object in which is being
-created (the Strategy), which is ``self.data`` (aka ``self.data0`` or ``self.datas[0]``)
+``SimpleMovingAverage``) receives the first data of the object in which is
+being created (the *Strategy*), which is ``self.data`` (aka ``self.data0`` or
+``self.datas[0]``)
 
+Almost everything is a *Data Feed*
+==================================
 
-Indicators and Operations ara DATAS
-===================================
+Not only `Data Feeds` are data and can be passed around. ``Indicators`` and
+results of ``Operations`` are also data.
 
-Not only `Data Feeds` are datas and can be passed around. `Indicators` and
-results of ``Operations`` are also datas.
-
-In the previous example the `SimpleMovingAverage` was receiving
-``self.datas[0]`` as input to operate on. An example with oeprations and extra
+In the previous example the ``SimpleMovingAverage`` was receiving
+``self.datas[0]`` as input to operate on. An example with operations and extra
 indicators::
 
   class MyStrategy(bt.Strategy):
@@ -137,24 +148,33 @@ indicators::
 
       ...
 
-Basically everything gets transformed into an object which can be used as a data
-once it has been operated upon.
+Basically everything gets transformed into an object which can be used as a
+data feed once it has been operated upon.
 
 Parameters
 **********
 
-Mostly every other `class` in the platform supports the notion of parameters.
+Mostly every other ``class`` in the platform supports the notion of
+*parameters*.
 
   - Parameters along with default values are declared as a class attribute
-    (tuple of tuples or dictionary)
+    (tuple of tuples or dict-like object)
   - Keywords args (``**kwargs``) are scanned for matching parameters, removing
-    them from ``kwargs`` if found and assining the value to the corresponding
+    them from ``**kwargs`` if found and assigning the value to the corresponding
     parameter
   - And parameters can be finally used in instances of the class by accessing
     the member variable ``self.params`` (shorthand: ``self.p``)
 
 The previous quick Strategy preview already contains a parameters example, but
-for the sake of redundancy, again, focusing only on the parameters::
+for the sake of redundancy, again, focusing only on the parameters. Using *tuples*::
+
+  class MyStrategy(bt.Strategy):
+      params = (('period', 20),)
+
+      def __init__(self):
+          sma = btind.SimpleMovingAverage(self.data, period=self.p.period)
+
+And using a ``dict``::
 
   class MyStrategy(bt.Strategy):
       params = dict(period=20)
@@ -166,17 +186,17 @@ for the sake of redundancy, again, focusing only on the parameters::
 Lines
 *****
 
-Again mostly every other object in the platform is a `Lines` enabled
-object. From a end user point of view this would mean:
+Again mostly every other object in the platform is a ``Lines`` enabled
+object. From a end user point of view this means:
 
   - It can hold one of more line series, being a line series an array of values
-    Were the values put together in a chart they would form a line.
+    were the values put together in a chart they would form a line.
 
 A good example of a *line* (or *lineseries*) is the line formed by the closing
 prices of a stock. This is actually a well-known chart representation of the
 evolution of prices (known as *Line on Close*)
 
-Regular use of the platform is only concerned with **accessing** `lines`. The
+Regular use of the platform is only concerned with **accessing** ``lines``. The
 previous mini-strategy example, lightly extended, comes in handy again::
 
   class MyStrategy(bt.Strategy):
@@ -190,19 +210,19 @@ previous mini-strategy example, lightly extended, comes in handy again::
           if self.movav.lines.sma[0] > self.data.lines.close[0]:
 	      print('Simple Moving Average is greater than the closing price')
 
-Two objects with `lines` have been exposed:
+Two objects with ``lines`` have been exposed:
 
   - ``self.data``
-    It has a ``lines`` attribute which contains a ``close`` sttribute in turn
-  - ``self.movav`` which is a SimpleMovingAverage indicator
-    It has a ``lines`` attribute which contains a ``sma`` sttribute in turn
+    It has a ``lines`` attribute which contains a ``close`` attribute in turn
+  - ``self.movav`` which is a ``SimpleMovingAverage`` indicator
+    It has a ``lines`` attribute which contains a ``sma`` attribute in turn
 
-.. note:: It should be obvious from this that ``lines`` are named. They can also
-	  be accessed sequentially following the declaration order, but this
-	  should only be used in `Indicator` development
+.. note:: It should be obvious from this, that ``lines`` are named. They can
+	  also be accessed sequentially following the declaration order, but
+	  this should only be used in ``Indicator`` development
 
-And both *lines*, namely `close` and `sma` can be queried for a point (*index
-0*) to compare the values.
+And both *lines*, namely ``close`` and ``sma`` can be queried for a point
+(*index 0*) to compare the values.
 
 Shorthand access to lines do exist:
 
@@ -219,7 +239,7 @@ Additionally the line names are directly accessible with:
 
   - ``self.data.close`` and ``self.movav.sma``
 
-    But the notation doesn't make as clear as the previous one if `lines` are
+    But the notation doesn't make as clear as the previous one if *lines* are
     actually being accessed.
 
 .. note:: **Setting**/**Assigning** the lines with these two later notations is
@@ -228,10 +248,10 @@ Additionally the line names are directly accessible with:
 *Lines* declaration
 ===================
 
-If an `Indicator` is being developed, the *lines* which the indicator has must
+If an *Indicator* is being developed, the *lines* which the indicator has must
 be declared.
 
-Just as with `params` this takes place as a class attribute this time *ONLY* as
+Just as with *params* this takes place as a class attribute this time *ONLY* as
 a tuple. Dictionaries are not supported because they do not store things
 following insertion order.
 
@@ -248,7 +268,7 @@ For the Simple Moving Average it would be done like this::
 	  few spots where Python's syntax got it wrong.
 
 As seen in the previous example this declaration creates a ``sma`` line in the
-`Indicator` that can be later accessed in the Strategy's logic (and possibly by
+*Indicator* that can be later accessed in the Strategy's logic (and possibly by
 other indicators to create more complex indicators)
 
 For development is sometimes useful to access the lines in a generic non-named
@@ -264,8 +284,8 @@ And of course, extra shorthand versions do exist:
   - ``self.lineX`` point to ``self.lines[X]``
   - ``self.line_X`` point to ``self.lines[X]``
 
-Inside objects which are receiving `datas` the lines below these datas can also
-be quickly accessed by number:
+Inside objects which are receiving *datas feeds* the lines below these data
+feeds can also be quickly accessed by number:
 
   - ``self.dataY`` points to ``self.data.lines[Y]``
   - ``self.dataX_Y`` points to ``self.dataX.lines[X]`` which is a full shorthard
@@ -307,8 +327,9 @@ data source.
 *Lines* len
 ===========
 
-*Lines* have a set of points and therefore the length can be measured at any
-time by invoking the standard Python ``len`` function.
+*Lines* have a set of points and grow dynamically during execution, therefore
+the length can be measured at any time by invoking the standard Python ``len``
+function.
 
 This applies to for example:
 
@@ -316,11 +337,11 @@ This applies to for example:
   - Strategies
   - Indicators
 
-An additional property applies to `Data Feeds` when the data is **preloaded**:
+An additional property applies to *Data Feeds* when the data is **preloaded**:
 
   - Method ``buflen``
 
-The method returns the actual number of bars the `Data Feed` has available.
+The method returns the actual number of bars the *Data Feed* has available.
 
 The difference between ``len`` and ``buflen``
 
@@ -335,8 +356,8 @@ connected to a live feed, this will mean the end of processing)
 Inheritance of Lines and Params
 ===============================
 
-A kind of metalanguage is in place to support declaration of `Params` and
-`Lines`. Every effort has been made to make it compatible with standard Python
+A kind of metalanguage is in place to support declaration of *Params* and
+*Lines*. Every effort has been made to make it compatible with standard Python
 inheritance rules.
 
 Params inheritance
@@ -362,14 +383,14 @@ Lines Inheritance
 Indexing: 0 and -1
 ******************
 
-`Lines` as seen before are line series and have a set of points that conform a
+*Lines* as seen before are line series and have a set of points that conform a
 line when drawn together (like when joining all closing prices together along a
 time axis)
 
 To access those points in regular code, the choice has been to use a **0** based
 approach for the current *get/set* instant.
 
-Strategies do only `get` values. Indicators do also `set` values.
+Strategies do only *get* values. Indicators do also *set* values.
 
 From the previous quick strategy example where the ``next`` method was briefly seen::
 
@@ -377,7 +398,7 @@ From the previous quick strategy example where the ``next`` method was briefly s
       if self.movav.lines.sma[0] > self.data.lines.close[0]:
           print('Simple Moving Average is greater than the closing price')
 
-The logic is `getting` the current value of the moving average and the current
+The logic is *getting* the current value of the moving average and the current
 closing price by applying index ``0``.
 
 .. note:: Actually for index ``0`` and when applying logic/arithmetic operators
@@ -405,19 +426,19 @@ makes for ``-1`` when accesing an array/iterable
 The platform consider the last `set` item (before the current live `get/set`
 point) to be ``-1``.
 
-As such comparing current close to the previous close is a ``0`` vs ``-1``
-thing. In a strategy, for example::
+As such comparing the current ``close`` to the *previous* ``close`` is a ``0``
+vs ``-1`` thing. In a strategy, for example::
 
   def next(self):
       if self.data.close[0] > self.data.close[-1]:
           print('Closing price is higher today')
 
-Of course and logically, prices `set` before ``-1`` will be accessed with ``-2,
+Of course and logically, prices *set* before ``-1`` will be accessed with ``-2,
 -3, ...``.
 
 
-Lines DELAYED indexing
-**********************
+Lines: DELAYED indexing
+***********************
 
 The ``[]`` operator syntax is there to extract individual values during the
 ``next`` logic phase. *Lines* objects support an additional notation to address
@@ -443,6 +464,9 @@ Here the ``(delay)`` notation is being used:
 
   - This delivers a replica of the ``close`` prices but delayed by ``-1``.
 
+    And the comparison ``self.data.close(-1) > self.sma`` generates another
+    *lines* object which returns either ``1`` if the condition is ``True`` or
+    ``0`` if ``False``
 
 Lines Coupling
 **************
@@ -454,8 +478,8 @@ If the syntax is used *WITHOUT* providing a ``delay`` value, then a
 ``LinesCoupler`` *lines* object is returned. This is meant to establish a
 coupling between indicators that operate on *datas* with different timeframes.
 
-Datas with different timeframes have different *lengths*, and the indicators
-operating on them replicate the length of the data. Example:
+Data Feeds with different timeframes have different *lengths*, and the
+indicators operating on them replicate the length of the data. Example:
 
   - A daily data feed has around 250 bars per year
 
@@ -475,7 +499,7 @@ to find out a day - week correspondence, but:
     They know nothing about the environment, just that if the data provides
     enough values, a calculation can take place.
 
-But the ``()`` empty notation comes to the rescue::
+The ``()`` (empty call) notation comes to the rescue::
 
   class MyStrategy(bt.Strategy):
       params = dict(period=20)
@@ -504,7 +528,7 @@ Operators, using natural constructs
 
 In order to achieve the "ease of use" goal the platform allows (within the
 constraints of Python) the use of operators. And to further enhance this goal
-the use of operators has been broken in two stages.
+, the use of operators has been broken in two stages.
 
 Stage 1 - Operators Create Objects
 ==================================
@@ -533,11 +557,13 @@ The code inside the SimpleMovingAverage indicator `__init__` could look like::
       # The operation returns an object assigned to "av" which again
       # returns the current average at the current instant in time
       # when queried with [0]
+
       av = datasum / self.params.period
 
       # The av *Lines* object can be naturally assigned to the named
       # line this indicator delivers. Other objects using this
       # indicator will have direct access to the calculation
+
       self.line.sma = av
 
 A more complete use case is shown during the initialization of a Strategy::
@@ -563,29 +589,10 @@ After the above operations have taken place, *sell_sig* is a *Lines* object
 which can be later used in the logic of the Strategy, indicating if the
 conditions are met or not.
 
-.. note:: There is an additional operator which can be used during Stage 1, and
-	  is the (n) operator. Being a Stage 1 operator it does return an
-	  object.
-
-	  This (n) operator is the "delay" operator. It returns the same object
-	  delayed n bars.
-
-	  Just as the [n] operator, *0* means the current moment (no delay)
-	  and *-1* is used to get the last output value (delay the object 1 bar)
-
-	  The following substracts the current closing price from the closing
-	  price of the previous day::
-
-	    close_diff = self.data.close(0) - self.data.close(-1)
-
-	  Obviously (0) is redundant and the expression can be simplified to::
-
-	    close_diff = self.data.close - self.data.close(-1)
-
 Stage 2 - Operators true to nature
 ==================================
 
-Let's first remember that a strategy has a *next* method which is called for
+Let's first remember that a strategy has a ``next`` method which is called for
 every bar the system processes. This is where operators are actually in the
 stage 2 mode. Buiding on the previous example::
 
@@ -663,7 +670,7 @@ Functions:
 
     ``Sum`` actually uses ``math.fsum`` as the underlying operation because the
     platform works with floating point numbers and applying a rgular ``sum``
-    would destroy precision.
+    may have an impatct on precision.
 
 These utility operators/functions operate on iterables. The elements in the
 iterables can be regular Python numeric types (ints, floats, ...) and also
@@ -710,6 +717,7 @@ Breakdown:
 
       The values will be calculated later when the system runs
 
+
   - The generated ``bt.If`` *Lines* object is then fed to a 2nd ``SMA`` which
     will sometimes use the ``low`` prices and sometimes the ``high`` prices for
     the calculation
@@ -727,40 +735,6 @@ Those **functions** take also numeric values. The same example with a modificati
 Now the 2nd moving average uses either ``30.0`` or the ``high`` prices to
 perform the calculation, depending on the logic status of ``sma`` vs ``close``
 
-
-Date and Time Manipulation
-==========================
-
-The initial versions of the platform mixed arrays of floats and Python DateTime
-objects. This was dropped and now only arrays of floats are considered and
-therefore dates and times are kept as floats.
-
-Because matplotlib is used for plotting and a the library has a nice convention
-to store a given datetime in a float up to the microsecond, the same is exactly
-used in the platform.
-
-The platform provides 2 utility functions as matplotlib does:
-
-  - ``num2date``
-
-    which takes a float and returns a Datetime object
-
-and
-
-  - ``date2num``
-
-    which takes a Datetime object and returns a float
-
-Data feed objects do already carry a "datetime" field and therefore embedded
-functionality is provided to access equivalent Python objects (Datetime, Date,
-Time) if needed be. For example::
-
-  def next(self):
-      if self.data.datetime.date(0) == datetime.date(2014, 12, 31):
-          print('It is the end of 2014 ... yuhuuu')
-
-      if self.data.datetime.time(0) == datetime.time(17, 30):
-          print('Time to go home')
-
-      if self.data.datetime.datetime(0) == datetime.datetime(2014, 12, 31, 17, 30):
-          print('Time to go home for a long party to celebrate the upcoming 2015')
+.. note::
+   The value ``30`` is transformed internally into a pseudo-iterable which
+   always returns ``30``

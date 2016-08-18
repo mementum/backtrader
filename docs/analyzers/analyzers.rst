@@ -49,11 +49,11 @@ Additional Location
 -------------------
 
 Some ``Analyzer`` objects may actually use other analyzers to complete its
-work (for example: ``SharpeRatio`` uses the output of ``TimeReturn`` for the
+work. For example: ``SharpeRatio`` uses the output of ``TimeReturn`` for the
 calculations.
 
 These *sub-analyzers* or *slave-analyzers* will also be inserted into the same
-strategy as the one creating them. But they are completetly invisible to the user.
+strategy as the one creating them. But they are completely invisible to the user.
 
 
 Attributes
@@ -67,9 +67,9 @@ ease of use:
     analyzer object is operating.  Anything accessible by the *strategy* can
     also be accessd by the *analyzer*
 
-  - ``self.datas[x]``: the array of datas present in the strategy. Although
-    this could be accesed over the *strategy* reference, the shortcut makes
-    work more comfortable.
+  - ``self.datas[x]``: the array of data feeds present in the
+    strategy. Although this could be accesed over the *strategy* reference, the
+    shortcut makes work more comfortable.
 
   - ``self.data``: shortcut to ``self.datas[0]`` for extra comfort.
 
@@ -94,6 +94,14 @@ ease of use:
 
     - ``self.data_close`` refers to ``self.datas[0].close``
 
+Returning the analysis
+----------------------
+
+The *Analyzer* base class creates a ``self.rets`` (of type
+``collections.OrderedDict``) member attribute to return the analysis. This is
+done in the method ``create_analysis`` which can be overriden by subclasses if
+creating custom analyzers.
+
 
 Modus operandi
 ==============
@@ -102,13 +110,17 @@ Although ``Analyzer`` objects are not *Lines* objects and therefore do not
 iterate over lines, they have been designed to follow the same operation
 pattern.
 
-  #. Instantiated before the system is put into motion (therefore calling
-  ``__init__``
+  #.  Instantiated before the system is put into motion (therefore calling
+      ``__init__``)
 
   #. Signaled the begin of operations with ``start``
 
   #. ``prenext`` / ``nextstart`` / ``next`` will be invoked following the
      calculated minimum period of the *strategy* the indicator is working in.
+
+     The default behaviour of ``prenext`` and ``nextstart`` is to invoke next,
+     because an analyzer may be analyzing from the very first moment the system
+     is alive.
 
      It may be customary to call ``len(self)`` in *Lines* objects to check the
      actual amount of bars. This also works in ``Analyzers`` by returning the
@@ -118,22 +130,28 @@ pattern.
      ``notify_order`` and ``notify_trade``
 
   #. Cash and value will also be notified like it is done with the strategy
-     over the ``notify_cashvalue`` metho
+     over the ``notify_cashvalue`` method
 
   #. ``stop`` will be invoked to signal the end of operations
 
-Once the regular operations cycle has been completed, the *analyzers* feature
-additional methods for extractin/outputting information
+Once the regular operations cycle has been completed, the *analyzers* featuring
+additional methods for extracting/outputting information
 
   - ``get_analysis``: which ideally (not enforced) returnes a ``dict`` -like
     object containing the analysis results.
 
-  - ``print`` usse a standard ``backtrader.WriterFile`` (unless overriden) to
+  - ``print`` uses a standard ``backtrader.WriterFile`` (unless overriden) to
     write the analysis result from ``get_analysis``.
 
   - ``pprint`` (*pretty print*) uses the Python ``pprint`` module to print the
     ``get_analysis`` resutls.
 
+And finally:
+
+  - ``get_analysis`` creates a member attribute ``self.ret`` (of type
+    ``collections.OrderedDict``) to which analyzers write the analysis results.
+
+    Subclasses of *Analyzer* can override this method to change this behavior
 
 Analyzer Patterns
 =================
@@ -155,8 +173,8 @@ Development of *Analyzer* objects in the ``backtrader`` platform have revealed
      ``notify_trade`` but generates the statistic during the ``stop`` method
 
 
-A quick exxample
-================
+A quick example
+===============
 
 As easy as it can be::
 
@@ -202,8 +220,8 @@ Forensic Analysis of an Analyzer
 ================================
 
 Let's repeat that ``Analyzers`` are not Lines objects, but to seamlessly
-integrate them into the ``backtrader`` ecosystem, it follows the internal API
-conventions of several Lines object, actually a **mixture** of them.
+integrate them into the ``backtrader`` ecosystem, the internal API conventions
+of several Lines object are followed (actually a **mixture** of them)
 
 Code for ``SharpeRatio`` to serve as a basis (a simplified version)
 
@@ -211,21 +229,24 @@ Code for ``SharpeRatio`` to serve as a basis (a simplified version)
    :language: python
    :lines: 21-
 
-The code is broken down into:
+The code can be broken down into:
 
   - ``params`` declaration
 
-    Although the declared ones are not used (future-proof), Analyzers like most
-    other objects in ``backtrader`` support parameters
+    Although the declared ones are not used (meant as an example), *Analyzers*
+    like most other objects in ``backtrader`` support parameters
 
   - ``__init__`` method
 
-    Just like ``Strategies`` declare ``Indicators`` in ``__init__``, the same do
+    Just like *Strategies* declare *Indicators* in ``__init__``, the same do
     analyzers with support objects.
 
-    In this case: the SharpeRatio is calculated using ``Annual Returns``. The
+    In this case: the ``SharpeRatio`` is calculated using **Annual Returns**. The
     calculation will be automatic and will be available to ``SharpeRatio`` for
     its own calculations.
+
+    .. note:: The actual implementation of ``SharpeRatio`` uses the more
+	      generic and later developed ``TimeReturn`` analyzer
 
   - ``next`` method
 
@@ -267,6 +288,8 @@ Reference
    .. automethod:: next
 
    .. automethod:: get_analysis
+
+   .. automethod:: create_analysis
 
    .. automethod:: print
 

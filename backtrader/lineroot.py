@@ -85,7 +85,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
             return self._operation_stage1(
                 other, operation, r=r, intify=intify)
 
-        return self._operation_stage2(other, operation)
+        return self._operation_stage2(other, operation, r=r)
 
     def _operationown(self, operation):
         if self._opstage == 1:
@@ -200,7 +200,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
         return self._makeoperation(other, operation, r, self)
 
-    def _operation_stage2(self, other, operation):
+    def _operation_stage2(self, other, operation, r=False):
         '''
         Rich Comparison operators. Scans other and returns either an
         operation with other directly or a subitem from other
@@ -209,6 +209,9 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
             other = other[0]
 
         # operation(float, other) ... expecting other to be a float
+        if r:
+            return operation(other, self[0])
+
         return operation(self[0], other)
 
     def _operationown_stage2(self, operation):

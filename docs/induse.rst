@@ -10,9 +10,10 @@ Indicators can be used in two places in the platform:
 Indicators in action
 ********************
 
-  #. Indicators are always "declared" during ``__init__``
+  #. Indicators are always instantiated during ``__init__`` in the *Strategy*
 
-  #. Indicator values (or values thereof derived) are used/checked during ``next``
+  #. Indicator values (or values thereof derived) are used/checked during
+     ``next``
 
 There is an important axiom to take into account:
 
@@ -21,8 +22,8 @@ There is an important axiom to take into account:
 
 Let's go for the differences an operation modes.
 
-__init__ vs next
-****************
+``__init__`` vs ``next``
+************************
 
 Things works as follows:
 
@@ -33,14 +34,14 @@ Things works as follows:
     Python types like floats and bools.
 
 
-During __init__
----------------
+During ``__init__``
+-------------------
 
 Example of an operation during ``__init__``::
 
   hilo_diff = self.data.high - self.data.low
 
-The variable ``hilo_diff`` holds a reference to an **lines** object which is
+The variable ``hilo_diff`` holds a reference to a **lines** object which is
 precalculated before calling ``next`` and can be accessed using the standard
 array notation ``[]``
 
@@ -61,8 +62,8 @@ Using logical operatorss::
 
 Now the generated **lines** object will contain an array of booleans.
 
-During next
------------
+During ``next``
+---------------
 
 Example of an operation (logical operator)::
 
@@ -72,11 +73,12 @@ Using the equivalent array (index 0 based notation)::
 
   close_over_sma = self.data.close[0] > self.sma[0]
 
-In this case ``close_over_sma`` yields a float. The other counterparts should be
-obvious.
+In this case ``close_over_sma`` yields a boolen which is the result of
+comparing two floating point values, the ones returned by the ``[0]`` operator
+applied to ``self.data.close`` and ``self.sma``
 
-The __init__ vs next "why"
---------------------------
+The ``__init__`` vs ``next`` *why*
+----------------------------------
 
 Logic simplification (and with it ease of use) is the key. Calculations and most
 of the associated logic can be declared during ``__init__`` keeping the actual
@@ -85,7 +87,7 @@ operational logic to a minimum during ``next``.
 There is actually a side benefit: **speed** (due to the precalculation explained
 at the beginning)
 
-A complete example which generates a (random) **buy** signal during
+A complete example which generates a **buy** signal during
 ``__init__``::
 
   class MyStrategy(bt.Strategy):
@@ -133,7 +135,7 @@ In the example above there are two things which have been simplified in
     ``Indicators`` and any **lines** object generated because of operations
     (like ``sma - ema``)
 
-  - ExponentialMovingAverage is being instantiated without ``self.data``
+  - ``ExponentialMovingAverage`` is being instantiated without ``self.data``
 
     This is intentional. If no ``data`` is passed, the 1st data of the
     **parent** (in this case the Strategy in which is being created) will be
@@ -187,16 +189,16 @@ member variable ``plotinfo`` for the indicator.
 
 The ``plotinfo`` offers the following parameters to control plotting behavior:
 
-  - plot (default: True)
+  - ``plot`` (default: ``True``)
 
     Whether the indicator is to be plotted or not
 
-  - subplot (default: True)
+  - ``subplot`` (default: ``True``)
 
     Whether to plot the indicator in a different window. For indicators like
     moving averages the default is changed to ``False``
 
-  - plotname (default: '')
+  - ``plotname`` (default: ``''``)
 
     Sets the plotname to show on the plot. The empty value means the canonical
     name of the indicator (``class.__name__``) will be used. This has some
@@ -210,13 +212,13 @@ The ``plotinfo`` offers the following parameters to control plotting behavior:
 
     Making the plot "nicer"
 
-  - plotabove (default: False)
+  - ``plotabove`` (default: ``False``)
 
-    Indicators are usually plotted (those with subplot=True) below the data they
-    have operated on. Setting this to ``True`` will make the indicator be
+    Indicators are usually plotted (those with ``subplot=True``) below the data
+    they have operated on. Setting this to ``True`` will make the indicator be
     plotted above the data.
 
-  - plotlinelabels (default: False)
+  - ``plotlinelabels`` (default: ``False``)
 
     Meant for "indicators" on "indicators". If one calculates the
     SimpleMovingAverage of the RSI the plot will usually show the name
@@ -229,13 +231,13 @@ The ``plotinfo`` offers the following parameters to control plotting behavior:
     if the value is set to ``True`` the actual name of the line inside the
     SimpleMovingAverage will be used.
 
-  - plotymargin (default: 0.0)
+  - ``plotymargin`` (default: ``0.0``)
 
     Amount of margin to leave at the top and bottom of the indicator (``0.15``
     -> 15%). Sometimes the ``matplotlib`` plots go too far to the top/bottom of
     the axis and a margin may be wished
 
-  - plotyticks (default: [])
+  - ``plotyticks`` (default: ``[]``)
 
     Used to control the drawn y scale ticks
 
@@ -246,7 +248,7 @@ The ``plotinfo`` offers the following parameters to control plotting behavior:
     Some indicators offer parameters like ``upperband`` and ``lowerband`` that
     are actually used to manipulate the y ticks
 
-  - plothlines (default: [])
+  - ``plothlines`` (default: ``[]``)
 
     Used to control the drawing of horizontal lines along the indicator axis.
 
@@ -258,11 +260,11 @@ The ``plotinfo`` offers the following parameters to control plotting behavior:
     Some indicators offer parameters like ``upperband`` and ``lowerband`` that
     are actually used to manipulate the horizontal lines
 
-  - plotyhlines (default: [])
+  - ``plotyhlines`` (default: ``[]``)
 
     Used to simultaneously control plotyticks and plothlines using a single parameter.
 
-  - plotforce (default: False)
+  - ``plotforce`` (default: ``False``)
 
     If for some reason you believe an indicator should be plotting and it is not
     plotting ... set this to ``True`` as a last resort.

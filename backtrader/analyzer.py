@@ -70,6 +70,8 @@ class MetaAnalyzer(bt.MetaParams):
                         setattr(_obj, 'data%d_%s' % (d, linealias), line)
                     setattr(_obj, 'data%d_%d' % (d, l), line)
 
+        _obj.create_analysis()
+
         # Return to the normal chain
         return _obj, args, kwargs
 
@@ -92,28 +94,28 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
     Automagically set member attributes:
 
-      - self.strategy (giving access to the strategy and anything accessible
-        from it)
+      - ``self.strategy`` (giving access to the *strategy* and anything
+        accessible from it)
 
-      - self.datas[x] giving access to the array of datas present in the the
-        system, which could also be accessed via the strategy reference
+      - ``self.datas[x]`` giving access to the array of data feeds present in
+        the the system, which could also be accessed via the strategy reference
 
-      - self.data, giving access to self.datas[0]
+      - ``self.data``, giving access to ``self.datas[0]``
 
-      - self.dataX -> self.datas[X]
+      - ``self.dataX`` -> ``self.datas[X]``
 
-      - self.dataX_Y -> self.datas[X].lines[Y]
+      - ``self.dataX_Y`` -> ``self.datas[X].lines[Y]``
 
-      - self.dataX_name -> self.datas[X].name
+      - ``self.dataX_name`` -> ``self.datas[X].name``
 
-      - self.data_name -> self.datas[0].name
+      - ``self.data_name`` -> ``self.datas[0].name``
 
-      - self.data_Y -> self.datas[0].lines[Y]
+      - ``self.data_Y`` -> ``self.datas[0].lines[Y]``
 
     This is not a *Lines* object, but the methods and operation follow the same
     design
 
-      - __init__ during instantiation and initial setup
+      - ``__init__`` during instantiation and initial setup
 
       - ``start`` / ``stop`` to signal the begin and end of operations
 
@@ -128,9 +130,10 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
     analysis can be generated with the ``next`` calls, at the end of operations
     during ``stop`` and even with a single method like ``notify_trade``
 
-    The important thing is to override ``get_analysis`` to return a  dict-like
+    The important thing is to override ``get_analysis`` to return a *dict-like*
     object containing the results of the analysis (the actual format is
     implementation dependent)
+
     '''
     csv = True
 
@@ -224,7 +227,7 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
     def start(self):
         '''Invoked to indicate the start of operations, giving the analyzer
         time to setup up needed things'''
-        self.create_analysis()
+        pass
 
     def stop(self):
         '''Invoked to indicate the end of operations, giving the analyzer
@@ -240,16 +243,17 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         self.rets = OrderedDict()
 
     def get_analysis(self):
-        '''Returns a dict-like object with the results of the analysis
+        '''Returns a *dict-like* object with the results of the analysis
 
         The keys and format of analysis results in the dictionary is
         implementation dependent.
 
-        It is not even enforced that the result is a dict-like object, just the
-        convention
+        It is not even enforced that the result is a *dict-like object*, just
+        the convention
 
         The default implementation returns the default OrderedDict ``rets``
         created by the default ``create_analysis`` method
+
         '''
         return self.rets
 

@@ -112,6 +112,9 @@ class Plot(with_metaclass(MetaParams, object)):
         if not strategy.datas:
             return
 
+        if not len(strategy):
+            return
+
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)
         self.calcrows(strategy)

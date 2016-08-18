@@ -21,6 +21,19 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .bbroker import *
+import backtrader as bt
 
-from . import filler as filler
+(
+
+    SIGNAL_NONE,
+    SIGNAL_LONGSHORT,
+    SIGNAL_LONG,
+    SIGNAL_SHORT,
+    SIGNAL_LONGEXIT,
+    SIGNAL_SHORTEXIT
+
+) = range(6)
+
+
+class Signal(bt.Indicator):
+    lines = ('signal',)

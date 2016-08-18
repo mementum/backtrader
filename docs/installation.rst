@@ -21,13 +21,13 @@ Additional requirements if plotting is wished:
     development
 
 .. note::
-   At the time of writing Matplotlib is not supported under pypy/pypy3
+   At the time of writing Matplotlib is not supported under *pypy/pypy3*
 
 Python 2.x/3.x compatibility
 ============================
 
 Development takes place under Python 2.7 and sometimes under 3.4. Tests are run
-locally with both version.
+locally with both versions.
 
 Compatibility with 3.2/3.3/3.5 and pypy/pyp3 is checked with continuous
 integration under Travis
@@ -55,23 +55,24 @@ Install from source
 *******************
 
 First downloading a release or the latest tarball from the github site:
-https://github.com/mementum/backtrader
 
-And the running the command::
+  - https://github.com/mementum/backtrader
+
+And after unpacking run the command::
 
   python setup.py install
 
 Run from source in your project
 *******************************
 
-Again download a release or the latest tarball from the github site:
+Download a release or the latest tarball from the github site:
 
   https://github.com/mementum/backtrader
 
 And then copy the *backtrader* package directory to your own project. Under a
 Unix-like OS for example::
 
-  tar xzf backgrader.tgz
+ Again tar xzf backgrader.tgz
   cd backtrader
   cp -r backtrader project_directory
 

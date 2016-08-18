@@ -4,12 +4,12 @@ PyFolio Overview
 Quoting from the main ``pyfolio`` page at http://quantopian.github.io/pyfolio/::
 
   pyfolio is a Python library for performance and risk analysis of financial
-   portfolios developed by Quantopian Inc. It works well with the Zipline open
-   source backtesting library
+  portfolios developed by Quantopian Inc. It works well with the Zipline open
+  source backtesting library
 
 And now it works also well with *backtrader*. What's needed:
 
-  - ``pyfolio``
+  - ``pyfolio`` obviously
   - And its dependencies (things like ``pandas``, ``seaborn`` ...)
 
     .. note::
@@ -17,28 +17,36 @@ And now it works also well with *backtrader*. What's needed:
        During the integration with version ``0.5.1``, an update to the most
        recent packages of the dependencies was needed, like ``seaborn`` from
        the previously installed ``0.7.0-dev`` to ``0.7.1``, apparently due to
-       the absence of the method ``swarmplot``.
+       the absence of the method ``swarmplot``
 
 Usage
 *****
 
-  1. Add the ``PyFolio`` analyzer to the ``cerebro`` mix
-  2. Run
-  3. Retrieve the analyzer using whatever name you gave to it
-  4. Use the analyzer method ``get_pf_items`` to retrieve the 4 components
-     later needed for ``pyfolio``:
+  #. Add the ``PyFolio`` analyzer to the ``cerebro`` mix::
 
-     - returns
-     - positions
-     - transactions
-     - gross_leverage
+       cerebro.addanalyzer(bt.analyzers.PyFolio)
+
+  #. Run and retrieve the 1st strategy::
+
+       strats = cerebro.run()
+       strat0 = strats[0]
+
+  #. Retrieve the analyzer using whatever name you gave to it or the default
+     name it will be given to it: ``pyfolio``. For example::
+
+       pyfolio = strats.analyzers.getbyname('pyfolio')
+
+  #. Use the analyzer method ``get_pf_items`` to retrieve the 4 components
+     later needed for ``pyfolio``::
+
+       returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
 
      .. note::
 
 	The integration was done looking at test samples available with
 	``pyfolio`` and the same headers (or absence of) has been replicated
 
-  5. Work with ``pyfolio`` (this is already outside of the *backtrader*
+  #. Work with ``pyfolio`` (this is already outside of the *backtrader*
      ecosystem)
 
 Some usage notes not directly related to *backtrader*
@@ -46,10 +54,10 @@ Some usage notes not directly related to *backtrader*
   - ``pyfolio`` automatic plotting works outside of a *Jupyter Notebook*, but
     **it works best** inside
 
-  - ``pyfolio`` table's output seems to barely work outside of a *Jupyter
+  - ``pyfolio`` data tables' output seems to barely work outside of a *Jupyter
     Notebook*. It works inside the *Notebook*
 
-The conclusion is easy if working with ``pyfolio`` is wished: **Work inside a
+The conclusion is easy if working with ``pyfolio`` is wished: **work inside a
 Jupyter Notebook**
 
 
@@ -83,5 +91,5 @@ The code would look like this::
 Reference
 =========
 
-Look into the *Analyzers Reference* for the ``PyFolio`` analyzer and which
+Look into the :doc:`../analyzers-reference` for the ``PyFolio`` analyzer and which
 analyzers it uses internally

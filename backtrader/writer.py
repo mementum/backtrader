@@ -36,50 +36,50 @@ class WriterBase(with_metaclass(bt.MetaParams, object)):
 
 
 class WriterFile(WriterBase):
-    '''
-    The system wide writer class.
+    '''The system wide writer class.
 
     It can be parametrized with:
 
-      - out (default: sys.stdout): output stream to write to
+      - ``out`` (default: ``sys.stdout``): output stream to write to
 
         If a string is passed a filename with the content of the parameter will
         be used
 
-      - close_out  (default: False)
+      - ``close_out``  (default: ``False``)
 
         If ``out`` is a stream whether it has to be explicitly closed by the
         writer
 
-      - csv (default: False)
+      - ``csv`` (default: ``False``)
 
-        If a csv stream of the datas, strategies, observers and indicators has
-        to be written to the stream during execution
+        If a csv stream of the data feeds, strategies, observers and indicators
+        has to be written to the stream during execution
 
         Which objects actually go into the csv stream can be controlled with
-        the ``csv`` attribute of each object (defaults to True for ``datas```
-        and ``observers`` / False for ``indicators``)
+        the ``csv`` attribute of each object (defaults to ``True`` for ``data
+        feeds`` and ``observers`` / False for ``indicators``)
 
-      - csv_filternan (default: True) wehther "nan" values have to be purged
-        out of the csv stream (replaced by an empty field)
+      - ``csv_filternan`` (default: ``True``) whether ``nan`` values have to be
+        purged out of the csv stream (replaced by an empty field)
 
-      - csv_counter (default: True) if the writer shall keep and print out a
-        counter of the lines actually output
+      - ``csv_counter`` (default: ``True``) if the writer shall keep and print
+        out a counter of the lines actually output
 
-      - indent (default: 2) indentation spaces for each level
+      - ``indent`` (default: ``2``) indentation spaces for each level
 
-      - separators (default: ['=', '-', '+', '*', '.', '~', '"', '^', '#'])
+      - ``separators`` (default: ``['=', '-', '+', '*', '.', '~', '"', '^',
+        '#']``)
 
         Characters used for line separators across section/sub(sub)sections
 
-      - seplen (default: 79)
+      - ``seplen`` (default: ``79``)
 
         total length of a line separator including indentation
 
-      - rounding (default: None)
+      - ``rounding`` (default: ``None``)
 
-        Number of decimal places to round floats down to. With None no rounding
-        is performed
+        Number of decimal places to round floats down to. With ``None`` no
+        rounding is performed
 
     '''
     params = (
@@ -196,7 +196,7 @@ class WriterFile(WriterBase):
                 self.writeline(kline)
                 self.writedict(val, level=level + 1, recurse=True)
             elif isinstance(val, (list, tuple, collections.Iterable)):
-                line = ', '.join(val)
+                line = ', '.join(map(str, val))
                 self.writeline(kline + ' ' + line)
             else:
                 kline += ' ' + str(val)

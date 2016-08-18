@@ -30,7 +30,8 @@ class Sizer(with_metaclass(MetaParams, object)):
     '''This is the base class for *Sizers*. Any *sizer* should subclass this
     and override the ``_getsizing`` method
 
-    Attributes:
+    Member Attribs:
+
       - ``strategy``: will be set by the strategy in which the sizer is working
 
         Gives access to the entire api of the strategy, for example if the

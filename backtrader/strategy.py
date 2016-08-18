@@ -30,7 +30,6 @@ from .utils.py3 import (filter, keys, iteritems, map,  string_types,
                         with_metaclass)
 
 import backtrader as bt
-from .broker import BrokerBack
 from .lineiterator import LineIterator, StrategyBase
 from .lineroot import LineSingle
 from .metabase import ItemCollection
@@ -300,11 +299,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _start(self):
         self._periodset()
 
-        # change operators to stage 2
-        self._stage2()
-
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._start()
+
+        # change operators to stage 2
+        self._stage2()
 
         self.start()
 
@@ -364,7 +363,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         for analyzer in self.analyzers:  # no slave for writer
             aname = analyzer.__class__.__name__
-            ainfo[aname].Params = item.p._getkwargs() or None
+            ainfo[aname].Params = analyzer.p._getkwargs() or None
             ainfo[aname].Analysis = analyzer.get_analysis()
 
         return wrinfo

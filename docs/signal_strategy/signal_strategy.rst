@@ -26,7 +26,7 @@ Quick example::
 
 Et voilá!.
 
-Of course the *Signal* itself is missing. Let's define a very dum *Signal*
+Of course the *Signal* itself is missing. Let's define a very dumb *Signal*
 which yields:
 
   - ``Long`` indication if the ``close`` price is above a *Simple Moving
@@ -121,6 +121,7 @@ There are 5 types of *Signals*, broken in 2 groups.
     are taken
 
   - ``LONG``:
+
     - ``long`` indications are taken to go long
     - ``short`` indications are taken to *close* the long position. But:
 
@@ -131,6 +132,7 @@ There are 5 types of *Signals*, broken in 2 groups.
         , it will be used to close a ``long`` before opening a ``short``
 
   - ``SHORT``:
+
     - ``short`` indications are taken to go short
     - ``long`` indications are taken to *close* the short position. But:
 
@@ -157,8 +159,8 @@ Accumulation and Order Concurrency
 
 The sample *Signal* shown above will issue *long* and *short* indications on a
 constant basis, because it simply substracts the ``SMA`` value from the
-``close`` price and this will always be either ``> 0`` and ``< 0`` (a couple of
-times ``== 0``)
+``close`` price and this will always be either ``> 0`` and ``< 0`` ( ``0`` is
+mathematically possible, but unlikely to really happen)
 
 This would lead to a continuous generation of *orders* that would produce 2
 situations:
@@ -252,7 +254,7 @@ The output
 To notice:
 
   - The 1st operation is a *sell* as expected and takes place later than the
-    1st operationa in the 2 examples above. Not until the ``close`` is below
+    1st operation in the 2 examples above. Not until the ``close`` is below
     the ``SMA`` and the simple substraction yields a minus
 
   - Here the cash level goes back to be the *value* level after each *buy*,
@@ -274,13 +276,13 @@ The output
 To notice:
 
   - Many of the trades are the same, but some are interrupted earlier because
-    the fast movin average in the *exit* signal crosses the slow moving average
+    the fast moving average in the *exit* signal crosses the slow moving average
     to the downside
 
   - The system shows its *longonly* property with the cash becoming the value
     at the end of each trade
 
-  - Side note: Again money ... even with some modified trades
+  - Side note: Again money is made ... even with some modified trades
 
 Usage
 -----
