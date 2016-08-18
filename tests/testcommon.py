@@ -82,7 +82,8 @@ def runtest(datas,
                                      exactbars=exbar)
 
                 if kwargs.get('main', False):
-                    print('prload {} / ronce {}'.format(prload, ronce))
+                    print('prload {} / ronce {} exbar {}'.format(
+                        prload, ronce, exbar))
 
                 if isinstance(datas, bt.LineSeries):
                     datas = [datas]
