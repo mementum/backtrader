@@ -48,11 +48,12 @@ class UltimateOscillator(bt.Indicator):
     '''
     lines = ('uo',)
 
-    params = (('p1', 7),
-              ('p2', 14),
-              ('p3', 28),
-              ('upperband', 70.0),
-              ('lowerband', 30.0),
+    params = (
+        ('p1', 7),
+        ('p2', 14),
+        ('p3', 28),
+        ('upperband', 70.0),
+        ('lowerband', 30.0),
     )
 
     def _plotinit(self):
@@ -60,7 +61,7 @@ class UltimateOscillator(bt.Indicator):
         hlines = [self.p.upperband, self.p.lowerband]
 
         # Plot lines at 0 & 100 to make the scale complete + upper/lower/bands
-        self.plotinfo.plotyhlines = hlines + [0.0, 100.0]
+        self.plotinfo.plotyhlines = hlines
         # Plot ticks at "baseticks" + the user specified upper/lower bands
         self.plotinfo.plotyticks = baseticks + hlines
 
@@ -72,5 +73,9 @@ class UltimateOscillator(bt.Indicator):
         av14 = SumN(bp, period=self.p.p2) / SumN(tr, period=self.p.p2)
         av28 = SumN(bp, period=self.p.p3) / SumN(tr, period=self.p.p3)
 
-        uo = 100.0 * (4.0 * av7 + 2.0 * av14 + av28) / (4.0 + 2.0 + 1.0)
+        # Multiply/divide floats outside of formula to reduce line objects
+        factor = 100.0 / (4.0 + 2.0 + 1.0)
+        uo = (4.0 * factor) * av7 + (2.0 * factor) * av14 + factor * av28
         self.lines.uo = uo
+
+        super(UltimateOscillator, self).__init__()
