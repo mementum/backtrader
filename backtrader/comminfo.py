@@ -62,11 +62,12 @@ class CommInfoBase(with_metaclass(MetaParams)):
         done with the param ``stocklike`` and the internal attribute
         ``_stocklike``
 
-      - ``stocklike`` (def: ``False``):  Indicates if the instrument is Stock-like or
-        Futures-like (see the ``commtype`` discussion above)
+      - ``stocklike`` (def: ``False``): Indicates if the instrument is
+        Stock-like or Futures-like (see the ``commtype`` discussion above)
 
-      - ``percabs`` (def: ``False``): when ``commtype`` is set to COMM_PERC, whether
-        the parameter ``commission`` has to be understood as XX% or 0.XX
+      - ``percabs`` (def: ``False``): when ``commtype`` is set to COMM_PERC,
+        whether the parameter ``commission`` has to be understood as XX% or
+        0.XX
 
         If this param is ``True``: 0.XX
         If this param is ``False``: XX%
