@@ -469,7 +469,7 @@ class BackBroker(bt.BrokerBase):
             comminfo.confirmexec(execsize, price)
 
             # do a real position update if something was executed
-            position.update(execsize, price)
+            position.update(execsize, price, order.data.datetime.datetime())
 
             # Execute and notify the order
             order.execute(order.data.datetime[ago],
