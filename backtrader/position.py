@@ -63,6 +63,8 @@ class Position(object):
         self.upclosed = 0
         self.set(size, price)
 
+        self.updt = None
+
     def clone(self):
         return copy(self)
 
@@ -122,7 +124,7 @@ class Position(object):
     def pseudoupdate(self, size, price):
         return Position(self.size, self.price).update(size, price)
 
-    def update(self, size, price):
+    def update(self, size, price, dt=None):
         '''
         Updates the current position and returns the updated size, price and
         units used to open/close a position
@@ -159,6 +161,8 @@ class Position(object):
             Both opened and closed carry the same sign as the "size" argument
             because they refer to a part of the "size" argument
         '''
+        self.datetime = dt  # record datetime update (datetime.datetime)
+
         self.price_orig = self.price
         oldsize = self.size
         self.size += size
