@@ -26,7 +26,7 @@ import datetime
 import io
 import itertools
 
-from ..utils.py3 import urlopen
+from ..utils.py3 import urlopen, urlquote
 
 
 from .. import feed
@@ -154,7 +154,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         self.error = None
 
         url = self.params.baseurl
-        url += 's=%s' % self.params.dataname
+        url += 's=%s' % urlquote(self.params.dataname)
         fromdate = self.params.fromdate
         url += '&a=%d&b=%d&c=%d' % \
                ((fromdate.month - 1), fromdate.day, fromdate.year)
