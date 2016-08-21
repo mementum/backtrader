@@ -47,7 +47,8 @@ class ZeroLagIndicator(MovingAverageBase):
         parameter ``_movav``
 
         .. note:: the passed moving average must calculate alpha (and 1 -
-        alpha) and make them available as attributes ``alpha`` and ``alpha1``
+                  alpha) and make them available as attributes ``alpha`` and
+                  ``alpha1`` in the instance
 
     See also:
       - http://www.mesasoftware.com/papers/ZeroLag.pdf
