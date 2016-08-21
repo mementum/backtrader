@@ -192,6 +192,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._signal_concurrent = False
         self._signal_accumulate = False
 
+        self._dataid = itertools.count(1)
+
         self._broker = BackBroker()
 
     @staticmethod
@@ -380,6 +382,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if name is not None:
             data._name = name
 
+        data._id = next(self._dataid)
         data.setenvironment(self)
 
         self.datas.append(data)
