@@ -33,8 +33,10 @@ import sys
 PY2 = sys.version_info.major == 2
 if PY2:
     from urllib2 import urlopen
+    from urllib import quote as urlquote
 else:
     from urllib.request import urlopen
+    from urllib.parse import quote as urlquote
 
 
 logging.basicConfig(
@@ -48,7 +50,7 @@ class YahooDownload(object):
     def __init__(self, ticker, fromdate, todate, period='d', reverse=True):
 
         url = self.baseurl
-        url += 's=%s' % ticker
+        url += 's=%s' % urlquote(ticker)
         fromdate = fromdate
         url += '&a=%d&b=%d&c=%d' % \
                ((fromdate.month - 1), fromdate.day, fromdate.year)
