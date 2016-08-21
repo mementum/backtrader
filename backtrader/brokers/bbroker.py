@@ -694,6 +694,17 @@ class BackBroker(bt.BrokerBase):
         if self.p.checksubmit:
             self.check_submitted()
 
+        # Discount any cash for positions hold
+        credit = 0.0
+        for data, pos in self.positions.items():
+            if pos:
+                comminfo = self.getcommissioninfo(data)
+                dt0 = data.datetime.datetime()
+                credit += comminfo.get_credit_interest(data, pos, dt0)
+                pos.datetime = dt0  # mark last credit operation
+
+        self.cash -= credit
+
         # Iterate once over all elements of the pending queue
         for i in range(len(self.pending)):
 
