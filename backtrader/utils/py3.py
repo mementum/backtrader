@@ -49,6 +49,7 @@ if PY2:
     from io import StringIO
 
     from urllib2 import urlopen
+    from urllib import quote as urlquote
 
     def iterkeys(d): return d.iterkeys()
 
@@ -86,6 +87,7 @@ else:
     from io import StringIO
 
     from urllib.request import urlopen
+    from urllib.parse import quote as urlquote
 
     def iterkeys(d): return iter(d.keys())
 
