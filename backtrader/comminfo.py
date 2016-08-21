@@ -21,6 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import datetime
+
 from .utils.py3 import with_metaclass
 from .metabase import MetaParams
 
@@ -72,6 +74,24 @@ class CommInfoBase(with_metaclass(MetaParams)):
         If this param is ``True``: 0.XX
         If this param is ``False``: XX%
 
+      - ``interest`` (def: ``0.0``)
+
+        If this is non-zero, this is the yearly interest charged for holding a
+        short selling position. This is mostly meant for stock short-selling
+
+        The formula: ``days * price * abs(size) * (interest / 365)``
+
+        It must be specified in absolute terms: 0.05 -> 5%
+
+        .. note:: the behavior can be changed by overriding the method:
+                 ``_get_credit_interest``
+
+      - ``interest_long`` (def: ``False``)
+
+        Some products like ETFs get charged on interest for short and long
+        positions. If ths is ``True`` and ``interest`` is non-zero the interest
+        will be charged on both directions
+
     Attributes:
 
       - ``_stocklike``: Final value to use for Stock-like/Futures-like behavior
@@ -90,6 +110,8 @@ class CommInfoBase(with_metaclass(MetaParams)):
         ('commtype', None),
         ('stocklike', False),
         ('percabs', False),
+        ('interest', 0.0),
+        ('interest_long', False),
     )
 
     def __init__(self):
@@ -117,6 +139,8 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
         if self._commtype == self.COMM_PERC and not self.p.percabs:
             self.p.commission /= 100.0
+
+        self._creditrate = self.p.interest / 365.0
 
     @property
     def margin(self):
@@ -189,6 +213,55 @@ class CommInfoBase(with_metaclass(MetaParams)):
             return size * (newprice - price) * self.p.mult
 
         return 0.0
+
+    def get_credit_interest(self, data, pos, dt):
+        '''Calculates the credit due for short selling or product specific'''
+        size, price = pos.size, pos.price
+
+        if size > 0 and not self.p.interest_long:
+            return 0.0  # long positions not charged
+
+        dt0 = dt.date()
+        dt1 = pos.datetime.date()
+
+        if dt0 <= dt1:
+            return 0.0
+
+        return self._get_credit_interest(data, size, price,
+                                         (dt0 - dt1).days, dt0, dt1)
+
+    def _get_credit_interest(self, data, size, price, days, dt0, dt1):
+        '''
+        This method returns  the cost in terms of credit interest charged by
+        the broker.
+
+        In the case of ``size > 0`` this method will only be called if the
+        parameter to the class ``interest_long`` is ``True``
+
+        The formulat for the calculation of the credit interest rate is:
+
+          The formula: ``days * price * abs(size) * (interest / 365)``
+
+
+        Params:
+          - ``data``: data feed for which interest is charged
+
+          - ``size``: current position size. > 0 for long positions and < 0 for
+            short positions (this parameter will not be ``0``)
+
+          - ``price``: current position price
+
+          - ``days``: number of days elapsed since last credit calculation
+            (this is (dt0 - dt1).days)
+
+          - ``dt0``: (datetime.datetime) current datetime
+
+          - ``dt1``: (datetime.datetime) datetime of previous calculation
+
+        ``dt0`` and ``dt1`` are not used in the default implementation and are
+        provided as extra input for overridden methods
+        '''
+        return days * self._creditrate * abs(size) * price
 
 
 class CommissionInfo(CommInfoBase):
