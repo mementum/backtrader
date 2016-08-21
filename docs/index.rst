@@ -47,6 +47,7 @@ Contents:
    commission-schemes/commission-schemes
    extending-commissions/commission-schemes-extended
    user-defined-commissions/commission-schemes-subclassing
+   commission-credit
    position
    trade
    plotting/plotting
