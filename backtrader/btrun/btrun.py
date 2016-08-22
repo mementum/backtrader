@@ -156,6 +156,10 @@ def setbroker(args, cerebro):
         commkwargs['margin'] = args.margin
     if args.mult is not None:
         commkwargs['mult'] = args.mult
+    if args.interest is not None:
+        commkwargs['interest'] = args.interest
+    if args.interest_long is not None:
+        commkwargs['interest_long'] = args.interest_long
 
     if commkwargs:
         broker.setcommission(**commkwargs)
@@ -576,6 +580,14 @@ def parse_args(pargs=''):
                        help='Margin type to set')
     group.add_argument('--mult', '-mul', required=False, type=float,
                        help='Multiplier to use')
+
+    group.add_argument('--interest', required=False, type=float,
+                       default=None,
+                       help='Credit Interest rate to apply (0.0x)')
+
+    group.add_argument('--interest_long', action='store_true',
+                       required=False, default=None,
+                       help='Apply credit interest to long positions')
 
     group.add_argument('--slip_perc', required=False, default=None,
                        type=float,

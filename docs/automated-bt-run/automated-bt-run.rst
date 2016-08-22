@@ -432,9 +432,11 @@ Directly from the script::
                          [--pranalyzer | --ppranalyzer]
                          [--indicator module:name:kwargs] [--writer [kwargs]]
                          [--cash CASH] [--commission COMMISSION]
-                         [--margin MARGIN] [--mult MULT] [--slip_perc SLIP_PERC]
+                         [--margin MARGIN] [--mult MULT] [--interest INTEREST]
+                         [--interest_long] [--slip_perc SLIP_PERC]
                          [--slip_fixed SLIP_FIXED] [--slip_open]
-                         [--no-slip_match] [--slip_out] [--plot [kwargs]]
+                         [--no-slip_match] [--slip_out] [--flush]
+                         [--plot [kwargs]]
 
   Backtrader Run Script
 
@@ -634,11 +636,14 @@ Directly from the script::
                           Margin type to set
     --mult MULT, -mul MULT
                           Multiplier to use
+    --interest INTEREST   Credit Interest rate to apply (0.0x)
+    --interest_long       Apply credit interest to long positions
     --slip_perc SLIP_PERC
                           Enable slippage with a percentage value
     --slip_fixed SLIP_FIXED
                           Enable slippage with a fixed point value
-    --slip_open           enable slippage for when matchin opening prices
+    --slip_open           enable slippage for when matching opening prices
     --no-slip_match       Disable slip_match, ie: matching capped at
                           high-low if slippage goes over those limits
     --slip_out            with slip_match enabled, match outside high-low
+    --flush               flush the output - useful under win32 systems
