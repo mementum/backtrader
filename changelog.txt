@@ -1,3 +1,8 @@
+1.8.8.96:
+  - Add support for credit interest rate (#125), with update of docs, sample,
+    support in broker and btrun
+  - urlencode tickers for yahoo downloads (feed and tool)
+
 1.8.7.96:
   - Added indicators (3): Hull MA, ZeroLag Indicator, Dickson MA
   - Added control of object cache to cerebro (default deactivated)
