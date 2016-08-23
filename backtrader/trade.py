@@ -256,7 +256,7 @@ class Trade(object):
 
         if self.justopened:
             self.baropen = len(self.data)
-            self.dtopen = self.data.datetime[0]
+            self.dtopen = 0.0 if order.p.simulated else self.data.datetime[0]
             self.long = self.size > 0
 
         # Any size means the trade was opened
@@ -295,8 +295,9 @@ class Trade(object):
 
         # Update the history if needed
         if self.historyon:
+            dt0 = self.data.datetime[0] if not order.p.simulated else 0.0
             histentry = TradeHistory(
-                self.status, self.data.datetime[0], self.barlen,
+                self.status, dt0, self.barlen,
                 self.size, self.price, self.value,
                 self.pnl, self.pnlcomm, self.data._tz)
             histentry.doupdate(order, size, price, commission)

@@ -783,7 +783,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
             order = self._broker.get_notification()
             if order is None:
                 break
-            order.owner._addnotification(order)
+
+            owner = order.owner
+            if owner is None:
+                owner = self.runningstrats[0]  # default
+
+            owner._addnotification(order)
 
     def _runnext(self, runstrats):
         '''

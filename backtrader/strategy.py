@@ -390,7 +390,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._tradespending = list()
 
     def _addnotification(self, order):
-        self._orderspending.append(order)
+        if not order.p.simulated:
+            self._orderspending.append(order)
 
         if not order.executed.size:
             return

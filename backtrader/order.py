@@ -207,6 +207,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('exectype', None), ('valid', None),
         ('tradeid', 0),
+        ('simulated', False),
     )
 
     DAY = datetime.timedelta()  # constant for DAY order identification
@@ -287,7 +288,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         else:
             price = self.price
 
-        self.created = OrderData(dt=self.data.datetime[0],
+        dcreated = self.data.datetime[0] if not self.p.simulated else 0.0
+        self.created = OrderData(dt=dcreated,
                                  size=self.size,
                                  price=price,
                                  pricelimit=self.pricelimit)
@@ -304,20 +306,22 @@ class OrderBase(with_metaclass(MetaParams, object)):
             valid = self.data.datetime.datetime() + self.valid
             self.valid = self.data.date2num(valid)
 
-        # get next session end
-        dtime = self.data.datetime.datetime(0)
+        if not self.p.simulated:
+            # provisional end-of-session
+            # get next session end
+            dtime = self.data.datetime.datetime(0)
+            session = self.data.p.sessionend
+            dteos = dtime.replace(hour=session.hour, minute=session.minute,
+                                  second=session.second,
+                                  microsecond=session.microsecond)
 
-        # provisional end-of-session
-        session = self.data.p.sessionend
-        dteos = dtime.replace(hour=session.hour, minute=session.minute,
-                              second=session.second,
-                              microsecond=session.microsecond)
+            if dteos < dtime:
+                # eos before current time ... no ... must be at least next day
+                dteos += datetime.timedelta(days=1)
 
-        if dteos < dtime:
-            # eos before current time ... no ... must be at least next day
-            dteos += datetime.timedelta(days=1)
-
-        self.dteos = self.data.date2num(dteos)
+            self.dteos = self.data.date2num(dteos)
+        else:
+            self.dteos = 0.0
 
     def clone(self):
         # status, triggered and executed are the only moving parts in order
