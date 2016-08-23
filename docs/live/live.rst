@@ -11,3 +11,4 @@ trading.
 
    ib/ib.rst
    vc/vc.rst
+   oanda/oanda.rst
