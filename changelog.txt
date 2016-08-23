@@ -1,3 +1,7 @@
+1.8.9.96:
+  - Finalize Oanda integration
+  - Allow simulated orders (meant to fetch initial positions from live brokers)
+
 1.8.8.96:
   - Add support for credit interest rate (#125), with update of docs, sample,
     support in broker and btrun
