@@ -12,7 +12,7 @@ Features:
       installed ``pytz``)
     - *Visual Chart* (needs a fork of ``comtypes`` until a pull request is
       integrated in the release and benefits from ``pytz``)
-    - *Oanda* (Live feed only, needs ``oandapy``)
+    - *Oanda* (needs ``oandapy``)
 
   - Data feeds from csv/files, online sources or from *pandas* and *blaze*
   - Filters for datas (like breaking a daily bar into chunks to simulate intraday)
