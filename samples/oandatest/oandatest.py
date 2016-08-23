@@ -42,7 +42,8 @@ class TestStrategy(bt.Strategy):
         stopafter=0,
         valid=None,
         cancel=0,
-        donotsell=False,
+        donotcounter=False,
+        sell=False,
     )
 
     def __init__(self):
@@ -127,17 +128,34 @@ class TestStrategy(bt.Strategy):
             return
 
         if self.datastatus and not self.position and len(self.orderid) < 1:
-            self.order = self.buy(size=self.p.stake,
-                                  exectype=self.p.exectype,
-                                  price=round(self.data0.close[0] * 0.90, 2),
-                                  valid=self.p.valid)
+            if not self.p.sell:
+                # price = round(self.data0.close[0] * 0.90, 2)
+                price = self.data0.close[0] - 0.005
+                self.order = self.buy(size=self.p.stake,
+                                      exectype=self.p.exectype,
+                                      price=price,
+                                      valid=self.p.valid)
+            else:
+                # price = round(self.data0.close[0] * 1.10, 4)
+                price = self.data0.close[0] - 0.05
+                self.order = self.sell(size=self.p.stake,
+                                       exectype=self.p.exectype,
+                                       price=price,
+                                       valid=self.p.valid)
 
             self.orderid.append(self.order)
-        elif self.position.size > 0 and not self.p.donotsell:
+        elif self.position and not self.p.donotcounter:
             if self.order is None:
-                self.order = self.sell(size=self.p.stake // 2,
-                                       exectype=bt.Order.Market,
-                                       price=self.data0.close[0])
+                if not self.p.sell:
+                    self.order = self.sell(size=self.p.stake // 2,
+                                           exectype=bt.Order.Market,
+                                           price=self.data0.close[0])
+                else:
+                    self.order = self.buy(size=self.p.stake // 2,
+                                          exectype=bt.Order.Market,
+                                          price=self.data0.close[0])
+
+            self.orderid.append(self.order)
 
         elif self.order is not None and self.p.cancel:
             if self.datastatus > self.p.cancel:
@@ -272,7 +290,8 @@ def runstrategy():
                         stopafter=args.stopafter,
                         valid=valid,
                         cancel=args.cancel,
-                        donotsell=args.donotsell)
+                        donotcounter=args.donotcounter,
+                        sell=args.sell)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -417,9 +436,13 @@ def parse_args(pargs=None):
                         required=False, action='store_true',
                         help='Do Sample Buy/Sell operations')
 
-    parser.add_argument('--donotsell',
+    parser.add_argument('--sell',
                         required=False, action='store_true',
-                        help='Do not sell after a buy')
+                        help='Start by selling')
+
+    parser.add_argument('--donotcounter',
+                        required=False, action='store_true',
+                        help='Do not counter the 1st operation')
 
     parser.add_argument('--exectype', default=bt.Order.ExecTypes[0],
                         choices=bt.Order.ExecTypes,
@@ -430,7 +453,7 @@ def parse_args(pargs=None):
                         required=False, action='store',
                         help='Stake to use in buy operations')
 
-    parser.add_argument('--valid', default=None, type=int,
+    parser.add_argument('--valid', default=None, type=float,
                         required=False, action='store',
                         help='Seconds to keep the order alive (0 means DAY)')
 

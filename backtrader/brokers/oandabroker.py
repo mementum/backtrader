@@ -26,17 +26,14 @@ from copy import copy
 from datetime import date, datetime, timedelta
 import threading
 
-import ib.ext.Order
-import ib.opt as ibopt
-
 from backtrader.feed import DataBase
 from backtrader import (TimeFrame, num2date, date2num, BrokerBase,
-                        Order, OrderBase, OrderData)
-from backtrader.utils.py3 import bytes, with_metaclass, queue, MAXFLOAT
+                        Order, BuyOrder, SellOrder, OrderBase, OrderData)
+from backtrader.utils.py3 import bytes, with_metaclass, MAXFLOAT
 from backtrader.metabase import MetaParams
 from backtrader.comminfo import CommInfoBase
 from backtrader.position import Position
-from backtrader.stores import ibstore
+from backtrader.stores import oandastore
 from backtrader.utils import AutoDict, AutoOrderedDict
 from backtrader.comminfo import CommInfoBase
 
@@ -57,33 +54,26 @@ class MetaOandaBroker(MetaParams):
         '''Class has already been created ... register'''
         # Initialize the class
         super(MetaOandaBroker, cls).__init__(name, bases, dct)
-        ibstore.IBStore.BrokerCls = cls
+        oandastore.OandaStore.BrokerCls = cls
 
 
 class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
-    '''Broker implementation for Interactive Brokers.
+    '''Broker implementation for Oanda.
 
-    This class maps the orders/positions from Interactive Brokers to the
+    This class maps the orders/positions from Oanda to the
     internal API of ``backtrader``.
 
-    Notes:
+    Params:
 
-      - ``tradeid`` is not really supported, because the profit and loss are
-        taken directly from IB. Because (as expected) calculates it in FIFO
-        manner, the pnl is not accurate for the tradeid.
+      - ``use_positions`` (default:``True``): When connecting to the broker
+        provider use the existing positions to kickstart the broker.
 
-      - Position
-
-        If there is an open position for an asset at the beginning of
-        operaitons or orders given by other means change a position, the trades
-        calculated in the ``Strategy`` in cerebro will not reflect the reality.
-
-        To avoid this, this broker would have to do its own position
-        management which would also allow tradeid with multiple ids (profit and
-        loss would also be calculated locally), but could be considered to be
-        defeating the purpose of working with a live broker
+        Set to ``False`` during instantiation to disregard any existing
+        position
     '''
-    params = ()
+    params = (
+        ('use_positions', True),
+    )
 
     def __init__(self, **kwargs):
         super(OandaBroker, self).__init__()
@@ -91,23 +81,71 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         self.o = oandastore.OandaStore(**kwargs)
 
         self.orders = collections.OrderedDict()  # orders by order id
-        self.notifs = queue.Queue()  # holds orders which are notified
+        self.notifs = collections.deque()  # holds orders which are notified
 
         self.startingcash = self.cash = 0.0
         self.startingvalue = self.value = 0.0
+        self.positions = collections.defaultdict(Position)
+        self.addcommissioninfo(self, OandaCommInfo(mult=1.0, stocklike=False))
 
     def start(self):
         super(OandaBroker, self).start()
+        self.addcommissioninfo(self, OandaCommInfo(mult=1.0, stocklike=False))
         self.o.start(broker=self)
         self.startingcash = self.cash = cash = self.o.get_cash()
-        self.startingvalue = self.value = cash
+        self.startingvalue = self.value = self.o.get_value()
+
+        if self.p.use_positions:
+            for p in self.o.get_positions():
+                print('position for instrument:', p['instrument'])
+                is_sell = p['side'] == 'sell'
+                size = p['units']
+                if is_sell:
+                    size = -size
+                price = p['avgPrice']
+                self.positions[p['instrument']] = Position(size, price)
+
+    def data_started(self, data):
+        pos = self.getposition(data)
+
+        if pos.size < 0:
+            order = SellOrder(data=data,
+                              size=pos.size, price=pos.price,
+                              exectype=Order.Market,
+                              simulated=True)
+
+            order.addcomminfo(self.getcommissioninfo(data))
+            order.execute(0, pos.size, pos.price,
+                          0, 0.0, 0.0,
+                          pos.size, 0.0, 0.0,
+                          0.0, 0.0,
+                          pos.size, pos.price)
+
+            order.completed()
+            self.notify.order(order)
+
+        elif pos.size > 0:
+            order = BuyOrder(data=data,
+                             size=pos.size, price=pos.price,
+                             exectype=Order.Market,
+                             simulated=True)
+
+            order.addcomminfo(self.getcommissioninfo(data))
+            order.execute(0, pos.size, pos.price,
+                          0, 0.0, 0.0,
+                          pos.size, 0.0, 0.0,
+                          0.0, 0.0,
+                          pos.size, pos.price)
+
+            order.completed()
+            self.notify(order)
 
     def stop(self):
         super(OandaBroker, self).stop()
         self.o.stop()
 
     def getcash(self):
-        # This call cannot block if no answer is available from ib
+        # This call cannot block if no answer is available from oanda
         self.cash = cash = self.o.get_cash()
         return cash
 
@@ -116,10 +154,12 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         return self.value
 
     def getposition(self, data, clone=True):
-        return self.o.getposition(data._dataname, clone=clone)
+        # return self.o.getposition(data._dataname, clone=clone)
+        pos = self.positions[data._dataname]
+        if clone:
+            pos = pos.clone()
 
-    def getcommissioninfo(self, data):
-        return OandaCommInfo(mult=mult, stocklike=False)
+        return pos
 
     def orderstatus(self, order):
         o = self.orders[order.ref]
@@ -150,9 +190,31 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         order.expire(self)
         self.notify(order)
 
-    def _fill(self, oref, size, price):
+    def _fill(self, oref, size, price, **kwargs):
         order = self.orders[oref]
-        # FIXME ... execute order ... use position to get opened, closed?
+
+        data = order.data
+        pos = self.getposition(data, clone=False)
+        psize, pprice, opened, closed = pos.update(size, price)
+
+        comminfo = self.getcommissioninfo(data)
+
+        closedvalue = closedcomm = 0.0
+        openedvalue = openedcomm = 0.0
+        margin = pnl = 0.0
+
+        order.execute(data.datetime[0], size, price,
+                      closed, closedvalue, closedcomm,
+                      opened, openedvalue, openedcomm,
+                      margin, pnl,
+                      psize, pprice)
+
+        if order.executed.remsize:
+            order.partial()
+        else:
+            order.completed()
+
+        self.notify(order)
 
     def buy(self, owner, data,
             size, price=None, plimit=None,
@@ -190,15 +252,13 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         return self.o.order_cancel(order)
 
     def notify(self, order):
-        self.notifs.put(order.clone())
+        self.notifs.append(order.clone())
 
     def get_notification(self):
-        try:
-            return self.notifs.get(False)
-        except queue.Empty:
-            pass
+        if not self.notifs:
+            return None
 
-        return None
+        return self.notifs.popleft()
 
     def next(self):
-        self.notifs.put(None)  # mark notification boundary
+        self.notifs.append(None)  # mark notification boundary

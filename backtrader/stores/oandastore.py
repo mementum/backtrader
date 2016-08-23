@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
-from datetime import datetime
+from datetime import datetime, timedelta
 import time as _time
 import json
 import threading
@@ -31,7 +31,6 @@ import oandapy
 import requests  # oandapy depdendency
 
 import backtrader as bt
-from backtrader import TimeFrame, Position
 from backtrader.metabase import MetaParams
 from backtrader.utils.py3 import queue, with_metaclass
 from backtrader.utils import AutoDict
@@ -185,6 +184,9 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
       - ``account`` (default: ``None``): account id
 
       - ``practice`` (default: ``False``): use the test environment
+
+      - ``account_tmout`` (default: ``10.0``): refresh period for account
+        value/cash refresh
     '''
 
     BrokerCls = None  # broker class will autoregister
@@ -194,6 +196,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         ('token', ''),
         ('account', ''),
         ('practice', False),
+        ('account_tmout', 10.0),  # account balance refresh timeout
     )
 
     _DTEPOCH = datetime(1970, 1, 1)
@@ -213,19 +216,24 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
     def __init__(self):
         super(OandaStore, self).__init__()
 
-        self.notifs = queue.Queue()  # store notifications for cerebro
+        self.notifs = collections.deque()  # store notifications for cerebro
 
         self._env = None  # reference to cerebro for general notifications
         self.broker = None  # broker instance
         self.datas = list()  # datas that have registered over start
 
-        self.orders = collections.OrderedDict()  # map order.ref to oid
-        self.orderrev = collections.OrderedDict()  # map oid to order.ref
+        self._orders = collections.OrderedDict()  # map order.ref to oid
+        self._ordersrev = collections.OrderedDict()  # map oid to order.ref
+        self._transpend = collections.defaultdict(collections.deque)
 
         self._oenv = self._ENVPRACTICE if self.p.practice else self._ENVLIVE
         self.oapi = API(environment=self._oenv,
                         access_token=self.p.token,
                         headers={'X-Accept-Datetime-Format': 'UNIX'})
+
+        self._cash = 0.0
+        self._value = 0.0
+        self._evt_acct = threading.Event()
 
     def start(self, data=None, broker=None):
         # Datas require some processing to kickstart data reception
@@ -238,50 +246,62 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             # For datas simulate a queue with None to kickstart co
             self.datas.append(data)
 
+            if self.broker is not None:
+                self.broker.data_started(data)
+
         elif broker is not None:
             self.broker = broker
+            self.streaming_events()
+            self.broker_threads()
 
     def stop(self):
-        pass  # nothing to do
+        # signal end of thread
+        if self.broker is not None:
+            self.q_ordercreate.put(None)
+            self.q_orderclose.put(None)
+            self.q_account.put(None)
+
+    def put_notification(self, msg, *args, **kwargs):
+        self.notifs.append((msg, args, kwargs))
 
     def get_notifications(self):
         '''Return the pending "store" notifications'''
-        # The background thread could keep on adding notifications. The None
-        # mark allows to identify which is the last notification to deliver
-        self.notifs.put(None)  # put a mark
-        notifs = list()
-        while True:
-            notif = self.notifs.get()
-            if notif is None:  # mark is reached
-                break
-            notifs.append(notif)
-
-        return notifs
+        self.notifs.append(None)  # put a mark / threads could still append
+        return [x for x in iter(self.notifs.popleft, None)]
 
     # Oanda supported granularities
     _GRANULARITIES = {
-        (TimeFrame.Seconds, 5): 'S5',
-        (TimeFrame.Seconds, 10): 'S10',
-        (TimeFrame.Seconds, 15): 'S15',
-        (TimeFrame.Seconds, 30): 'S30',
-        (TimeFrame.Minutes, 1): 'M1',
-        (TimeFrame.Minutes, 2): 'M3',
-        (TimeFrame.Minutes, 3): 'M3',
-        (TimeFrame.Minutes, 4): 'M4',
-        (TimeFrame.Minutes, 5): 'M5',
-        (TimeFrame.Minutes, 10): 'M5',
-        (TimeFrame.Minutes, 15): 'M5',
-        (TimeFrame.Minutes, 30): 'M5',
-        (TimeFrame.Minutes, 60): 'H1',
-        (TimeFrame.Minutes, 120): 'H2',
-        (TimeFrame.Minutes, 180): 'H3',
-        (TimeFrame.Minutes, 240): 'H4',
-        (TimeFrame.Minutes, 360): 'H6',
-        (TimeFrame.Minutes, 480): 'H8',
-        (TimeFrame.Days, 1): 'D',
-        (TimeFrame.Weeks, 1): 'W',
-        (TimeFrame.Months, 1): 'M',
+        (bt.TimeFrame.Seconds, 5): 'S5',
+        (bt.TimeFrame.Seconds, 10): 'S10',
+        (bt.TimeFrame.Seconds, 15): 'S15',
+        (bt.TimeFrame.Seconds, 30): 'S30',
+        (bt.TimeFrame.Minutes, 1): 'M1',
+        (bt.TimeFrame.Minutes, 2): 'M3',
+        (bt.TimeFrame.Minutes, 3): 'M3',
+        (bt.TimeFrame.Minutes, 4): 'M4',
+        (bt.TimeFrame.Minutes, 5): 'M5',
+        (bt.TimeFrame.Minutes, 10): 'M5',
+        (bt.TimeFrame.Minutes, 15): 'M5',
+        (bt.TimeFrame.Minutes, 30): 'M5',
+        (bt.TimeFrame.Minutes, 60): 'H1',
+        (bt.TimeFrame.Minutes, 120): 'H2',
+        (bt.TimeFrame.Minutes, 180): 'H3',
+        (bt.TimeFrame.Minutes, 240): 'H4',
+        (bt.TimeFrame.Minutes, 360): 'H6',
+        (bt.TimeFrame.Minutes, 480): 'H8',
+        (bt.TimeFrame.Days, 1): 'D',
+        (bt.TimeFrame.Weeks, 1): 'W',
+        (bt.TimeFrame.Months, 1): 'M',
     }
+
+    def get_positions(self):
+        try:
+            positions = self.oapi.get_positions(self.p.account)
+        except (oandapy.OandaError, OandaRequestError,):
+            return None
+
+        poslist = positions.get('positions', [])
+        return poslist
 
     def get_granularity(self, timeframe, compression):
         return self._GRANULARITIES.get((timeframe, compression), None)
@@ -296,9 +316,9 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         i = insts.get('instruments', [{}])
         return i[0] or None
 
-    def streaming_events(self):
+    def streaming_events(self, tmout=None):
         q = queue.Queue()
-        kwargs = {'q': q}
+        kwargs = {'q': q, 'tmout': tmout}
 
         t = threading.Thread(target=self._t_streaming_listener, kwargs=kwargs)
         t.daemon = True
@@ -309,20 +329,19 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         t.start()
         return q
 
-    def _t_streaming_listener(self, q):
-        trans = q.get()
-        newcash = trans.get('accountBalance', None)
-        if newcash is not None:
-            self.cash = newcash
-        self._transaction(trans)
+    def _t_streaming_listener(self, q, tmout=None):
+        while True:
+            trans = q.get()
+            self._transaction(trans)
 
-    def _t_streaming_events(self, dataname, q):
+    def _t_streaming_events(self, q, tmout=None):
         if tmout is not None:
             _time.sleep(tmout)
 
-        streamer = StreamerEvents(q, environment=self._oenv,
-                                  access_token=self.p.token,
-                                  headers={'X-Accept-Datetime-Format': 'UNIX'})
+        streamer = Streamer(q,
+                            environment=self._oenv,
+                            access_token=self.p.token,
+                            headers={'X-Accept-Datetime-Format': 'UNIX'})
 
         streamer.events(ignore_heartbeat=False)
 
@@ -361,7 +380,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
         except oandapy.OandaError as e:
             q.put(e.error_response)
-            q.put(None)  # CHECK
+            q.put(None)
             return
 
         for candle in response.get('candles', []):
@@ -388,112 +407,215 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         streamer.rates(self.p.account, instruments=dataname)
 
     def get_cash(self):
-        if self.cash is None:
-            try:
-                account = oanda.get_account(account_id=accid)
-            except:  # no matter what
-                self.cash = 0.0
-            else:
-                self.cash = float(account['balance'])
-
-        return self.cash
+        return self._cash
 
     def get_value(self):
-        # FIXME:
-        return 0.0
-
-    def getposition(self, instrument, clone=False):
-        # Lock access to the position dicts. This is called from main
-        # thread and updates could be happening in the background
-        with self._lock_pos:
-            position = self.positions[instrument]
-            if clone:
-                return position.clone()
-
-            return position
+        return self._value
 
     _ORDEREXECS = {
         bt.Order.Market: 'market',
         bt.Order.Limit: 'limit',
         bt.Order.Stop: 'stop',
+        bt.Order.StopLimit: 'stop',
     }
+
+    def broker_threads(self):
+        self.q_account = queue.Queue()
+        self.q_account.put(True)  # force an immediate update
+        t = threading.Thread(target=self._t_account)
+        t.daemon = True
+        t.start()
+
+        self.q_ordercreate = queue.Queue()
+        t = threading.Thread(target=self._t_order_create)
+        t.daemon = True
+        t.start()
+
+        self.q_orderclose = queue.Queue()
+        t = threading.Thread(target=self._t_order_cancel)
+        t.daemon = True
+        t.start()
+
+        # Wait once for the values to be set
+        self._evt_acct.wait(self.p.account_tmout)
+
+    def _t_account(self):
+        while True:
+            try:
+                msg = self.q_account.get(timeout=self.p.account_tmout)
+                if msg is None:
+                    break  # end of thread
+            except queue.Empty:  # tmout -> time to refresh
+                pass
+
+            try:
+                accinfo = self.oapi.get_account(self.p.account)
+            except Exception as e:
+                self.put_notification(e)
+                continue
+
+            try:
+                self._cash = accinfo['marginAvail']
+                self._value = accinfo['balance']
+            except KeyError:
+                pass
+
+            self._evt_acct.set()
 
     def order_create(self, order, **kwargs):
         okwargs = dict()
-        okwargs['instruments'] = order.data._dataname
+        okwargs['instrument'] = order.data._dataname
         okwargs['units'] = abs(order.created.size)
         okwargs['side'] = 'buy' if order.isbuy() else 'sell'
         okwargs['type'] = self._ORDEREXECS[order.exectype]
-        if order.exectype != bt.order.Market:
+        if order.exectype != bt.Order.Market:
             okwargs['price'] = order.created.price
             if order.valid is None:
-                valid = datetime.datetime.max
+                # 1 year and datetime.max fail ... 1 month works
+                valid = datetime.utcnow() + timedelta(days=30)
             else:
                 valid = order.data.num2date(order.valid)
-
-            # To timestamp with seconds precision
+                # To timestamp with seconds precision
             okwargs['expiry'] = int((valid - self._DTEPOCH).total_seconds())
+
+        if order.exectype == bt.Order.StopLimit:
+            okwargs['lowerBound'] = order.created.pricelimit
+            okwargs['upperBound'] = order.created.pricelimit
 
         okwargs.update(**kwargs)  # anything from the user
 
-        t = threading.Thread(target=self._t_order_reate, args=(order,),
-                             kwargs=okwargs)
-        t.daemon = True
-        t.start()
+        self.q_ordercreate.put((order.ref, okwargs,))
         return order
 
-    def _t_order_create(self, order, **kwwargs):
-        try:
-            o = self.oapi.create_order(self.p.account, **kwargs)
-        except Exception as e:
-            order._o = {}
-            self.broker._reject(order)
-        else:
-            order._o = _o = o.get('orderOpened', {})
-            oref, oid = order.ref, _o['id']
-            self._orders[oref] = oid
-            self._ordersrev[oid] = oref
-            self.broker._submit(order)
+    _OIDSINGLE = ['orderOpened', 'tradeOpened', 'tradeReduced']
+    _OIDMULTIPLE = ['tradesClosed']
+
+    def _t_order_create(self):
+        while True:
+            msg = self.q_ordercreate.get()
+            if msg is None:
+                break
+
+            oref, okwargs = msg
+            try:
+                o = self.oapi.create_order(self.p.account, **okwargs)
+            except Exception as e:
+                self.put_notification(e)
+                self.broker._reject(order.ref)
+                return
+
+            # Ids are delivered in different fields and all must be fetched to
+            # match them (as executions) to the order generated here
+            _o = {'id': None}
+            oids = list()
+            for oidfield in self._OIDSINGLE:
+                if oidfield in o and 'id' in o[oidfield]:
+                    oids.append(o[oidfield]['id'])
+
+            for oidfield in self._OIDMULTIPLE:
+                if oidfield in o:
+                    for suboidfield in o[oidfield]:
+                        oids.append(suboidfield['id'])
+
+            if not oids:
+                self.broker._reject(oref)
+                return
+
+            self._orders[oref] = oids[0]
+            self.broker._submit(oref)
+            if okwargs['type'] == 'market':
+                self.broker._accept(oref)  # taken immediately
+
+            for oid in oids:
+                self._ordersrev[oid] = oref  # maps ids to backtrader order
+
+                # An transaction may have happened and was stored
+                tpending = self._transpend[oid]
+                tpending.append(None)  # eom marker
+                while True:
+                    trans = tpending.popleft()
+                    if trans is None:
+                        break
+                    self._process_transaction(oid, trans)
 
     def order_cancel(self, order):
-        t = threading.Thread(target=self._t_order_cancel, args=(order,))
-        t.daemon = True
-        t.start()
+        self.q_orderclose.put(order.ref)
         return order
 
-    def _t_order_cancel(self, order, **kwwargs):
-        oid = self.orders.get(order.ref, None)
-        try:
+    def _t_order_cancel(self):
+        while True:
+            order = self.q_orderclose.get()
+            if oref is None:
+                break
+
+            oid = self._orders.get(oref, None)
             if oid is None:
-                raise Exception
+                continue  # the order is no longer there
+            try:
+                o = self.oapi.close_order(self.p.account, oid)
+            except Exception as e:
+                continue  # not cancelled - FIXME: notify
 
-            o = self.oapi.close_order(self.p.account, oid)
-        except Exception as e:
-            pass
-        else:
-            order._o = o.get('orderOpened', {})
-            self.broker._t_cancel()
-
-    _X_ORDER_CREATE = ['MARKET_ORDER_CREATE', 'STOP_ORDER_CREATE',
-                       'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE']
-
-    _X_ORDER_CANCEL = ['ORDER_CANCEL']
-
-    _X_ORDER_FILLED = ['ORDER_FILLED', 'TAKE_PROFIT_FILLED',
-                       'STOP_LOSS_FILLED', 'TRAILING_STOP_FILLED']
-
-    def _transaction(self, trans):
-        oid = trans['id']
-        ttype = trans['type']
-
-        oref = self.order_refs[oid]
-
-        if ttype in self._X_ORDER_CREATE:
-            self.broker._accept(oref)
-
-        elif ttype in self._X_ORDER_CANCEL:
             self.broker._cancel(oref)
 
-        elif ttype in self._X_ORDER_FILLED:
-            # FIXME: parse parameters
+    def _transaction(self, trans):
+        # Invoked from Streaming Events. May actually receive an event for an
+        # oid which has not yet been returned after creating an order. Hence
+        # store if not yet seen, else forward to processer
+        ttype = trans['type']
+        if ttype == 'MARKET_ORDER_CREATE':
+            try:
+                oid = trans['tradeReduced']['id']
+            except KeyError:
+                try:
+                    oid = trans['tradeOpened']['id']
+                except KeyError:
+                    return  # cannot do anythin else
+
+        elif ttype == 'ORDER_FILLED':
+            oid = trans['orderId']
+
+        elif ttype == 'ORDER_CANCEL':
+            oid = trans['orderId']
+
+        try:
+            oref = self._ordersrev[oid]
+            self._process_transaction(oid, trans)
+        except KeyError:  # not yet seen, keep as pending
+            self._transpend[oid].append(trans)
+
+    _X_ORDER_CREATE = ('STOP_ORDER_CREATE',
+                       'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE',)
+
+    _X_ORDER_FILLED = ('MARKET_ORDER_CREATE',
+                       'ORDER_FILLED', 'TAKE_PROFIT_FILLED',
+                       'STOP_LOSS_FILLED', 'TRAILING_STOP_FILLED',)
+
+    def _process_transaction(self, oid, trans):
+        try:
+            oref = self._ordersrev.pop(oid)
+        except KeyError:
+            return
+
+        ttype = trans['type']
+
+        if ttype in self._X_ORDER_FILLED:
+            size = trans['units']
+            if trans['side'] == 'sell':
+                size = -size
+            price = trans['price']
             self.broker._fill(oref, size, price)
+
+        elif ttype in self._X_ORDER_CREATE:
+            self.broker._accept(oref)
+
+        elif ttype in 'ORDER_CANCEL':
+            reason = trans['reason']
+            if reason == 'ORDER_FILLED':
+                pass  # individual execs have done the job
+            elif reason == 'TIME_IN_FORCE_EXPIRED':
+                self.broker._expire(oref)
+            elif reason == 'CLIENT_REQUEST':
+                self.broker._cancel(oref)
+            else:  # default action ... if nothing else
+                self.broker._reject(oref)
