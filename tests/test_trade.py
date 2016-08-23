@@ -51,13 +51,18 @@ class FakeData(object):
 def test_run(main=False):
     tr = trade.Trade(data=FakeData())
 
+    order = bt.BuyOrder(data=FakeData(),
+                        size=0, price=1.0,
+                        exectype=bt.Order.Market,
+                        simulated=True)
+
     commrate = 0.025
     size = 10
     price = 10.0
     value = size * price
     commission = value * commrate
 
-    tr.update(order=None, size=size, price=price, value=value,
+    tr.update(order=order, size=size, price=price, value=value,
               commission=commission, pnl=0.0, comminfo=FakeCommInfo())
 
     assert not tr.isclosed
@@ -73,7 +78,7 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    tr.update(order=None, size=upsize, price=upprice, value=upvalue,
+    tr.update(order=order, size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0, comminfo=FakeCommInfo())
 
     assert not tr.isclosed
@@ -91,7 +96,7 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    tr.update(order=None, size=upsize, price=upprice, value=upvalue,
+    tr.update(order=order, size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0, comminfo=FakeCommInfo())
 
     assert not tr.isclosed
@@ -109,7 +114,7 @@ def test_run(main=False):
     upvalue = upsize * upprice
     upcomm = abs(value) * commrate
 
-    tr.update(order=None, size=upsize, price=upprice, value=upvalue,
+    tr.update(order=order, size=upsize, price=upprice, value=upvalue,
               commission=upcomm, pnl=0.0, comminfo=FakeCommInfo())
 
     assert tr.isclosed
