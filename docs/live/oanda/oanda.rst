@@ -208,14 +208,14 @@ OandaStore
 .. autoclass:: OandaStore
 
 
-VCBroker
-========
+OandaBroker
+===========
 
 .. currentmodule:: backtrader.brokers
 .. autoclass:: OandaBroker
 
-VCData
-======
+OandaData
+=========
 
 .. currentmodule:: backtrader.feeds
 .. autoclass:: OandaData
