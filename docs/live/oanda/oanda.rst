@@ -30,7 +30,7 @@ Oanda - the store
 *****************
 
 The store is the keystone of the live data feed/trade support, providing a
-layer of adaptation between the *COM* API and the needs of a data feed
+layer of adaptation between the *Oanda* API and the needs of a data feed
 and a broker proxy.
 
   - Providesaccess to getting a *broker* instance with the method:
@@ -140,11 +140,10 @@ explanation)
 Order Execution Types
 =====================
 
-*Visual Chart* supports the minimum order execution types needed by
-*backtrader* and as such, anyhing which is backtested can go live.
+*Oanda* supports almost all of the order execution types needed by
+*backtrader* with the exception of *Close*.
 
-As such the order execution types are limited to the ones available in the
-*broker simulation*:
+As such the order execution types are limited to:
 
   - ``Order.Market``
   - ``Order.Limit``
@@ -156,7 +155,7 @@ Order Validity
 
 The same validity notion available during backtesting (with ``valid`` to
 ``buy`` and ``sell``) is available and with the same meaning. As such, the
-``valid`` parameter is translated as follows for *Visual Chart Orders* for the
+``valid`` parameter is translated as follows for *Oanda Orders* for the
 following values:
 
   - ``None`` translates to *Good Til Cancelled*
@@ -166,14 +165,8 @@ following values:
 
   - ``datetime/date`` translates to *Good Til Date*
 
-    .. note:: Beware: *Visual Chart* does only support "full dates" and the
-	      *time* part is discarded.
-
   - ``timedelta(x)`` translates to *Good Til Date* (here ``timedelta(x) !=
     timedelta()``)
-
-    .. note:: Beware: *Visual Chart* does only support **full dates** and the
-	      *time* part is discarded.
 
     This is interpreted as a signal to have an order be valid from ``now`` +
     ``timedelta(x)``
