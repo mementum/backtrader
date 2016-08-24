@@ -12,7 +12,7 @@ Requirements
 
   - ``oandapy``
 
-    Install it with: ``pip install onadapy``
+    Install it with: ``pip install git+https://github.com/oanda/oandapy.git``
 
   - ``pytz`` (optional and not really recommended)
 
