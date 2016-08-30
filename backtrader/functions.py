@@ -199,9 +199,19 @@ class MultiLogic(Logic):
 
 
 class MultiLogicReduce(MultiLogic):
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super(MultiLogicReduce, self).__init__(*args)
-        self.flogic = functools.partial(functools.reduce, self.flogic)
+        if 'initializer' not in kwargs:
+            self.flogic = functools.partial(functools.reduce, self.flogic)
+        else:
+            self.flogic = functools.partial(functools.reduce, self.flogic,
+                                            initializer=kwargs['initializer'])
+
+
+class Reduce(MultiLogicReduce):
+    def __init__(self, flogic, *args, **kwargs):
+        self.flogic = flogic
+        super(Reduce, self).__init__(*args, **kwargs)
 
 
 # The _xxxlogic functions are defined at module scope to make them
@@ -232,3 +242,11 @@ class Min(MultiLogic):
 
 class Sum(MultiLogic):
     flogic = math.fsum
+
+
+class Any(MultiLogic):
+    flogic = any
+
+
+class All(MultiLogic):
+    flogic = all
