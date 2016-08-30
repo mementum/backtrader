@@ -660,17 +660,25 @@ Operators:
   - ``and`` -> ``And``
   - ``or`` -> ``Or``
 
-Functions:
+Logic Control:
 
   - ``if`` -> ``If``
+
+Functions:
+
+  - ``any`` -> ``Any``
+  - ``all`` -> ``All``
   - ``cmp`` -> ``Cmp``
   - ``max`` -> ``Max``
   - ``min`` -> ``Min``
   - ``sum`` -> ``Sum``
+  - ``reduce`` -> ``Reduce``
 
     ``Sum`` actually uses ``math.fsum`` as the underlying operation because the
-    platform works with floating point numbers and applying a rgular ``sum``
+    platform works with floating point numbers and applying a regular ``sum``
     may have an impatct on precision.
+
+  - ``reduce`` -> ``Reduce``
 
 These utility operators/functions operate on iterables. The elements in the
 iterables can be regular Python numeric types (ints, floats, ...) and also
