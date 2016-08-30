@@ -28,6 +28,11 @@ PY2 = sys.version_info.major == 2
 
 
 if PY2:
+    try:
+        import _winreg as winreg
+    except ImportError:
+        winreg = None
+
     MAXINT = sys.maxint
     MININT = -sys.maxint - 1
 
@@ -66,6 +71,11 @@ if PY2:
     import Queue as queue
 
 else:
+    try:
+        import winreg
+    except ImportError:
+        winreg = None
+
     MAXINT = sys.maxsize
     MININT = -sys.maxsize - 1
 
