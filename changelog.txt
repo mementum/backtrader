@@ -1,3 +1,18 @@
+1.8.10.99:
+  - Added Any, All, Reduce, function replacements
+  - Added AnyN, AllN, ReduceN indicators
+  - Aliased Highest -> MaxN, Lowest -> MinN
+  - Added VChartfile Store and Feed improving over existing feed
+    implementing the store pattern and fetching the basepath location
+    from the registry if possible
+  - Some docs improvements/corrections
+  - Add a generic Store to let stores subclass
+  - Add a RollOver data feed
+  - Add shortcuts for some subpackages: indicators -> ind, observers -> obs
+    strategies -> strats, commissions -> comms
+  - Add framework for analyzer testing and tests for 2 analyzers: SQN,
+    TimeReturn
+
 1.8.9.96:
   - Finalize Oanda integration
   - Allow simulated orders (meant to fetch initial positions from live brokers)
