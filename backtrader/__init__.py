@@ -60,10 +60,14 @@ from . import utils as utils
 
 from . import feeds as feeds
 from . import indicators as indicators
+from . import indicators as ind
 from . import strategies as strategies
+from . import strategies as strats
 from . import observers as observers
+from . import observers as obs
 from . import analyzers as analyzers
 from . import commissions as commissions
+from . import commissions as comms
 from . import filters as filters
 from . import signals as signals
 from . import sizers as sizers
