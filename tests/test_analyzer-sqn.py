@@ -147,7 +147,7 @@ def test_run(main=False):
                                   stocklike=False,
                                   printops=main,
                                   plot=main,
-                                  analyzer=bt.analyzers.SQN)
+                                  analyzer=(bt.analyzers.SQN, {}))
 
     for cerebro in cerebros:
         strat = cerebro.runstrats[0][0]  # no optimization, only 1
