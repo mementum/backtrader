@@ -47,3 +47,4 @@ except ImportError:
 
 from .vchartfile import VChartFile
 
+from .rollover import RollOver
