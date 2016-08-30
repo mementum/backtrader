@@ -73,6 +73,8 @@ class Highest(OperationN):
     '''
     Calculates the highest value for the data in a given period
 
+    Uses the built-in ``max`` for the calculation
+
     Formula:
       - highest = max(data, period)
     '''
@@ -85,6 +87,8 @@ class Lowest(OperationN):
     '''
     Calculates the lowest value for the data in a given period
 
+    Uses the built-in ``min`` for the calculation
+
     Formula:
       - lowest = min(data, period)
     '''
@@ -96,6 +100,9 @@ class Lowest(OperationN):
 class SumN(OperationN):
     '''
     Calculates the Sum of the data values over a given period
+
+    Uses ``math.fsum`` for the calculation rather than the built-in ``sum`` to
+    avoid precision errors
 
     Formula:
       - sumn = sum(data, period)
