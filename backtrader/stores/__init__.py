@@ -38,3 +38,6 @@ try:
     from .oandastore import OandaStore
 except ImportError:
     pass  # The user may not have a module installed
+
+
+from .vchartfile import VChartFile
