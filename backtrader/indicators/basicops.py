@@ -76,6 +76,7 @@ class Highest(OperationN):
     Formula:
       - highest = max(data, period)
     '''
+    alias = ('MaxN',)
     lines = ('highest',)
     func = max
 
@@ -87,6 +88,7 @@ class Lowest(OperationN):
     Formula:
       - lowest = min(data, period)
     '''
+    alias = ('MinN',)
     lines = ('lowest',)
     func = min
 
