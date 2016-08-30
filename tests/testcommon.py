@@ -66,6 +66,7 @@ def runtest(datas,
             optimize=False,
             maxcpus=1,
             writer=None,
+            analyzer=None,
             **kwargs):
 
     runonces = [True, False] if runonce is None else [runonce]
@@ -97,6 +98,12 @@ def runtest(datas,
                         wr = writer[0]
                         wrkwargs = writer[1]
                         cerebro.addwriter(wr, **wrkwargs)
+
+                    if analyzer:
+                        al = analyzer[0]
+                        alkwargs = analyzer[1]
+                        cerebro.addanalyzer(al, **alkwargs)
+
                 else:
                     cerebro.optstrategy(strategy, **kwargs)
 
