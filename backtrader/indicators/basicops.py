@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import functools
 import math
 import operator
 
@@ -97,6 +98,35 @@ class Lowest(OperationN):
     func = min
 
 
+class ReduceN(OperationN):
+    '''
+    Calculates the Reduced value of the ``period`` data points applying
+    ``function``
+
+    Uses the built-in ``min`` for the calculation
+
+    Formula:
+      - reduced = reduce(function(data, period)), initializer=initializer)
+
+    Notes:
+
+      - In order to mimic the python ``reduce``, this indicator takes a
+        ``function`` non-named argument as the 1st argument, unlike other
+        Indicators which take only named arguments
+    '''
+    lines = ('reduced',)
+    func = functools.reduce
+
+    def __init__(self, function, **kwargs):
+        if 'initializer' not in kwargs:
+            self.func = functools.partial(self.func, function)
+        else:
+            self.func = functools.partial(self.func, function,
+                                          initializer=kwargs['initializer'])
+
+        super(ReduceN, self).__init__()
+
+
 class SumN(OperationN):
     '''
     Calculates the Sum of the data values over a given period
@@ -109,6 +139,34 @@ class SumN(OperationN):
     '''
     lines = ('sumn',)
     func = math.fsum
+
+
+class AnyN(OperationN):
+    '''
+    Has a value of ``True`` (stored as ``1.0`` in the lines) if *any* of the
+    values in the ``period`` evaluates to non-zero (ie: ``True``)
+
+    Uses the built-in ``any`` for the calculation
+
+    Formula:
+      - anyn = any(data, period)
+    '''
+    lines = ('anyn',)
+    func = any
+
+
+class AllN(OperationN):
+    '''
+    Has a value of ``True`` (stored as ``1.0`` in the lines) if *all* of the
+    values in the ``period`` evaluates to non-zero (ie: ``True``)
+
+    Uses the built-in ``all`` for the calculation
+
+    Formula:
+      - anyn = any(data, period)
+    '''
+    lines = ('alln',)
+    func = all
 
 
 class FindFirstIndex(OperationN):
