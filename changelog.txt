@@ -7,7 +7,7 @@
     from the registry if possible
   - Some docs improvements/corrections
   - Add a generic Store to let stores subclass
-  - Add a RollOver data feed
+  - Add a Chainer, RollOver data feed and sample
   - Add shortcuts for some subpackages: indicators -> ind, observers -> obs
     strategies -> strats, commissions -> comms
   - Add framework for analyzer testing and tests for 2 analyzers: SQN,

@@ -29,8 +29,8 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-**Release 1.7.0.93**: `TA-Lib integration
-<http://www.backtrader.com/posts/2016-07-26-talib-integration/talib-integration/>`_
+**Release 1.8.10.99**: `Futures Roll-Over
+<http://www.backtrader.com/posts/2016-08-31-rolling-over-futures/rolling-futures-over/>`_
 
 Features:
 =========
