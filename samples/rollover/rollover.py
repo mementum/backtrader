@@ -96,7 +96,6 @@ def runstrat(args=None):
 
     fcodes = ['199FESXM4', '199FESXU4', '199FESXZ4', '199FESXH5', '199FESXM5']
     store = bt.stores.VChartFile()
-
     ffeeds = [store.getdata(dataname=x) for x in fcodes]
 
     rollkwargs = dict()
@@ -106,11 +105,17 @@ def runstrat(args=None):
         if args.checkcondition:
             rollkwargs['checkcondition'] = checkvolume
 
-    datarollover = bt.feeds.RollOver(*ffeeds, dataname='FESX', **rollkwargs)
-    cerebro.adddata(datarollover)
+    if not args.no_cerebro:
+        if args.rollover:
+            cerebro.rolloverdata(name='FESX', *ffeeds, **rollkwargs)
+        else:
+            cerebro.chaindata(name='FESX', *ffeeds)
+    else:
+        drollover = bt.feeds.RollOver(*ffeeds, dataname='FESX', **rollkwargs)
+        cerebro.adddata(drollover)
 
     cerebro.addstrategy(TheStrategy)
-    cerebro.run()
+    cerebro.run(stdstats=False)
 
     if args.plot:
         pkwargs = dict(style='bar')
@@ -126,6 +131,11 @@ def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for Roll Over of Futures')
+
+    parser.add_argument('--no-cerebro', required=False, action='store_true',
+                        help='Use RollOver Directly')
+
+    parser.add_argument('--rollover', required=False, action='store_true')
 
     parser.add_argument('--checkdate', required=False, action='store_true',
                         help='Change during expiration week')

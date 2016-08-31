@@ -25,6 +25,7 @@ import collections
 import itertools
 import multiprocessing
 
+import backtrader as bt
 from .utils.py3 import map, range, zip, with_metaclass, string_types
 
 from . import linebuffer
@@ -393,6 +394,38 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if data.islive():
             self._dolive = True
+
+    def chaindata(self, *args, **kwargs):
+        '''
+        Chains several data feeds into one
+
+        If ``name`` is passed as named argument and is not None it will be put
+        into ``data._name`` which is meant for decoration/plotting purposes.
+
+        If ``None``, then the name of the 1st data will be used
+        '''
+        dname = kwargs.pop('name', None)
+        if dname is None:
+            dname = args[0]._dataname
+        d = bt.feeds.Chainer(dataname=dname, *args)
+        self.adddata(d, name=dname)
+
+    def rolloverdata(self, *args, **kwargs):
+        '''Chains several data feeds into one
+
+        If ``name`` is passed as named argument and is not None it will be put
+        into ``data._name`` which is meant for decoration/plotting purposes.
+
+        If ``None``, then the name of the 1st data will be used
+
+        Any other kwargs will be passed to the RollOver class
+
+        '''
+        dname = kwargs.pop('name', None)
+        if dname is None:
+            dname = args[0]._dataname
+        d = bt.feeds.RollOver(dataname=dname, *args, **kwargs)
+        self.adddata(d, name=dname)
 
     def replaydata(self, dataname, name=None, **kwargs):
         '''

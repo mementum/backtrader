@@ -251,6 +251,10 @@ Reference
 
    .. automethod:: replaydata
 
+   .. automethod:: chaindata
+
+   .. automethod:: rolloverdata
+
    .. automethod:: addstrategy
 
    .. automethod:: optstrategy
