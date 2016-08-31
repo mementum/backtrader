@@ -33,6 +33,7 @@ Contents:
    data-resampling/data-resampling
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
+   data-rollover/rolling-futures-over
    filters
    induse
    talib/talib
