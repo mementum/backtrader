@@ -645,15 +645,17 @@ not the universal panacea.
 	  PyAlgoTrade does not round the datafeed values when applying the
 	  divided "adjusted close" to the data feed values.
 
-	  The Data Feed provided by *backtrade* rounds the values down to 2
-	  decimals after applying the adjusted close. Upong printing the values
-	  everything seems the same, but it's obvious that sometimes that 5th
-	  place decimal plays a role.
+	  The Yahoo Data Feed provided by *backtrader* rounds the values down
+	  to 2 decimals after applying the adjusted close. Upon printing the
+	  values everything seems the same, but it's obvious that sometimes
+	  that 5th place decimal plays a role.
 
 	  Rounding down to 2 decimals seems more realistic, because Marke
 	  Exchanges do only allow a number of decimals per asset (being that 2
 	  decimals usually for stocks)
 
+.. note:: The Yahoo Data Feed (starting with version ``1.8.11.99`` allows to
+	  specify if rounding has to happen and how many decimals)
 
 Visual Inspection: Plotting
 ===========================
