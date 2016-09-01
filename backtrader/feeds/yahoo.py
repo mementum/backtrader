@@ -42,18 +42,31 @@ class YahooFinanceCSVData(feed.CSVDataBase):
 
       - ``dataname``: The filename to parse or a file-like object
 
-      - ``reverse``
+      - ``reverse`` (default: ``False``)
 
         It is assumed that locally stored files have already been reversed
         during the download process
 
-      - ``adjclose``
+      - ``adjclose`` (default: ``True``)
 
         Whether to use the dividend/split adjusted close and adjust all
         values according to it.
 
+      - ``round`` (default: ``True``)
+
+        Whether to round the values to a specific number of decimals after
+        having adjusted the close
+
+      - ``decimals`` (default: ``2``)
+
+        Number of decimals to round to
     '''
-    params = (('adjclose', True), ('reverse', False),)
+    params = (
+        ('reverse', False),
+        ('adjclose', True),
+        ('round', True),
+        ('decimals', 2),
+    )
 
     def start(self):
         super(YahooFinanceCSVData, self).start()
@@ -85,21 +98,36 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
 
         self.lines.datetime[0] = dtnum
-        self.lines.open[0] = float(linetokens[next(i)])
-        self.lines.high[0] = float(linetokens[next(i)])
-        self.lines.low[0] = float(linetokens[next(i)])
-        self.lines.close[0] = float(linetokens[next(i)])
-        self.lines.volume[0] = float(linetokens[next(i)])
+        o = float(linetokens[next(i)])
+        h = float(linetokens[next(i)])
+        l = float(linetokens[next(i)])
+        c = float(linetokens[next(i)])
+        v = float(linetokens[next(i)])
         self.lines.openinterest[0] = 0.0
+
         if self.params.adjclose:
             adjustedclose = float(linetokens[next(i)])
-            adjfactor = self.lines.close[0] / adjustedclose
+            adjfactor = c / adjustedclose
 
-            self.lines.open[0] = round(self.lines.open[0] / adjfactor, 2)
-            self.lines.high[0] = round(self.lines.high[0] / adjfactor, 2)
-            self.lines.low[0] = round(self.lines.low[0] / adjfactor, 2)
-            self.lines.close[0] = round(adjustedclose, 2)
-            self.lines.volume[0] = round(self.lines.volume[0] / adjfactor, 2)
+            o /= adjfactor
+            h /= adjfactor
+            l /= adjfactor
+            c = adjustedclose
+            v /= adjfactor
+
+            if self.p.round:
+                decimals = self.p.decimals
+                o = round(o, decimals)
+                h = round(h, decimals)
+                l = round(l, decimals)
+                c = round(c, decimals)
+                v = round(v, decimals)
+
+        self.lines.open[0] = o
+        self.lines.high[0] = h
+        self.lines.low[0] = l
+        self.lines.close[0] = c
+        self.lines.volume[0] = v
 
         return True
 
