@@ -296,6 +296,10 @@ Reference: Strategy
    .. automethod:: close
    .. automethod:: cancel
 
+   .. automethod:: order_target_size
+   .. automethod:: order_target_value
+   .. automethod:: order_target_percent
+
    .. automethod:: getsizer
    .. automethod:: setsizer
    .. automethod:: getsizing

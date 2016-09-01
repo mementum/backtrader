@@ -657,6 +657,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         '''
         if isinstance(data, string_types):
             data = self.getdatabyname(data)
+        elif data is None:
+            data = self.data
 
         possize = self.getposition(data, self.broker).size
         size = abs(size or possize)
@@ -671,6 +673,178 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                             tradeid=tradeid, **kwargs)
 
         return None
+
+    def order_target_size(self, data=None, target=0,
+                          price=None, plimit=None,
+                          exectype=None, valid=None,
+                          tradeid=0, **kwargs):
+
+        '''
+        Place an order to rebalance a position to have final size of ``target``
+
+        The current ``position`` size is taken into account as the start point
+        to achieve ``target``
+
+          - If ``target`` > ``pos.size`` -> buy ``target - pos.size``
+
+          - If ``target`` < ``pos.size`` -> sell ``target - pos.size``
+
+        It returns either:
+
+          - The generated order
+
+          or
+
+          - ``None`` if no order has been issued (``target == position.size``)
+        '''
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        elif data is None:
+            data = self.data
+
+        possize = self.getposition(data, self.broker).size
+        if target > possize:
+            # print('buy: target - possize:', target - possize)
+            return self.buy(data=data, size=target - possize,
+                            price=price, plimit=plimit,
+                            exectype=exectype, valid=valid,
+                            tradeid=tradeid, **kwargs)
+
+        elif target < possize:
+            # print('sell: target - possize:', target - possize)
+            return self.sell(data=data, size=possize - target,
+                             price=price, plimit=plimit,
+                             exectype=exectype, valid=valid,
+                             tradeid=tradeid, **kwargs)
+
+        return None  # no execution target == possize
+
+    def order_target_value(self, data=None, target=0.0,
+                           price=None, plimit=None,
+                           exectype=None, valid=None,
+                           tradeid=0, **kwargs):
+        '''
+        Place an order to rebalance a position to have final value of
+        ``target``
+
+        The current ``value`` is taken into account as the start point to
+        achieve ``target``
+
+        The ``position.size`` is used to determine if a position is ``long`` /
+        ``short``
+
+          - If ``target`` > ``value``
+            - buy if ``pos.size >= 0`` (Increase a long position)
+            - sell if ``pos.size < 0`` (Increase a short position)
+
+          - If ``target`` < ``value``
+            - sell if ``pos.size >= 0`` (Decrease a long position)
+            - buy if ``pos.size < 0`` (Decrease a short position)
+
+        It returns either:
+
+          - The generated order
+
+          or
+
+          - ``None`` if no order has been issued (``target == position.size``)
+        '''
+
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        elif data is None:
+            data = self.data
+
+        possize = self.getposition(data, self.broker).size
+        value = self.broker.getvalue(datas=[data])
+        comminfo = self.broker.getcommissioninfo(data)
+
+        # Make sure a price is there
+        price = price if price is not None else data.close[0]
+
+        if target > value:
+            size = comminfo.getsize(price, target - value)
+            if possize >= 0:
+                return self.buy(data=data, size=size,
+                                price=price, plimit=plimit,
+                                exectype=exectype, valid=valid,
+                                tradeid=tradeid, **kwargs)
+            else:
+                return self.sell(data=data, size=size,
+                                 price=price, plimit=plimit,
+                                 exectype=exectype, valid=valid,
+                                 tradeid=tradeid, **kwargs)
+
+        elif target < value:
+            size = comminfo.getsize(price, value - target)
+            if possize >= 0:
+                return self.sell(data=data, size=size,
+                                 price=price, plimit=plimit,
+                                 exectype=exectype, valid=valid,
+                                 tradeid=tradeid, **kwargs)
+            else:
+                return self.buy(data=data, size=size,
+                                price=price, plimit=plimit,
+                                exectype=exectype, valid=valid,
+                                tradeid=tradeid, **kwargs)
+
+        return None  # no execution size == possize
+
+    def order_target_percent(self, data=None, target=0.0,
+                             price=None, plimit=None,
+                             exectype=None, valid=None,
+                             tradeid=0, **kwargs):
+
+        '''
+        Place an order to rebalance a position to have final value of
+        ``target`` percentage of current portfolio ``value``
+
+        ``target`` is expressed in decimal: ``0.05`` -> ``5%``
+
+        It uses ``order_target_value`` to execute the order.
+
+        Example:
+          - ``target=0.05`` and portfolio value is ``100``
+
+          - The ``value`` to be reached is ``0.05 * 100 = 5``
+
+          - ``5`` is passed as the ``target`` value to ``order_target_value``
+
+        The current ``value`` is taken into account as the start point to
+        achieve ``target``
+
+        The ``position.size`` is used to determine if a position is ``long`` /
+        ``short``
+
+          - If ``target`` > ``value``
+            - buy if ``pos.size >= 0`` (Increase a long position)
+            - sell if ``pos.size < 0`` (Increase a short position)
+
+          - If ``target`` < ``value``
+            - sell if ``pos.size >= 0`` (Decrease a long position)
+            - buy if ``pos.size < 0`` (Decrease a short position)
+
+        It returns either:
+
+          - The generated order
+
+          or
+
+          - ``None`` if no order has been issued (``target == position.size``)
+        '''
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        elif data is None:
+            data = self.data
+
+        possize = self.getposition(data, self.broker).size
+        value = self.broker.getvalue()
+        target_value = value * target
+
+        return self.order_target_value(data=data, target=target_value,
+                                       price=price, plimit=plimit,
+                                       exectype=exectype, valid=valid,
+                                       tradeid=tradeid, **kwargs)
 
     def getposition(self, data=None, broker=None):
         '''
