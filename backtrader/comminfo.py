@@ -151,7 +151,7 @@ class CommInfoBase(with_metaclass(MetaParams)):
         return self._stocklike
 
     def getsize(self, price, cash):
-        '''Returns the needed amount of cash an operation would cost'''
+        '''Returns the needed size to meet a cash operation at a given price'''
         if not self._stocklike:
             return cash // self.p.margin
 
