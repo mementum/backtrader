@@ -162,6 +162,7 @@ def test_run(main=False):
             if PY2:
                 assert str(analysis.sqn) == '0.912550316439'
             else:
+                print(str(analysis.sqn))
                 assert str(analysis.sqn) == '0.9125503164393756'
             assert str(analysis.trades) == '11'
 

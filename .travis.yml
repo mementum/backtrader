@@ -14,4 +14,4 @@ python:
 #    pip install git+https://github.com/blampe/IbPy.git
 
 # command to run tests
-script: cd tests && nosetests -v -v
+script: cd tests && nosetests -v -v ./test_analyzer-sqn.py
