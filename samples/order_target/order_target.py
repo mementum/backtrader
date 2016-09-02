@@ -53,9 +53,6 @@ class TheStrategy(bt.Strategy):
         ('use_target_percent', False),
     )
 
-    def __init__(self):
-        print('use order size', self.p.use_target_size)
-
     def notify_order(self, order):
         if order.status == order.Completed:
             pass
@@ -138,6 +135,14 @@ def runstrat(args=None):
                         use_target_percent=args.target_percent)
 
     cerebro.run()
+
+    if args.plot:
+        pkwargs = dict(style='bar')
+        if args.plot is not True:  # evals to True but is not True
+            npkwargs = eval('dict(' + args.plot + ')')  # args were passed
+            pkwargs.update(npkwargs)
+
+        cerebro.plot(**pkwargs)
 
 
 def parse_args(pargs=None):
