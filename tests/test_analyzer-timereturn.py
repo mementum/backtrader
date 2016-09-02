@@ -27,6 +27,7 @@ import testcommon
 
 import backtrader as bt
 import backtrader.indicators as btind
+from backtrader.utils.py3 import PY2
 
 
 class TestStrategy(bt.Strategy):
@@ -157,9 +158,15 @@ def test_run(main=False):
         analysis = analyzer.get_analysis()
         if main:
             print(analysis)
-            print(str(analysis[analysis.keys[0]]))
+            print(str(analysis[next(iter(analysis.keys()))]))
         else:
-            assert str(analysis[analysis.keys()[0]]) == '0.2795'
+            # Handle different precision
+            if PY2:
+                sval = '0.2795'
+            else:
+                sval = '0.2794999999999983'
+
+            assert str(analysis[next(iter(analysis.keys()))]) == sval
 
 
 if __name__ == '__main__':

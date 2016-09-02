@@ -27,6 +27,7 @@ import testcommon
 
 import backtrader as bt
 import backtrader.indicators as btind
+from backtrader.utils.py3 import PY2
 
 
 class TestStrategy(bt.Strategy):
@@ -157,7 +158,11 @@ def test_run(main=False):
             print(analysis)
             print(str(analysis.sqn))
         else:
-            assert str(analysis.sqn) == '0.912550316439'
+            # Handle different precision
+            if PY2:
+                assert str(analysis.sqn) == '0.912550316439'
+            else:
+                assert str(analysis.sqn) == '0.9125503164393756'
             assert str(analysis.trades) == '11'
 
 
