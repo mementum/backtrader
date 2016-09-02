@@ -1,3 +1,8 @@
+1.8.11.99:
+  - Add rounding control to YahooFinanceCSVData and update docs. Closes #138
+  - Sharpe Ratio external testing sample. Addresses #137
+  - order_target_api, sample and cos. Closes #134
+
 1.8.10.99:
   - Added Any, All, Reduce, function replacements
   - Added AnyN, AllN, ReduceN indicators
