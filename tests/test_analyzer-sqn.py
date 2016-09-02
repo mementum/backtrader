@@ -27,7 +27,6 @@ import testcommon
 
 import backtrader as bt
 import backtrader.indicators as btind
-from backtrader.utils.py3 import PY2
 
 
 class TestStrategy(bt.Strategy):
