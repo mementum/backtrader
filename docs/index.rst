@@ -19,6 +19,7 @@ Contents:
    cerebro
    strategy
    sizers/sizers
+   order_target/order_target
    signal_strategy/signal_strategy
    broker
    slippage/slippage
