@@ -223,6 +223,15 @@ Let's repeat that ``Analyzers`` are not Lines objects, but to seamlessly
 integrate them into the ``backtrader`` ecosystem, the internal API conventions
 of several Lines object are followed (actually a **mixture** of them)
 
+.. note:: The code for the ``SharpeRatio`` has evolved to take for example into
+	  account annualization and the version here should only be a
+	  reference.
+
+	  Please check the :doc:`../analyzers-reference`
+
+	  There is additionally a ``SharpeRatio_A`` which provides the value
+	  directly in annualized form regardless of the sought timeframe
+
 Code for ``SharpeRatio`` to serve as a basis (a simplified version)
 
 .. literalinclude:: ./sharpe-forensic.py
@@ -286,6 +295,12 @@ Reference
    .. automethod:: nextstart
 
    .. automethod:: next
+
+   .. automethod:: notify_cashvalue
+
+   .. automethod:: notify_order
+
+   .. automethod:: notify_trade
 
    .. automethod:: get_analysis
 
