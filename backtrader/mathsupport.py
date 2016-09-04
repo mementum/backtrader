@@ -22,20 +22,20 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import math
-import operator
-
-from .utils.py3 import map
 
 
-def average(x):
+def average(x, oneless=False):
     '''
     Args:
       x: iterable with len
 
+      oneless: (default ``False``) reduces the length of the array for the
+                division.
+
     Returns:
       A float with the average of the elements of x
     '''
-    return math.fsum(x) / len(x)
+    return math.fsum(x) / (len(x) - oneless)
 
 
 def variance(x):
@@ -47,15 +47,18 @@ def variance(x):
       A list with the variance for each element of x
     '''
     avgx = average(x)
-    return list(map(lambda y: (y - avgx) ** 2, x))
+    return [pow(y - avgx, 2.0) for y in x]
 
 
-def standarddev(x):
+def standarddev(x, oneless=False):
     '''
     Args:
       x: iterable with len
 
+      oneless: (default ``False``) to be passed to the average to divide by ``N
+      - 1`` (Bessel's correction)
+
     Returns:
       A float with the standard deviation of the elements of x
     '''
-    return math.sqrt(average(variance(x)))
+    return math.sqrt(average(variance(x), oneless=oneless))
