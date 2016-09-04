@@ -60,8 +60,26 @@ def runstrat(pargs=None):
     # Add the Analyzers
     cerebro.addanalyzer(bt.analyzers.TimeReturn,
                         timeframe=tframes[args.tframe])
+
+    shkwargs = dict()
+    if args.annualize:
+        shkwargs['annualize'] = True
+
+    if args.riskfreerate is not None:
+        shkwargs['riskfreerate'] = args.riskfreerate
+
+    if args.factor is not None:
+        shkwargs['factor'] = args.factor
+
+    if args.stddev_sample:
+        shkwargs['stddev_sample'] = True
+
+    if args.no_convertrate:
+        shkwargs['convertrate'] = False
+
     cerebro.addanalyzer(bt.analyzers.SharpeRatio,
-                        timeframe=tframes[args.tframe])
+                        timeframe=tframes[args.tframe],
+                        **shkwargs)
 
     # Add a writer to get output
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
@@ -101,9 +119,30 @@ def parse_args(pargs=None):
     parser.add_argument('--writercsv', '-wcsv', action='store_true',
                         help='Tell the writer to produce a csv stream')
 
-    parser.add_argument('--tframe', default='years', required=False,
+    parser.add_argument('--tframe', '--timeframe', default='years',
+                        required=False,
                         choices=['days', 'weeks', 'months', 'years'],
                         help='TimeFrame for the Returns/Sharpe calculations')
+
+    parser.add_argument('--annualize', required=False, action='store_true',
+                        help='Annualize Sharpe Ratio')
+
+    parser.add_argument('--riskfreerate', required=False, action='store',
+                        type=float, default=None,
+                        help='Riskfree Rate (annual) for Sharpe')
+
+    parser.add_argument('--factor', required=False, action='store',
+                        type=float, default=None,
+                        help=('Riskfree Rate conversion factor for Sharpe '
+                              'to downgrade riskfree rate to timeframe'))
+
+    parser.add_argument('--stddev-sample', required=False, action='store_true',
+                        help='Consider Bessels correction for stddeviation')
+
+    parser.add_argument('--no-convertrate', required=False,
+                        action='store_true',
+                        help=('Upgrade returns to target timeframe rather than'
+                              'downgrading the riskfreerate'))
 
     # Plot options
     parser.add_argument('--plot', '-p', nargs='?', required=False,
