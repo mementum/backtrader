@@ -180,3 +180,18 @@ class SharpeRatio(Analyzer):
             self.ratio = ratio
 
         self.rets['sharperatio'] = self.ratio
+
+
+class SharpeRatio_A(SharpeRatio):
+    '''Extension of the SharpeRatio which returns the Sharpe Ratio directly in
+    annualized form
+
+    The following param has been changed from ``SharpeRatio``
+
+      - ``annualize`` (default: ``True``)
+
+    '''
+
+    params = (
+        ('annualize', True),
+    )

@@ -33,6 +33,11 @@ SharpeRatio
 
 .. autoclass:: SharpeRatio
 
+SharpeRatio_A
+*************
+
+.. autoclass:: SharpeRatio_A
+
 
 SQN
 ***
