@@ -52,7 +52,11 @@ def runstrat():
     args = parse_args()
 
     # Create a cerebro entity
-    cerebro = bt.Cerebro(maxcpus=args.maxcpus)
+    cerebro = bt.Cerebro(maxcpus=args.maxcpus,
+                         runonce=not args.no_runonce,
+                         exactbars=args.exactbars,
+                         optdatas=not args.no_optdatas,
+                         optreturn=not args.no_optreturn)
 
     # Add a strategy
     cerebro.optstrategy(
@@ -125,6 +129,25 @@ def parse_args():
               '\n'
               '  - 0 (default): use all available CPUs\n'
               '  - 1 -> n: use as many as specified\n'))
+
+    parser.add_argument(
+        '--no-runonce', action='store_true', required=False,
+        help='Run in next mode')
+
+    parser.add_argument(
+        '--exactbars', required=False, type=int, default=0,
+        help=('Use the specified exactbars still compatible with preload\n'
+              '  0 No memory savings\n'
+              '  -1 Moderate memory savings\n'
+              '  -2 Less moderate memory savings\n'))
+
+    parser.add_argument(
+        '--no-optdatas', action='store_true', required=False,
+        help='Do not optimize data preloading in optimization')
+
+    parser.add_argument(
+        '--no-optreturn', action='store_true', required=False,
+        help='Do not optimize the returned values to save time')
 
     parser.add_argument(
         '--ma_low', type=int,
