@@ -1,3 +1,9 @@
+1.8.12.99:
+  - Rework SharpeRatio, add annualization and add SharpeRatio_A with default
+    annualization
+  - Improve data / results message passing during optimization
+  - Some documentation improvements/corrections
+
 1.8.11.99:
   - Add rounding control to YahooFinanceCSVData and update docs. Closes #138
   - Sharpe Ratio external testing sample. Addresses #137
