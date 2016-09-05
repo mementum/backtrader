@@ -38,6 +38,15 @@ from .utils import OrderedDict
 from .strategy import Strategy, SignalStrategy
 
 
+# Defined here to make it pickable. Ideally it could be defined inside Cerebro
+
+class OptReturn(object):
+    def __init__(self, params, **kwargs):
+        self.p = self.params = params
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
 
@@ -156,6 +165,39 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for all strategies. This can also be accomplished on a per strategy
         basis with the strategy method ``set_tradehistory``
 
+      - ``optdatas`` (default: ``True``)
+
+        If ``True`` and optimizing (and the system can ``preload`` and use
+        ``runonce``, data preloading will be done only once in the main process
+        to save time and resources.
+
+        The tests show an approximate ``20%`` speed-up moving from a sample
+        execution in ``83`` seconds to ``66``
+
+      - ``optreturn`` (default: ``True``)
+
+        If ``True`` the optimization results will not be full ``Strategy``
+        objects (and all *datas*, *indicators*, *observers* ...) but and object
+        with the following attributes (same as in ``Strategy``):
+
+          - ``params`` (or ``p``) the strategy had for the execution
+          - ``analyzers`` the strategy has executed
+
+        In most occassions, only the *analyzers* and with which *params* are
+        the things needed to evaluate a the performance of a strategy. If
+        detailed analysis of the generated values for (for example)
+        *indicators* is needed, turn this off
+
+        The tests show a ``13% - 15%`` improvement in execution time. Combined
+        with ``optdatas`` the total gain increases to a total speed-up of
+        ``32%`` in an optimization run.
+
+      - ``tradehistory`` (default: ``False``)
+
+        If set to ``True``, it will activate update event logging in each trade
+        for all strategies. This can also be accomplished on a per strategy
+        basis with the strategy method ``set_tradehistory``
+
     '''
 
     params = (
@@ -166,6 +208,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('oldbuysell', False),
         ('lookahead', 0),
         ('exactbars', False),
+        ('optdatas', True),
+        ('optreturn', True),
         ('objcache', False),
         ('live', False),
         ('writer', False),
@@ -569,7 +613,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Used during optimization to pass the cerebro over the multiprocesing
         module without complains
         '''
-        return self.runstrategies(iterstrat)
+
+        predata = self.p.optdatas and self._dopreload and self._dorunonce
+        return self.runstrategies(iterstrat, predata=predata)
 
     def runstop(self):
         '''If invoked from inside a strategy or anywhere else, including other
@@ -680,8 +726,21 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 runstrat = self.runstrategies(iterstrat)
                 self.runstrats.append(runstrat)
         else:
+            if self.p.optdatas and self._dopreload and self._dorunonce:
+                for data in self.datas:
+                    data.reset()
+                    if self._exactbars < 1:  # datas can be full length
+                        data.extend(size=self.params.lookahead)
+                    data._start()
+                    if self._dopreload:
+                        data.preload()
+
             pool = multiprocessing.Pool(self.p.maxcpus or None)
             self.runstrats = list(pool.map(self, iterstrats))
+
+            if self.p.optdatas and self._dopreload and self._dorunonce:
+                for data in self.datas:
+                    data.stop()
 
         if not self._dooptimize:
             # avoid a list of list for regular cases
@@ -689,7 +748,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return self.runstrats
 
-    def runstrategies(self, iterstrat):
+    def runstrategies(self, iterstrat, predata=False):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
@@ -712,13 +771,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if writer.p.csv:
                     writer.addheaders(wheaders)
 
-        for data in self.datas:
-            data.reset()
-            if self._exactbars < 1:  # datas can be full length
-                data.extend(size=self.params.lookahead)
-            data._start()
-            if self._dopreload:
-                data.preload()
+        if not predata:
+            for data in self.datas:
+                data.reset()
+                if self._exactbars < 1:  # datas can be full length
+                    data.extend(size=self.params.lookahead)
+                data._start()
+                if self._dopreload:
+                    data.preload()
 
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
@@ -757,8 +817,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if writer.p.csv:
                     writer.addheaders(strat.getwriterheaders())
 
-        for strat in runstrats:
-            strat.qbuffer(self._exactbars)
+        if not predata:
+            for strat in runstrats:
+                strat.qbuffer(self._exactbars)
 
         for writer in self.runwriters:
             writer.start()
@@ -773,8 +834,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._broker.stop()
 
-        for data in self.datas:
-            data.stop()
+        if not predata:
+            for data in self.datas:
+                data.stop()
 
         for feed in self.feeds:
             feed.stop()
@@ -783,6 +845,21 @@ class Cerebro(with_metaclass(MetaParams, object)):
             store.stop()
 
         self.stop_writers(runstrats)
+
+        if self.p.optreturn:
+            results = list()
+            for strat in runstrats:
+                for a in strat.analyzers:
+                    a.strategy = None
+                    a._parent = None
+                    for attrname in dir(a):
+                        if attrname.startswith('data'):
+                            setattr(a, attrname, None)
+
+                oreturn = OptReturn(strat.params, analyzers=strat.analyzers)
+                results.append(oreturn)
+
+            return results
 
         return runstrats
 
