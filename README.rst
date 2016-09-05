@@ -29,6 +29,9 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
+**Release 1.8.12.99**: `Optimization Improvements
+<http://www.backtrader.com/posts/2016-09-05-optimization-improvements/optimization-improvements/>`_
+
 **Release 1.8.11.99**: `Target Orders
 <http://www.backtrader.com/posts/2016-09-02-target-orders/target-orders/>`_
 
@@ -51,7 +54,7 @@ Live Trading and backtesting platform written in Python.
   - Integrated Resampling and Replaying
   - Step by Step backtesting or at once (except in the evaluation of the Strategy)
   - Integrated battery of indicators
-  - *TA-Lib* indicator support
+  - *TA-Lib* indicator support (needs python *ta-lib* / check the docs)
   - Easy development of custom indicators
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
     integration
@@ -72,21 +75,22 @@ Read the full documentation at readthedocs.org:
 
   - `backtrader documentation <http://backtrader.readthedocs.io/>`_
 
-List of built-in Indicators (96)
+List of built-in Indicators (99)
 
   - `backtrader indicators <http://backtrader.readthedocs.io/en/latest/indautoref.html>`_
 
 Python 2/3 Support
 ==================
 
-  - Python 2.7
-  - Python 3.2/3.3/3.4/3.5
+  - Python ``2.7``
+  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5``
 
-  - It also works with pypy and pypy3 (no plotting - matplotlib is not supported under pypy)
+  - It also works with *pypy* and *pypy3* (no plotting - ``matplotlib`` is not
+    supported under *pypy*)
 
-Compatibility is tested during development with 2.7 and 3.4
+Compatibility is tested during development with ``2.7`` and ``3.5``
 
-The other versions are tested automatically with Travis.
+The other versions are tested automatically with *Travis*.
 
 Installation
 ============
@@ -94,17 +98,17 @@ Installation
 ``backtrader`` is self-contained with no external dependencies (except if you
 want to plot)
 
-From pypi:
+From *pypi*:
 
-  - pip install backtrader
+  - ``pip install backtrader``
 
-  - pip install backtrader[matplotlib]
+  - ``pip install backtrader[matplotlib]``
 
-    If `matplotlib` is not installed and you wish to do some plotting
+    If ``matplotlib`` is not installed and you wish to do some plotting
 
-.. note:: The minimum matplotlib version is 1.4.1
+.. note:: The minimum matplotlib version is ``1.4.1``
 
-For IB Trading:
+An example for *IB*  Data Feeds/Trading:
 
   - ``IbPy`` doesn't seem to be in PyPi. Do either::
 
@@ -113,6 +117,9 @@ For IB Trading:
     or (if ``git`` is not available in your system)::
 
       pip install https://github.com/blampe/IbPy/archive/master.zip
+
+For other functionalities like: ``Visual Chart``, ``Oanda``, ``TA-Lib``, check
+the dependencies in the documentation.
 
 From source:
 
@@ -123,8 +130,8 @@ Version numbering
 
 X.Y.Z.I
 
-  - X: Major version number. Should stay stable unless something big is changed like an
-    overhaul to use numpy
+  - X: Major version number. Should stay stable unless something big is changed
+    like an overhaul to use numpy
   - Y: Minor version number. To be changed upon adding a complete new feature or
     (god forbids) an incompatible API change.
   - Z: Revision version number. To be changed for documentation updates, small
