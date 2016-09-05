@@ -53,6 +53,7 @@ Contents:
    position
    trade
    plotting/plotting
+   optimization-improvements
    automated-bt-run/automated-bt-run
    memory-savings/memory-savings
    timemgmt
