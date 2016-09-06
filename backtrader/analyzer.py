@@ -284,7 +284,6 @@ class TimeFrameAnalyzerBase(Analyzer):
 
     def start(self):
         super(TimeFrameAnalyzerBase, self).start()
-        self.data = self.strategy.data
         self.timeframe = self.p.timeframe or self.data._timeframe
         self.compression = self.p.compression or self.data._compression
 
