@@ -141,8 +141,8 @@ X.Y.Z.I
 Alternatives
 ============
 
-If after seeing the docs (see also the example below) you feel this is not your
-cup of tea, you can always have a look at similar Python platforms:
+If after seeing the docs and some samples (see the blog also) you feel this is
+not your cup of tea, you can always have a look at similar Python platforms:
 
   - `PyAlgoTrade <https://github.com/gbeced/pyalgotrade>`_
   - `Zipline <https://github.com/quantopian/zipline>`_
