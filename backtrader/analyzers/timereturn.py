@@ -31,8 +31,8 @@ class TimeReturn(TimeFrameAnalyzerBase):
     Params:
 
       - ``timeframe`` (default: ``None``)
-        If ``None`` then the complete return over the entire backtested period
-        will be reported
+        If ``None`` the ``timeframe`` of the 1st data in the system will be
+        used
 
         Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
         time constraints
