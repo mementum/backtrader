@@ -32,7 +32,7 @@ from .utils import AutoOrderedDict, OrderedDict, date2num
 
 class TimeFrame(object):
     (Ticks, MicroSeconds, Seconds, Minutes,
-     Days, Weeks, Months, Years, NoTimeFrame) = range(9)
+     Days, Weeks, Months, Years, NoTimeFrame) = range(1, 10)
 
     Names = ['Ticks', 'MicroSeconds', 'Seconds', 'Minutes',
              'Days', 'Weeks', 'Months', 'Years', 'NoTimeFrame']
