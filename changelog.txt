@@ -1,3 +1,10 @@
+1.8.13.99:
+  - Set annualization factor for days to 252 in SharpeRatio to match the value
+    most used in the literature
+  - Add Returns analyzer
+  - Closes #137 Added VWR (VariabilityWeightedReturn) analyzer
+  - Some documentation improvements/corrections
+
 1.8.12.99:
   - Rework SharpeRatio, add annualization and add SharpeRatio_A with default
     annualization
