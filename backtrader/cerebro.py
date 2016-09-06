@@ -846,7 +846,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self.stop_writers(runstrats)
 
-        if self.p.optreturn:
+        if self._dooptimize and self.p.optreturn:
+            # Results can be optimized
             results = list()
             for strat in runstrats:
                 for a in strat.analyzers:
