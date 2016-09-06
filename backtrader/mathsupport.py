@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import math
 
 
-def average(x, oneless=False):
+def average(x, bessel=False):
     '''
     Args:
       x: iterable with len
@@ -35,7 +35,7 @@ def average(x, oneless=False):
     Returns:
       A float with the average of the elements of x
     '''
-    return math.fsum(x) / (len(x) - oneless)
+    return math.fsum(x) / (len(x) - bessel)
 
 
 def variance(x):
@@ -50,15 +50,15 @@ def variance(x):
     return [pow(y - avgx, 2.0) for y in x]
 
 
-def standarddev(x, oneless=False):
+def standarddev(x, bessel=False):
     '''
     Args:
       x: iterable with len
 
-      oneless: (default ``False``) to be passed to the average to divide by ``N
-      - 1`` (Bessel's correction)
+      bessel: (default ``False``) to be passed to the average to divide by
+      ``N - 1`` (Bessel's correction)
 
     Returns:
       A float with the standard deviation of the elements of x
     '''
-    return math.sqrt(average(variance(x), oneless=oneless))
+    return math.sqrt(average(variance(x), bessel=bessel))
