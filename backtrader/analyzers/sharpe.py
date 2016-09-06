@@ -61,7 +61,7 @@ class SharpeRatio(Analyzer):
         If ``None``, the conversion factor for the riskfree rate from *annual*
         to the chosen timeframe will be chosen from a predefined table
 
-          Days: 256, Weeks: 52, Months: 12, Years: 1
+          Days: 252, Weeks: 52, Months: 12, Years: 1
 
         Else the specified value will be used
 
@@ -115,7 +115,7 @@ class SharpeRatio(Analyzer):
     )
 
     RATEFACTORS = {
-        TimeFrame.Days: 256,
+        TimeFrame.Days: 252,
         TimeFrame.Weeks: 52,
         TimeFrame.Months: 12,
         TimeFrame.Years: 1,
@@ -170,7 +170,7 @@ class SharpeRatio(Analyzer):
 
             # Get the excess returns - arithmetic mean - original sharpe
             ret_free_avg = average([r - rate for r in returns])
-            retdev = standarddev(returns, oneless=self.p.stddev_sample)
+            retdev = standarddev(returns, bessel=self.p.stddev_sample)
 
             ratio = ret_free_avg / retdev
 
