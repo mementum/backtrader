@@ -28,10 +28,17 @@ PyFolio
   .. automethod:: get_pf_items
 
 
+Returns
+*******
+
+.. autoclass:: Returns
+
+
 SharpeRatio
 ***********
 
 .. autoclass:: SharpeRatio
+
 
 SharpeRatio_A
 *************
@@ -61,3 +68,9 @@ Transactions
 ************
 
 .. autoclass:: Transactions
+
+
+VWR
+***
+
+.. autoclass:: VWR
