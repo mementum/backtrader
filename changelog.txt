@@ -3,8 +3,7 @@
     most used in the literature
   - Add Returns analyzer
   - Closes #137 Added VWR (VariabilityWeightedReturn) analyzer
-  - Fixes #141. optreturn must only be applied when optimizing
-  - Correct getting default value for ptfimeframe in pyfolio2 sample. Fixes #142
+  - Some documentation improvements/corrections
 
 1.8.12.99:
   - Rework SharpeRatio, add annualization and add SharpeRatio_A with default
