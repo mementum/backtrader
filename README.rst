@@ -41,6 +41,7 @@ Features:
 Live Trading and backtesting platform written in Python.
 
   - Live Data Feed and Trading with
+
     - Interactive Brokers (needs ``IbPy`` and benefits greatly from an
       installed ``pytz``)
     - *Visual Chart* (needs a fork of ``comtypes`` until a pull request is
