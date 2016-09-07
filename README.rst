@@ -171,3 +171,4 @@ cup of tea, you can always have a look at similar Python platforms:
   - `QSTrader <https://github.com/mhallsmoore/qstrader/>`_
   - `QSForex <https://github.com/mhallsmoore/qsforex>`_
   - `pysystemtrade <https://github.com/robcarver17/pysystemtrade>`_
+  - `QTPyLib <https://github.com/ranaroussi/qtpylib>`_
