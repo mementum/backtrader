@@ -145,6 +145,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return cls._NOTIFNAMES[status]
 
     _feed = None
+    _store = None
+
     _tmoffset = datetime.timedelta()
 
     # Set to non 0 if resampling/replaying
