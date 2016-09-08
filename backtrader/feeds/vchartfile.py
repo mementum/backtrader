@@ -52,6 +52,10 @@ class VChartFile(bt.with_metaclass(MetaVChartFile, bt.DataBase)):
 
     def start(self):
         super(VChartFile, self).start()
+        if self._store is None:
+            self._store = bt.stores.VChartFile()
+            self._store.start()
+
         self._store.start(data=self)
 
         # Choose extension and extraction/calculation parameters
