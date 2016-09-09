@@ -1,3 +1,8 @@
+1.8.14.99:
+  - README Updates
+  - Improvements to generic Store management and VChartfile
+  - Addresses time underflow/overflow in #143
+
 1.8.13.99:
   - Set annualization factor for days to 252 in SharpeRatio to match the value
     most used in the literature
