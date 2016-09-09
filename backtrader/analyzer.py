@@ -371,13 +371,26 @@ class TimeFrameAnalyzerBase(Analyzer):
             pm, psec = divmod(pm, 60 * 1e6)
             ps, pus = divmod(psec, 1e6)
 
+        extradays = 0
+        if ph > 23:  # went over midnight:
+            extradays = ph // 24
+            ph %= 24
+
         # moving 1 minor unit to the left to be in the boundary
-        pm -= self.timeframe == TimeFrame.Minutes
-        ps -= self.timeframe == TimeFrame.Seconds
-        pus -= self.timeframe == TimeFrame.MicroSeconds
+        # pm -= self.timeframe == TimeFrame.Minutes
+        # ps -= self.timeframe == TimeFrame.Seconds
+        # pus -= self.timeframe == TimeFrame.MicroSeconds
+
+        tadjust = datetime.timedelta(
+            minutes=self.timeframe == TimeFrame.Minutes,
+            seconds=self.timeframe == TimeFrame.Seconds,
+            microseconds=self.timeframe == TimeFrame.MicroSeconds)
 
         # Replace intraday parts with the calculated ones and update it
         dtcmp = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+        dtcmp -= tadjust
+        if extradays:
+            dt += datetime.timedelta(days=extradays)
         dtkey = dtcmp
 
         return dtcmp, dtkey
