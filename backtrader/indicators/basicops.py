@@ -103,7 +103,8 @@ class ReduceN(OperationN):
     Calculates the Reduced value of the ``period`` data points applying
     ``function``
 
-    Uses the built-in ``min`` for the calculation
+    Uses the built-in ``reduce`` for the calculation plus the ``func`` that
+    subclassess define
 
     Formula:
       - reduced = reduce(function(data, period)), initializer=initializer)
@@ -163,7 +164,7 @@ class AllN(OperationN):
     Uses the built-in ``all`` for the calculation
 
     Formula:
-      - anyn = any(data, period)
+      - alln = all(data, period)
     '''
     lines = ('alln',)
     func = all
