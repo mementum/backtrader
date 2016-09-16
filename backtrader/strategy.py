@@ -101,8 +101,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     csv = True
 
-    # This unnamed line is meant to allow having "len" and "forwarding"
-    extralines = 1
+    # keep the latest delivered data date in the line
+    lines = ('datetime',)
 
     def qbuffer(self, savemem=0):
         '''Enable the memory saving schemes. Possible values for ``savemem``:
