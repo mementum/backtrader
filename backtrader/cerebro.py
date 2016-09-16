@@ -1087,8 +1087,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 for i, dti in enumerate(dts):
                     if dti is not None and dti > dt0:
                         datas[i].rewind()  # cannot deliver yet
-                    else:
-                        datas[i]._tick_fill()  # deliver -> try filling tick
+                    elif not datas[i].replaying:
+                        # Replay forces tick fill, else force here
+                        datas[i]._tick_fill(force=True)
 
             elif d0ret is None:
                 # meant for things like live feeds which may not produce a bar
