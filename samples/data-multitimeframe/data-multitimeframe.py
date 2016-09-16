@@ -39,8 +39,14 @@ class SMAStrategy(bt.Strategy):
 
     def __init__(self):
         self.sma_small_tf = btind.SMA(self.data, period=self.p.period)
+        bt.indicators.MACD(self.data0)
+
         if not self.p.onlydaily:
             self.sma_large_tf = btind.SMA(self.data1, period=self.p.period)
+            bt.indicators.MACD(self.data1)
+
+    def prenext(self):
+        self.next()
 
     def nextstart(self):
         print('--------------------------------------------------')
@@ -48,6 +54,40 @@ class SMAStrategy(bt.Strategy):
         print('--------------------------------------------------')
 
         super(SMAStrategy, self).nextstart()
+
+    def next(self):
+        print('Strategy:', len(self))
+
+        txt = list()
+        txt.append('Data0')
+        txt.append('%04d' % len(self.data0))
+        dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
+        txt.append('{:f}'.format(self.data.datetime[0]))
+        txt.append('%s' % self.data.datetime.datetime(0).strftime(dtfmt))
+        # txt.append('{:f}'.format(self.data.open[0]))
+        # txt.append('{:f}'.format(self.data.high[0]))
+        # txt.append('{:f}'.format(self.data.low[0]))
+        txt.append('{:f}'.format(self.data.close[0]))
+        # txt.append('{:6d}'.format(int(self.data.volume[0])))
+        # txt.append('{:d}'.format(int(self.data.openinterest[0])))
+        # txt.append('{:f}'.format(self.sma_small[0]))
+        print(', '.join(txt))
+
+        if len(self.datas) > 1 and len(self.data1):
+            txt = list()
+            txt.append('Data1')
+            txt.append('%04d' % len(self.data1))
+            dtfmt = '%Y-%m-%dT%H:%M:%S.%f'
+            txt.append('{:f}'.format(self.data1.datetime[0]))
+            txt.append('%s' % self.data1.datetime.datetime(0).strftime(dtfmt))
+            # txt.append('{}'.format(self.data1.open[0]))
+            # txt.append('{}'.format(self.data1.high[0]))
+            # txt.append('{}'.format(self.data1.low[0]))
+            txt.append('{}'.format(self.data1.close[0]))
+            # txt.append('{}'.format(self.data1.volume[0]))
+            # txt.append('{}'.format(self.data1.openinterest[0]))
+            # txt.append('{}'.format(float('NaN')))
+            print(', '.join(txt))
 
 
 def runstrat():
@@ -123,10 +163,12 @@ def runstrat():
     # Run over everything
     cerebro.run(runonce=not args.runnext,
                 preload=not args.nopreload,
+                oldsync=args.oldsync,
                 stdstats=False)
 
     # Plot the result
-    cerebro.plot(style='bar')
+    if args.plot:
+        cerebro.plot(style='bar')
 
 
 def parse_args():
@@ -144,6 +186,9 @@ def parse_args():
 
     parser.add_argument('--nopreload', action='store_true',
                         help='Do not preload the data')
+
+    parser.add_argument('--oldsync', action='store_true',
+                        help='Use old data synchronization method')
 
     parser.add_argument('--oldrs', action='store_true',
                         help='Use old resampler')
@@ -169,6 +214,9 @@ def parse_args():
 
     parser.add_argument('--period', default=10, required=False, type=int,
                         help='Period to apply to indicator')
+
+    parser.add_argument('--plot', required=False, action='store_true',
+                        help='Plot the chart')
 
     return parser.parse_args()
 
