@@ -85,6 +85,16 @@ class MultiDataStrategy(bt.Strategy):
         if self.orderid:
             return  # if an order is active, no new orders are allowed
 
+        if self.p.printout:
+            print('Self  len:', len(self))
+            print('Data0 len:', len(self.data0))
+            print('Data1 len:', len(self.data1))
+            print('Data0 len == Data1 len:',
+                  len(self.data0) == len(self.data1))
+
+            print('Data0 dt:', self.data0.datetime.datetime())
+            print('Data1 dt:', self.data1.datetime.datetime())
+
         if not self.position:  # not yet in market
             if self.signal > 0.0:  # cross upwards
                 self.log('BUY CREATE , %.2f' % self.data1.close[0])
@@ -142,7 +152,9 @@ def runstrategy():
     cerebro.broker.setcommission(commission=args.commperc)
 
     # And run it
-    cerebro.run()
+    cerebro.run(runonce=not args.runnext,
+                preload=not args.nopreload,
+                oldsync=args.oldsync)
 
     # Plot if requested
     if args.plot:
@@ -174,8 +186,17 @@ def parse_args():
     parser.add_argument('--cash', default=100000, type=int,
                         help='Starting Cash')
 
+    parser.add_argument('--runnext', action='store_true',
+                        help='Use next by next instead of runonce')
+
+    parser.add_argument('--nopreload', action='store_true',
+                        help='Do not preload the data')
+
+    parser.add_argument('--oldsync', action='store_true',
+                        help='Use old data synchronization method')
+
     parser.add_argument('--commperc', default=0.005, type=float,
-                        help='Percentage commission for operation (0.005 is 0.5%%')
+                        help='Percentage commission (0.005 is 0.5%%')
 
     parser.add_argument('--stake', default=10, type=int,
                         help='Stake to apply in each operation')
