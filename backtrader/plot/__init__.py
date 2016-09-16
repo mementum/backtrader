@@ -30,5 +30,5 @@ else:
     matplotlib.use('TkAgg')
 
 
-from .plot import Plot
+from .plot import Plot, Plot_OldSync
 from .scheme import PlotScheme

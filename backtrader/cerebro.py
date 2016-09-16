@@ -609,7 +609,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if not plotter:
             from . import plot
-            plotter = plot.Plot(**kwargs)
+            if self.p.oldsync:
+                plotter = plot.Plot_OldSync(**kwargs)
+            else:
+                plotter = plot.Plot(**kwargs)
 
         for stratlist in self.runstrats:
             for strat in stratlist:
