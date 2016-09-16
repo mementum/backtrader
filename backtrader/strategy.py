@@ -235,12 +235,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         minperstatus = max(dlens)
         return minperstatus
 
-    def _oncepost(self):
+    def _oncepost(self, dt):
         for indicator in self._lineiterators[LineIterator.IndType]:
             if len(indicator._clock) > len(indicator):
                 indicator.advance()
 
         self.advance()
+        self.lines.datetime[0] = dt
         self._notify()
 
         minperstatus = self._getminperstatus()
@@ -259,6 +260,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def _next(self):
         super(Strategy, self)._next()
+
+        self.lines.datetime[0] = max(d.datetime[0]
+                                     for d in self.datas if len(d))
 
         minperstatus = self._getminperstatus()
         self._next_analyzers(minperstatus)

@@ -993,7 +993,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 return
 
             for strat in runstrats:
-                strat._oncepost()
+                # data0.datetime[0] for compat. w/ new strategy's oncepost
+                strat._oncepost(data0.datetime[0])
                 if self._event_stop:  # stop if requested
                     return
 
