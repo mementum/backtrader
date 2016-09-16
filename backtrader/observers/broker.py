@@ -29,6 +29,8 @@ class Cash(Observer):
 
     Params: None
     '''
+    _stclock = True
+
     lines = ('cash',)
 
     plotinfo = dict(plot=True, subplot=True)
@@ -43,6 +45,8 @@ class Value(Observer):
 
     Params: None
     '''
+    _stclock = True
+
     lines = ('value',)
 
     plotinfo = dict(plot=True, subplot=True)
@@ -57,6 +61,8 @@ class Broker(Observer):
 
     Params: None
     '''
+    _stclock = True
+
     alias = ('CashValue',)
     lines = ('cash', 'value')
 

@@ -30,6 +30,8 @@ class DrawDown(Observer):
 
     Params: None
     '''
+    _stclock = True
+
     lines = ('drawdown', 'maxdrawdown',)
 
     plotinfo = dict(plot=True, subplot=True)

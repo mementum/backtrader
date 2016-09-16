@@ -51,6 +51,7 @@ class TimeReturn(Observer):
     by looking at the *lines* by name at index ``0``.
 
     '''
+    _stclock = True
 
     lines = ('timereturn',)
     plotinfo = dict(plot=True, subplot=True)

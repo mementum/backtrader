@@ -35,6 +35,8 @@ class Trades(Observer):
 
     Params: None
     '''
+    _stclock = True
+
     lines = ('pnlplus', 'pnlminus')
 
     plotinfo = dict(plot=True, subplot=True,

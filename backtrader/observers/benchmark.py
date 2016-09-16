@@ -51,6 +51,8 @@ class Benchmark(TimeReturn):
     by looking at the *lines* by name at index ``0``.
 
     '''
+    _stclock = True
+
     lines = ('benchmark',)
     plotlines = dict(benchmark=dict(_name='Benchmark'))
 
