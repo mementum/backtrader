@@ -687,3 +687,7 @@ class DataClone(AbstractDataBase):
             line[0] = dline[0]
 
         return True
+
+    def advance(self, size=1, datamaster=None, ticks=True):
+        self._dlen += size
+        super(DataClone, self).advance(size, datamaster, ticks=ticks)
