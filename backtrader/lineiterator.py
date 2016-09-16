@@ -218,9 +218,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     bind2line = bind2lines
 
     def _next(self):
-        clock_len = len(self._clock)
-        if clock_len != len(self):
-            self.forward()
+        clock_len = self._clk_update()
 
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator._next()
@@ -246,6 +244,13 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                 self.nextstart()  # only called for the 1st value
             elif clock_len:
                 self.prenext()
+
+    def _clk_update(self):
+        clock_len = len(self._clock)
+        if clock_len != len(self):
+            self.forward()
+
+        return clock_len
 
     def _once(self):
         self.forward(size=self._clock.buflen())
