@@ -704,14 +704,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         possize = self.getposition(data, self.broker).size
         if target > possize:
-            # print('buy: target - possize:', target - possize)
             return self.buy(data=data, size=target - possize,
                             price=price, plimit=plimit,
                             exectype=exectype, valid=valid,
                             tradeid=tradeid, **kwargs)
 
         elif target < possize:
-            # print('sell: target - possize:', target - possize)
             return self.sell(data=data, size=possize - target,
                              price=price, plimit=plimit,
                              exectype=exectype, valid=valid,
