@@ -186,18 +186,33 @@ Brief outline of the flow of things:
 
   1. Ask data feeds to deliver the next set of ticks/bars
 
-     The 1st data inserted into the system is the ``datamaster`` and the system
-     will wait for it to deliver a tick
+     .. versionchanged:: 1.9.0.99
 
-     The other data feeds are, more or less, slaves to the ``datamaster`` and:
+	*New Behavior*
 
-       - If the next tick to deliver is newer (datetime-wise) than the one
-	 delivered by the ``datamaster`` it will not be delivered
+	Data Feeds are synchronized by peeking at the *datetime* which is going
+	to be provided next by available data feeds. Feeds which have not
+	traded in the new period still provide the old data points, whilst data
+	feeds which have new data available offer this one (along with the
+	calculation of indicators)
 
-       - May return without delivering a new tick for a number of reasons
+	*Old Behavior* (retained when using ``oldsync=True`` with *Cerebro*)
 
-       The logic was designed to easily synchronize multiple data feeds and
-       data feeds with different timeframes
+	The 1st data inserted into the system is the ``datamaster`` and the
+	system will wait for it to deliver a tick
+
+	The other data feeds are, more or less, slaves to the ``datamaster``
+	and:
+
+          - If the next tick to deliver is newer (datetime-wise) than the one
+	    delivered by the ``datamaster`` it will not be delivered
+
+          - May return without delivering a new tick for a number of reasons
+
+         The logic was designed to easily synchronize multiple data feeds and
+	 data feeds with different timeframes
+
+
 
   2. Notify the strategy about queued broker notifications of orders, trades
      and cash/value

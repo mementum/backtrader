@@ -100,6 +100,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     _ltype = LineIterator.StratType
 
     csv = True
+    _oldsync = False  # update clock using old methodology : data 0
 
     # keep the latest delivered data date in the line
     lines = ('datetime',)
@@ -240,7 +241,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             if len(indicator._clock) > len(indicator):
                 indicator.advance()
 
-        self.advance()
+        if self._oldsync:
+            # Strategy has not been reset, the line is there
+            self.advance()
+        else:
+            # strategy has been reset to beginning. advance step by step
+            self.forward()
+
         self.lines.datetime[0] = dt
         self._notify()
 
@@ -257,6 +264,18 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._next_observers(minperstatus, once=True)
 
         self.clear()
+
+    def _clk_update(self):
+        if self._oldsync:
+            return super(Strategy, self)._clk_update()
+
+        newdlens = [len(d) for d in self.datas]
+        if any(nl > l for l, nl in zip(self._dlens, newdlens)):
+            self.forward()
+
+        self._dlens = newdlens
+
+        return len(self)
 
     def _next(self):
         super(Strategy, self)._next()
@@ -281,7 +300,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                     analyzer._prenext()
 
             if once:
-                observer.advance()
+                if self._oldsync:
+                    observer.advance()
+                else:
+                    observer.forward()
+
                 if minperstatus < 0:
                     observer.next()
                 elif minperstatus == 0:
@@ -308,6 +331,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         # change operators to stage 2
         self._stage2()
+
+        self._dlens = [len(data) for data in self.datas]
 
         self.start()
 

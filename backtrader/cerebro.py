@@ -198,6 +198,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for all strategies. This can also be accomplished on a per strategy
         basis with the strategy method ``set_tradehistory``
 
+      - ``oldsync`` (default: ``False``)
+
+        Starting with release 1.9.0.99 the synchronization of multiple datas
+        (same or different timeframes) has been changed to allow datas of
+        different lengths.
+
+        If the old behavior with data0 as the master of the system is wished,
+        set this parameter to true
     '''
 
     params = (
@@ -214,6 +222,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('live', False),
         ('writer', False),
         ('tradehistory', False),
+        ('oldsync', False),
     )
 
     def __init__(self):
@@ -783,6 +792,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
             strat = stratcls(self, *sargs, **skwargs)
+            if self.p.oldsync:
+                strat._oldsync = True  # tell strategy to use old clock update
             if self.p.tradehistory:
                 strat.set_tradehistory()
             runstrats.append(strat)
@@ -825,9 +836,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
             writer.start()
 
         if self._dopreload and self._dorunonce:
-            self._runonce(runstrats)
+            if self.p.oldsync:
+                self._runonce_old(runstrats)
+            else:
+                self._runonce(runstrats)
         else:
-            self._runnext(runstrats)
+            if self.p.oldsync:
+                self._runnext_old(runstrats)
+            else:
+                self._runnext(runstrats)
 
         for strat in runstrats:
             strat._stop()
@@ -901,7 +918,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             owner._addnotification(order)
 
-    def _runnext(self, runstrats):
+    def _runnext_old(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
@@ -967,10 +984,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if self._event_stop:  # stop if requested
             return
 
-    def _runonce(self, runstrats):
+    def _runonce_old(self, runstrats):
         '''
         Actual implementation of run in vector mode.
-
         Strategies are still invoked on a pseudo-event mode in which ``next``
         is called for each data arrival
         '''
@@ -1018,3 +1034,139 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     writer.addvalues(wvalues)
 
                     writer.next()
+
+    def _runnext(self, runstrats):
+        '''
+        Actual implementation of run in full next mode. All objects have its
+        ``next`` method invoke on each data arrival
+        '''
+        datas = self.datas
+        datas1 = datas[1:]
+        data0 = self.datas[0]
+        d0ret = True
+        while d0ret or d0ret is None:
+            lastret = False
+            # Notify anything from the store even before moving datas
+            # because datas may not move due to an error reported by the store
+            self._storenotify()
+            if self._event_stop:  # stop if requested
+                return
+            self._datanotify()
+            if self._event_stop:  # stop if requested
+                return
+
+            drets = [d.next(ticks=False) for d in datas]
+            d0ret = any((dret for dret in drets))
+            if not d0ret and any((dret is None for dret in drets)):
+                d0ret = None
+
+            if d0ret:
+                dts = []
+                for i, ret in enumerate(drets):
+                    dts.append(datas[i].datetime.datetime() if ret else None)
+
+                # Get index to minimum datetime
+                dt0 = min((d for d in dts if d is not None))
+                dmaster = datas[dts.index(dt0)]  # and timemaster
+
+                # Try to get something for those that didn't return
+                for i, ret in enumerate(drets):
+                    if ret:  # dts already contains a valid datetime for this i
+                        continue
+
+                    # ty to get a
+                    d = datas[i]
+                    d._check(forcedata=dmaster)  # check to force output
+                    if d.next(datamaster=dmaster, ticks=False):  # retry
+                        dts[i] = d.datetime.datetime()  # good -> store
+
+                # make sure only those at dmaster level end up delivering
+                for i, dti in enumerate(dts):
+                    if dti is not None and dti > dt0:
+                        datas[i].rewind()  # cannot deliver yet
+                    else:
+                        datas[i]._tick_fill()  # deliver -> try filling tick
+
+            elif d0ret is None:
+                # meant for things like live feeds which may not produce a bar
+                # at the moment but need the loop to run for notifications and
+                # getting resample and others to produce timely bars
+                for data in datas:
+                    data._check()
+            else:
+                lastret = data0._last()
+                for data in datas1:
+                    lastret += data._last(datamaster=data0)
+
+                if not lastret:
+                    # Only go extra round if something was changed by "lasts"
+                    break
+
+            # Datas may have generated a new notification after next
+            self._datanotify()
+            if self._event_stop:  # stop if requested
+                return
+
+            self._brokernotify()
+            if self._event_stop:  # stop if requested
+                return
+
+            if d0ret or lastret:  # bars produced by data or filters
+                for strat in runstrats:
+                    strat._next()
+                    if self._event_stop:  # stop if requested
+                        return
+
+                    self._next_writers(runstrats)
+
+        # Last notification chance before stopping
+        self._datanotify()
+        if self._event_stop:  # stop if requested
+            return
+        self._storenotify()
+        if self._event_stop:  # stop if requested
+            return
+
+    def _runonce(self, runstrats):
+        '''
+        Actual implementation of run in vector mode.
+
+        Strategies are still invoked on a pseudo-event mode in which ``next``
+        is called for each data arrival
+        '''
+        for strat in runstrats:
+            strat._once()
+            strat.reset()  # strat called next by next - reset lines
+
+        # The default once for strategies does nothing and therefore
+        # has not moved forward all datas/indicators/observers that
+        # were homed before calling once, Hence no "need" to do it
+        # here again, because pointers are at 0
+        # data0 = self.datas[0]
+        # datas = self.datas[1:]
+        datas = self.datas
+        # for i in range(data0.buflen()):
+        while True:
+            # Check next incoming date in the datas
+            dts = [d.advance_peek() for d in self.datas]
+            dt0 = min(dts)
+            if dt0 == float('inf'):
+                break  # no data delivers anything
+
+            # Timemaster if needed be
+            # dmaster = datas[dts.index(dt0)]  # and timemaster
+
+            for i, dti in enumerate(dts):
+                if dti <= dt0:
+                    datas[i].advance()
+
+            self._brokernotify()
+            if self._event_stop:  # stop if requested
+                return
+
+            for strat in runstrats:
+                strat._oncepost(dt0)
+                if self._event_stop:  # stop if requested
+                    return
+
+                self._next_writers(runstrats)
