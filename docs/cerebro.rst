@@ -165,6 +165,12 @@ is used (a *strategy* was added with ``optstrategy``):
     ``result`` will be a ``list`` of ``list``. Each internal list will contain
     the strategies after each optimization run
 
+.. note:: The default behavior for *optimization* was changed to only return
+	  the *analyzers* present in the system, to make message passing across
+	  computer cores lighter.
+
+	  If the complete set of strategies is wished as return value, set the
+	  parameter ``optreturn`` to ``False``
 
 Giving access to the plotting facilities
 ****************************************
