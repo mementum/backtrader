@@ -288,7 +288,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _tick_fill(self, force=False):
         # If nothing filled the tick_xxx attributes, the bar is the tick
         alias0 = self._getlinealias(0)
-        if force or getattr(self, 'tick_', alias0) is None:
+        if force or getattr(self, 'tick_' + alias0, None) is None:
             for lalias in self.getlinealiases():
                 if lalias != 'datetime':
                     setattr(self, 'tick_' + lalias,
