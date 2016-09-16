@@ -303,7 +303,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return float('inf')  # max date else
 
     def advance(self, size=1, datamaster=None, ticks=True):
-        self._tick_nullify()
+        if ticks:
+            self._tick_nullify()
 
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
@@ -345,7 +346,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                     self._tick_fill()
                 return ret
         else:
-            self.advance()
+            self.advance(ticks=ticks)
 
         # a bar is "loaded" or was preloaded - index has been moved to it
         if datamaster is not None:
@@ -355,10 +356,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 self.rewind()
             else:
                 self.mlen.append(len(datamaster) - 1)
-                self._tick_fill()
+                if ticks:
+                    self._tick_fill()
 
         else:
-            self._tick_fill()
+            if ticks:
+                self._tick_fill()
 
         # tell the world there is a bar (either the new or the previous
         return True
