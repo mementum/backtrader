@@ -296,7 +296,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
             self.tick_last = getattr(self.lines, alias0)[0]
 
-    def advance(self, size=1, datamaster=None):
+    def advance(self, size=1, datamaster=None, ticks=True):
         self._tick_nullify()
 
         # Need intercepting this call to support datas with
@@ -314,15 +314,18 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 self.lines.rewind()
             else:
                 self.mlen.append(len(datamaster) - 1)
-                self._tick_fill()
+                if ticks:
+                    self._tick_fill()
         elif len(self) < self.buflen():
             # a resampler may have advance us past the last point
-            self._tick_fill()
+            if ticks:
+                self._tick_fill()
 
-    def next(self, datamaster=None):
+    def next(self, datamaster=None, ticks=True):
 
         if len(self) >= self.buflen():
-            self._tick_nullify()
+            if ticks:
+                self._tick_nullify()
 
             # not preloaded - request next bar
             ret = self.load()
@@ -332,7 +335,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
             if datamaster is None:
                 # bar is there and no master ... return load's result
-                self._tick_fill()
+                if ticks:
+                    self._tick_fill()
                 return ret
         else:
             self.advance()
