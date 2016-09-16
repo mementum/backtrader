@@ -33,8 +33,19 @@ class MetaObserver(ObserverBase.__class__):
 
         return _obj, args, kwargs  # return the instantiated object and args
 
+    def dopreinit(cls, _obj, *args, **kwargs):
+        _obj, args, kwargs = \
+            super(MetaObserver, cls).dopreinit(_obj, *args, **kwargs)
+
+        if _obj._stclock:  # Change clock if strategy wide observer
+            _obj._clock = _obj._owner
+
+        return _obj, args, kwargs
+
 
 class Observer(with_metaclass(MetaObserver, ObserverBase)):
+    _stclock = False
+
     _OwnerCls = StrategyBase
     _ltype = LineIterator.ObsType
 
