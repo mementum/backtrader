@@ -1066,7 +1066,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if d0ret:
                 dts = []
                 for i, ret in enumerate(drets):
-                    dts.append(datas[i].datetime.datetime() if ret else None)
+                    dts.append(datas[i].datetime[0] if ret else None)
 
                 # Get index to minimum datetime
                 dt0 = min((d for d in dts if d is not None))
@@ -1077,11 +1077,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     if ret:  # dts already contains a valid datetime for this i
                         continue
 
-                    # ty to get a
+                    # try to get a data by checking with a master
                     d = datas[i]
                     d._check(forcedata=dmaster)  # check to force output
                     if d.next(datamaster=dmaster, ticks=False):  # retry
-                        dts[i] = d.datetime.datetime()  # good -> store
+                        dts[i] = d.datetime[0]  # good -> store
 
                 # make sure only those at dmaster level end up delivering
                 for i, dti in enumerate(dts):
