@@ -594,7 +594,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, **kwargs):
+    def plot(self, plotter=None, numfigs=1, iplot=True, useplotly=False,
+             **kwargs):
         '''
         Plots the strategies inside cerebro
 
@@ -603,6 +604,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         ``numfigs`` split the plot in the indicated number of charts reducing
         chart density if wished
+
+        ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
+        displayed inline
+
         '''
         if self._exactbars > 0:
             return
@@ -614,11 +619,35 @@ class Cerebro(with_metaclass(MetaParams, object)):
             else:
                 plotter = plot.Plot(**kwargs)
 
+        if useplotly:
+            try:
+                from plotly import __version__ as plyversion
+            except ImportError:
+                useplotly = False
+            else:
+                numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
+
         for stratlist in self.runstrats:
             for strat in stratlist:
-                plotter.plot(strat, numfigs=numfigs)
+                plotter.plot(strat, numfigs=numfigs, iplot=iplot,
+                             useplotly=useplotly)
 
         plotter.show()
+
+    def plotly(self, plotter=None, numfigs=1, **kwargs):
+        '''
+        Plots the strategies inside cerebro in plotly offline if available
+
+        If ``plotter`` is None a default ``Plot`` instance is created and
+        ``kwargs`` are passed to it during instantiation.
+
+        ``numfigs`` split the plot in the indicated number of charts reducing
+        chart density if wished
+
+          If ``plotly`` is really available this will be capped down to 1 to
+          let plotly take over and control those features
+        '''
+        self.plot(plotter=plotter, numfigs=numfigs, useplotly=True, **kwargs)
 
     def __call__(self, iterstrat):
         '''

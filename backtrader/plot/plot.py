@@ -25,13 +25,15 @@ import bisect
 import collections
 import itertools
 import math
+import sys
 
 from ..utils.py3 import range, with_metaclass
 
+import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
-import matplotlib.pyplot as mpyplot
+# import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
 
 from ..utils import OrderedDict
@@ -63,7 +65,7 @@ class PInfo(object):
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
-    def newfig(self, numfig):
+    def newfig(self, numfig, mpyplot):
         fig = mpyplot.figure(numfig)
         self.figs.append(fig)
         self.daxis = OrderedDict()
@@ -108,12 +110,20 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, numfigs=1):
+    def plot(self, strategy, numfigs=1, iplot=True, useplotly=False):
         if not strategy.datas:
             return
 
         if not len(strategy):
             return
+
+        if iplot:
+            if 'ipykernel' in sys.modules:
+                matplotlib.use('nbagg')
+
+        # this import must not happen before matplotlib.use
+        import matplotlib.pyplot as mpyplot
+        self.mpyplot = mpyplot
 
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)
@@ -132,7 +142,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         for numfig in range(numfigs):
             # prepare a figure
-            fig = self.pinf.newfig(numfig)
+            fig = self.pinf.newfig(numfig, self.mpyplot)
 
             self.pinf.pstart, self.pinf.pend, self.pinf.psize = pranges[numfig]
             self.pinf.xstart = self.pinf.pstart
@@ -201,15 +211,15 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 fig.autofmt_xdate(bottom=0.25, rotation=0)
             elif True:
                 for ax in self.pinf.daxis.values():
-                    mpyplot.setp(ax.get_xticklabels(), visible=False)
+                    self.mpyplot.setp(ax.get_xticklabels(), visible=False)
                     # ax.autoscale_view(tight=True)
-                mpyplot.setp(lastax.get_xticklabels(),
-                             visible=True,
-                             rotation=self.pinf.sch.tickrotation)
+                self.mpyplot.setp(lastax.get_xticklabels(),
+                                  visible=True,
+                                  rotation=self.pinf.sch.tickrotation)
 
             # Things must be tight along the x axis (to fill both ends)
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
-            mpyplot.autoscale(enable=True, axis=axtight, tight=True)
+            self.mpyplot.autoscale(enable=True, axis=axtight, tight=True)
 
     def setlocators(self, data):
         ax = list(self.pinf.daxis.values())[-1]
@@ -286,8 +296,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.pinf.nrows = nrows
 
     def newaxis(self, obj, rowspan):
-        ax = mpyplot.subplot2grid((self.pinf.nrows, 1), (self.pinf.row, 0),
-                                  rowspan=rowspan, sharex=self.pinf.sharex)
+        ax = self.mpyplot.subplot2grid(
+            (self.pinf.nrows, 1), (self.pinf.row, 0),
+            rowspan=rowspan, sharex=self.pinf.sharex)
 
         # update the sharex information if not available
         if self.pinf.sharex is None:
@@ -634,7 +645,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                              downinds=self.dplotsdown[downind])
 
     def show(self):
-        mpyplot.show()
+        self.mpyplot.show()
 
     def sortdataindicators(self, strategy):
         # These lists/dictionaries hold the subplots that go above each data
@@ -729,12 +740,22 @@ class Plot(with_metaclass(MetaParams, object)):
         self.pinf.xlen[obj] = xlen = len(xreal)
         self.pinf.x[obj] = list(range(xlen))
 
-    def plot(self, strategy, numfigs=1):
+    def plot(self, strategy, numfigs=1, iplot=True, useplotly=False):
         if not strategy.datas:
             return
 
         if not len(strategy):
             return
+
+        self.useplotly = useplotly
+
+        if iplot:
+            if 'ipykernel' in sys.modules:
+                matplotlib.use('nbagg')
+
+        # this import must not happen before matplotlib.use
+        import matplotlib.pyplot as mpyplot
+        self.mpyplot = mpyplot
 
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)
@@ -753,7 +774,7 @@ class Plot(with_metaclass(MetaParams, object)):
 
         for numfig in range(numfigs):
             # prepare a figure
-            fig = self.pinf.newfig(numfig)
+            fig = self.pinf.newfig(numfig, self.mpyplot)
 
             self.psizes(strategy, numfig, numfigs)
 
@@ -803,7 +824,7 @@ class Plot(with_metaclass(MetaParams, object)):
             ax.patch.set_visible(False)
             ax.yaxis.set_visible(False)
 
-            for spinename, spine in ax.spines.iteritems():
+            for spinename, spine in ax.spines.items():
                 if spinename != 'bottom':
                     spine.set_visible(False)
 
@@ -835,15 +856,15 @@ class Plot(with_metaclass(MetaParams, object)):
             # Applying the manual rotation with setp cures the problem
             # but the labels from all axis but the last have to be hidden
             for ax in self.pinf.daxis.values():
-                mpyplot.setp(ax.get_xticklabels(), visible=False)
+                self.mpyplot.setp(ax.get_xticklabels(), visible=False)
                 # ax.autoscale_view()
-            mpyplot.setp(lastax.get_xticklabels(),
-                         visible=True,
-                         rotation=self.pinf.sch.tickrotation)
+            self.mpyplot.setp(lastax.get_xticklabels(),
+                              visible=True,
+                              rotation=self.pinf.sch.tickrotation)
 
             # Things must be tight along the x axis (to fill both ends)
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
-            mpyplot.autoscale(enable=True, axis=axtight, tight=True)
+            self.mpyplot.autoscale(enable=True, axis=axtight, tight=True)
 
             cursor = MultiCursor(
                 fig.canvas, list(self.pinf.daxis.values()),
@@ -939,8 +960,9 @@ class Plot(with_metaclass(MetaParams, object)):
         self.pinf.nrows = nrows
 
     def newaxis(self, obj, rowspan, sharex=None):
-        ax = mpyplot.subplot2grid((self.pinf.nrows, 1), (self.pinf.row, 0),
-                                  rowspan=rowspan, sharex=sharex)
+        ax = self.mpyplot.subplot2grid(
+            (self.pinf.nrows, 1), (self.pinf.row, 0),
+            rowspan=rowspan, sharex=sharex)
 
         # update the row index with the taken rows
         self.pinf.row += rowspan
@@ -1313,7 +1335,7 @@ class Plot(with_metaclass(MetaParams, object)):
         return ax
 
     def show(self):
-        mpyplot.show()
+        self.mpyplot.show()
 
     def sortdataindicators(self, strategy):
         # These lists/dictionaries hold the subplots that go above each data

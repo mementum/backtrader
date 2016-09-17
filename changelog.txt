@@ -1,7 +1,6 @@
-1.9.0.99:
-  - Data Time Synchronization rework
-  - oldsync param in cerebro to use old data time synchronization
-  - Some documentation updates
+1.9.1.99:
+  - Automatic inline plotting if running inside a notebook
+  - Correct new plotting code for Python 3
 
 1.8.14.99:
   - README Updates
