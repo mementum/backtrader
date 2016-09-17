@@ -803,7 +803,7 @@ class Plot(with_metaclass(MetaParams, object)):
             ax.patch.set_visible(False)
             ax.yaxis.set_visible(False)
 
-            for spinename, spine in ax.spines.iteritems():
+            for spinename, spine in ax.spines.items():
                 if spinename != 'bottom':
                     spine.set_visible(False)
 
