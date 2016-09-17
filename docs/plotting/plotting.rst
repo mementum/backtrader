@@ -341,7 +341,7 @@ System-wide plotting options
 
 First the *signature* of ``plot`` within cerebro::
 
-    def plot(self, plotter=None, numfigs=1, **kwargs):
+    def plot(self, plotter=None, numfigs=1, iplot=True, **kwargs):
 
 Which means:
 
@@ -356,6 +356,8 @@ Which means:
     Sometimes a chart contains too many bars and will not be easily readable if
     packed in a single figure. This breaks it down in as many pieces as
     requested
+
+  - ``iplot``: automatically plot inline if running inside a Jupyter Notebook
 
   - ``**kwargs``: the args will be used to change the values of the attributes
     of ``plotter`` or the default ``PlotScheme`` object created if no
