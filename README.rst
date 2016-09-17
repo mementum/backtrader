@@ -29,14 +29,11 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
+**Release 1.9.1.99**: `Notebook - Automatic Inline Plotting
+<http://www.backtrader.com/posts/2016-09-17-notebook-inline/notebook-inline/>`_
+
 **Release 1.9.0.99**: `Data Synchronization Rework
 <http://www.backtrader.com/posts/2016-09-17-data-synchronization/data-synchronization/>`_
-
-**Release 1.8.12.99**: `Optimization Improvements
-<http://www.backtrader.com/posts/2016-09-05-optimization-improvements/optimization-improvements/>`_
-
-**Release 1.8.11.99**: `Target Orders
-<http://www.backtrader.com/posts/2016-09-02-target-orders/target-orders/>`_
 
 Features:
 =========
