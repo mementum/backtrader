@@ -65,8 +65,9 @@ class PInfo(object):
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
-    def newfig(self, numfig, mpyplot):
-        fig = mpyplot.figure(numfig)
+    def newfig(self, figid, numfig, mpyplot):
+        print('new figure with:', figid + numfig)
+        fig = mpyplot.figure(figid + numfig)
         self.figs.append(fig)
         self.daxis = OrderedDict()
         self.ldaxis.append(self.daxis)
@@ -110,7 +111,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, numfigs=1, iplot=True, useplotly=False):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
         if not strategy.datas:
             return
 
@@ -140,9 +141,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             pranges.append([a, b, d])
 
+        figs = []
         for numfig in range(numfigs):
             # prepare a figure
-            fig = self.pinf.newfig(numfig, self.mpyplot)
+            fig = self.pinf.newfig(figid, numfig, self.mpyplot)
+            figs.append(fig)
 
             self.pinf.pstart, self.pinf.pend, self.pinf.psize = pranges[numfig]
             self.pinf.xstart = self.pinf.pstart
@@ -220,6 +223,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # Things must be tight along the x axis (to fill both ends)
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
             self.mpyplot.autoscale(enable=True, axis=axtight, tight=True)
+
+        return figs
 
     def setlocators(self, data):
         ax = list(self.pinf.daxis.values())[-1]
@@ -740,7 +745,7 @@ class Plot(with_metaclass(MetaParams, object)):
         self.pinf.xlen[obj] = xlen = len(xreal)
         self.pinf.x[obj] = list(range(xlen))
 
-    def plot(self, strategy, numfigs=1, iplot=True, useplotly=False):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
         if not strategy.datas:
             return
 
@@ -772,9 +777,11 @@ class Plot(with_metaclass(MetaParams, object)):
         self.pinf.x = dict()
         self.pinf.clock = strategy
 
+        figs = []
         for numfig in range(numfigs):
             # prepare a figure
-            fig = self.pinf.newfig(numfig, self.mpyplot)
+            fig = self.pinf.newfig(figid, numfig, self.mpyplot)
+            figs.append(fig)
 
             self.psizes(strategy, numfig, numfigs)
 
@@ -875,6 +882,8 @@ class Plot(with_metaclass(MetaParams, object)):
                 color='black', lw=1, ls=':')
 
             self.pinf.cursors.append(cursor)
+
+        return figs
 
     def setlocators(self, data):
         ax = list(self.pinf.daxis.values())[-1]
