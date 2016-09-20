@@ -1,3 +1,7 @@
+1.9.2.99:
+  - Correct plotting for multi strategy approach
+  - Make Crossover plot like any other indicator
+
 1.9.1.99:
   - Automatic inline plotting if running inside a notebook
   - Correct new plotting code for Python 3
