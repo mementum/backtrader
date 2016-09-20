@@ -609,6 +609,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         displayed inline
 
         '''
+        print('entering plot')
+
         if self._exactbars > 0:
             return
 
@@ -627,12 +629,17 @@ class Cerebro(with_metaclass(MetaParams, object)):
             else:
                 numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
 
+        figs = []
         for stratlist in self.runstrats:
-            for strat in stratlist:
-                plotter.plot(strat, numfigs=numfigs, iplot=iplot,
-                             useplotly=useplotly)
+            for si, strat in enumerate(stratlist):
+                rfig = plotter.plot(strat, figid=si * 100,
+                                    numfigs=numfigs, iplot=iplot,
+                                    useplotly=useplotly)
 
-        plotter.show()
+                figs.append(rfig)
+
+            plotter.show()
+        return figs
 
     def plotly(self, plotter=None, numfigs=1, **kwargs):
         '''
