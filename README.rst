@@ -173,4 +173,4 @@ not your cup of tea, you can always have a look at similar Python platforms:
   - `QSForex <https://github.com/mhallsmoore/qsforex>`_
   - `pysystemtrade <https://github.com/robcarver17/pysystemtrade>`_
   - `QTPyLib <https://github.com/ranaroussi/qtpylib>`_
-  - `RQalpha <https://github.com/ricequant/rqalphaa>`_
+  - `RQalpha <https://github.com/faruto/rqalpha>`_
