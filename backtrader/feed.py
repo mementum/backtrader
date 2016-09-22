@@ -609,6 +609,17 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
             self.f.close()
             self.f = None
 
+    def preload(self):
+        while self.load():
+            pass
+
+        self._last()
+        self.home()
+
+        # preloaded - no need to keep the object around - breaks multip in 3.x
+        self.f.close()
+        self.f = None
+
     def _load(self):
         if self.f is None:
             return False
