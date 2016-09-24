@@ -79,9 +79,6 @@ class Trades(Observer):
 
     def next(self):
         for trade in self._owner._tradespending:
-            if trade.data is not self.data:
-                continue
-
             if not trade.isclosed:
                 continue
 
