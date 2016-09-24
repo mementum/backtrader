@@ -252,6 +252,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def clone(self, **kwargs):
         return DataClone(dataname=self, **kwargs)
 
+    def copyas(self, _dataname, **kwargs):
+        d = DataClone(dataname=self, **kwargs)
+        d._dataname = _dataname
+        return d
+
     def setenvironment(self, env):
         '''Keep a reference to the environment'''
         self._env = self
