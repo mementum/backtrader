@@ -78,7 +78,6 @@ class Trades(Observer):
         self.trades_length_min = 0
 
     def next(self):
-
         for trade in self._owner._tradespending:
             if trade.data not in self.datas:
                 continue
@@ -91,30 +90,4 @@ class Trades(Observer):
             else:
                 self.lines.pnlminus[0] = trade.pnl
 
-            if False:
-                self.trades_long += trade.long
-                self.trades_short += not trade.long
 
-                self.trades_plus += trade.pnl > 0
-                self.trades_minus += trade.pnl < 0
-
-                self.trades_plus_gross += trade.pnlcomm > 0
-                self.trades_minus_gross += trade.pnlcomm < 0
-
-                if trade.pnl >= 0:
-                    w = self.trades_win * self.trades + trade.pnl
-                    self.trades_win = w / (self.trades + 1)
-                    self.trades_win_max = max(self.trades_win_max, trade.pnl)
-                    self.trades_win_min = min(self.trades_win_min, trade.pnl)
-                elif trade.pnl < 0:
-                    l = self.trades_loss * self.trades + trade.pnl
-                    self.trades_loss = l / (self.trades + 1)
-                    self.trades_loss_max = max(self.trades_loss_max, trade.pnl)
-                    self.trades_loss_min = min(self.trades_loss_min, trade.pnl)
-
-                l = self.trades_length * self.trades + trade.barlen
-                self.trades_length = l / (self.trades + 1)
-                self.trades_length_max = max(self.trades_length_max, trade.barlen)
-                self.trades_length_min = min(self.trades_length_min, trade.barlen)
-
-                self.trades += 1
