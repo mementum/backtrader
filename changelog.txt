@@ -1,3 +1,10 @@
+1.9.3.99:
+  - copyas method in data feeds to let a clone data be seen differently in the
+    broker
+  - Count trades on strategy basis and not main data basis
+  - Add RQAlpha link
+  - Fixes #153 by closing file descriptors after preloading
+
 1.9.2.99:
   - Correct plotting for multi strategy approach
   - Make Crossover plot like any other indicator
