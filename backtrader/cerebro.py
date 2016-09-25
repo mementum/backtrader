@@ -609,8 +609,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         displayed inline
 
         '''
-        print('entering plot')
-
         if self._exactbars > 0:
             return
 
