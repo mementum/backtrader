@@ -1,3 +1,7 @@
+1.9.4.99
+  - Add DataTrades Observer to plot the trades of multiple datas independently
+  - Make this observer the default in cerebro (old behavior via oldtrades=True)
+
 1.9.3.99:
   - copyas method in data feeds to let a clone data be seen differently in the
     broker
