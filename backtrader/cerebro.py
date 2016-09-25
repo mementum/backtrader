@@ -96,6 +96,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
           given moment in time is. This will of course be on top of an OHLC bar
           or on a Line on Cloe bar, difficulting the recognition of the plot.
 
+      - ``oldtrades`` (default: ``False``)
+
+        If ``stdstats`` is ``True`` and observers are getting automatically
+        added, this switch controls the main behavior of the ``Trades``
+        observer
+
+        - ``False``: use the modern behavior in which trades for all datas are
+          plotted with different markers
+
+        - ``True``: use the old Trades observer which plots the trades with the
+          same markers, differentiating only if they are positive or negative
+
       - ``exactbars`` (default: ``False``)
 
         With the default value each and every value stored in a line is kept in
@@ -214,6 +226,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('maxcpus', None),
         ('stdstats', True),
         ('oldbuysell', False),
+        ('oldtrades', False),
         ('lookahead', 0),
         ('exactbars', False),
         ('optdatas', True),
@@ -844,7 +857,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     strat._addobserver(True, observers.BuySell)
                 else:
                     strat._addobserver(True, observers.BuySell, barplot=True)
-                strat._addobserver(False, observers.Trades)
+
+                if self.p.oldtrades:
+                    strat._addobserver(False, observers.Trades)
+                else:
+                    strat._addobserver(False, observers.DataTrades)
 
             for multi, obscls, obsargs, obskwargs in self.observers:
                 strat._addobserver(multi, obscls, *obsargs, **obskwargs)
