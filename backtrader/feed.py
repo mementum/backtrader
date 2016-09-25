@@ -255,6 +255,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def copyas(self, _dataname, **kwargs):
         d = DataClone(dataname=self, **kwargs)
         d._dataname = _dataname
+        d._name = _dataname
         return d
 
     def setenvironment(self, env):
