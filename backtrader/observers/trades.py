@@ -78,7 +78,11 @@ class Trades(Observer):
         self.trades_length_min = 0
 
     def next(self):
+
         for trade in self._owner._tradespending:
+            if trade.data not in self.datas:
+                continue
+
             if not trade.isclosed:
                 continue
 
