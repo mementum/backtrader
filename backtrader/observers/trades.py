@@ -133,6 +133,8 @@ class MetaDataTrades(Observer.__class__):
 
 
 class DataTrades(with_metaclass(MetaDataTrades, Observer)):
+    _stclock = True
+
     params = (('usenames', True),)
 
     plotinfo = dict(plot=True, subplot=True, plothlines=[0.0])
