@@ -1,3 +1,8 @@
+1.9.5.99
+  - Improve data synchronization behavior
+  - Make new DataTrades synchronize to strategy
+  - Correct TimeFrameAnalyzerBase to synchronize with strategy
+
 1.9.4.99
   - Add DataTrades Observer to plot the trades of multiple datas independently
   - Make this observer the default in cerebro (old behavior via oldtrades=True)
