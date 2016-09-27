@@ -300,7 +300,8 @@ class TimeFrameAnalyzerBase(Analyzer):
         if self.timeframe == TimeFrame.NoTimeFrame:
             dtcmp, dtkey = MAXINT, datetime.datetime.max
         else:
-            dt = self.data.datetime.datetime()
+            # With >= 1.9.x the system datetime is in the strategy
+            dt = self.strategy.datetime.datetime()
             dtcmp, dtkey = self._get_dt_cmpkey(dt)
 
         if dtcmp > self.dtcmp:
