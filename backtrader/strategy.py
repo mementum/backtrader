@@ -267,21 +267,23 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def _clk_update(self):
         if self._oldsync:
-            return super(Strategy, self)._clk_update()
+            clk_len = super(Strategy, self)._clk_update()
+            self.lines.datetime[0] = max(d.datetime[0]
+                                         for d in self.datas if len(d))
+            return clk_len
 
         newdlens = [len(d) for d in self.datas]
         if any(nl > l for l, nl in zip(self._dlens, newdlens)):
             self.forward()
 
+        self.lines.datetime[0] = max(d.datetime[0]
+                                     for d in self.datas if len(d))
         self._dlens = newdlens
 
         return len(self)
 
     def _next(self):
         super(Strategy, self)._next()
-
-        self.lines.datetime[0] = max(d.datetime[0]
-                                     for d in self.datas if len(d))
 
         minperstatus = self._getminperstatus()
         self._next_analyzers(minperstatus)
