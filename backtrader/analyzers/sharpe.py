@@ -169,8 +169,10 @@ class SharpeRatio(Analyzer):
                     returns = [pow(1.0 + x, factor) - 1.0 for x in returns]
 
             # Get the excess returns - arithmetic mean - original sharpe
-            ret_free_avg = average([r - rate for r in returns])
-            retdev = standarddev(returns, bessel=self.p.stddev_sample)
+            ret_free = [r - rate for r in returns]
+            ret_free_avg = average(ret_free)
+            retdev = standarddev(ret_free, avgx=ret_free_avg,
+                                 bessel=self.p.stddev_sample)
 
             ratio = ret_free_avg / retdev
 
