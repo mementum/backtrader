@@ -640,12 +640,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
             else:
                 numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
 
+        pfillers = {self.datas[i]: self._plotfillers[i]
+                    for i, x in enumerate(self._plotfillers)}
         figs = []
         for stratlist in self.runstrats:
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    useplotly=useplotly)
+                                    useplotly=useplotly,
+                                    pfillers=pfillers)
 
                 figs.append(rfig)
 
@@ -829,6 +832,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for writer in self.runwriters:
                 if writer.p.csv:
                     writer.addheaders(wheaders)
+
+        self._plotfillers = [list() for d in self.datas]
 
         if not predata:
             for data in self.datas:
@@ -1098,6 +1103,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         datas1 = datas[1:]
         data0 = self.datas[0]
         d0ret = True
+
         while d0ret or d0ret is None:
             lastret = False
             # Notify anything from the store even before moving datas
@@ -1133,11 +1139,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     d._check(forcedata=dmaster)  # check to force output
                     if d.next(datamaster=dmaster, ticks=False):  # retry
                         dts[i] = d.datetime[0]  # good -> store
+                    else:
+                        self._plotfillers[i].append(slen)  # mark as empty
 
                 # make sure only those at dmaster level end up delivering
+                slen = len(runstrats[0])
                 for i, dti in enumerate(dts):
                     if dti is not None and dti > dt0:
                         datas[i].rewind()  # cannot deliver yet
+                        self._plotfillers[i].append(slen)
                     elif not datas[i].replaying:
                         # Replay forces tick fill, else force here
                         datas[i]._tick_fill(force=True)
@@ -1197,10 +1207,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # has not moved forward all datas/indicators/observers that
         # were homed before calling once, Hence no "need" to do it
         # here again, because pointers are at 0
-        # data0 = self.datas[0]
-        # datas = self.datas[1:]
         datas = self.datas
-        # for i in range(data0.buflen()):
         while True:
             # Check next incoming date in the datas
             dts = [d.advance_peek() for d in self.datas]
@@ -1210,10 +1217,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             # Timemaster if needed be
             # dmaster = datas[dts.index(dt0)]  # and timemaster
-
+            slen = len(runstrats[0])
             for i, dti in enumerate(dts):
                 if dti <= dt0:
                     datas[i].advance()
+                else:
+                    self._plotfillers[i].append(slen)
 
             self._brokernotify()
             if self._event_stop:  # stop if requested
