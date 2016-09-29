@@ -27,24 +27,21 @@ import itertools
 import math
 import sys
 
-from ..utils.py3 import range, with_metaclass
-
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
-# import matplotlib.pyplot as mpyplot
 import matplotlib.ticker as mticker
 
-from ..utils import OrderedDict
-
+from ..utils.py3 import range, with_metaclass
 from .. import AutoInfoClass, MetaParams, TimeFrame
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
+from . import locator as loc
+from .multicursor import MultiCursor
 from .scheme import PlotScheme
 from .utils import tag_box_style
-from .multicursor import MultiCursor
 
 
 class PInfo(object):
@@ -58,8 +55,8 @@ class PInfo(object):
         self.sharex = None
         self.figs = list()
         self.cursors = list()
-        self.daxis = OrderedDict()
-        self.ldaxis = list()
+        self.daxis = collections.OrderedDict()
+        self.vaxis = list()
         self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
 
@@ -68,8 +65,8 @@ class PInfo(object):
     def newfig(self, figid, numfig, mpyplot):
         fig = mpyplot.figure(figid + numfig)
         self.figs.append(fig)
-        self.daxis = OrderedDict()
-        self.ldaxis.append(self.daxis)
+        self.daxis = collections.OrderedDict()
+        self.vaxis = list()
         self.row = 0
         self.sharex = None
         return fig
@@ -110,7 +107,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False,
+             pfillers={}):
         if not strategy.datas:
             return
 
@@ -141,6 +139,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             pranges.append([a, b, d])
 
         figs = []
+
         for numfig in range(numfigs):
             # prepare a figure
             fig = self.pinf.newfig(figid, numfig, self.mpyplot)
@@ -150,21 +149,27 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.pinf.xstart = self.pinf.pstart
             self.pinf.xend = self.pinf.pend
 
-            self.pinf.clock = strategy._clock
-            self.pinf.xreal = strategy._clock.datetime.plot(
+            self.pinf.clock = strategy
+            self.pinf.xreal = self.pinf.clock.datetime.plot(
                 self.pinf.pstart, self.pinf.psize)
             self.pinf.xlen = len(self.pinf.xreal)
             self.pinf.x = list(range(self.pinf.xlen))
+            self.pinf.pfillers = {None: []}
+            for key, val in pfillers.items():
+                pfstart = bisect.bisect_left(val, self.pinf.pstart)
+                pfend = bisect.bisect_right(val, self.pinf.pend)
+                self.pinf.pfillers[key] = val[pfstart:pfend]
 
             # Do the plotting
             # Things that go always at the top (observers)
             for ptop in self.dplotstop:
-                self.plotind(ptop, subinds=self.dplotsover[ptop])
+                self.plotind(None, ptop, subinds=self.dplotsover[ptop])
 
             # Create the rest on a per data basis
             for data in strategy.datas:
                 for ind in self.dplotsup[data]:
                     self.plotind(
+                        data,
                         ind,
                         subinds=self.dplotsover[ind],
                         upinds=self.dplotsup[ind],
@@ -174,6 +179,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
                 for ind in self.dplotsdown[data]:
                     self.plotind(
+                        data,
                         ind,
                         subinds=self.dplotsover[ind],
                         upinds=self.dplotsup[ind],
@@ -189,35 +195,32 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             self.pinf.cursors.append(cursor)
 
-            lastax = list(self.pinf.daxis.values())[-1]
-            # Date formatting for the x axis - only the last one needs it
-            if False:
-                locator = mticker.AutoLocator()
-                lastax.xaxis.set_major_locator(locator)
-                # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-                formatter = mdates.IndexDateFormatter(self.pinf.xreal,
-                                                      fmt='%Y-%m-%d')
-                lastax.xaxis.set_major_formatter(formatter)
-            else:
-                self.setlocators(strategy._clock)
-
             # Put the subplots as indicated by hspace
             fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
                                 top=0.98, left=0.05, bottom=0.05, right=0.95)
+
+            laxis = list(self.pinf.daxis.values())
+
+            # Find last axis which is not a twinx (date locator fails there)
+            i = -1
+            while True:
+                lastax = laxis[i]
+                if lastax not in self.pinf.vaxis:
+                    break
+
+                i -= 1
+
+            self.setlocators(lastax)  # place the locators/fmts
 
             # Applying fig.autofmt_xdate if the data axis is the last one
             # breaks the presentation of the date labels. why?
             # Applying the manual rotation with setp cures the problem
             # but the labels from all axis but the last have to be hidden
-            if False:
-                fig.autofmt_xdate(bottom=0.25, rotation=0)
-            elif True:
-                for ax in self.pinf.daxis.values():
-                    self.mpyplot.setp(ax.get_xticklabels(), visible=False)
-                    # ax.autoscale_view(tight=True)
-                self.mpyplot.setp(lastax.get_xticklabels(),
-                                  visible=True,
-                                  rotation=self.pinf.sch.tickrotation)
+            for ax in laxis:
+                self.mpyplot.setp(ax.get_xticklabels(), visible=False)
+
+            self.mpyplot.setp(lastax.get_xticklabels(), visible=True,
+                              rotation=self.pinf.sch.tickrotation)
 
             # Things must be tight along the x axis (to fill both ends)
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
@@ -225,59 +228,36 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         return figs
 
-    def setlocators(self, data):
-        ax = list(self.pinf.daxis.values())[-1]
-
-        comp = getattr(data, '_compression', 1)
-        tframe = getattr(data, '_timeframe', TimeFrame.Days)
+    def setlocators(self, ax):
+        comp = getattr(self.pinf.clock, '_compression', 1)
+        tframe = getattr(self.pinf.clock, '_timeframe', TimeFrame.Days)
 
         if tframe == TimeFrame.Years:
-            fmtmajor = '%Y'
-            fmtminor = '%Y'
             fmtdata = '%Y'
         elif tframe == TimeFrame.Months:
-            fmtmajor = '%Y'
-            fmtminor = '%b'
             fmtdata = '%Y-%m'
         elif tframe == TimeFrame.Weeks:
-            fmtmajor = '%b'
-            fmtminor = '%d'
             fmtdata = '%Y-%m-%d'
         elif tframe == TimeFrame.Days:
-            fmtmajor = '%b'
-            fmtminor = '%d'
             fmtdata = '%Y-%m-%d'
         elif tframe == TimeFrame.Minutes:
-            fmtmajor = '%H:%M'
-            fmtminor = '%H:%M'
             fmtdata = '%Y-%m-%d %H:%M'
         elif tframe == TimeFrame.Seconds:
-            fmtmajor = '%M:%S'
-            fmtminor = '%M:%S'
-            fmtdata = '%M:%S'
+            fmtdata = '%Y-%m-%d %H:%M:%S'
         elif tframe == TimeFrame.MicroSeconds:
-            fmtmajor = '%M:%S'
-            fmtminor = '%S.%f'
-            fmtdata = '%M:%S.%f'
+            fmtdata = '%Y-%m-%d %H:%M:%S.%f'
         elif tframe == TimeFrame.Ticks:
-            fmtmajor = '%M:%S'
-            fmtminor = '%S.%f'
-            fmtdata = '%M:%S.%f'
+            fmtdata = '%Y-%m-%d %H:%M:%S.%f'
 
         fordata = MyDateFormatter(self.pinf.xreal, fmt=fmtdata)
         for dax in self.pinf.daxis.values():
             dax.fmt_xdata = fordata
 
-        locmajor = mticker.AutoLocator()
-        locminor = mticker.AutoMinorLocator()
-
-        ax.xaxis.set_minor_locator(locminor)
+        # Major locator / formatter
+        locmajor = loc.AutoDateLocator(self.pinf.xreal)
         ax.xaxis.set_major_locator(locmajor)
-
-        formajor = MyDateFormatter(self.pinf.xreal, fmt=fmtmajor)
-        forminor = MyDateFormatter(self.pinf.xreal, fmt=fmtminor)
-        ax.xaxis.set_major_formatter(formajor)
-        ax.xaxis.set_minor_formatter(forminor)
+        autofmt = loc.AutoDateFormatter(self.pinf.xreal, locmajor)
+        ax.xaxis.set_major_formatter(autofmt)
 
     def calcrows(self, strategy):
         # Calculate the total number of rows
@@ -320,7 +300,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         return ax
 
-    def plotind(self, ind,
+    def plotind(self, iref, ind,
                 subinds=None, upinds=None, downinds=None,
                 masterax=None):
 
@@ -333,7 +313,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         # plot subindicators on self with independent axis above
         for upind in upinds:
-            self.plotind(upind)
+            self.plotind(iref, upind)
 
         # Get an axis for this plot
         ax = masterax or self.newaxis(ind, rowspan=self.pinf.sch.rowsminor)
@@ -362,6 +342,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
+            if len(lplot) < self.pinf.xlen:
+                for idx in self.pinf.pfillers[iref]:
+                    lplot.insert(idx, float('NaN'))
 
             if not math.isnan(lplot[-1]):
                 label += ' %.2f' % lplot[-1]
@@ -379,18 +362,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             if ax in self.pinf.zorder:
                 plotkwargs['zorder'] = self.pinf.zordernext(ax)
-
-            if ind.plotinfo.plotmaster is not None:
-                clk = getattr(ind._clock, 'owner', ind._clock)
-                mlens = getattr(clk, 'mlen', None)
-                newlplot = list()
-                if mlens:
-                    prevmlen = 0
-                    for i, mlen in enumerate(mlens):
-                        newlplot.extend([lplot[i]] * (mlen + 1 - prevmlen))
-                        prevmlen = mlen + 1
-
-                    lplot = newlplot
 
             pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
             plottedline = pltmethod(self.pinf.x, lplot, **plotkwargs)
@@ -410,7 +381,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         # plot subindicators that were created on self
         for subind in subinds:
-            self.plotind(subind, subinds=self.dplotsover[subind], masterax=ax)
+            self.plotind(iref, subind, subinds=self.dplotsover[subind],
+                         masterax=ax)
 
         if not masterax:
             # adjust margin if requested ... general of particular
@@ -458,7 +430,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         # plot subindicators on self with independent axis below
         for downind in downinds:
-            self.plotind(downind)
+            self.plotind(iref, downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
         if self.pinf.sch.voloverlay:
@@ -475,6 +447,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         maxvol = volylim = max(volumes)
         if maxvol:
+            pfiller = self.pinf.pfillers[data]
+            for idx in pfiller:
+                volumes.insert(idx, 0.0)
+
             # Plot the volume (no matter if as overlay or standalone)
             vollabel = label
             volplot, = plot_volume(ax, self.pinf.x, opens, closes, volumes,
@@ -533,7 +509,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         for ind in indicators:
             upinds = self.dplotsup[ind]
             for upind in upinds:
-                self.plotind(upind,
+                self.plotind(data, upind,
                              subinds=self.dplotsover[upind],
                              upinds=self.dplotsup[upind],
                              downinds=self.dplotsdown[upind])
@@ -547,6 +523,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         closes = data.close.plotrange(self.pinf.xstart, self.pinf.xend)
         volumes = data.volume.plotrange(self.pinf.xstart, self.pinf.xend)
 
+        for x in [opens, highs, lows, closes]:
+            pfiller = self.pinf.pfillers[data]
+            for idx in pfiller:
+                x.insert(idx, float('NaN'))
+
         vollabel = 'Volume'
         if self.pinf.sch.volume and self.pinf.sch.voloverlay:
             volplot = self.plotvolume(
@@ -554,6 +535,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             axvol = self.pinf.daxis[data.volume]
             ax = axvol.twinx()
             self.pinf.daxis[data] = ax
+            self.pinf.vaxis.append(ax)
         else:
             ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
 
@@ -613,7 +595,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     ax.set_ylim(axbot, axtop)
 
         for ind in indicators:
-            self.plotind(ind, subinds=self.dplotsover[ind], masterax=ax)
+            self.plotind(data, ind, subinds=self.dplotsover[ind], masterax=ax)
 
         handles, labels = ax.get_legend_handles_labels()
         if handles:
@@ -643,7 +625,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         for ind in indicators:
             downinds = self.dplotsdown[ind]
             for downind in downinds:
-                self.plotind(downind,
+                self.plotind(data, downind,
                              subinds=self.dplotsover[downind],
                              upinds=self.dplotsup[downind],
                              downinds=self.dplotsdown[downind])
@@ -705,704 +687,4 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             else:
                 self.dplotsover[key].append(x)
 
-
-class Plot(with_metaclass(MetaParams, object)):
-    params = (('scheme', PlotScheme()),)
-
-    def __init__(self, **kwargs):
-        for pname, pvalue in kwargs.items():
-            setattr(self.p.scheme, pname, pvalue)
-
-    def drawtag(self, ax, x, y, facecolor, edgecolor, alpha=0.9, **kwargs):
-
-        txt = ax.text(x, y, '%.2f' % y, va='center', ha='left',
-                      fontsize=self.pinf.sch.subtxtsize,
-                      bbox=dict(boxstyle=tag_box_style,
-                                facecolor=facecolor,
-                                edgecolor=edgecolor,
-                                alpha=alpha),
-                      # 3.0 is the minimum default for text
-                      zorder=self.pinf.zorder[ax] + 3.0,
-                      **kwargs)
-
-    def psizes(self, obj, curfig, numfigs):
-        slen = len(obj)
-        size, m = divmod(slen, numfigs)
-        start = size * curfig
-        if curfig == (numfigs - 1):
-            size += m  # add remainder to last stint
-        end = start + size
-
-        self.pinf.pstart[obj] = start
-        self.pinf.pend[obj] = end
-        self.pinf.psize[obj] = size
-
-        self.pinf.xstart[obj] = start
-        self.pinf.xend[obj] = end
-
-        self.pinf.xreal[obj] = xreal = obj.datetime.plot(start, size)
-        self.pinf.xlen[obj] = xlen = len(xreal)
-        self.pinf.x[obj] = list(range(xlen))
-
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
-        if not strategy.datas:
-            return
-
-        if not len(strategy):
-            return
-
-        self.useplotly = useplotly
-
-        if iplot:
-            if 'ipykernel' in sys.modules:
-                matplotlib.use('nbagg')
-
-        # this import must not happen before matplotlib.use
-        import matplotlib.pyplot as mpyplot
-        self.mpyplot = mpyplot
-
-        self.pinf = PInfo(self.p.scheme)
-        self.sortdataindicators(strategy)
-        self.calcrows(strategy)
-
-        self.pinf.pstart = dict()
-        self.pinf.pend = dict()
-        self.pinf.psize = dict()
-        self.pinf.xstart = dict()
-        self.pinf.xend = dict()
-
-        self.pinf.xreal = dict()
-        self.pinf.xlen = dict()
-        self.pinf.x = dict()
-        self.pinf.clock = strategy
-
-        figs = []
-        for numfig in range(numfigs):
-            # prepare a figure
-            fig = self.pinf.newfig(figid, numfig, self.mpyplot)
-            figs.append(fig)
-
-            self.psizes(strategy, numfig, numfigs)
-
-            for d in strategy.datas:
-                self.psizes(d, numfig, numfigs)
-
-            if False:
-                for x in strategy.getindicators():
-                    self.psizes(x, numfig, numfigs)
-
-            # Do the plotting
-            # Things that go always at the top (observers)
-            for ptop in self.dplotstop:
-                self.plotind(ptop, subinds=self.dplotsover[ptop])
-
-            # Create the rest on a per data basis
-            for data in strategy.datas:
-                ax = None
-
-                for ind in self.dplotsup[data]:
-                    ax = self.plotind(
-                        ind,
-                        subinds=self.dplotsover[ind],
-                        upinds=self.dplotsup[ind],
-                        downinds=self.dplotsdown[ind],
-                        share=ax)
-
-                ax = self.plotdata(data, self.dplotsover[data], sharex=ax)
-
-                for ind in self.dplotsdown[data]:
-                    self.plotind(
-                        ind,
-                        subinds=self.dplotsover[ind],
-                        upinds=self.dplotsup[ind],
-                        downinds=self.dplotsdown[ind], sharex=ax)
-
-            # Put the subplots as indicated by hspace
-            fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
-                                top=0.98, left=0.05, bottom=0.05, right=0.95)
-
-            lastax = list(self.pinf.daxis.values())[-1]
-
-            # put a non-visible strategy axis in sync with the last
-            points = lastax.get_position()
-
-            ax = fig.add_axes(points)
-            ax.patch.set_visible(False)
-            ax.yaxis.set_visible(False)
-
-            for spinename, spine in ax.spines.items():
-                if spinename != 'bottom':
-                    spine.set_visible(False)
-
-            # ax.spines['bottom'].set_position(('outward', 25))
-
-            xstart = self.pinf.xstart[strategy]
-            xend = self.pinf.xend[strategy]
-            self.pinf.daxis[strategy] = lastax = ax
-
-            # sdata = [float('NaN') for x in self.pinf.x[strategy]]
-            sdata = [0.0 for x in self.pinf.x[strategy]]
-            ax.plot(self.pinf.x[strategy], sdata, visible=False)
-
-            ax.set_xlim(xstart, xend)  # make sure nans are plotted
-
-            # Date formatting for the x axis - only the last one needs it
-            if False:
-                locator = mticker.AutoLocator()
-                lastax.xaxis.set_major_locator(locator)
-                # lastax.xaxis.set_major_formatter(MyDateFormatter(self.pinf.xreal))
-                formatter = mdates.IndexDateFormatter(self.pinf.xreal,
-                                                      fmt='%Y-%m-%d')
-                lastax.xaxis.set_major_formatter(formatter)
-            else:
-                self.setlocators(self.pinf.clock)
-
-            # Applying fig.autofmt_xdate if the data axis is the last one
-            # breaks the presentation of the date labels. why?
-            # Applying the manual rotation with setp cures the problem
-            # but the labels from all axis but the last have to be hidden
-            for ax in self.pinf.daxis.values():
-                self.mpyplot.setp(ax.get_xticklabels(), visible=False)
-                # ax.autoscale_view()
-            self.mpyplot.setp(lastax.get_xticklabels(),
-                              visible=True,
-                              rotation=self.pinf.sch.tickrotation)
-
-            # Things must be tight along the x axis (to fill both ends)
-            axtight = 'x' if not self.pinf.sch.ytight else 'both'
-            self.mpyplot.autoscale(enable=True, axis=axtight, tight=True)
-
-            cursor = MultiCursor(
-                fig.canvas, list(self.pinf.daxis.values()),
-                useblit=True,
-                horizOn=True, vertOn=True,
-                horizMulti=False, vertMulti=True,
-                horizShared=True, vertShared=False,
-                color='black', lw=1, ls=':')
-
-            self.pinf.cursors.append(cursor)
-
-        return figs
-
-    def setlocators(self, data):
-        ax = list(self.pinf.daxis.values())[-1]
-
-        comp = getattr(data, '_compression', 1)
-        tframe = getattr(data, '_timeframe', TimeFrame.Days)
-
-        if tframe == TimeFrame.Years:
-            fmtmajor = '%Y'
-            fmtminor = '%Y'
-            fmtdata = '%Y'
-        elif tframe == TimeFrame.Months:
-            fmtmajor = '%Y'
-            fmtminor = '%b'
-            fmtdata = '%Y-%m'
-        elif tframe == TimeFrame.Weeks:
-            fmtmajor = '%b'
-            fmtminor = '%d'
-            fmtdata = '%Y-%m-%d'
-        elif tframe == TimeFrame.Days:
-            fmtmajor = '%b'
-            fmtminor = '%d'
-            fmtdata = '%Y-%m-%d'
-        elif tframe == TimeFrame.Minutes:
-            fmtmajor = '%H:%M'
-            fmtminor = '%H:%M'
-            fmtdata = '%Y-%m-%d %H:%M'
-        elif tframe == TimeFrame.Seconds:
-            fmtmajor = '%M:%S'
-            fmtminor = '%M:%S'
-            fmtdata = '%M:%S'
-        elif tframe == TimeFrame.MicroSeconds:
-            fmtmajor = '%M:%S'
-            fmtminor = '%S.%f'
-            fmtdata = '%M:%S.%f'
-        elif tframe == TimeFrame.Ticks:
-            fmtmajor = '%M:%S'
-            fmtminor = '%S.%f'
-            fmtdata = '%M:%S.%f'
-
-        for obj, dax in self.pinf.daxis.items():
-            locmajor = mticker.AutoLocator()
-            locminor = mticker.AutoMinorLocator()
-            keyobj = obj
-            while True:
-                try:
-                    xreal = self.pinf.xreal[keyobj]
-                except KeyError:
-                    keyobj = getattr(keyobj, '_owner')
-                else:
-                    break
-
-            fordata = MyDateFormatter(xreal, fmt=fmtdata)
-            dax.fmt_xdata = fordata
-
-        ax.xaxis.set_minor_locator(locminor)
-        ax.xaxis.set_major_locator(locmajor)
-
-        xreal = self.pinf.xreal[self.pinf.clock]
-        formajor = MyDateFormatter(xreal, fmt=fmtmajor)
-        forminor = MyDateFormatter(xreal, fmt=fmtminor)
-        ax.xaxis.set_major_formatter(formajor)
-        ax.xaxis.set_minor_formatter(forminor)
-
-    def calcrows(self, strategy):
-        # Calculate the total number of rows
-        rowsmajor = self.pinf.sch.rowsmajor
-        rowsminor = self.pinf.sch.rowsminor
-        nrows = 0
-
-        # Datas and volumes
-        nrows += len(strategy.datas) * rowsmajor
-        if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
-            nrows += len(strategy.datas) * rowsminor
-
-        # top indicators/observers
-        nrows += len(self.dplotstop) * rowsminor
-
-        # indicators above datas
-        nrows += sum(len(v) for v in self.dplotsup.values())
-        nrows += sum(len(v) for v in self.dplotsdown.values())
-
-        self.pinf.nrows = nrows
-
-    def newaxis(self, obj, rowspan, sharex=None):
-        ax = self.mpyplot.subplot2grid(
-            (self.pinf.nrows, 1), (self.pinf.row, 0),
-            rowspan=rowspan, sharex=sharex)
-
-        # update the row index with the taken rows
-        self.pinf.row += rowspan
-
-        # save the mapping indicator - axis and return
-        self.pinf.daxis[obj] = ax
-
-        # Activate grid in all axes if requested
-        ax.yaxis.tick_right()
-        ax.grid(self.pinf.sch.grid, which='both')
-
-        return ax
-
-    def plotind(self, ind,
-                subinds=None, upinds=None, downinds=None,
-                masterax=None, sharex=None):
-
-        sch = self.p.scheme
-
-        # check subind
-        subinds = subinds or []
-        upinds = upinds or []
-        downinds = downinds or []
-
-        # plot subindicators on self with independent axis above
-        for upind in upinds:
-            self.plotind(upind)
-
-        # Get an axis for this plot
-        ax = masterax or self.newaxis(ind,
-                                      rowspan=self.pinf.sch.rowsminor,
-                                      sharex=sharex)
-
-        indlabel = ind.plotlabel()
-        keyind = ind
-        while True:
-            try:
-                keyind = self.dindmap[keyind]
-            except KeyError:
-                keyind = getattr(keyind._clock, 'owner', keyind._clock)
-                continue  # try with new key indicator
-
-            try:
-                xstart, xend = self.pinf.xstart[keyind], self.pinf.xend[keyind]
-            except KeyError:
-                continue  # Failed fetching xstart, xend - go another round
-
-            break
-
-        ax.set_xlim(xstart, xend)  # make sure nans are plotted
-
-        for lineidx in range(ind.size()):
-            line = ind.lines[lineidx]
-            linealias = ind.lines._getlinealias(lineidx)
-
-            lineplotinfo = getattr(ind.plotlines, '_%d' % lineidx, None)
-            if not lineplotinfo:
-                lineplotinfo = getattr(ind.plotlines, linealias, None)
-
-            if not lineplotinfo:
-                lineplotinfo = AutoInfoClass()
-
-            if lineplotinfo._get('_plotskip', False):
-                continue
-
-            # Legend label only when plotting 1st line
-            if masterax and not ind.plotinfo.plotlinelabels:
-                label = indlabel * (lineidx == 0) or '_nolegend'
-            else:
-                label = lineplotinfo._get('_name', '') or linealias
-
-            # plot data
-            lplot = line.plotrange(xstart, xend)
-
-            if not math.isnan(lplot[-1]):
-                label += ' %.2f' % lplot[-1]
-
-            plotkwargs = dict()
-            linekwargs = lineplotinfo._getkwargs(skip_=True)
-
-            if linekwargs.get('color', None) is None:
-                if not lineplotinfo._get('_samecolor', False):
-                    self.pinf.nextcolor(ax)
-                plotkwargs['color'] = self.pinf.color(ax)
-
-            plotkwargs.update(dict(aa=True, label=label))
-            plotkwargs.update(**linekwargs)
-
-            if ax in self.pinf.zorder:
-                plotkwargs['zorder'] = self.pinf.zordernext(ax)
-
-            if ind.plotinfo.plotmaster is not None:
-                clk = getattr(ind._clock, 'owner', ind._clock)
-                mlens = getattr(clk, 'mlen', None)
-                newlplot = list()
-                if mlens:
-                    prevmlen = 0
-                    for i, mlen in enumerate(mlens):
-                        newlplot.extend([lplot[i]] * (mlen + 1 - prevmlen))
-                        prevmlen = mlen + 1
-
-                    lplot = newlplot
-
-            pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
-            plottedline = pltmethod(self.pinf.x[keyind], lplot, **plotkwargs)
-            try:
-                plottedline = plottedline[0]
-            except:
-                # Possibly a container of artists (when plotting bars)
-                pass
-
-            self.pinf.zorder[ax] = plottedline.get_zorder()
-
-            if not math.isnan(lplot[-1]):
-                # line has valid values, plot a tag for the last value
-                self.drawtag(ax, len(self.pinf.xreal[keyind]), lplot[-1],
-                             facecolor='white',
-                             edgecolor=self.pinf.color(ax))
-
-        # plot subindicators that were created on self
-        for subind in subinds:
-            self.plotind(subind, subinds=self.dplotsover[subind], masterax=ax)
-
-        if not masterax:
-            # adjust margin if requested ... general of particular
-            ymargin = ind.plotinfo._get('plotymargin', 0.0)
-            ymargin = max(ymargin, self.pinf.sch.yadjust)
-            if ymargin:
-                ax.margins(y=ymargin)
-
-            # Set specific or generic ticks
-            yticks = ind.plotinfo._get('plotyticks', [])
-            if not yticks:
-                yticks = ind.plotinfo._get('plotyhlines', [])
-
-            if yticks:
-                ax.set_yticks(yticks)
-            else:
-                locator = mticker.MaxNLocator(nbins=4, prune='both')
-                ax.yaxis.set_major_locator(locator)
-
-            # Set specific hlines if asked to
-            hlines = ind.plotinfo._get('plothlines', [])
-            if not hlines:
-                hlines = ind.plotinfo._get('plotyhlines', [])
-            for hline in hlines:
-                ax.axhline(hline, color=self.pinf.sch.hlinescolor,
-                           ls=self.pinf.sch.hlinesstyle,
-                           lw=self.pinf.sch.hlineswidth)
-
-            if self.pinf.sch.legendind and \
-               ind.plotinfo._get('plotlegend', True):
-
-                handles, labels = ax.get_legend_handles_labels()
-                # Ensure that we have something to show
-                if labels:
-                    # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
-                                       numpoints=1, frameon=False,
-                                       shadow=False, fancybox=False,
-                                       prop=self.pinf.prop)
-
-                    legend.set_title(indlabel, prop=self.pinf.prop)
-                    # hack: if title is set. legend has a Vbox for the labels
-                    # which has a default "center" set
-                    legend._legend_box.align = 'left'
-
-        # plot subindicators on self with independent axis below
-        for downind in downinds:
-            self.plotind(downind)
-
-        return ax
-
-    def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
-        if self.pinf.sch.voloverlay:
-            rowspan = self.pinf.sch.rowsmajor
-        else:
-            rowspan = self.pinf.sch.rowsminor
-
-        ax = self.newaxis(data.volume, rowspan=rowspan)
-
-        if self.pinf.sch.voloverlay:
-            volalpha = self.pinf.sch.voltrans
-        else:
-            volalpha = 1.0
-
-        maxvol = volylim = max(volumes)
-        if maxvol:
-            # Plot the volume (no matter if as overlay or standalone)
-            vollabel = label
-            volplot, = plot_volume(ax, self.pinf.x[data],
-                                   opens, closes, volumes,
-                                   colorup=self.pinf.sch.volup,
-                                   colordown=self.pinf.sch.voldown,
-                                   alpha=volalpha, label=vollabel)
-
-            nbins = 6
-            prune = 'both'
-            if self.pinf.sch.voloverlay:
-                # store for a potential plot over it
-                nbins = int(nbins / self.pinf.sch.volscaling)
-                prune = None
-
-                volylim /= self.pinf.sch.volscaling
-                ax.set_ylim(0, volylim, auto=True)
-            else:
-                # plot a legend
-                handles, labels = ax.get_legend_handles_labels()
-                if handles:
-                    # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
-                                       numpoints=1, frameon=False,
-                                       shadow=False, fancybox=False,
-                                       prop=self.pinf.prop)
-
-            locator = mticker.MaxNLocator(nbins=nbins, prune=prune)
-            ax.yaxis.set_major_locator(locator)
-            ax.yaxis.set_major_formatter(MyVolFormatter(maxvol))
-
-        if not maxvol:
-            ax.set_yticks([])
-            return None
-
-        return volplot
-
-    def setxdata(self, data):
-        # only if this data has a master, do something
-        if data.mlen:
-            # this data has a master, get the real length of this data
-            self.pinf.xlen[data] = len(data.mlen)
-            # find the starting point with regards to master start: pstart
-            self.pinf.xstart[data] = xstart = bisect.bisect_left(
-                data.mlen, self.pinf.pstart[data])
-
-            # find the ending point with regards to master start: pend
-            self.pinf.xend[data] = xend = bisect.bisect_right(
-                data.mlen, self.pinf.pend[data])
-
-            # extract the Xs from the subdata
-            self.pinf.x[data] = xdata = data.mlen[xstart:xend]
-            # rebase the Xs to the start of the main data point
-            self.pinf.x[data] = [x - self.pinf.pstart[data] for x in xdata]
-
-    def plotdata(self, data, indicators, sharex=None):
-        ax = sharex
-        for ind in indicators:
-            upinds = self.dplotsup[ind]
-            for upind in upinds:
-                ax = self.plotind(upind,
-                                  subinds=self.dplotsover[upind],
-                                  upinds=self.dplotsup[upind],
-                                  downinds=self.dplotsdown[upind],
-                                  sharex=ax)
-
-        # set the x axis data (if needed)
-        self.setxdata(data)
-
-        xstart, xend = self.pinf.xstart[data], self.pinf.xend[data]
-
-        opens = data.open.plotrange(xstart, xend)
-        highs = data.high.plotrange(xstart, xend)
-        lows = data.low.plotrange(xstart, xend)
-        closes = data.close.plotrange(xstart, xend)
-        volumes = data.volume.plotrange(xstart, xend)
-
-        vollabel = 'Volume'
-        if self.pinf.sch.volume and self.pinf.sch.voloverlay:
-            volplot = self.plotvolume(
-                data, opens, highs, lows, closes, volumes, vollabel)
-            axvol = self.pinf.daxis[data.volume]
-            ax = axvol.twinx()
-            self.pinf.daxis[data] = ax
-        else:
-            ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor, sharex=ax)
-
-        ax.set_xlim(xstart, xend)  # make sure nans are plotted
-
-        datalabel = ''
-        dataname = ''
-        if hasattr(data, '_name') and data._name:
-            datalabel += data._name
-
-        if hasattr(data, '_compression') and \
-           hasattr(data, '_timeframe'):
-            tfname = TimeFrame.getname(data._timeframe, data._compression)
-            datalabel += ' (%d %s)' % (data._compression, tfname)
-
-        datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
-                     (opens[-1], highs[-1], lows[-1], closes[-1])
-
-        if self.pinf.sch.style.startswith('line'):
-            plotted = plot_lineonclose(
-                ax, self.pinf.x[data], closes,
-                color=self.pinf.sch.loc, label=datalabel)
-        else:
-            if self.pinf.sch.style.startswith('candle'):
-               plotted = plot_candlestick(
-                    ax, self.pinf.x[data], opens, highs, lows, closes,
-                    colorup=self.pinf.sch.barup,
-                    colordown=self.pinf.sch.bardown,
-                    label=datalabel)
-
-            elif self.pinf.sch.style.startswith('bar') or True:
-                # final default option -- should be "else"
-                plotted = plot_ohlc(
-                    ax, self.pinf.x[data], opens, highs, lows, closes,
-                    colorup=self.pinf.sch.barup,
-                    colordown=self.pinf.sch.bardown,
-                    label=datalabel)
-
-        self.pinf.zorder[ax] = plotted[0].get_zorder()
-
-        # Code to place a label at the right hand side with the last value
-        self.drawtag(ax, len(self.pinf.xreal[data]), closes[-1],
-                     facecolor='white', edgecolor=self.pinf.sch.loc)
-
-        ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
-        # make sure "over" indicators do not change our scale
-        ax.set_ylim(ax.get_ylim())
-
-        if self.pinf.sch.volume:
-            if not self.pinf.sch.voloverlay:
-                self.plotvolume(
-                    data, opens, highs, lows, closes, volumes, vollabel)
-            else:
-                # Prepare overlay scaling/pushup or manage own axis
-                if self.pinf.sch.volpushup:
-                    # push up overlaid axis by lowering the bottom limit
-                    axbot, axtop = ax.get_ylim()
-                    axbot *= (1.0 - self.pinf.sch.volpushup)
-                    ax.set_ylim(axbot, axtop)
-
-        for ind in indicators:
-            self.plotind(ind, subinds=self.dplotsover[ind], masterax=ax)
-
-        handles, labels = ax.get_legend_handles_labels()
-        if handles:
-            # put data and volume legend entries in the 1st positions
-            # because they are "collections" they are considered after Line2D
-            # for the legend entries, which is not our desire
-            if self.pinf.sch.volume and self.pinf.sch.voloverlay:
-                if volplot:
-                    # even if volume plot was requested, there may be no volume
-                    labels.insert(0, vollabel)
-                    handles.insert(0, volplot)
-
-            didx = labels.index(datalabel)
-            labels.insert(0, labels.pop(didx))
-            handles.insert(0, handles.pop(didx))
-
-            # feed handles/labels to legend to get right order
-            legend = ax.legend(handles, labels,
-                               loc='upper left', frameon=False, shadow=False,
-                               fancybox=False,
-                               prop=self.pinf.prop, numpoints=1, ncol=1)
-
-            # hack: if title is set. legend has a Vbox for the labels
-            # which has a default "center" set
-            legend._legend_box.align = 'left'
-
-        for ind in indicators:
-            downinds = self.dplotsdown[ind]
-            for downind in downinds:
-                ax = self.plotind(downind,
-                                  subinds=self.dplotsover[downind],
-                                  upinds=self.dplotsup[downind],
-                                  downinds=self.dplotsdown[downind],
-                                  sharex=ax)
-
-        return ax
-
-    def show(self):
-        self.mpyplot.show()
-
-    def sortdataindicators(self, strategy):
-        # These lists/dictionaries hold the subplots that go above each data
-        self.dindmap = dict()
-        self.dplotstop = list()
-        self.dplotsup = collections.defaultdict(list)
-        self.dplotsdown = collections.defaultdict(list)
-        self.dplotsover = collections.defaultdict(list)
-
-        self.dindmap[None] = strategy
-
-        # Sort observers in the different lists/dictionaries
-        for x in strategy.getobservers():
-            if not x.plotinfo.plot or x.plotinfo.plotskip:
-                continue
-
-            if x.plotinfo.subplot:
-                self.dplotstop.append(x)
-                key = strategy
-            else:
-                key = getattr(x._clock, 'owner', x._clock)
-                self.dplotsover[key].append(x)
-
-            self.dindmap[x] = key
-
-        # Sort indicators in the different lists/dictionaries
-        for x in strategy.getindicators():
-            if not hasattr(x, 'plotinfo'):
-                # no plotting support - so far LineSingle derived classes
-                continue
-
-            if not x.plotinfo.plot or x.plotinfo.plotskip:
-                continue
-
-            x._plotinit()  # will be plotted ... call its init function
-
-            # support LineSeriesStub which has "owner" to point to the data
-            key = getattr(x._clock, 'owner', x._clock)
-            if key is strategy:  # a LinesCoupler
-                key = strategy.data
-
-            if getattr(x.plotinfo, 'plotforce', False):
-                if key not in strategy.datas:
-                    datas = strategy.datas
-                    while True:
-                        if key not in strategy.datas:
-                            key = key._clock
-                        else:
-                            break
-
-            if x.plotinfo.plotmaster is not None:
-                key = x.plotinfo.plotmaster
-
-            self.dindmap[x] = key
-
-            if x.plotinfo.subplot and x.plotinfo.plotmaster is None:
-                if x.plotinfo.plotabove:
-                    self.dplotsup[key].append(x)
-                else:
-                    self.dplotsdown[key].append(x)
-            else:
-                self.dplotsover[key].append(x)
+Plot = Plot_OldSync
