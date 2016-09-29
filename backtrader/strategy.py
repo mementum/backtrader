@@ -26,8 +26,8 @@ import inspect
 import itertools
 import operator
 
-from .utils.py3 import (filter, keys, iteritems, map,  string_types,
-                        with_metaclass)
+from .utils.py3 import (filter, keys, integer_types, iteritems, itervalues,
+                        map, string_types, with_metaclass)
 
 import backtrader as bt
 from .lineiterator import LineIterator, StrategyBase
@@ -977,6 +977,19 @@ class MetaSigStrategy(Strategy.__class__):
             super(MetaSigStrategy, cls).dopreinit(_obj, env, *args, **kwargs)
 
         _obj._signals = collections.defaultdict(list)
+
+        _data = _obj.p._data
+        if _data is None:
+            _obj._dtarget = _obj.data0
+        elif isinstance(_data, integer_types):
+            _obj._dtarget = _obj.datas[_data]
+        elif isinstance(_data, string_types):
+            _obj._dtarget = _obj.getdatabyname(_data)
+        elif isinstance(_data, bt.LineRoot):
+            _obj._dtarget = _data
+        else:
+            _obj._dtarget = _obj.data0
+
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -1064,12 +1077,24 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
       - ``_concurrent`` (default: ``False``): allow orders to be issued even if
         orders are already pending execution
 
+      - ``_data`` (default: ``None``): if multiple datas are present in the
+        system which is the target for orders. This can be
+
+        - ``None``: The first data in the system will be used
+
+        - An ``int``: indicating the data that was inserted at that position
+
+        - An ``str``: name given to the data when creating it (parameter
+          ``name``) or when adding it cerebro with ``cerebro.addata(..., name=)
+
+        - A ``data`` instance
     '''
 
     params = (
         ('signals', []),
         ('_accumulate', False),
         ('_concurrent', False),
+        ('_data', None),
     )
 
     def start(self):
@@ -1078,8 +1103,12 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
     def signal_add(self, sigtype, signal):
         self._signals[sigtype].append(signal)
 
+    def notify_order(self, order):
+        if not order.alive():
+            self.order = None
+
     def next(self):
-        if self.order is not None and not self._concurrent:
+        if self.order is not None and not self.p._concurrent:
             return  # order active and more than 1 not allowed
 
         sigs = self._signals
@@ -1110,32 +1139,34 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
         s_leave = not self._shortexit and s_leave
 
         # Take size and start logic
-        size = self.position.size
+        size = self.getposition(self._dtarget).size
         if not size:
             if ls_long or l_enter:
-                self.buy()
+                self.order = self.buy(self._dtarget)
 
             elif ls_short or s_enter:
-                self.sell()
+                self.order = self.sell(self._dtarget)
 
         elif size > 0:  # current long position
             if ls_short or l_exit or l_rev or l_leave:
-                self.close()
+                # closing position - not relevant for concurrency
+                self.close(self._dtarget)
 
             if ls_short or l_rev:
-                self.sell()
+                self.order = self.sell(self._dtarget)
 
             if ls_long or l_enter:
                 if self.p._accumulate:
-                    self.buy()
+                    self.order = self.buy(self._dtarget)
 
         elif size < 0:  # current short position
             if ls_long or s_exit or s_rev or s_leave:
-                self.close()
+                # closing position - not relevant for concurrency
+                self.close(self._dtarget)
 
             if ls_long or s_rev:
-                self.buy()
+                self.order = self.buy(self._dtarget)
 
             if ls_short or s_enter:
                 if self.p._accumulate:
-                    self.sell()
+                    self.order = self.sell(self._dtarget)
