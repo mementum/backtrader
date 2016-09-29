@@ -302,10 +302,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                     analyzer._prenext()
 
             if once:
-                if self._oldsync:
-                    observer.advance()
-                else:
-                    observer.forward()
+                if len(self) > len(observer):
+                    if self._oldsync:
+                        observer.advance()
+                    else:
+                        observer.forward()
 
                 if minperstatus < 0:
                     observer.next()
