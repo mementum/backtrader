@@ -35,6 +35,12 @@ import backtrader as bt
 ) = range(6)
 
 
+SignalTypes = [
+    SIGNAL_NONE,
+    SIGNAL_LONGSHORT, SIGNAL_LONG, SIGNAL_LONGEXIT, SIGNAL_SHORTEXIT
+]
+
+
 class Signal(bt.Indicator):
     SignalTypes = SignalTypes
 
