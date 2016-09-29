@@ -232,22 +232,25 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         comp = getattr(self.pinf.clock, '_compression', 1)
         tframe = getattr(self.pinf.clock, '_timeframe', TimeFrame.Days)
 
-        if tframe == TimeFrame.Years:
-            fmtdata = '%Y'
-        elif tframe == TimeFrame.Months:
-            fmtdata = '%Y-%m'
-        elif tframe == TimeFrame.Weeks:
-            fmtdata = '%Y-%m-%d'
-        elif tframe == TimeFrame.Days:
-            fmtdata = '%Y-%m-%d'
-        elif tframe == TimeFrame.Minutes:
-            fmtdata = '%Y-%m-%d %H:%M'
-        elif tframe == TimeFrame.Seconds:
-            fmtdata = '%Y-%m-%d %H:%M:%S'
-        elif tframe == TimeFrame.MicroSeconds:
-            fmtdata = '%Y-%m-%d %H:%M:%S.%f'
-        elif tframe == TimeFrame.Ticks:
-            fmtdata = '%Y-%m-%d %H:%M:%S.%f'
+        if self.pinf.sch.fmt_x_data is None:
+            if tframe == TimeFrame.Years:
+                fmtdata = '%Y'
+            elif tframe == TimeFrame.Months:
+                fmtdata = '%Y-%m'
+            elif tframe == TimeFrame.Weeks:
+                fmtdata = '%Y-%m-%d'
+            elif tframe == TimeFrame.Days:
+                fmtdata = '%Y-%m-%d'
+            elif tframe == TimeFrame.Minutes:
+                fmtdata = '%Y-%m-%d %H:%M'
+            elif tframe == TimeFrame.Seconds:
+                fmtdata = '%Y-%m-%d %H:%M:%S'
+            elif tframe == TimeFrame.MicroSeconds:
+                fmtdata = '%Y-%m-%d %H:%M:%S.%f'
+            elif tframe == TimeFrame.Ticks:
+                fmtdata = '%Y-%m-%d %H:%M:%S.%f'
+        else:
+            fmtdata = self.pinf.sch.fmt_x_data
 
         fordata = MyDateFormatter(self.pinf.xreal, fmt=fmtdata)
         for dax in self.pinf.daxis.values():
@@ -256,7 +259,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         # Major locator / formatter
         locmajor = loc.AutoDateLocator(self.pinf.xreal)
         ax.xaxis.set_major_locator(locmajor)
-        autofmt = loc.AutoDateFormatter(self.pinf.xreal, locmajor)
+        if self.pinf.sch.fmt_x_ticks is None:
+            autofmt = loc.AutoDateFormatter(self.pinf.xreal, locmajor)
+        else:
+            autofmt = MyDateFormatter(self.pinf.xreal,
+                                      fmt=self.pinf.sch.fmt_x_ticks)
         ax.xaxis.set_major_formatter(autofmt)
 
     def calcrows(self, strategy):
