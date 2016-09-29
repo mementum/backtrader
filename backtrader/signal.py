@@ -36,4 +36,10 @@ import backtrader as bt
 
 
 class Signal(bt.Indicator):
+    SignalTypes = SignalTypes
+
     lines = ('signal',)
+
+    def __init__(self):
+        self.lines.signal = self.data0.lines[0]
+        self.plotinfo.plotmaster = getattr(self.data0, '_clock', self.data0)
