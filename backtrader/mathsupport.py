@@ -38,7 +38,7 @@ def average(x, bessel=False):
     return math.fsum(x) / (len(x) - bessel)
 
 
-def variance(x):
+def variance(x, avgx=None):
     '''
     Args:
       x: iterable with len
@@ -46,11 +46,12 @@ def variance(x):
     Returns:
       A list with the variance for each element of x
     '''
-    avgx = average(x)
+    if avgx is None:
+        avgx = average(x)
     return [pow(y - avgx, 2.0) for y in x]
 
 
-def standarddev(x, bessel=False):
+def standarddev(x, avgx=None, bessel=False):
     '''
     Args:
       x: iterable with len
@@ -61,4 +62,4 @@ def standarddev(x, bessel=False):
     Returns:
       A float with the standard deviation of the elements of x
     '''
-    return math.sqrt(average(variance(x), bessel=bessel))
+    return math.sqrt(average(variance(x, avgx), bessel=bessel))
