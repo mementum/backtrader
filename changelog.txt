@@ -1,3 +1,11 @@
+1.9.6.99:
+  - Allow defining the datetime format string for the x axis and data points.
+    Closes #148
+  - Rework plotting to account for datas with different lengths and work with
+    auto locators/formatters
+  - Improve signals to handle multiple datas and wrap LineIterators (Indicators)
+  - Use excess returns for the standard deviation in Sharpe Ratio
+
 1.9.5.99
   - Improve data synchronization behavior
   - Make new DataTrades synchronize to strategy
