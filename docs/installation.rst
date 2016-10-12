@@ -45,7 +45,7 @@ Install from pypi (including *matplotlib*)
 
 Use this if plotting capabilities are wished::
 
-  pip install backtrader[matplotlib]
+  pip install backtrader[plotting]
 
 This pulls in matplotlib which will in turn pull in other dependencies.
 
