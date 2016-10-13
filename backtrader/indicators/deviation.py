@@ -58,7 +58,7 @@ class StandardDeviation(Indicator):
 
         meansq = self.p.movav(pow(self.data, 2), period=self.p.period)
         sqmean = pow(mean, 2)
-        self.lines.stddev = pow(meansq - sqmean, 0.5)
+        self.lines.stddev = pow(abs(meansq - sqmean), 0.5)
 
 
 class MeanDeviation(Indicator):
