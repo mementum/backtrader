@@ -413,6 +413,10 @@ options are documented in the code::
           # Level of transparency to apply to bars/cancles (NOT USED)
           self.bartrans = 1.0
 
+          # Wether the candlesticks have to be filled or be transparent
+          self.barupfill = True
+          self.bardownfill = True
+
           # Wether to plot volume or not. Note: if the data in question has no
           # volume values, volume plotting will be skipped even if this is True
           self.volume = True

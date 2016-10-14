@@ -48,6 +48,8 @@ class CandlestickPlotHandler(object):
                  edgeadjust=0.05, edgeshading=-10,
                  alpha=1.0,
                  label='_nolegend',
+                 fillup=True,
+                 filldown=True,
                  **kwargs):
 
         # Manager up/down bar colors
@@ -85,6 +87,7 @@ class CandlestickPlotHandler(object):
             x, opens, highs, lows, closes,
             width, tickwidth, edgeadjust,
             label=label,
+            fillup=fillup, filldown=filldown,
             **kwargs)
 
         # add collections to the axis and return them
@@ -127,6 +130,7 @@ class CandlestickPlotHandler(object):
                       width, tickwidth=1, edgeadjust=0,
                       label='_nolegend',
                       scaling=1.0, bot=0,
+                      fillup=True, filldown=True,
                       **kwargs):
 
         # Prepack different zips of the series values
@@ -134,7 +138,9 @@ class CandlestickPlotHandler(object):
         xoc = lambda: zip(xs, opens, closes)
         iohlc = lambda: zip(xs, opens, highs, lows, closes)
 
-        colord = {True: self.colorup, False: self.colordown}
+        colorup = self.colorup if fillup else 'None'
+        colordown = self.colordown if filldown else 'None'
+        colord = {True: colorup, False: colordown}
         colors = [colord[o < c] for o, c in oc()]
 
         edgecolord = {True: self.edgeup, False: self.edgedown}
@@ -213,6 +219,8 @@ def plot_candlestick(ax,
                      edgeadjust=0.05, edgeshading=-10,
                      alpha=1.0,
                      label='_nolegend',
+                     fillup=True,
+                     filldown=True,
                      **kwargs):
 
     chandler = CandlestickPlotHandler(
@@ -224,6 +232,8 @@ def plot_candlestick(ax,
         edgeadjust, edgeshading,
         alpha,
         label,
+        fillup,
+        filldown,
         **kwargs)
 
     # Return the collections. the barcol goes first because

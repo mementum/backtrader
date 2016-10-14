@@ -569,7 +569,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     ax, self.pinf.x, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
-                    label=datalabel)
+                    label=datalabel,
+                    fillup=self.pinf.sch.barupfill,
+                    filldown=self.pinf.sch.bardownfill)
 
             elif self.pinf.sch.style.startswith('bar') or True:
                 # final default option -- should be "else"
