@@ -32,13 +32,15 @@ import ib.opt as ibopt
 from backtrader.feed import DataBase
 from backtrader import (TimeFrame, num2date, date2num, BrokerBase,
                         Order, OrderBase, OrderData)
-from backtrader.utils.py3 import bytes, with_metaclass, queue, MAXFLOAT
+from backtrader.utils.py3 import bytes, bstr, with_metaclass, queue, MAXFLOAT
 from backtrader.metabase import MetaParams
 from backtrader.comminfo import CommInfoBase
 from backtrader.position import Position
 from backtrader.stores import ibstore
 from backtrader.utils import AutoDict, AutoOrderedDict
 from backtrader.comminfo import CommInfoBase
+
+bytes = bstr  # py2/3 need for ibpy
 
 
 class IBOrderState(object):
