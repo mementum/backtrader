@@ -50,6 +50,7 @@ if PY2:
     cmp = cmp
 
     bytes = bytes
+    bstr = bytes
 
     from io import StringIO
 
@@ -93,6 +94,8 @@ else:
     def cmp(a, b): return (a > b) - (a < b)
 
     def bytes(x): return x.encode('utf-8')
+
+    def bstr(x): return str(x)
 
     from io import StringIO
 

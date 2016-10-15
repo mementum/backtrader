@@ -35,8 +35,10 @@ import ib.opt as ibopt
 
 from backtrader import TimeFrame, Position
 from backtrader.metabase import MetaParams
-from backtrader.utils.py3 import bytes, queue, with_metaclass
+from backtrader.utils.py3 import bytes, bstr, queue, with_metaclass
 from backtrader.utils import AutoDict
+
+bytes = bstr  # py2/3 need for ibpy
 
 
 def _ts2dt(tstamp=None):
