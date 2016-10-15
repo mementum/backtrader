@@ -1,3 +1,9 @@
+1.9.7.99
+  - Closes #156 by adding LinePlotterIndicator
+  - Closes #154 by providing hollow candlesticks
+  - Ensure unique name for analyzers to get all printed out by writers
+  - Fix installation instructions for plotting
+
 1.9.6.99:
   - Allow defining the datetime format string for the x axis and data points.
     Closes #148
