@@ -25,7 +25,8 @@ from __future__ import (absolute_import, division, print_function,
 from .utils.py3 import range, with_metaclass
 
 from .lineiterator import LineIterator, IndicatorBase
-from .lineseries import LineSeriesMaker
+from .lineseries import LineSeriesMaker, Lines
+from .metabase import AutoInfoClass
 
 
 class MetaIndicator(IndicatorBase.__class__):
@@ -133,3 +134,31 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
 
             self.advance()
             self.next()
+
+
+class MtLinePlotterIndicator(Indicator.__class__):
+    def donew(cls, *args, **kwargs):
+        lname = kwargs.pop('name')
+        name = cls.__name__
+
+        lines = getattr(cls, 'lines', Lines)
+        cls.lines = lines._derive(name, (lname,), 0, [])
+
+        plotlines = AutoInfoClass
+        newplotlines = dict()
+        newplotlines.setdefault(lname, dict())
+        cls.plotlines = plotlines._derive(name, newplotlines, [], recurse=True)
+
+        # Create the object and set the params in place
+        _obj, args, kwargs =  \
+            super(MtLinePlotterIndicator, cls).donew(*args, **kwargs)
+
+        _obj.owner = _obj.data.owner._clock
+        _obj.data.lines[0].addbinding(_obj.lines[0])
+
+        # Return the object and arguments to the chain
+        return _obj, args, kwargs
+
+
+class LinePlotterIndicator(with_metaclass(MtLinePlotterIndicator, Indicator)):
+    pass
