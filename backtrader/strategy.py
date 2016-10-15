@@ -75,6 +75,7 @@ class MetaStrategy(StrategyBase.__class__):
 
         _obj.stats = _obj.observers = ItemCollection()
         _obj.analyzers = ItemCollection()
+        _obj._alnames = collections.defaultdict(itertools.count)
         _obj.writers = list()
 
         _obj._slave_analyzers = list()
@@ -209,6 +210,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def _addanalyzer(self, ancls, *anargs, **ankwargs):
         anname = ankwargs.pop('_name', '') or ancls.__name__.lower()
+        nsuffix = next(self._alnames[anname])
+        anname += str(nsuffix or '')  # 0 (first instance) gets no suffix
         analyzer = ancls(*anargs, **ankwargs)
         self.analyzers.append(analyzer, anname)
 
@@ -393,8 +396,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         ainfo.Value.Begin = self.broker.startingcash
         ainfo.Value.End = self.broker.getvalue()
 
-        for analyzer in self.analyzers:  # no slave for writer
-            aname = analyzer.__class__.__name__
+        # no slave analyzers for writer
+        for aname, analyzer in self.analyzers.getitems():
             ainfo[aname].Params = analyzer.p._getkwargs() or None
             ainfo[aname].Analysis = analyzer.get_analysis()
 
