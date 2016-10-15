@@ -80,6 +80,11 @@ def runstrat(pargs=None):
         vwrkwargs['tau'] = args.tau
 
     cerebro.addanalyzer(bt.analyzers.VWR, **vwrkwargs)  # VWR Analyzer
+    # Sample time return analyzers
+    cerebro.addanalyzer(bt.analyzers.TimeReturn,
+                        timeframe=bt.TimeFrame.Months)
+    cerebro.addanalyzer(bt.analyzers.TimeReturn,
+                        timeframe=bt.TimeFrame.Years)
 
     # Add a writer to get output
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
@@ -99,7 +104,7 @@ def runstrat(pargs=None):
 def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='TimeReturns and SharpeRatio')
+        description='VWR')
 
     parser.add_argument('--data', '-d',
                         default='../../datas/2005-2006-day-001.txt',
