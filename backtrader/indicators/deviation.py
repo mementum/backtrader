@@ -43,7 +43,7 @@ class StandardDeviation(Indicator):
     alias = ('StdDev',)
 
     lines = ('stddev',)
-    params = (('period', 20), ('movav', MovAv.Simple),)
+    params = (('period', 20), ('movav', MovAv.Simple), ('safepow', False),)
 
     def _plotlabel(self):
         plabels = [self.p.period]
@@ -58,7 +58,11 @@ class StandardDeviation(Indicator):
 
         meansq = self.p.movav(pow(self.data, 2), period=self.p.period)
         sqmean = pow(mean, 2)
-        self.lines.stddev = pow(abs(meansq - sqmean), 0.5)
+
+        if self.p.safepow:
+            self.lines.stddev = pow(abs(meansq - sqmean), 0.5)
+        else:
+            self.lines.stddev = pow(meansq - sqmean, 0.5)
 
 
 class MeanDeviation(Indicator):
