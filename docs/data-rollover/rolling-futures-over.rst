@@ -18,7 +18,7 @@ a continuous stream alleviates the pain. The problem:
 
 Some literature, courtesy of *SierraChart* at:
 
-  - MyLink
+  - http://www.sierrachart.com/index.php?page=doc/ChangingFuturesContract.html
 
 The RollOver Data Feed
 **********************
