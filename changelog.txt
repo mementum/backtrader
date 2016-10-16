@@ -1,5 +1,6 @@
 1.9.8.99
   - Workaround IbPy not converting bytes by passing strings in Python3
+  - safepow parameter for StandardDeviation
 
 1.9.7.99
   - Closes #156 by adding LinePlotterIndicator
