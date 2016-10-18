@@ -202,7 +202,7 @@ class RSI_Safe(RSI):
     params = (('safediv', True),)
 
 
-class RSI_SMA(Indicator):
+class RSI_SMA(RSI):
     '''
     Uses a SimpleMovingAverage as described in Wikipedia and other soures
 
@@ -214,7 +214,7 @@ class RSI_SMA(Indicator):
     params = (('movav', MovAv.Simple),)
 
 
-class RSI_EMA(Indicator):
+class RSI_EMA(RSI):
     '''
     Uses an ExponentialMovingAverage as described in Wikipedia
 
