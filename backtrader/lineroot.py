@@ -250,6 +250,9 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
     def __abs__(self):
         return self._operationown(operator.__abs__)
 
+    def __neg__(self):
+        return self._operationown(operator.__neg__)
+
     def __lt__(self, other):
         return self._operation(other, operator.__lt__)
 
