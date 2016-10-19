@@ -1,3 +1,15 @@
+1.9.9.99
+  - Correct RSI_EMA, RSI_SMA subclassing
+  - Add cheat-on-close to the broker
+  - Correct own operation bug directly on lines (was fine on line
+    actions/operations)
+  - Add support for __neg__ operator (-) to lines
+  - Adresses #170 by forcing a bool as return
+  - Extend signal trigger detection to inverse and any values
+  - Support for embedding in a line non-line types
+  - Closes #171. Make safepow the default
+  - Use DataTrades only if several datas are in place
+
 1.9.8.99
   - Workaround IbPy not converting bytes by passing strings in Python3
   - safepow parameter for StandardDeviation
