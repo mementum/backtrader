@@ -377,7 +377,7 @@ class LineBuffer(LineSingle):
                               _ownerskip=_ownerskip)
 
     def _makeoperationown(self, operation, _ownerskip=None):
-        return LineOwnOperation(self, operation, _ownerskip=None)
+        return LineOwnOperation(self, operation, _ownerskip=_ownerskip)
 
     def _settz(self, tz):
         self._tz = tz
