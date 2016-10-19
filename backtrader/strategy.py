@@ -1107,8 +1107,9 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
         ('_data', None),
     )
 
-    def start(self):
+    def _start(self):
         self.order = None  # sentinel for order concurrency
+        super(SignalStrategy, self)._start()
 
     def signal_add(self, sigtype, signal):
         self._signals[sigtype].append(signal)
