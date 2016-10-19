@@ -114,7 +114,7 @@ class Position(object):
         return abs(self.size)
 
     def __bool__(self):
-        return self.size != 0
+        return bool(self.size != 0)
 
     __nonzero__ = __bool__
 
