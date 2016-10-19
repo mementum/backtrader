@@ -136,7 +136,7 @@ class SharpeRatio(Analyzer):
             retavg = average([r - rate for r in self.anret.rets])
             retdev = standarddev(self.anret.rets)
 
-            self.ratio = retavg / retdev if retdev else math.nan
+            self.ratio = retavg / retdev if retdev else None
         else:
             # Get the returns from the subanalyzer
             returns = list(itervalues(self.timereturn.get_analysis()))
