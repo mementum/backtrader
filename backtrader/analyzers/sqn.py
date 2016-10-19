@@ -72,7 +72,7 @@ class SQN(Analyzer):
 
     def stop(self):
         if self.count == 0:
-            self.rets.sqn = math.nan
+            self.rets.sqn = None
             self.rets.trades = 0
             return
 
