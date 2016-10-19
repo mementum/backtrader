@@ -35,6 +35,33 @@ backtrader
 **Release 1.9.0.99**: `Data Synchronization Rework
 <http://www.backtrader.com/posts/2016-09-17-data-synchronization/data-synchronization/>`_
 
+Here a snippet of a Simple Moving Average CrossOver. It can be done in several
+different ways. Use the docs (and examples) Luke!
+::
+
+  from datetime import datetime
+  import backtrader as bt
+
+  class SmaCross(bt.SignalStrategy):
+      def __init__(self):
+          sma1, sma2 = bt.ind.SMA(period=10), bt.ind.SMA(period=30)
+          crossover = bt.ind.CrossOver(sma1, sma2)
+          self.signal_add(bt.SIGNAL_LONG, crossover)
+
+  cerebro = bt.Cerebro()
+  cerebro.addstrategy(SmaCross)
+
+  data0 = bt.feeds.YahooFinanceData(dataname='YHOO', fromdate=datetime(2011, 1, 1),
+                                    todate=datetime(2012, 12, 31))
+  cerebro.adddata(data0)
+
+  cerebro.run()
+  cerebro.plot()
+
+Including a full featured chart. Give it a try! This is included in the samples
+as ``sigsmacross/sigsmacross2.py``. Along it is ``sigsmacross.py`` which can be
+parametrized from the command line.
+
 Features:
 =========
 
