@@ -25,6 +25,8 @@ from . import Indicator, And
 
 
 class _CrossBase(Indicator):
+    _mindatas = 2
+
     lines = ('cross',)
 
     plotinfo = dict(plotymargin=0.05, plotyhlines=[0.0, 1.0])
