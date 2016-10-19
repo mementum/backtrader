@@ -846,7 +846,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
-            strat = stratcls(self, *sargs, **skwargs)
+            strat = stratcls(*sargs, **skwargs)
             if self.p.oldsync:
                 strat._oldsync = True  # tell strategy to use old clock update
             if self.p.tradehistory:

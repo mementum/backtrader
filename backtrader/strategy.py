@@ -32,7 +32,7 @@ from .utils.py3 import (filter, keys, integer_types, iteritems, itervalues,
 import backtrader as bt
 from .lineiterator import LineIterator, StrategyBase
 from .lineroot import LineSingle
-from .metabase import ItemCollection
+from .metabase import ItemCollection, findowner
 from .trade import Trade
 from .utils import OrderedDict, AutoOrderedDict, AutoDictList
 
@@ -62,11 +62,18 @@ class MetaStrategy(StrategyBase.__class__):
            name != 'Strategy' and not name.startswith('_'):
             cls._indcol[name] = cls
 
-    def dopreinit(cls, _obj, env, *args, **kwargs):
+    def donew(cls, *args, **kwargs):
+        _obj, args, kwargs = super(MetaStrategy, cls).donew(*args, **kwargs)
+
+        # Find the owner and store it
+        _obj.env = findowner(_obj, bt.Cerebro)
+
+        return _obj, args, kwargs
+
+    def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaStrategy, cls).dopreinit(_obj, *args, **kwargs)
-        _obj.env = env
-        _obj.broker = env.broker
+        _obj.broker = _obj.env.broker
         _obj._sizer = bt.sizers.FixedSize()
         _obj._orders = list()
         _obj._orderspending = list()
@@ -975,9 +982,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
 class MetaSigStrategy(Strategy.__class__):
 
-    def dopreinit(cls, _obj, env, *args, **kwargs):
+    def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
-            super(MetaSigStrategy, cls).dopreinit(_obj, env, *args, **kwargs)
+            super(MetaSigStrategy, cls).dopreinit(_obj, *args, **kwargs)
 
         _obj._signals = collections.defaultdict(list)
 
