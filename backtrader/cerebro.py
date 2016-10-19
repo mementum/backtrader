@@ -863,7 +863,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 else:
                     strat._addobserver(True, observers.BuySell, barplot=True)
 
-                if self.p.oldtrades:
+                if self.p.oldtrades or len(self.datas) == 1:
                     strat._addobserver(False, observers.Trades)
                 else:
                     strat._addobserver(False, observers.DataTrades)
