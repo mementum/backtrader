@@ -551,7 +551,7 @@ class MetaLineActions(LineBuffer.__class__):
             mlines = [x.lines[0] for x in args if isinstance(x, LineMultiple)]
             _minperiods = [x._minperiod for x in mlines]
 
-        _minperiod = max(_minperiods)
+        _minperiod = max(_minperiods or [1])
 
         # update own minperiod if needed
         _obj.updateminperiod(_minperiod)
@@ -633,11 +633,15 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
         self.oncebinding()
 
 
-def LineDelay(a, ago, **kwargs):
+def LineDelay(a, ago=0, **kwargs):
     if ago <= 0:
         return _LineDelay(a, ago, **kwargs)
 
     return _LineForward(a, ago, **kwargs)
+
+
+def LineNum(num):
+    return LineDelay(PseudoArray(num))
 
 
 class _LineDelay(LineActions):
