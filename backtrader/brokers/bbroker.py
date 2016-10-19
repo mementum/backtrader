@@ -181,6 +181,14 @@ class BackBroker(bt.BrokerBase):
           Provide *slippage* even if the price falls outside the ``high`` -
           ``low`` range.
 
+        - ``coc`` (default: ``False``)
+
+          *Cheat-On-Close*. Setting this to ``True`` with ``set_coc`` enables
+           matching a ``Market`` order to the closing price of the bar in which
+           the order was issued. This is actually *cheating*, because the bar
+           is *closed* and any order should first be matched against the prices
+           in the next bar
+
     '''
     params = (
         ('cash', 10000.0),
@@ -194,6 +202,7 @@ class BackBroker(bt.BrokerBase):
         ('slip_match', True),
         ('slip_limit', True),
         ('slip_out', False),
+        ('coc', False),
     )
 
     def init(self):
@@ -215,6 +224,10 @@ class BackBroker(bt.BrokerBase):
             pass
 
         return None
+
+    def set_coc(self, coc):
+        '''Configure the Cheat-On-Close method to buy the close on order bar'''
+        self.p.coc = coc
 
     def set_slippage_perc(self, perc,
                           slip_open=True, slip_limit=True,
@@ -492,12 +505,19 @@ class BackBroker(bt.BrokerBase):
         self.notifs.append(order.clone())
 
     def _try_exec_market(self, order, popen, phigh, plow):
-        if order.isbuy():
-            p = self._slip_up(phigh, popen, doslip=self.p.slip_open)
+        if self.p.coc:
+            ago = -1
+            exprice = order.data.close[-1]
         else:
-            p = self._slip_down(plow, popen, doslip=self.p.slip_open)
+            ago = 0
+            exprice = popen
 
-        self._execute(order, ago=0, price=p)
+        if order.isbuy():
+            p = self._slip_up(phigh, exprice, doslip=self.p.slip_open)
+        else:
+            p = self._slip_down(plow, exprice, doslip=self.p.slip_open)
+
+        self._execute(order, ago=ago, price=p)
 
     def _try_exec_close(self, order, pclose):
         # pannotated allows to keep track of the closing bar if there is no
