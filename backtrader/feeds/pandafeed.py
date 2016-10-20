@@ -90,7 +90,7 @@ class PandasDirectData(feed.DataBase):
         tstamp = row[colidx]
 
         # convert to float via datetime and store it
-        dt = tstamp.to_datetime()
+        dt = tstamp.to_pydatetime()
         dtnum = date2num(dt)
 
         # get the line to be set
@@ -231,7 +231,7 @@ class PandasData(feed.DataBase):
             tstamp = self.p.dataname.index[coldtime][self._idx]
 
         # convert to float via datetime and store it
-        dt = tstamp.to_datetime()
+        dt = tstamp.to_pydatetime()
         dtnum = date2num(dt)
         self.lines.datetime[0] = dtnum
 
