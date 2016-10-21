@@ -27,8 +27,6 @@ import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.utils.flushfile
 
-from pivotpoint import PivotPoint, PivotPoint1
-
 
 class St(bt.Strategy):
     params = (('usepp1', False),
@@ -36,9 +34,11 @@ class St(bt.Strategy):
 
     def __init__(self):
         if self.p.usepp1:
-            self.pp = PivotPoint1(self.data1)
+            self.pp = bt.ind.PivotPoint1(self.data1)
         else:
-            self.pp = PivotPoint(self.data1)
+            self.pp = pp = bt.ind.PivotPoint(self.data1)
+            pp.plotinfo.plot = False  # deactivate plotting
+            pp1 = self.pp()
 
         if self.p.plot_on_daily:
             self.pp.plotinfo.plotmaster = self.data0
@@ -65,7 +65,7 @@ def runstrat():
     cerebro.addstrategy(St,
                         usepp1=args.usepp1,
                         plot_on_daily=args.plot_on_daily)
-    cerebro.run()
+    cerebro.run(runonce=False)
     if args.plot:
         cerebro.plot(style='bar')
 
