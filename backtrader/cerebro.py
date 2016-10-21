@@ -1129,6 +1129,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 dt0 = min((d for d in dts if d is not None))
                 dmaster = datas[dts.index(dt0)]  # and timemaster
 
+                slen = len(runstrats[0])
                 # Try to get something for those that didn't return
                 for i, ret in enumerate(drets):
                     if ret:  # dts already contains a valid datetime for this i
@@ -1143,7 +1144,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         self._plotfillers[i].append(slen)  # mark as empty
 
                 # make sure only those at dmaster level end up delivering
-                slen = len(runstrats[0])
                 for i, dti in enumerate(dts):
                     if dti is not None and dti > dt0:
                         datas[i].rewind()  # cannot deliver yet
