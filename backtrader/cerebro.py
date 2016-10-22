@@ -1145,12 +1145,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 # make sure only those at dmaster level end up delivering
                 for i, dti in enumerate(dts):
-                    if dti is not None and dti > dt0:
-                        datas[i].rewind()  # cannot deliver yet
-                        self._plotfillers[i].append(slen)
-                    elif not datas[i].replaying:
-                        # Replay forces tick fill, else force here
-                        datas[i]._tick_fill(force=True)
+                    if dti is not None:
+                        if dti > dt0:
+                            datas[i].rewind()  # cannot deliver yet
+                            self._plotfillers[i].append(slen)
+                        elif not datas[i].replaying:
+                            # Replay forces tick fill, else force here
+                            datas[i]._tick_fill(force=True)
 
             elif d0ret is None:
                 # meant for things like live feeds which may not produce a bar
