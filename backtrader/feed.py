@@ -379,12 +379,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         for ff, fargs, fkwargs in self._ffilters:
             ret += ff.last(self, *fargs, **fkwargs)
 
+        doticks = False
         if datamaster is not None and self._barstack:
             doticks = True
 
         while self._fromstack(forward=True):
             # consume bar(s) produced by "last"s - adding room
             pass
+
+        if doticks:
+            self._tick_fill()
 
         return bool(ret)
 
@@ -436,7 +440,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 continue
             if dt > self.todate:
                 # discard loaded bar and break out
-                self.backwards()
+                self.backwards(force=True)
                 break
 
             # Pass through filters
