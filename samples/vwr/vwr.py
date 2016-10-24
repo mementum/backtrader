@@ -79,6 +79,8 @@ def runstrat(pargs=None):
     if args.tau is not None:
         vwrkwargs['tau'] = args.tau
 
+    cerebro.addanalyzer(bt.analyzers.SQN)  # VWR Analyzer
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio_A)  # VWR Analyzer
     cerebro.addanalyzer(bt.analyzers.VWR, **vwrkwargs)  # VWR Analyzer
     # Sample time return analyzers
     cerebro.addanalyzer(bt.analyzers.TimeReturn,
