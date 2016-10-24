@@ -75,8 +75,10 @@ class SQN(Analyzer):
         pnl_stddev = standarddev(self.pnl)
 
         trades_sqr = math.sqrt(len(self.pnl))
-
-        sqn = trades_sqr * pnl_av / pnl_stddev
+        if trades_sqr:
+            sqn = trades_sqr * pnl_av / pnl_stddev
+        else:
+            sqn = 0
 
         self.rets.sqn = sqn
         self.rets.trades = self.count
