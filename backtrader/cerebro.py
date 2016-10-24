@@ -889,7 +889,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if not predata:
             for strat in runstrats:
-                strat.qbuffer(self._exactbars)
+                strat.qbuffer(self._exactbars, replaying=self._doreplay)
 
         for writer in self.runwriters:
             writer.start()
