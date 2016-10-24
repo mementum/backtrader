@@ -71,6 +71,11 @@ class SQN(Analyzer):
             self.count += 1
 
     def stop(self):
+        if self.count == 0:
+            self.rets.sqn = None
+            self.rets.trades = 0
+            return
+
         pnl_av = average(self.pnl)
         pnl_stddev = standarddev(self.pnl)
 

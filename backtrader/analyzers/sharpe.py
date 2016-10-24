@@ -136,7 +136,7 @@ class SharpeRatio(Analyzer):
             retavg = average([r - rate for r in self.anret.rets])
             retdev = standarddev(self.anret.rets)
 
-            self.ratio = retavg / retdev
+            self.ratio = retavg / retdev if retdev else None
         else:
             # Get the returns from the subanalyzer
             returns = list(itervalues(self.timereturn.get_analysis()))
@@ -174,9 +174,9 @@ class SharpeRatio(Analyzer):
             retdev = standarddev(ret_free, avgx=ret_free_avg,
                                  bessel=self.p.stddev_sample)
 
-            ratio = ret_free_avg / retdev
+            ratio = ret_free_avg / retdev if retdev else None
 
-            if factor is not None and self.p.convertrate and self.p.annualize:
+            if ratio and factor is not None and self.p.convertrate and self.p.annualize:
                 ratio = math.sqrt(factor) * ratio
 
             self.ratio = ratio
@@ -197,3 +197,4 @@ class SharpeRatio_A(SharpeRatio):
     params = (
         ('annualize', True),
     )
+
