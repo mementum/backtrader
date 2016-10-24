@@ -494,24 +494,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         return volplot
 
-    def setxdata(self, data):
-        # only if this data has a master, do something
-        if data.mlen:
-            # this data has a master, get the real length of this data
-            self.pinf.xlen = len(data.mlen)
-            # find the starting point with regards to master start: pstart
-            self.pinf.xstart = bisect.bisect_left(
-                data.mlen, self.pinf.pstart)
-
-            # find the ending point with regards to master start: pend
-            self.pinf.xend = bisect.bisect_right(
-                data.mlen, self.pinf.pend)
-
-            # extract the Xs from the subdata
-            self.pinf.x = data.mlen[self.pinf.xstart:self.pinf.xend]
-            # rebase the Xs to the start of the main data point
-            self.pinf.x = [x - self.pinf.pstart for x in self.pinf.x]
-
     def plotdata(self, data, indicators):
         for ind in indicators:
             upinds = self.dplotsup[ind]
@@ -520,9 +502,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                              subinds=self.dplotsover[upind],
                              upinds=self.dplotsup[upind],
                              downinds=self.dplotsdown[upind])
-
-        # set the x axis data (if needed)
-        self.setxdata(data)
 
         opens = data.open.plotrange(self.pinf.xstart, self.pinf.xend)
         highs = data.high.plotrange(self.pinf.xstart, self.pinf.xend)

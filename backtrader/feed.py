@@ -97,9 +97,6 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
                 _obj.p.todate = datetime.datetime.combine(
                     _obj.p.todate, _obj.p.sessionend)
 
-        # hold datamaster points corresponding to own
-        _obj.mlen = list()
-
         _obj._barstack = collections.deque()  # for filter operations
         _obj._barstash = collections.deque()  # for filter operations
 
@@ -243,7 +240,6 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def start(self):
         self._barstack = collections.deque()
         self._barstash = collections.deque()
-        self.mlen = list()
         self._laststatus = self.CONNECTED
 
     def stop(self):
@@ -326,7 +322,6 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
                 self.lines.rewind()
             else:
-                self.mlen.append(len(datamaster) - 1)
                 if ticks:
                     self._tick_fill()
         elif len(self) < self.buflen():
@@ -361,7 +356,6 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 # can't deliver new bar, too early, go back
                 self.rewind()
             else:
-                self.mlen.append(len(datamaster) - 1)
                 if ticks:
                     self._tick_fill()
 
@@ -386,8 +380,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             ret += ff.last(self, *fargs, **fkwargs)
 
         if datamaster is not None and self._barstack:
-            self.mlen.append(len(datamaster) - 1)
-            self._tick_fill()
+            doticks = True
 
         while self._fromstack(forward=True):
             # consume bar(s) produced by "last"s - adding room
