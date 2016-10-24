@@ -525,6 +525,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         dataname.resample(**kwargs)
         self.adddata(dataname, name=name)
+        self._doreplay = True
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''
@@ -1104,6 +1105,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         data0 = self.datas[0]
         d0ret = True
 
+        rs = [i for i, x in enumerate(datas) if x.resampling]
+        onlyreplay = len(datas) == len(rs)
+        noreplay = not rs
+
         while d0ret or d0ret is None:
             lastret = False
             # Notify anything from the store even before moving datas
@@ -1126,7 +1131,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     dts.append(datas[i].datetime[0] if ret else None)
 
                 # Get index to minimum datetime
-                dt0 = min((d for d in dts if d is not None))
+                if onlyreplay or noreplay:
+                    dt0 = min((d for d in dts if d is not None))
+                else:
+                    dt0 = min((d for i, d in enumerate(dts)
+                               if d is not None and i not in rs))
+
                 dmaster = datas[dts.index(dt0)]  # and timemaster
 
                 slen = len(runstrats[0])
