@@ -641,15 +641,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
             else:
                 numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
 
-        pfillers = {self.datas[i]: self._plotfillers[i]
-                    for i, x in enumerate(self._plotfillers)}
+        # pfillers = {self.datas[i]: self._plotfillers[i]
+        # for i, x in enumerate(self._plotfillers)}
+
+        # pfillers2 = {self.datas[i]: self._plotfillers2[i]
+        # for i, x in enumerate(self._plotfillers2)}
+
         figs = []
         for stratlist in self.runstrats:
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    useplotly=useplotly,
-                                    pfillers=pfillers)
+                                    useplotly=useplotly)
+                # pfillers=pfillers2)
 
                 figs.append(rfig)
 
@@ -834,7 +838,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if writer.p.csv:
                     writer.addheaders(wheaders)
 
-        self._plotfillers = [list() for d in self.datas]
+        # self._plotfillers = [list() for d in self.datas]
+        # self._plotfillers2 = [list() for d in self.datas]
 
         if not predata:
             for data in self.datas:
@@ -1139,7 +1144,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 dmaster = datas[dts.index(dt0)]  # and timemaster
 
-                slen = len(runstrats[0])
+                # slen = len(runstrats[0])
                 # Try to get something for those that didn't return
                 for i, ret in enumerate(drets):
                     if ret:  # dts already contains a valid datetime for this i
@@ -1150,18 +1155,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     d._check(forcedata=dmaster)  # check to force output
                     if d.next(datamaster=dmaster, ticks=False):  # retry
                         dts[i] = d.datetime[0]  # good -> store
+                        # self._plotfillers2[i].append(slen)  # mark as fill
                     else:
-                        self._plotfillers[i].append(slen)  # mark as empty
+                        # self._plotfillers[i].append(slen)  # mark as empty
+                        pass
 
                 # make sure only those at dmaster level end up delivering
                 for i, dti in enumerate(dts):
                     if dti is not None:
                         if dti > dt0:
                             datas[i].rewind()  # cannot deliver yet
-                            self._plotfillers[i].append(slen)
+                            # self._plotfillers[i].append(slen)
                         elif not datas[i].replaying:
                             # Replay forces tick fill, else force here
                             datas[i]._tick_fill(force=True)
+
+                        # self._plotfillers2[i].append(slen)  # mark as fill
 
             elif d0ret is None:
                 # meant for things like live feeds which may not produce a bar
@@ -1232,8 +1241,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for i, dti in enumerate(dts):
                 if dti <= dt0:
                     datas[i].advance()
+                    # self._plotfillers2[i].append(slen)  # mark as fill
                 else:
-                    self._plotfillers[i].append(slen)
+                    # self._plotfillers[i].append(slen)
+                    pass
 
             self._brokernotify()
             if self._event_stop:  # stop if requested

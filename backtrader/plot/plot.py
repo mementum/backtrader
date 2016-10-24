@@ -107,8 +107,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False,
-             pfillers={}):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
+        # pfillers={}):
         if not strategy.datas:
             return
 
@@ -154,19 +154,30 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.pinf.pstart, self.pinf.psize)
             self.pinf.xlen = len(self.pinf.xreal)
             self.pinf.x = list(range(self.pinf.xlen))
-            self.pinf.pfillers = {None: []}
-            for key, val in pfillers.items():
-                pfstart = bisect.bisect_left(val, self.pinf.pstart)
-                pfend = bisect.bisect_right(val, self.pinf.pend)
-                self.pinf.pfillers[key] = val[pfstart:pfend]
+            # self.pinf.pfillers = {None: []}
+            # for key, val in pfillers.items():
+            #     pfstart = bisect.bisect_left(val, self.pinf.pstart)
+            #     pfend = bisect.bisect_right(val, self.pinf.pend)
+            #     self.pinf.pfillers[key] = val[pfstart:pfend]
 
             # Do the plotting
             # Things that go always at the top (observers)
+            self.pinf.xdata = self.pinf.x
             for ptop in self.dplotstop:
                 self.plotind(None, ptop, subinds=self.dplotsover[ptop])
 
             # Create the rest on a per data basis
+            dt0, dt1 = self.pinf.xreal[0], self.pinf.xreal[-1]
             for data in strategy.datas:
+                self.pinf.xdata = self.pinf.x
+                if len(data) < self.pinf.xlen:
+                    self.pinf.xdata = xdata = []
+                    xreal = self.pinf.xreal
+                    dts = data.datetime.plot()
+                    for dt in (x for x in dts if dt0 <= x <= dt1):
+                        dtidx = bisect.bisect_left(xreal, dt)
+                        xdata.append(dtidx)
+
                 for ind in self.dplotsup[data]:
                     self.plotind(
                         data,
@@ -349,9 +360,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
-            if len(lplot) < self.pinf.xlen:
-                for idx in self.pinf.pfillers[iref]:
-                    lplot.insert(idx, float('NaN'))
 
             if not math.isnan(lplot[-1]):
                 label += ' %.2f' % lplot[-1]
@@ -371,7 +379,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 plotkwargs['zorder'] = self.pinf.zordernext(ax)
 
             pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
-            plottedline = pltmethod(self.pinf.x, lplot, **plotkwargs)
+            plottedline = pltmethod(self.pinf.xdata, lplot, **plotkwargs)
             try:
                 plottedline = plottedline[0]
             except:
@@ -454,13 +462,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         maxvol = volylim = max(volumes)
         if maxvol:
-            pfiller = self.pinf.pfillers[data]
-            for idx in pfiller:
-                volumes.insert(idx, 0.0)
 
             # Plot the volume (no matter if as overlay or standalone)
             vollabel = label
-            volplot, = plot_volume(ax, self.pinf.x, opens, closes, volumes,
+            volplot, = plot_volume(ax, self.pinf.xdata, opens, closes, volumes,
                                    colorup=self.pinf.sch.volup,
                                    colordown=self.pinf.sch.voldown,
                                    alpha=volalpha, label=vollabel)
@@ -509,11 +514,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         closes = data.close.plotrange(self.pinf.xstart, self.pinf.xend)
         volumes = data.volume.plotrange(self.pinf.xstart, self.pinf.xend)
 
-        for x in [opens, highs, lows, closes]:
-            pfiller = self.pinf.pfillers[data]
-            for idx in pfiller:
-                x.insert(idx, float('NaN'))
-
         vollabel = 'Volume'
         if self.pinf.sch.volume and self.pinf.sch.voloverlay:
             volplot = self.plotvolume(
@@ -540,12 +540,12 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         if self.pinf.sch.style.startswith('line'):
             plotted = plot_lineonclose(
-                ax, self.pinf.x, closes,
+                ax, self.pinf.xdata, closes,
                 color=self.pinf.sch.loc, label=datalabel)
         else:
             if self.pinf.sch.style.startswith('candle'):
                 plotted = plot_candlestick(
-                    ax, self.pinf.x, opens, highs, lows, closes,
+                    ax, self.pinf.xdata, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel,
@@ -555,7 +555,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             elif self.pinf.sch.style.startswith('bar') or True:
                 # final default option -- should be "else"
                 plotted = plot_ohlc(
-                    ax, self.pinf.x, opens, highs, lows, closes,
+                    ax, self.pinf.xdata, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel)
@@ -674,5 +674,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     self.dplotsdown[key].append(x)
             else:
                 self.dplotsover[key].append(x)
+
 
 Plot = Plot_OldSync
