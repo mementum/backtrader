@@ -232,8 +232,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def getfeed(self):
         return self._feed
 
-    def qbuffer(self, savemem=0):
-        extrasize = self.resampling
+    def qbuffer(self, savemem=0, replaying=False):
+        extrasize = self.resampling or replaying
         for line in self.lines:
             line.qbuffer(savemem=savemem, extrasize=extrasize)
 
