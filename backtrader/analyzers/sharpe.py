@@ -174,10 +174,15 @@ class SharpeRatio(Analyzer):
             retdev = standarddev(ret_free, avgx=ret_free_avg,
                                  bessel=self.p.stddev_sample)
 
-            ratio = ret_free_avg / retdev
+            try:
+                ratio = ret_free_avg / retdev
 
-            if factor is not None and self.p.convertrate and self.p.annualize:
-                ratio = math.sqrt(factor) * ratio
+                if factor is not None and \
+                   self.p.convertrate and self.p.annualize:
+
+                    ratio = math.sqrt(factor) * ratio
+            except (ValueError, TypeError):
+                ratio = None
 
             self.ratio = ratio
 
