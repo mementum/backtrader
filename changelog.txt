@@ -1,3 +1,15 @@
+1.9.10.99
+  - Further use cases coverage for new synchronizatio method and
+    resample/replay
+  - PR #173 - SharpeRatio returns None if it cannot be calculated
+  - PR #173 - SQN returns 0 (instead of raising exception) if no trades have
+    been made
+  - Cover replay case for cheat-on-close
+  - Extra analyzers in VWR Sample and modernized PivotPoint sample
+  - Reworked of plotting for datas of different length by matching date indexes
+  - Removed old mlen accounting for plotting different timeframes
+  - #172 cover extra unwinding of linebuffer and add extra size to qbuffer
+
 1.9.9.99
   - Correct RSI_EMA, RSI_SMA subclassing
   - Add cheat-on-close to the broker
