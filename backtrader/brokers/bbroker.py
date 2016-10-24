@@ -506,8 +506,8 @@ class BackBroker(bt.BrokerBase):
 
     def _try_exec_market(self, order, popen, phigh, plow):
         if self.p.coc:
-            ago = -1
-            exprice = order.data.close[-1]
+            ago = order.created.length - len(order.data)
+            exprice = order.data.close[ago]
         else:
             ago = 0
             exprice = popen
