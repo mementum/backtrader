@@ -113,7 +113,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     # keep the latest delivered data date in the line
     lines = ('datetime',)
 
-    def qbuffer(self, savemem=0):
+    def qbuffer(self, savemem=0, replaying=False):
         '''Enable the memory saving schemes. Possible values for ``savemem``:
 
           0: No savings. Each lines object keeps in memory all values
@@ -138,7 +138,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         elif savemem > 0:
             for data in self.datas:
-                data.qbuffer()
+                data.qbuffer(replaying=replaying)
 
             for line in self.lines:
                 line.qbuffer(savemem=1)
