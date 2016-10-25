@@ -1,3 +1,7 @@
+1.9.11.99:
+  - Separate resampling from replaying for synchronization purposes
+  - Modernize sample to better check #169
+
 1.9.10.99
   - Further use cases coverage for new synchronizatio method and
     resample/replay
