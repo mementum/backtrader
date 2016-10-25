@@ -82,12 +82,13 @@ def runstrat():
 
     cerebro.addstrategy(St)
 
-    cerebro.run(stdstats=False, runonce=False, preload=False)
+    cerebro._doreplay = True
+    cerebro.run(**(eval('dict(' + args.cerebro + ')')))
     if args.plot:
-        cerebro.plot(style='bar')
+        cerebro.plot(**(eval('dict(' + args.plot + ')')))
 
 
-def parse_args():
+def parse_args(pargs=None):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description='Sample for pivot point and cross plotting')
@@ -96,10 +97,14 @@ def parse_args():
                         default='../../datas/2005-2006-day-001.txt',
                         help='Data to be read in')
 
-    parser.add_argument('--plot', required=False, action='store_true',
-                        help=('Plot the result'))
+    parser.add_argument('--cerebro', required=False, action='store',
+                        default='', help=('Arguments for cerebro'))
 
-    return parser.parse_args()
+    parser.add_argument('--plot', '-p', nargs='?', required=False,
+                        metavar='kwargs', const='{}',
+                        help=('Plot (with additional args if passed'))
+
+    return parser.parse_args(pargs)
 
 
 if __name__ == '__main__':
