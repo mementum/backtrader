@@ -1111,8 +1111,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         d0ret = True
 
         rs = [i for i, x in enumerate(datas) if x.resampling]
-        onlyreplay = len(datas) == len(rs)
-        noreplay = not rs
+        rp = [i for i, x in enumerate(datas) if x.replaying]
+        rsonly = [i for i, x in enumerate(datas)
+                  if x.resampling and not x.replaying]
+        onlyresample = len(datas) == len(rsonly)
+        noresample = not rsonly
 
         while d0ret or d0ret is None:
             lastret = False
@@ -1136,11 +1139,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     dts.append(datas[i].datetime[0] if ret else None)
 
                 # Get index to minimum datetime
-                if onlyreplay or noreplay:
+                if onlyresample or noresample:
                     dt0 = min((d for d in dts if d is not None))
                 else:
                     dt0 = min((d for i, d in enumerate(dts)
-                               if d is not None and i not in rs))
+                               if d is not None and i not in rsonly))
 
                 dmaster = datas[dts.index(dt0)]  # and timemaster
 
