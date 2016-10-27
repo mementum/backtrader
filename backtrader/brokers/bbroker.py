@@ -382,7 +382,8 @@ class BackBroker(bt.BrokerBase):
 
         return self.submit(order)
 
-    def _execute(self, order, ago=None, price=None, cash=None, position=None):
+    def _execute(self, order, ago=None, price=None, cash=None, position=None,
+                 dtcoc=None):
         # ago = None is used a flag for pseudo execution
         if ago is not None and price is None:
             return  # no psuedo exec no price - no execution
@@ -485,7 +486,7 @@ class BackBroker(bt.BrokerBase):
             position.update(execsize, price, order.data.datetime.datetime())
 
             # Execute and notify the order
-            order.execute(order.data.datetime[ago],
+            order.execute(dtcoc or order.data.datetime[ago],
                           execsize, price,
                           closed, closedvalue, closedcomm,
                           opened, openedvalue, openedcomm,
@@ -505,11 +506,12 @@ class BackBroker(bt.BrokerBase):
         self.notifs.append(order.clone())
 
     def _try_exec_market(self, order, popen, phigh, plow):
+        ago = 0
         if self.p.coc:
-            ago = order.created.length - len(order.data)
-            exprice = order.data.close[ago]
+            dtcoc = order.created.dt
+            exprice = order.created.pclose
         else:
-            ago = 0
+            dtcoc = None
             exprice = popen
 
         if order.isbuy():
@@ -517,7 +519,7 @@ class BackBroker(bt.BrokerBase):
         else:
             p = self._slip_down(plow, exprice, doslip=self.p.slip_open)
 
-        self._execute(order, ago=ago, price=p)
+        self._execute(order, ago=0, price=p, dtcoc=dtcoc)
 
     def _try_exec_close(self, order, pclose):
         # pannotated allows to keep track of the closing bar if there is no

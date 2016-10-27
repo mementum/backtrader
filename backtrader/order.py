@@ -126,9 +126,9 @@ class OrderData(object):
     # thread making an append and with no need for a lock
 
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0,
-                 length=0):
+                 pclose=0.0):
 
-        self.length = length
+        self.pclose = pclose
         self.exbits = collections.deque()  # for historical purposes
         self.p1, self.p2 = 0, 0  # indices to pending notifications
 
@@ -296,7 +296,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
                                  size=self.size,
                                  price=price,
                                  pricelimit=self.pricelimit,
-                                 length=len(self.data))
+                                 pclose=self.data.close[0])
 
         self.executed = OrderData(remsize=self.size)
         self.position = 0
