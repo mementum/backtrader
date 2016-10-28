@@ -729,6 +729,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             self._dorunonce = False  # something is saving memory, no runonce
             self._dopreload = self._dopreload and self._exactbars < 1
 
+        self._doreplay = self._doreplay or any(x.replaying for x in self.datas)
         if self._doreplay:
             # preloading is not supported with replay. full timeframe bars
             # are constructed in realtime
