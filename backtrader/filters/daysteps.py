@@ -38,8 +38,12 @@ class BarReplayer_Open(object):
     '''
     def __init__(self, data):
         self.pendingbar = None
+        data.resampling = 1
+        data.replaying = True
 
     def __call__(self, data):
+        ret = True
+
         # Make a copy of the new bar and remove it from stream
         newbar = [data.lines[i][0] for i in range(data.size())]
         data.backwards()  # remove the copied bar from stream
@@ -56,11 +60,12 @@ class BarReplayer_Open(object):
         # Overwrite the new data bar with our pending data - except start point
         if self.pendingbar is not None:
             data._updatebar(self.pendingbar)
+            ret = False
 
         self.pendingbar = newbar  # update the pending bar to the new bar
         data._add2stack(openbar)  # Add the openbar to the stack for processing
 
-        return False  # the length of the stream was not changed
+        return ret  # the length of the stream was not changed
 
     def last(self, data):
         '''Called when the data is no longer producing bars
