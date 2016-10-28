@@ -47,6 +47,10 @@ class FakeData(object):
     def datetime(self):
         return [0.0]
 
+    @property
+    def close(self):
+        return [0.0]
+
 
 def test_run(main=False):
     tr = trade.Trade(data=FakeData())
