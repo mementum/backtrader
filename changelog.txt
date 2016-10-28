@@ -1,3 +1,7 @@
+1.9.12.99:
+  - Improve cheat-on-close to provide exact match price even during replay
+  - Allow offsetting resampling bar set by timeframe/compression units
+
 1.9.11.99:
   - Separate resampling from replaying for synchronization purposes
   - Modernize sample to better check #169
