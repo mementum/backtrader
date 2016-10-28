@@ -80,6 +80,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         ('bar2edge', True),
         ('adjbartime', True),
         ('rightedge', True),
+        ('boundoff', 0),
 
         ('timeframe', TimeFrame.Days),
         ('compression', 1),
@@ -202,6 +203,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
                 restpoint = tm.microsecond
         else:
             restpoint = tm.second + tm.microsecond
+
+        point += self.p.boundoff
 
         return point, restpoint
 

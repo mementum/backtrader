@@ -82,16 +82,16 @@ From the original 256 daily bars we end up with 18 3-week bars. The breakdown:
 
 It doesn't take much more. Of course intraday data can also be resampled.
 
-The resampling filter supports 3 additional parameters, which in most cases
+The resampling filter supports additional parameters, which in most cases
 should not be touched:
 
-  - ``bar2edge`` (default: True)
+  - ``bar2edge`` (default: ``True``)
 
     resamples using time boundaries as the target. For example with a
     "ticks -> 5 seconds" the resulting 5 seconds bars will be aligned to
     xx:00, xx:05, xx:10 ...
 
-  - ``adjbartime`` (default: True)
+  - ``adjbartime`` (default: ``True``)
 
     Use the time at the boundary to adjust the time of the delivered
     resampled bar instead of the last seen timestamp. If resampling to "5
@@ -104,7 +104,7 @@ should not be touched:
        sense to adjust the time if the bar has not been aligned to a
        boundary
 
-  - ``rightedge`` (default: True)
+  - ``rightedge`` (default: ``True``)
 
     Use the right edge of the time boundaries to set the time.
 
@@ -114,6 +114,21 @@ should not be touched:
 
     If True the used boundary for the time will be hh:mm:05 (the ending
     boundary)
+
+  - ``boundoff`` (default: ``0``)
+
+    Push the boundary for resampling/replaying by an amount of units.
+
+    If for example the resampling is from *1 minute* to *15 minutes*, the
+    default behavior is to take the 1-minute bars from *00:01:00* until
+    *00:15:00* to produce a 15-minutes replayed/resampled bar.
+
+    If ``boundoff`` is set to ``1``, then the boundary is pushed ``1 unit``
+    forward. In this case the original *unit* is a *1-minute* bar. Consequently
+    the resampling/replaying will now:
+
+      - Use the bars from *00:00:00* to *00:14:00* for the generation of the
+	15-minutes bar
 
 The sample code for the resampling test script.
 
