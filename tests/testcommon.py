@@ -200,7 +200,7 @@ class TestStrategy(bt.Strategy):
 
                 print(outtxt)
 
-            print('vs')
+            print('vs expected')
 
             for chkval in self.p.chkvals:
                 print(chkval)
@@ -213,4 +213,10 @@ class TestStrategy(bt.Strategy):
             for lidx, linevals in enumerate(self.p.chkvals):
                 for i, chkpt in enumerate(chkpts):
                     chkval = '%f' % self.ind.lines[lidx][chkpt]
-                    assert chkval == linevals[i]
+                    if not isinstance(linevals[i], tuple):
+                        assert chkval == linevals[i]
+                    else:
+                        try:
+                            assert chkval == linevals[i][0]
+                        except AssertionError:
+                            assert chkval == linevals[i][1]
