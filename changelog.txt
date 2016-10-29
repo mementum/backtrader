@@ -1,3 +1,12 @@
+1.9.13.102:
+  - Closes #179 Ichimoku indicator
+  - Plotting allows now filling areas and showing the indicator name even with
+    plotlinelabels active
+  - Use _minperiod in linebuffer.qbuffer for maxlen rather than default 1
+  - Closes #169 - Correct DaySteps filter
+  - Add ROC100 indicator
+  - Add KnowSureThing indicator
+
 1.9.12.99:
   - Improve cheat-on-close to provide exact match price even during replay
   - Allow offsetting resampling bar set by timeframe/compression units
