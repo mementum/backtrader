@@ -60,10 +60,6 @@ class Ichimoku(bt.Indicator):
                            _fill_lt=('senkou_span_b', 'r')),
     )
 
-    plotlines = dict(
-        senkou_span_a=dict(_fill=('senkou_span_b', 'g'))
-    )
-
     def __init__(self):
         hi_tenkan = Highest(self.data.high, period=self.p.tenkan)
         lo_tenkan = Lowest(self.data.low, period=self.p.tenkan)
