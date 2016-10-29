@@ -25,9 +25,11 @@ import bisect
 import collections
 import itertools
 import math
+import operator
 import sys
 
 import matplotlib
+import numpy as np  # guaranteed by matplotlib
 import matplotlib.dates as mdates
 import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
@@ -394,6 +396,25 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
                              facecolor='white',
                              edgecolor=self.pinf.color(ax))
+
+            farts = (('_gt', operator.gt), ('_lt', operator.lt), ('', None),)
+            for fcmp, fop in farts:
+                fattr = '_fill' + fcmp
+                fref, fcol = lineplotinfo._get(fattr, (None, None))
+                if fref is not None:
+                    y1 = np.array(lplot)
+                    l2 = getattr(ind, fref)
+                    prl2 = l2.plotrange(self.pinf.xstart, self.pinf.xend)
+                    y2 = np.array(prl2)
+                    kwargs = dict()
+                    if fop is not None:
+                        kwargs['where'] = fop(y1, y2)
+
+                    ax.fill_between(self.pinf.xdata, y1, y2,
+                                    facecolor=fcol,
+                                    alpha=0.20,
+                                    interpolate=True,
+                                    **kwargs)
 
         # plot subindicators that were created on self
         for subind in subinds:
