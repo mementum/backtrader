@@ -356,7 +356,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             if masterax and not ind.plotinfo.plotlinelabels:
                 label = indlabel * (lineidx == 0) or '_nolegend'
             else:
-                label = lineplotinfo._get('_name', '') or linealias
+                label = (indlabel + '\n') * (lineidx == 0)
+                label += lineplotinfo._get('_name', '') or linealias
 
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
