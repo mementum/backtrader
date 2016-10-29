@@ -71,3 +71,5 @@ from .williams import *
 
 # Depends on Momentum
 from .kst import *
+
+from .ichimoku import *
