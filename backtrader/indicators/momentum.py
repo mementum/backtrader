@@ -100,3 +100,30 @@ class RateOfChange(Indicator):
         dperiod = self.data(-self.p.period)
         self.l.roc = (self.data - dperiod) / dperiod
         super(RateOfChange, self).__init__()
+
+
+class RateOfChange100(Indicator):
+    '''
+    Measures the ratio of change in prices over a period with base 100
+
+    This is for example how ROC is defined in stockcharts
+
+    Formula:
+      - roc = 100 * (data - data_period) / data_period
+
+    See:
+      - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:rate_of_change_roc_and_momentum
+
+    '''
+    alias = ('ROC100',)
+
+    # Named output lines
+    lines = ('roc100',)
+
+    # Accepted parameters (and defaults) -
+    # MovAvg also parameter to allow experimentation
+    params = (('period', 12),)
+
+    def __init__(self):
+        self.l.roc100 = 100.0 * ROC(self.data)
+        super(RateOfChange100, self).__init__()
