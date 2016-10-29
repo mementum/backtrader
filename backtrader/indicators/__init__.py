@@ -67,3 +67,7 @@ from .stochastic import *
 from .trix import *
 from .ultimateoscillator import *
 from .williams import *
+
+
+# Depends on Momentum
+from .kst import *
