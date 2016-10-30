@@ -71,12 +71,10 @@ class SQN(Analyzer):
             self.count += 1
 
     def stop(self):
-        pnl_av = average(self.pnl)
-        pnl_stddev = standarddev(self.pnl)
-
-        trades_sqr = math.sqrt(len(self.pnl))
-        if trades_sqr:
-            sqn = trades_sqr * pnl_av / pnl_stddev
+        if self.pnl:
+            pnl_av = average(self.pnl)
+            pnl_stddev = standarddev(self.pnl)
+            sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
         else:
             sqn = 0
 
