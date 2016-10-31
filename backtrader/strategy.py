@@ -982,6 +982,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
 class MetaSigStrategy(Strategy.__class__):
 
+    def __new__(meta, name, bases, dct):
+        # map user defined next to custom to be able to call own method before
+        if 'next' in dct:
+            dct['_next_custom'] = dct.pop('next')
+
+        cls = super(MetaSigStrategy, meta).__new__(meta, name, bases, dct)
+
+        # after class creation remap _next_catch to be next
+        cls.next = cls._next_catch
+        return cls
+
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaSigStrategy, cls).dopreinit(_obj, *args, **kwargs)
@@ -1108,18 +1119,29 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
     )
 
     def _start(self):
-        self.order = None  # sentinel for order concurrency
+        self._sentinel = None  # sentinel for order concurrency
         super(SignalStrategy, self)._start()
 
     def signal_add(self, sigtype, signal):
         self._signals[sigtype].append(signal)
 
-    def notify_order(self, order):
-        if not order.alive():
-            self.order = None
+    def _notify(self):
+        # Nullify the sentinel if done
+        if self._sentinel is not None:
+            for order in self._orderspending:
+                if order == self._sentinel and not order.alive():
+                    self._sentinel = None
+                    break
 
-    def next(self):
-        if self.order is not None and not self.p._concurrent:
+        super(SignalStrategy, self)._notify()
+
+    def _next_catch(self):
+        self._next_signal()
+        if hasattr(self, '_next_custom'):
+            self._next_custom()
+
+    def _next_signal(self):
+        if self._sentinel is not None and not self.p._concurrent:
             return  # order active and more than 1 not allowed
 
         sigs = self._signals
@@ -1174,10 +1196,10 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
         size = self.getposition(self._dtarget).size
         if not size:
             if ls_long or l_enter:
-                self.order = self.buy(self._dtarget)
+                self._sentinel = self.buy(self._dtarget)
 
             elif ls_short or s_enter:
-                self.order = self.sell(self._dtarget)
+                self._sentinel = self.sell(self._dtarget)
 
         elif size > 0:  # current long position
             if ls_short or l_exit or l_rev or l_leave:
@@ -1185,11 +1207,11 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
                 self.close(self._dtarget)
 
             if ls_short or l_rev:
-                self.order = self.sell(self._dtarget)
+                self._sentinel = self.sell(self._dtarget)
 
             if ls_long or l_enter:
                 if self.p._accumulate:
-                    self.order = self.buy(self._dtarget)
+                    self._sentinel = self.buy(self._dtarget)
 
         elif size < 0:  # current short position
             if ls_long or s_exit or s_rev or s_leave:
@@ -1197,8 +1219,8 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
                 self.close(self._dtarget)
 
             if ls_long or s_rev:
-                self.order = self.buy(self._dtarget)
+                self._sentinel = self.buy(self._dtarget)
 
             if ls_short or s_enter:
                 if self.p._accumulate:
-                    self.order = self.sell(self._dtarget)
+                    self._sentinel = self.sell(self._dtarget)
