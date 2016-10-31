@@ -306,6 +306,21 @@ class BackBroker(bt.BrokerBase):
 
     getvalue = get_value
 
+    def get_orders_open(self, safe=False):
+        '''Returns an iterable with the orders which are still open (either not
+        executed or partially executed
+
+        The orders returned must not be touched.
+
+        If order manipulation is needed, set the parameter ``safe`` to True
+        '''
+        if safe:
+            os = [x.clone() for x in self.pending]
+        else:
+            os = [x for x in self.pending]
+
+        return os
+
     def getposition(self, data):
         return self.positions[data]
 

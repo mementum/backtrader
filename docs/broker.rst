@@ -19,3 +19,5 @@ Reference
 
    .. automethod:: set_slippage_perc
    .. automethod:: set_slippage_fixed
+
+   .. automethod:: get_orders_open
