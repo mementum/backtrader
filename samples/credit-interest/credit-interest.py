@@ -55,12 +55,18 @@ class St(bt.SignalStrategy):
             t += ' Size: {:+d} / Price: {:.2f}'
             print(t.format(order.executed.size, order.executed.price))
 
+    def notify_trade(self, trade):
+        if trade.isclosed:
+            print('Trade closed with P&L: Gross {} Net {}'.format(
+                trade.pnl, trade.pnlcomm))
+
 
 def runstrat(args=None):
     args = parse_args(args)
 
     cerebro = bt.Cerebro()
     cerebro.broker.set_cash(args.cash)
+    cerebro.broker.set_int2pnl(args.no_int2pnl)
 
     dkwargs = dict()
     if args.fromdate is not None:
@@ -100,9 +106,7 @@ def runstrat(args=None):
         interest=args.interest,
         interest_long=args.interest_long)
 
-    if True:
-        cerebro.broker.addcommissioninfo(comminfo)
-
+    cerebro.broker.addcommissioninfo(comminfo)
 
     cerebro.run()
     if args.plot:
@@ -145,6 +149,9 @@ def parse_args(pargs=None):
     parser.add_argument('--interest', required=False, action='store',
                         default=0.0, type=float,
                         help=('Activate credit interest rate'))
+
+    parser.add_argument('--no-int2pnl', required=False, action='store_false',
+                        help=('Do not assign interest to pnl'))
 
     parser.add_argument('--interest_long', required=False, action='store_true',
                         help=('Credit interest rate for long positions'))
