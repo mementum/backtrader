@@ -189,6 +189,13 @@ class BackBroker(bt.BrokerBase):
            is *closed* and any order should first be matched against the prices
            in the next bar
 
+        - ``int2pnl`` (default: ``True``)
+
+          Assign generated interest (if any) to the profit and loss of
+          operation that reduces a position (be it long or short). There may be
+          cases in which this is undesired, because different strategies are
+          competing and the interest would be assigned on a non-deterministic
+          basis to any of them.
     '''
     params = (
         ('cash', 10000.0),
@@ -203,6 +210,7 @@ class BackBroker(bt.BrokerBase):
         ('slip_limit', True),
         ('slip_out', False),
         ('coc', False),
+        ('int2pnl', True),
     )
 
     def init(self):
@@ -213,6 +221,7 @@ class BackBroker(bt.BrokerBase):
         self.pending = collections.deque()  # popleft and append(right)
 
         self.positions = collections.defaultdict(Position)
+        self.d_credit = collections.defaultdict(float)  # credit per data
         self.notifs = collections.deque()
 
         self.submitted = collections.deque()
@@ -224,6 +233,10 @@ class BackBroker(bt.BrokerBase):
             pass
 
         return None
+
+    def set_int2pnl(self, int2pnl):
+        '''Configure assignment of interest to profit and loss'''
+        self.p.int2pnl = int2pnl
 
     def set_coc(self, coc):
         '''Configure the Cheat-On-Close method to buy the close on order bar'''
@@ -500,6 +513,9 @@ class BackBroker(bt.BrokerBase):
             # do a real position update if something was executed
             position.update(execsize, price, order.data.datetime.datetime())
 
+            if closed and self.p.int2pnl:  # Assign accumulated interest data
+                closedcomm += self.d_credit.pop(order.data, 0.0)
+
             # Execute and notify the order
             order.execute(dtcoc or order.data.datetime[ago],
                           execsize, price,
@@ -737,7 +753,9 @@ class BackBroker(bt.BrokerBase):
             if pos:
                 comminfo = self.getcommissioninfo(data)
                 dt0 = data.datetime.datetime()
-                credit += comminfo.get_credit_interest(data, pos, dt0)
+                dcredit = comminfo.get_credit_interest(data, pos, dt0)
+                self.d_credit[data] += dcredit
+                credit += dcredit
                 pos.datetime = dt0  # mark last credit operation
 
         self.cash -= credit
