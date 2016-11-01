@@ -16,6 +16,8 @@ Reference
    .. automethod:: set_eosbar
    .. automethod:: set_checksubmit
    .. automethod:: set_filler
+   .. automethod:: set_coc
+   .. automethod:: set_int2pnl
 
    .. automethod:: set_slippage_perc
    .. automethod:: set_slippage_fixed
