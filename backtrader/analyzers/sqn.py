@@ -71,7 +71,7 @@ class SQN(Analyzer):
             self.count += 1
 
     def stop(self):
-        if self.pnl:
+        if self.count > 1:
             pnl_av = average(self.pnl)
             pnl_stddev = standarddev(self.pnl)
             sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev

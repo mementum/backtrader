@@ -32,6 +32,7 @@ import backtrader.indicators as btind
 class TestStrategy(bt.Strategy):
     params = (
         ('period', 15),
+        ('maxtrades', None),
         ('printdata', True),
         ('printops', True),
         ('stocklike', True),
@@ -44,6 +45,10 @@ class TestStrategy(bt.Strategy):
             print('%s, %s' % (dt.isoformat(), txt))
         else:
             print('---------- %s' % (txt))
+
+    def notify_trade(self, trade):
+        if trade.isclosed:
+            self.tradecount += 1
 
     def notify_order(self, order):
         if order.status in [bt.Order.Submitted, bt.Order.Accepted]:
@@ -93,6 +98,7 @@ class TestStrategy(bt.Strategy):
         self.sellcreate = list()
         self.buyexec = list()
         self.sellexec = list()
+        self.tradecount = 0
 
     def stop(self):
         tused = time.clock() - self.tstart
@@ -119,13 +125,14 @@ class TestStrategy(bt.Strategy):
             return
 
         if not self.position.size:
-            if self.cross > 0.0:
-                if self.p.printops:
-                    self.log('BUY CREATE , %.2f' % self.data.close[0])
+            if self.p.maxtrades is None or self.tradecount < self.p.maxtrades:
+                if self.cross > 0.0:
+                    if self.p.printops:
+                        self.log('BUY CREATE , %.2f' % self.data.close[0])
 
-                self.orderid = self.buy()
-                chkprice = '%.2f' % self.data.close[0]
-                self.buycreate.append(chkprice)
+                    self.orderid = self.buy()
+                    chkprice = '%.2f' % self.data.close[0]
+                    self.buycreate.append(chkprice)
 
         elif self.cross < 0.0:
             if self.p.printops:
@@ -141,25 +148,32 @@ chkdatas = 1
 
 def test_run(main=False):
     datas = [testcommon.getdata(i) for i in range(chkdatas)]
-    cerebros = testcommon.runtest(datas,
-                                  TestStrategy,
-                                  printdata=main,
-                                  stocklike=False,
-                                  printops=main,
-                                  plot=main,
-                                  analyzer=(bt.analyzers.SQN, {}))
 
-    for cerebro in cerebros:
-        strat = cerebro.runstrats[0][0]  # no optimization, only 1
-        analyzer = strat.analyzers[0]  # only 1
-        analysis = analyzer.get_analysis()
-        if main:
-            print(analysis)
-            print(str(analysis.sqn))
-        else:
-            # Handle different precision
-            assert str(analysis.sqn)[0:14] == '0.912550316439'
-            assert str(analysis.trades) == '11'
+    for maxtrades in [None, 0, 1]:
+        cerebros = testcommon.runtest(datas,
+                                      TestStrategy,
+                                      printdata=main,
+                                      stocklike=False,
+                                      maxtrades=maxtrades,
+                                      printops=main,
+                                      plot=main,
+                                      analyzer=(bt.analyzers.SQN, {}))
+
+        for cerebro in cerebros:
+            strat = cerebro.runstrats[0][0]  # no optimization, only 1
+            analyzer = strat.analyzers[0]  # only 1
+            analysis = analyzer.get_analysis()
+            if main:
+                print(analysis)
+                print(str(analysis.sqn))
+            else:
+                if maxtrades == 0 or maxtrades == 1:
+                    assert analysis.sqn == 0
+                    assert analysis.trades == maxtrades
+                else:
+                    # Handle different precision
+                    assert str(analysis.sqn)[0:14] == '0.912550316439'
+                    assert str(analysis.trades) == '11'
 
 
 if __name__ == '__main__':
