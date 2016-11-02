@@ -1,3 +1,13 @@
+1.9.14.102:
+  - Pull Request #187 to improve SQN and test
+  - Update some samples
+  - Refactor new KST - Closes #183
+  - Closes #163 adding interest as commission to correct calculate PNL
+  - Improve SignalStrategy overriden methods to avoid impacting user subclasses
+  - Closes #168 - Fetching open orders
+  - #173 short-circuit calculation sqn in case of no trades
+  - strategy selection sample
+
 1.9.13.102:
   - Closes #179 Ichimoku indicator
   - Plotting allows now filling areas and showing the indicator name even with
