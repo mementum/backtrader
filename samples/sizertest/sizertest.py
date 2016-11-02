@@ -90,7 +90,7 @@ def runstrat(args=None):
     if args.longonly:
         cerebro.addsizer(LongOnly, stake=args.stake)
     else:
-        cerebro.addsizer(FixedReverser, stake=args.stake)
+        cerebro.addsizer(bt.sizers.FixedReverser, stake=args.stake)
 
     cerebro.run()
     if args.plot:
