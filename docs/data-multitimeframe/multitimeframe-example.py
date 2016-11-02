@@ -67,31 +67,22 @@ def runstrat():
 
     # Load the Data
     datapath = args.dataname or '../../datas/2006-day-001.txt'
-    data = btfeeds.BacktraderCSVData(
-        dataname=datapath)
+    data = btfeeds.BacktraderCSVData(dataname=datapath)
+    cerebro.adddata(data)  # First add the original data - smaller timeframe
 
-    tframes = dict(
-        daily=bt.TimeFrame.Days,
-        weekly=bt.TimeFrame.Weeks,
-        monthly=bt.TimeFrame.Months)
+    tframes = dict(daily=bt.TimeFrame.Days, weekly=bt.TimeFrame.Weeks,
+                   monthly=bt.TimeFrame.Months)
 
     # Handy dictionary for the argument timeframe conversion
     # Resample the data
     if args.noresample:
         datapath = args.dataname2 or '../../datas/2006-week-001.txt'
-        data2 = btfeeds.BacktraderCSVData(
-            dataname=datapath)
+        data2 = btfeeds.BacktraderCSVData(dataname=datapath)
+        # And then the large timeframe
+        cerebro.adddata(data2)
     else:
-        data2 = bt.DataResampler(
-            dataname=data,
-            timeframe=tframes[args.timeframe],
-            compression=args.compression)
-
-    # First add the original data - smaller timeframe
-    cerebro.adddata(data)
-
-    # And then the large timeframe
-    cerebro.adddata(data2)
+        cerebro.resampledata(data, timeframe=tframes[args.timeframe],
+                             compression=args.compression)
 
     # Run over everything
     cerebro.run()
@@ -102,7 +93,7 @@ def runstrat():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Pandas test script')
+        description='Multitimeframe test')
 
     parser.add_argument('--dataname', default='', required=False,
                         help='File Data to Load')

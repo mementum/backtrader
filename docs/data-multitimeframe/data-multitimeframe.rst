@@ -35,7 +35,7 @@ Minimum period which will probably have the side effect of having to consume
 several orders of magnitude of the smaller timeframe bars before a Strategy
 added to Cerebro kicks into action.
 
-The built-in ``DataResampler`` is going to be used to create a larger timeframe.
+The built-in ``cerebro.resample`` is going to be used to create a larger timeframe.
 
 Some examples below, but first the sauce of the test script.
 
