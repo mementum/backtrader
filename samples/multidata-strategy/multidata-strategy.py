@@ -99,11 +99,13 @@ class MultiDataStrategy(bt.Strategy):
             if self.signal > 0.0:  # cross upwards
                 self.log('BUY CREATE , %.2f' % self.data1.close[0])
                 self.buy(size=self.p.stake)
+                self.buy(data=self.data1, size=self.p.stake)
 
         else:  # in the market
             if self.signal < 0.0:  # crosss downwards
                 self.log('SELL CREATE , %.2f' % self.data1.close[0])
                 self.sell(size=self.p.stake)
+                self.sell(data=self.data1, size=self.p.stake)
 
     def stop(self):
         print('==================================================')
