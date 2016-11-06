@@ -1,6 +1,9 @@
 {% extends "basic/layout.html" %}
 
-{% set theme_css_files = ['_static/mycss.css',] %}
+{# this ensures it is the last and overrrides things #}
+{% set bootswatch_css_custom = ['_static/mycss.css'] %}
+
+{% set theme_css_files = [] %}
 {% if theme_bootstrap_version == "3" %}
   {% set bootstrap_version, bootstrap_additional_css, navbar_version = "3.3.6", "theme", "" %}
   {% set bs_span_prefix = "col-md-" %}
