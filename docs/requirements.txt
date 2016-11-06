@@ -1,4 +1,1 @@
-sphinxcontrib-images
-sphinxcontrib-restbuilder
-git+https://github.com/blampe/IbPy.git
-git+https://github.com/oanda/oandapy.git
+

@@ -101,7 +101,7 @@ setuptools.setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=setuptools.find_packages(exclude=['docs', 'samples']),
+    packages=setuptools.find_packages(exclude=['docs', 'docs2', 'samples']),
     # packages=['backtrader', '],
 
     # List run-time dependencies here.
