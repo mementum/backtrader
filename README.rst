@@ -23,7 +23,7 @@ backtrader
 .. image:: https://readthedocs.org/projects/backtrader/badge/?version=latest
    :alt: Documentation Status
    :scale: 100%
-   :target: https://readthedocs.org/projects/backtrader/
+   :target: https://www.backtrader.com/docu
 .. image:: https://img.shields.io/pypi/pyversions/backtrader.svg
    :alt: Python versions
    :scale: 100%
@@ -99,13 +99,13 @@ The blog:
 
   - `backtrader blog <http://www.backtrader.com>`_
 
-Read the full documentation at readthedocs.org:
+Read the full documentation at:
 
-  - `backtrader documentation <http://backtrader.readthedocs.io/>`_
+  - `backtrader documentation <http://www.backtrader.com/docu>`_
 
-List of built-in Indicators (99)
+List of built-in Indicators (102)
 
-  - `backtrader indicators <http://backtrader.readthedocs.io/en/latest/indautoref.html>`_
+  - `backtrader indicators <http://www.backtrader.com/docu/indautoref.html>`_
 
 Python 2/3 Support
 ==================

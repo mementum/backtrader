@@ -144,8 +144,9 @@ html_theme_options = {
     # 'navbar_links': [],
 
     'navbar_links': [
-        ("Home", "http://www.backtrader.com", True),
-        ("Features", "http://www.backtrader.com/features", True),
+        ("Home", "/", True),
+        ("Features", "/features", True),
+        ("Docs", "/docu", True),
         ("Blog", "http://blog.backtrader.com", True),
     ],
 
