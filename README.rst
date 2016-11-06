@@ -97,15 +97,15 @@ Documentation
 
 The blog:
 
-  - `backtrader blog <http://www.backtrader.com>`_
+  - `Blog <http://www.backtrader.com/blog>`_
 
 Read the full documentation at:
 
-  - `backtrader documentation <http://www.backtrader.com/docu>`_
+  - `Documentation <http://www.backtrader.com/docu>`_
 
 List of built-in Indicators (102)
 
-  - `backtrader indicators <http://www.backtrader.com/docu/indautoref.html>`_
+  - `Indicators Reference <http://www.backtrader.com/docu/indautoref.html>`_
 
 Python 2/3 Support
 ==================
