@@ -684,6 +684,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
         predata = self.p.optdatas and self._dopreload and self._dorunonce
         return self.runstrategies(iterstrat, predata=predata)
 
+    def __getstate__(self):
+        '''
+        Used during optimization to prevent optimization result `runstrats`
+        from being pickled to subprocesses
+        '''
+
+        return {k: v for k, v in vars(self).items() if k != 'runstrats'}
+
     def runstop(self):
         '''If invoked from inside a strategy or anywhere else, including other
         threads the execution will stop as soon as possible.'''
@@ -755,7 +763,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # Write down if any writer wants the full csv output
         self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
 
-        self.runstrats = list()
+        self.runstrats = iter({})
 
         if self.signals:  # allow processing of signals
             signalst, sargs, skwargs = self._signal_strat
@@ -804,7 +812,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         data.preload()
 
             pool = multiprocessing.Pool(self.p.maxcpus or None)
-            self.runstrats = list(pool.map(self, iterstrats))
+            self.runstrats = pool.imap(self, iterstrats)
 
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
