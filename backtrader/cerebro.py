@@ -690,7 +690,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         from being pickled to subprocesses
         '''
 
-        return {k: v for k, v in vars(self).items() if k != 'runstrats'}
+        rv = vars(self).copy()
+        if 'runstrats' in rv:
+            del(rv['runstrats'])
+        return rv
 
     def runstop(self):
         '''If invoked from inside a strategy or anywhere else, including other
