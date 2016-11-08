@@ -763,7 +763,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # Write down if any writer wants the full csv output
         self.writers_csv = any(map(lambda x: x.p.csv, self.runwriters))
 
-        self.runstrats = iter({})
+        self.runstrats = list()
 
         if self.signals:  # allow processing of signals
             signalst, sargs, skwargs = self._signal_strat
