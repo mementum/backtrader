@@ -49,8 +49,7 @@ The rationale behind this:
 This enables, for example, "replaying" a daily session but using intraday data
 which could be made of 5 minutes bars.
 
-It could also allow the platform to get values from a live feed. But this is
-left for future development.
+It could also allow the platform to get values from a live feed.
 
 A dummy (but functional) indicator
 **********************************
