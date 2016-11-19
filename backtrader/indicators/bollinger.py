@@ -61,3 +61,15 @@ class BollingerBands(Indicator):
         self.lines.bot = ma - stddev
 
         super(BollingerBands, self).__init__()
+
+
+class BollingerBandsPct(BollingerBands):
+    '''
+    Extends the Bollinger Bands with a Percentage line
+    '''
+    lines = ('pctb',)
+    plotlines = dict(pctb=dict(_name='%B'))  # display the line as %B on chart
+
+    def __init__(self):
+        super(BollingerBandsPct, self).__init__()
+        self.l.pctb = (self.data - self.l.bot) / (self.l.top - self.l.bot)
