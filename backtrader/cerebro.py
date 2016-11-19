@@ -204,12 +204,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         with ``optdatas`` the total gain increases to a total speed-up of
         ``32%`` in an optimization run.
 
-      - ``tradehistory`` (default: ``False``)
-
-        If set to ``True``, it will activate update event logging in each trade
-        for all strategies. This can also be accomplished on a per strategy
-        basis with the strategy method ``set_tradehistory``
-
       - ``oldsync`` (default: ``False``)
 
         Starting with release 1.9.0.99 the synchronization of multiple datas
