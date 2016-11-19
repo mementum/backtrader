@@ -59,6 +59,7 @@ from .envelope import *
 from .macd import *
 from .momentum import *
 from .oscillator import *
+from .percentchange import *
 from .pivotpoint import *
 from .prettygoodoscillator import *
 from .priceoscillator import *
