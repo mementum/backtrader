@@ -73,6 +73,9 @@ class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
         for d in self._args:
             d.stop()
 
+    def get_notifications(self):
+        return [] if self._d is None else self._d.get_notifications()
+
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the
         timezone'''
