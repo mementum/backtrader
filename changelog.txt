@@ -1,3 +1,11 @@
+1.9.15.104:
+  - PR #202 to fix import in ibdata
+  - PR #196, #198 - doc updates
+  - PR #199 delegate notifications in Chainer Data Feed
+  - PercentChange indicator request from #192
+  - %B BollingerBands from #190
+  - Check bar time before market type execution #190
+
 1.9.14.102:
   - Pull Request #187 to improve SQN and test
   - Update some samples
