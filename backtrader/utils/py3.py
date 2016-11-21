@@ -90,6 +90,7 @@ else:
     map = map
     range = range
     zip = zip
+    long = int
 
     def cmp(a, b): return (a > b) - (a < b)
 
