@@ -46,6 +46,7 @@ if PY2:
     map = itertools.imap
     range = xrange
     zip = itertools.izip
+    long = long
 
     cmp = cmp
 
