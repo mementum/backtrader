@@ -1300,12 +1300,13 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # Lock access to the position dicts. This is called in sub-thread and
         # can kick in at any time
         with self._lock_pos:
+            price = msg.averageCost / float(msg.contract.m_multiplier or 1)
             if not self._event_accdownload.is_set():  # 1st event seen
-                position = Position(msg.position, msg.averageCost)
+                position = Position(msg.position, price)
                 self.positions[msg.contract.m_conId] = position
             else:
                 position = self.positions[msg.contract.m_conId]
-                if not position.fix(msg.position, msg.averageCost):
+                if not position.fix(msg.position, price):
                     err = ('The current calculated position and '
                            'the position reported by the broker do not match. '
                            'Operation can continue, but the trades '
