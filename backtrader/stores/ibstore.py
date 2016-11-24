@@ -1298,9 +1298,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         self.conn.reqAccountUpdates(subscribe, bytes(account))
 
-    def reqPositions():
-        self.conn.reqPositions()
-
     @ibregister
     def accountDownloadEnd(self, msg):
         # Signals the end of an account update
