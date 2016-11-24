@@ -1275,16 +1275,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
             if con_id not in self.positions:
                 self.positions[con_id] = Position(msg.position, price)
+            else:
+                position = self.positions[con_id]
 
-            position = self.positions[con_id]
+                if not position.fix(msg.position, price):
+                    err = ('The current calculated position and '
+                           'the position reported by the broker do not match. '
+                           'Operation can continue, but the trades '
+                           'calculated in the strategy may be wrong')
 
-            if not position.fix(msg.position, price):
-                err = ('The current calculated position and '
-                       'the position reported by the broker do not match. '
-                       'Operation can continue, but the trades '
-                       'calculated in the strategy may be wrong')
-
-                self.notifs.put((err, (), {}))
+                    self.notifs.put((err, (), {}))
 
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
