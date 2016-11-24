@@ -260,6 +260,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
         if self.ib.connected():
             self.ib.reqAccountUpdates()
+            self.ib.reqPositions()
             self.startingcash = self.cash = self.ib.get_acc_cash()
             self.startingvalue = self.value = self.ib.get_acc_value()
         else:

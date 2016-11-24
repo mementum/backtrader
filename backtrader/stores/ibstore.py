@@ -1269,7 +1269,22 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def position(self, msg):
         '''Receive event positions'''
-        pass  # Not implemented yet
+        with self._lock_pos:
+            price = msg.avgCost / float(m.contract.m_multiplier or 1)
+            con_id = msg.contract.m_conId
+
+            if con_id not in self.positions:
+                self.positions[con_id] = Position(msg.position, price)
+
+            position = self.positions[con_id]
+
+            if not position.fix(msg.position, price):
+                err = ('The current calculated position and '
+                       'the position reported by the broker do not match. '
+                       'Operation can continue, but the trades '
+                       'calculated in the strategy may be wrong')
+
+                self.notifs.put((err, (), {}))
 
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
@@ -1282,6 +1297,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             account = self.managed_accounts[0]
 
         self.conn.reqAccountUpdates(subscribe, bytes(account))
+
+    def reqPositions():
+        self.conn.reqPositions()
 
     @ibregister
     def accountDownloadEnd(self, msg):
@@ -1300,21 +1318,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # Lock access to the position dicts. This is called in sub-thread and
         # can kick in at any time
         with self._lock_pos:
-            if not self._event_accdownload.is_set():  # 1st event seen
-                position = Position(msg.position, msg.averageCost)
-                self.positions[msg.contract.m_conId] = position
-            else:
-                position = self.positions[msg.contract.m_conId]
-                if not position.fix(msg.position, msg.averageCost):
-                    err = ('The current calculated position and '
-                           'the position reported by the broker do not match. '
-                           'Operation can continue, but the trades '
-                           'calculated in the strategy may be wrong')
-
-                    self.notifs.put((err, (), {}))
-
+            if self._event_accdownload.is_set():  # 1st event seen
                 # Flag signal to broker at the end of account download
-                # self.port_update = True
                 self.broker.push_portupdate()
 
     def getposition(self, contract, clone=False):
