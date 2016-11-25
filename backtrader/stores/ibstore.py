@@ -1274,11 +1274,11 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             con_id = msg.contract.m_conId
 
             if con_id not in self.positions:
-                self.positions[con_id] = Position(msg.position, price)
+                self.positions[con_id] = Position(msg.pos, price)
             else:
                 position = self.positions[con_id]
 
-                if not position.fix(msg.position, price):
+                if not position.fix(msg.pos, price):
                     err = ('The current calculated position and '
                            'the position reported by the broker do not match. '
                            'Operation can continue, but the trades '
