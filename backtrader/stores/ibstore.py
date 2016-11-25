@@ -1270,7 +1270,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     def position(self, msg):
         '''Receive event positions'''
         with self._lock_pos:
-            price = msg.avgCost / float(m.contract.m_multiplier or 1)
+            price = msg.avgCost / float(msg.contract.m_multiplier or 1)
             con_id = msg.contract.m_conId
 
             if con_id not in self.positions:
