@@ -1273,18 +1273,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             price = msg.avgCost / float(msg.contract.m_multiplier or 1)
             con_id = msg.contract.m_conId
 
-            if con_id not in self.positions:
-                self.positions[con_id] = Position(msg.pos, price)
+            if con_id in self.positions:
+                self.positions[con_id].fix(msg.pos, price)
             else:
-                position = self.positions[con_id]
-
-                if not position.fix(msg.pos, price):
-                    err = ('The current calculated position and '
-                           'the position reported by the broker do not match. '
-                           'Operation can continue, but the trades '
-                           'calculated in the strategy may be wrong')
-
-                    self.notifs.put((err, (), {}))
+                self.positions[con_id] = Position(msg.pos, price)
 
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
@@ -1318,6 +1310,15 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             if self._event_accdownload.is_set():  # 1st event seen
                 # Flag signal to broker at the end of account download
                 self.broker.push_portupdate()
+            else:
+                con_id = msg.contract.m_conId
+                if con_id in self.positions and self.positions[con_id].size != msg.position:
+                    err = ('The current calculated position and '
+                           'the position reported by the broker do not match. '
+                           'Operation can continue, but the trades '
+                           'calculated in the strategy may be wrong')
+
+                    self.notifs.put((err, (), {}))
 
     def getposition(self, contract, clone=False):
         # Lock access to the position dicts. This is called from main thread
