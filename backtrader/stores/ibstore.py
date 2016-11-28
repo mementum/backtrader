@@ -1278,6 +1278,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             else:
                 self.positions[con_id] = Position(msg.pos, price)
 
+    @ibregister
+    def positionEnd(self, msg):
+        self.conn.cancelPositions()
+
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
 
@@ -1313,6 +1317,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             else:
                 con_id = msg.contract.m_conId
                 if con_id in self.positions and self.positions[con_id].size != msg.position:
+                    self.positions[con_id].update(msg.position, self.positions[con_id].price)
                     err = ('The current calculated position and '
                            'the position reported by the broker do not match. '
                            'Operation can continue, but the trades '
