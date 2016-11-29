@@ -67,6 +67,7 @@ from .rsi import *
 from .stochastic import *
 from .trix import *
 from .ultimateoscillator import *
+from .vortex import *
 from .williams import *
 
 
