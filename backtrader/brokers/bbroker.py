@@ -211,11 +211,15 @@ class BackBroker(bt.BrokerBase):
         ('slip_out', False),
         ('coc', False),
         ('int2pnl', True),
+        ('shortcash', True),
     )
 
     def init(self):
         super(BackBroker, self).init()
         self.startingcash = self.cash = self.p.cash
+        self._value = self.cash
+        self._valuemkt = 0.0  # no open position
+        self._unrealized = 0.0  # no open position
 
         self.orders = list()  # will only be appending
         self.pending = collections.deque()  # popleft and append(right)
@@ -287,6 +291,7 @@ class BackBroker(bt.BrokerBase):
     def set_cash(self, cash):
         '''Sets the cash parameter (alias: ``setcash``)'''
         self.startingcash = self.cash = self.p.cash = cash
+        self._value = cash
 
     setcash = set_cash
 
@@ -301,21 +306,42 @@ class BackBroker(bt.BrokerBase):
         self.notify(order)
         return True
 
-    def get_value(self, datas=None):
+    def get_value(self, datas=None, mkt=False):
         '''Returns the portfolio value of the given datas (if datas is ``None``, then
         the total portfolio value will be returned (alias: ``getvalue``)
         '''
+        if datas is None:
+            if mkt:
+                return self._valuemkt
+
+            return self._value
+
+        return self._get_value(datas=datas)
+
+    def _get_value(self, datas=None):
         pos_value = 0.0
+        unrealized = 0.0
 
         for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
-            dvalue = comminfo.getvalue(position, data.close[0])
+            # use valuesize:  returns raw value, rather than negative adj val
+            dvalue = comminfo.getvaluesize(position.size, data.close[0])
             if datas and len(datas) == 1:
                 return dvalue  # raw data value requested, short selling is neg
-            pos_value += abs(dvalue)  # short selling adds value
 
-        return self.cash + pos_value
+            if not self.p.shortcash:
+                dvalue = abs(dvalue)  # short selling adds value in this case
+
+            pos_value += dvalue
+            unrealized += comminfo.profitandloss(position.size, position.price,
+                                                 data.close[0])
+
+        self._value = self.cash + pos_value
+        self._valuemkt = pos_value
+        self._unrealized = unrealized
+
+        return self._value
 
     getvalue = get_value
 
@@ -448,7 +474,11 @@ class BackBroker(bt.BrokerBase):
         # "Closing" totally or partially is possible. Cash may be re-injected
         if closed:
             # Adjust to returned value for closed items & acquired opened items
-            closedvalue = comminfo.getoperationcost(closed, pprice_orig)
+            if self.p.shortcash:
+                closedvalue = comminfo.getvaluesize(-closed, pprice_orig)
+            else:
+                closedvalue = comminfo.getoperationcost(closed, pprice_orig)
+
             cash += closedvalue + pnl * comminfo.stocklike
             # Calculate and substract commission
             closedcomm = comminfo.getcommission(closed, price)
@@ -468,8 +498,12 @@ class BackBroker(bt.BrokerBase):
 
         popened = opened
         if opened:
-            openedvalue = comminfo.getoperationcost(opened, price)
-            cash -= openedvalue
+            if self.p.shortcash:
+                openedvalue = comminfo.getvaluesize(opened, price)
+            else:
+                openedvalue = comminfo.getoperationcost(opened, price)
+
+            cash -= openedvalue  # original behavior
 
             openedcomm = comminfo.getcommission(opened, price)
             cash -= openedcomm
@@ -787,6 +821,8 @@ class BackBroker(bt.BrokerBase):
                                                  data.close[0])
                 # record the last adjustment price
                 pos.adjbase = data.close[0]
+
+        self._get_value()  # update value
 
 
 # Alias
