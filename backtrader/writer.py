@@ -104,7 +104,7 @@ class WriterFile(WriterBase):
 
         # open file if needed
         if isinstance(self.p.out, string_types):
-            self.out = open(self.p.out, 'wb')
+            self.out = open(self.p.out, 'w')
             self.close_out = True
         else:
             self.out = self.p.out
