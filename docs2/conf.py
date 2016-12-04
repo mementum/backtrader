@@ -148,6 +148,7 @@ html_theme_options = {
         ("Features", "/features", True),
         ("Docs", "/docu", True),
         ("Blog", "/blog", True),
+        ("Community", "https://community.backtrader.com", True),
     ],
 
     # Render the next and previous page links in navbar. (Default: true)
