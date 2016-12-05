@@ -77,3 +77,6 @@ from . import stores as stores
 from . import brokers as brokers
 
 from . import talib as talib
+
+# Load contributed indicators
+import backtrader.indicators.contrib

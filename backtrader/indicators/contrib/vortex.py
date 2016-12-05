@@ -3,6 +3,7 @@
 ###############################################################################
 #
 # Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2016 Chris Yuen kizzx2
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +23,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import backtrader as bt
+
+__all__ = ['Vortex']
 
 
 class Vortex(bt.Indicator):
