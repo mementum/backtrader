@@ -183,7 +183,7 @@ class BackBroker(bt.BrokerBase):
 
         - ``coc`` (default: ``False``)
 
-          *Cheat-On-Close*. Setting this to ``True`` with ``set_coc`` enables
+          *Cheat-On-Close* Setting this to ``True`` with ``set_coc`` enables
            matching a ``Market`` order to the closing price of the bar in which
            the order was issued. This is actually *cheating*, because the bar
            is *closed* and any order should first be matched against the prices
@@ -196,6 +196,14 @@ class BackBroker(bt.BrokerBase):
           cases in which this is undesired, because different strategies are
           competing and the interest would be assigned on a non-deterministic
           basis to any of them.
+
+        - ``shortcash`` (default: ``True``)
+
+          If True then cash will be increased when a stocklike asset is shorted
+          and the calculated value for the asset will be negative.
+
+          If ``False`` then the cash will be deducted as operation cost and the
+          calculated value will be positive to end up with the same amount
     '''
     params = (
         ('cash', 10000.0),
@@ -245,6 +253,10 @@ class BackBroker(bt.BrokerBase):
     def set_coc(self, coc):
         '''Configure the Cheat-On-Close method to buy the close on order bar'''
         self.p.coc = coc
+
+    def set_shortcash(self, shortcash):
+        '''Configure the shortcash parameters'''
+        self.p.shortcash = shortcash
 
     def set_slippage_perc(self, perc,
                           slip_open=True, slip_limit=True,
