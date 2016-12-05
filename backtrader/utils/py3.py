@@ -46,6 +46,7 @@ if PY2:
     map = itertools.imap
     range = xrange
     zip = itertools.izip
+    long = long
 
     cmp = cmp
 
@@ -90,6 +91,7 @@ else:
     map = map
     range = range
     zip = zip
+    long = int
 
     def cmp(a, b): return (a > b) - (a < b)
 
