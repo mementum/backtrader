@@ -1,3 +1,10 @@
+1.9.16.105:
+  - PR #212 added Vortex indicator
+  - Closed #215 writer opens file in binary mode
+  - Closed #210 missing comma in status definitions lists in feed
+  - PR #203 python3 compatiblity for ib (long)
+  - Added shortcash parameter to broker to control cash increase/decrease
+
 1.9.15.104:
   - PR #202 to fix import in ibdata
   - PR #196, #198 - doc updates
