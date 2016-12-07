@@ -1,3 +1,9 @@
+1.9.17.105
+  - PR #195 make runstrats iterable to allow callbacks
+  - Fixes #189 by adding callback during optimization
+  - Fixes #205 to avoid errors during unnamed argument usage in strategy
+  - Regression correction for no short-cashing
+
 1.9.16.105:
   - PR #212 added Vortex indicator
   - Closed #215 writer opens file in binary mode
