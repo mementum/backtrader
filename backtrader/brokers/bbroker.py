@@ -338,7 +338,11 @@ class BackBroker(bt.BrokerBase):
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
             # use valuesize:  returns raw value, rather than negative adj val
-            dvalue = comminfo.getvaluesize(position.size, data.close[0])
+            if not self.p.shortcash:
+                dvalue = comminfo.getvalue(position, data.close[0])
+            else:
+                dvalue = comminfo.getvaluesize(position.size, data.close[0])
+
             if datas and len(datas) == 1:
                 return dvalue  # raw data value requested, short selling is neg
 
