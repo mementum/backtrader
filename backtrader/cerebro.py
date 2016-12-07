@@ -678,6 +678,17 @@ class Cerebro(with_metaclass(MetaParams, object)):
         predata = self.p.optdatas and self._dopreload and self._dorunonce
         return self.runstrategies(iterstrat, predata=predata)
 
+    def __getstate__(self):
+        '''
+        Used during optimization to prevent optimization result `runstrats`
+        from being pickled to subprocesses
+        '''
+
+        rv = vars(self).copy()
+        if 'runstrats' in rv:
+            del(rv['runstrats'])
+        return rv
+
     def runstop(self):
         '''If invoked from inside a strategy or anywhere else, including other
         threads the execution will stop as soon as possible.'''
@@ -798,7 +809,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         data.preload()
 
             pool = multiprocessing.Pool(self.p.maxcpus or None)
-            self.runstrats = list(pool.map(self, iterstrats))
+            self.runstrats = pool.imap(self, iterstrats)
 
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
