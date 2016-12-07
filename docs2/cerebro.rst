@@ -280,6 +280,8 @@ Reference
 
    .. automethod:: optstrategy
 
+   .. automethod:: optcallback
+
    .. automethod:: addindicator
 
    .. automethod:: addobserver

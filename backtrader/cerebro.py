@@ -241,6 +241,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.datas = list()
         self.datasbyname = collections.OrderedDict()
         self.strats = list()
+        self.optcbs = list()  # holds a list of callbacks for opt strategies
         self.observers = list()
         self.analyzers = list()
         self.indicators = list()
@@ -520,6 +521,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
         dataname.resample(**kwargs)
         self.adddata(dataname, name=name)
         self._doreplay = True
+
+    def optcallback(self, cb):
+        '''
+        Adds a *callback* to the list of callbacks that will be called with the
+        optimizations when each of the strategies has been run
+
+        The signature: cb(strategy)
+        '''
+        self.optcbs.append(cb)
 
     def optstrategy(self, strategy, *args, **kwargs):
         '''
@@ -809,7 +819,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         data.preload()
 
             pool = multiprocessing.Pool(self.p.maxcpus or None)
-            self.runstrats = pool.imap(self, iterstrats)
+            for r in pool.imap(self, iterstrats):
+                self.runstrats.append(r)
+                for cb in self.optcbs:
+                    cb(r)  # callback receives finished strategy
 
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
