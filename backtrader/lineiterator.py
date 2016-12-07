@@ -61,7 +61,7 @@ class MetaLineIterator(LineSeries.__class__):
                     # Not a LineNum and is not a LineSeries - bail out
                     break
 
-            mindatas -= 1
+            mindatas = max(0, mindatas - 1)
             lastarg += 1
 
         newargs = args[lastarg:]
