@@ -301,7 +301,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.executed = OrderData(remsize=self.size)
         self.position = 0
 
-        if isinstance(self.valid, datetime.datetime):
+        if isinstance(self.valid, datetime.date):
             # comparison will later be done against the raw datetime[0] value
             self.valid = self.data.date2num(self.valid)
         elif isinstance(self.valid, datetime.timedelta):
