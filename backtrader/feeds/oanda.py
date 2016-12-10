@@ -222,7 +222,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             self.qhist = self.o.candles(
                 self.p.dataname, dtbegin, dtend,
                 self._timeframe, self._compression,
-                candleFormat=self.p.candleFormat,
+                candleFormat=self._candleFormat,
                 includeFirst=self.p.includeFirst)
 
             self._state = self._ST_HISTORBACK
