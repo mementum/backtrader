@@ -1,3 +1,13 @@
+1.9.18.105
+  - PR #221 Correct onda candleFormat parameter
+  - Allow data on data plotting and no data plotting
+  - Remove double labeling on indicators
+  - Analyzer LogReturnsRolling
+  - Observer LogReturns
+  - Improved order management of input for validity
+  - Set default end date for online downloads in Yahoo if not set
+  - Gold vs SP500 Sample
+
 1.9.17.105
   - PR #195 make runstrats iterable to allow callbacks
   - Fixes #189 by adding callback during optimization
