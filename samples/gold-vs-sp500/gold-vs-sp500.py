@@ -21,6 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+# Reference
+# https://estrategiastrading.com/oro-bolsa-estadistica-con-python/
+
 import argparse
 import datetime
 
@@ -113,7 +116,10 @@ def parse_args(pargs=None):
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description='buysell arrows ...')
+        description=(
+            'Gold vs SP500 from '
+            'https://estrategiastrading.com/oro-bolsa-estadistica-con-python/')
+    )
 
     parser.add_argument('--data0', required=False, default='SPY',
                         metavar='TICKER', help='Yahoo ticker to download')
@@ -146,9 +152,6 @@ def parse_args(pargs=None):
     parser.add_argument('--plot', required=False, default='',
                         nargs='?', const='{}',
                         metavar='kwargs', help='kwargs in key=value format')
-
-    parser.add_argument('--myobserver', required=False, action='store_true',
-                        help='Patch in Custom BuySell observer')
 
     return parser.parse_args(pargs)
 
