@@ -187,6 +187,8 @@ class YahooFinanceData(YahooFinanceCSVData):
         url += '&a=%d&b=%d&c=%d' % \
                ((fromdate.month - 1), fromdate.day, fromdate.year)
         todate = self.params.todate
+        if todate is None:
+            todate = datetime.date.today()
         url += '&d=%d&e=%d&f=%d' % \
                ((todate.month - 1), todate.day, todate.year)
         url += '&g=%s' % self.params.period
