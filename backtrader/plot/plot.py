@@ -460,7 +460,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
 
-                    legend.set_title(indlabel, prop=self.pinf.prop)
+                    # legend.set_title(indlabel, prop=self.pinf.prop)
                     # hack: if title is set. legend has a Vbox for the labels
                     # which has a default "center" set
                     legend._legend_box.align = 'left'
