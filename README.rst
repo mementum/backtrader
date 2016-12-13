@@ -29,10 +29,10 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-.. note::
+Note:
 
-   Unless it is really an issue, please post feedback/questions and other
-   things to https://community.backtrader.com
+  Unless it is really an issue, please post feedback/questions and other
+  things to https://community.backtrader.com
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
