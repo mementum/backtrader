@@ -28,6 +28,11 @@ PyFolio
   .. automethod:: get_pf_items
 
 
+LogReturnsRolling
+*****************
+
+.. autoclass:: LogReturnsRolling
+
 Returns
 *******
 

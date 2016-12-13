@@ -35,3 +35,5 @@ from .transactions import *
 from .pyfolio import *
 from .returns import *
 from .vwr import *
+
+from .logreturnsrolling import *
