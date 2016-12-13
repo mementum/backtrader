@@ -38,3 +38,13 @@ Trades
 ******
 
 .. autoclass:: Trades
+
+LogReturns
+**********
+
+.. autoclass:: LogReturns
+
+LogReturns2
+***********
+
+.. autoclass:: LogReturns2
