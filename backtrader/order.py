@@ -307,8 +307,20 @@ class OrderBase(with_metaclass(MetaParams, object)):
         elif isinstance(self.valid, datetime.timedelta):
             # offset with regards to now ... get utcnow + offset
             # when reading with date2num ... it will be automatically localized
-            valid = self.data.datetime.datetime() + self.valid
+            if self.valid == self.DAY:
+                valid = datetime.datetime.combine(
+                    self.data.datetime.date(), datetime.time(23, 59, 59, 9999))
+            else:
+                valid = self.data.datetime.datetime() + self.valid
+
             self.valid = self.data.date2num(valid)
+
+        elif self.valid is not None:
+            if not self.valid:  # avoid comparing None and 0
+                valid = datetime.datetime.combine(
+                    self.data.datetime.date(), datetime.time(23, 59, 59, 9999))
+            else:  # assume float
+                valid = self.data.datetime[0] + self.valid
 
         if not self.p.simulated:
             # provisional end-of-session
