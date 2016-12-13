@@ -29,11 +29,10 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-**Release 1.9.1.99**: `Notebook - Automatic Inline Plotting
-<http://www.backtrader.com/posts/2016-09-17-notebook-inline/notebook-inline/>`_
+.. note::
 
-**Release 1.9.0.99**: `Data Synchronization Rework
-<http://www.backtrader.com/posts/2016-09-17-data-synchronization/data-synchronization/>`_
+   Unless it is really an issue, please post feedback/questions and other
+   things to https://community.backtrader.com
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
