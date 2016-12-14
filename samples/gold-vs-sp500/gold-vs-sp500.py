@@ -39,8 +39,8 @@ class PearsonR(bt.ind.PeriodN):
     params = (('period', 20),)
 
     def next(self):
-        c, p, = scipy.stats.pearsonr(self.data0.get(size=self.p.period),
-                                     self.data1.get(size=self.p.period))
+        c, p = scipy.stats.pearsonr(self.data0.get(size=self.p.period),
+                                    self.data1.get(size=self.p.period))
 
         self.lines.correlation[0] = c
 
