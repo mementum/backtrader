@@ -781,7 +781,7 @@ class LinesOperation(LineActions):
         tz = self._tz
 
         for i in range(start, end):
-            dst[i] = op(num2date(src[i], tz=tz).time(), srcb)
+            dst[i] = op(num2date(srca[i], tz=tz).time(), srcb)
 
     def _once_val_op(self, start, end):
         # cache python dictionary lookups
