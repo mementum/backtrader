@@ -1,3 +1,8 @@
+1.9.19.105
+  - Add time comparison for single line operations
+  - Correct plotting error calculations with volume and improve data on data
+  - Remove cosmetic comma
+
 1.9.18.105
   - PR #221 Correct onda candleFormat parameter
   - Allow data on data plotting and no data plotting
