@@ -61,6 +61,8 @@ class PInfo(object):
         self.vaxis = list()
         self.zorder = dict()
         self.coloridx = collections.defaultdict(lambda: -1)
+        self.handles = collections.defaultdict(list)
+        self.labels = collections.defaultdict(list)
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
@@ -288,18 +290,27 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         datasnoplot = 0
         for data in strategy.datas:
             if not data.plotinfo.plot:
+                # neither data nor indicators nor volume add rows
                 datasnoplot += 1
                 self.dplotsup.pop(data, None)
                 self.dplotsdown.pop(data, None)
                 self.dplotsover.pop(data, None)
 
             elif data.plotinfo.plotmaster is not None:
-                datasnoplot += 1
+                # data doesn't add a row, but volume may
+                if self.pinf.sch.volume:
+                    nrows += rowsminor
+            else:
+                # data adds rows, volume may
+                nrows += rowsmajor
+                if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
+                    nrows += rowsminor
 
-        # Datas and volumes
-        nrows += (len(strategy.datas) - datasnoplot) * rowsmajor
-        if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
-            nrows += (len(strategy.datas) - datasnoplot) * rowsminor
+        if False:
+            # Datas and volumes
+            nrows += (len(strategy.datas) - datasnoplot) * rowsmajor
+            if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
+                nrows += (len(strategy.datas) - datasnoplot) * rowsminor
 
         # top indicators/observers
         nrows += len(self.dplotstop) * rowsminor
@@ -481,14 +492,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(iref, downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
-        if self.pinf.sch.voloverlay:
+        voloverlay = (self.pinf.sch.voloverlay and
+                      data.plotinfo.plotmaster is None)
+
+        # if sefl.pinf.sch.voloverlay:
+        if voloverlay:
             rowspan = self.pinf.sch.rowsmajor
         else:
             rowspan = self.pinf.sch.rowsminor
 
         ax = self.newaxis(data.volume, rowspan=rowspan)
 
-        if self.pinf.sch.voloverlay:
+        # if self.pinf.sch.voloverlay:
+        if voloverlay:
             volalpha = self.pinf.sch.voltrans
         else:
             volalpha = 1.0
@@ -505,7 +521,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             nbins = 6
             prune = 'both'
-            if self.pinf.sch.voloverlay:
+            # if self.pinf.sch.voloverlay:
+            if voloverlay:
                 # store for a potential plot over it
                 nbins = int(nbins / self.pinf.sch.volscaling)
                 prune = None
@@ -549,8 +566,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         vollabel = 'Volume'
         voloverlay = (self.pinf.sch.voloverlay and
-                      data.plotinfo.plotmaster is not None)
+                      data.plotinfo.plotmaster is None)
+
+        if not voloverlay:
+            vollabel += ' ({})'.format(data._dataname)
+
         # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+        axdatamaster = None
         if self.pinf.sch.volume and voloverlay:
             volplot = self.plotvolume(
                 data, opens, highs, lows, closes, volumes, vollabel)
@@ -561,7 +583,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         else:
             if data.plotinfo.plotmaster is None:
                 ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
-                axdatamaster = None
             else:
                 axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
                 ax = axdatamaster.twinx()
@@ -620,7 +641,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         if self.pinf.sch.volume:
             # if not self.pinf.sch.voloverlay:
-            if not vololverlay:
+            if not voloverlay:
                 self.plotvolume(
                     data, opens, highs, lows, closes, volumes, vollabel)
             else:
@@ -635,41 +656,41 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(data, ind, subinds=self.dplotsover[ind], masterax=ax)
 
         handles, labels = ax.get_legend_handles_labels()
-        if axdatamaster is not None:
-            h2, l2 = axdatamaster.get_legend_handles_labels()
-        else:
-            h2, l2 = None, None
         if handles:
             # put data and volume legend entries in the 1st positions
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
-            if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+            # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+            if self.pinf.sch.volume and voloverlay:
                 if volplot:
                     # even if volume plot was requested, there may be no volume
                     labels.insert(0, vollabel)
                     handles.insert(0, volplot)
 
-            if h2 is None:
-                didx = labels.index(datalabel)
-                labels.insert(0, labels.pop(didx))
-                handles.insert(0, handles.pop(didx))
+            didx = labels.index(datalabel)
+            labels.insert(0, labels.pop(didx))
+            handles.insert(0, handles.pop(didx))
+
+            if axdatamaster is None:
+                self.pinf.handles[ax] = handles
+                self.pinf.labels[ax] = labels
             else:
-                didx = labels.index(datalabel)
-                l2.append(labels.pop(didx))
-                # h2.insert(0, plotted[0])
-                h2.append(handles.pop(didx))
+                self.pinf.handles[axdatamaster].extend(handles)
+                self.pinf.labels[axdatamaster].extend(labels)
 
-            # feed handles/labels to legend to get right order
-            if h2 is not None:
-                legend = ax.legend(h2 or handles, l2 or labels,
-                                   loc='upper left',
-                                   frameon=False, shadow=False,
-                                   fancybox=False, prop=self.pinf.prop,
-                                   numpoints=1, ncol=1)
+            h = self.pinf.handles[axdatamaster or ax]
+            l = self.pinf.labels[axdatamaster or ax]
 
-                # hack: if title is set. legend has a Vbox for the labels
-                # which has a default "center" set
-                legend._legend_box.align = 'left'
+            axlegend = axdatamaster or ax
+            legend = axlegend.legend(h, l,
+                                     loc='upper left',
+                                     frameon=False, shadow=False,
+                                     fancybox=False, prop=self.pinf.prop,
+                                     numpoints=1, ncol=1)
+
+            # hack: if title is set. legend has a Vbox for the labels
+            # which has a default "center" set
+            legend._legend_box.align = 'left'
 
         for ind in indicators:
             downinds = self.dplotsdown[ind]
