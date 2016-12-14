@@ -33,6 +33,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import array
 import collections
+import datetime
 from itertools import islice
 import math
 
@@ -703,6 +704,7 @@ class _LineForward(LineActions):
 
 
 class LinesOperation(LineActions):
+
     '''
     Holds an operation that operates on a two operands. Example: mul
 
@@ -722,6 +724,7 @@ class LinesOperation(LineActions):
     have been kept in place for clarity (although the maps are not really
     unclear here)
     '''
+
     def __init__(self, a, b, operation, r=False):
         super(LinesOperation, self).__init__()
 
@@ -730,24 +733,32 @@ class LinesOperation(LineActions):
         self.b = b
 
         self.r = r
-        self.bfloat = not isinstance(b, LineBuffer)
+        self.bline = isinstance(b, LineBuffer)
+        self.btime = isinstance(b, datetime.time)
+        self.bfloat = not self.bline and not self.btime
 
         if r:
             self.a, self.b = b, a
 
     def next(self):
-        if not self.bfloat:
+        if self.bline:
             self[0] = self.operation(self.a[0], self.b[0])
         elif not self.r:
-            self[0] = self.operation(self.a[0], self.b)
+            if not self.btime:
+                self[0] = self.operation(self.a[0], self.b)
+            else:
+                self[0] = self.operation(self.a.time(), self.b)
         else:
             self[0] = self.operation(self.a, self.b[0])
 
     def once(self, start, end):
-        if not self.bfloat:
+        if self.bline:
             self._once_op(start, end)
         elif not self.r:
-            self._once_val_op(start, end)
+            if not self.btime:
+                self._once_val_op(start, end)
+            else:
+                self._once_time_op(start, end)
         else:
             self._once_val_op_r(start, end)
 
@@ -760,6 +771,17 @@ class LinesOperation(LineActions):
 
         for i in range(start, end):
             dst[i] = op(srca[i], srcb[i])
+
+    def _once_time_op(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        srca = self.a.array
+        srcb = self.b
+        op = self.operation
+        tz = self._tz
+
+        for i in range(start, end):
+            dst[i] = op(num2date(src[i], tz=tz).time(), srcb)
 
     def _once_val_op(self, start, end):
         # cache python dictionary lookups
