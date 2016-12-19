@@ -95,7 +95,7 @@ def parse_args():
     parser.add_argument('--plot', '-p', action='store_true',
                         help='Plot the read data')
 
-    parser.add_argument('--numfigs', '-n', default=1,
+    parser.add_argument('--numfigs', '-n', default=1, type=int,
                         help='Plot using numfigs figures')
 
     return parser.parse_args()
