@@ -102,15 +102,17 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
           - Else ... the incoming bar is in the session, fill up to it
         '''
         # Get time of current (from data source) bar
+        ret = False
+
         dtime_cur = data.datetime.datetime()
 
         if dtime_cur > self.sessend:
             # bar over session end - fill up and invalidate
             # Do not put current bar in stack to let it be evaluated below
             # Fill up to endsession + smallest unit of timeframe
-            self._fillbars(data, self.dtime_prev,
-                           self.sessend + self._tdframe,
-                           tostack=False)
+            ret = self._fillbars(data, self.dtime_prev,
+                                 self.sessend + self._tdframe,
+                                 tostack=False)
             self.sessend = self.MAXDATE
 
         # Fall through from previous check ... the bar which is over the
@@ -124,17 +126,18 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
             if sessstart <= dtime_cur <= sessend:
                 # 1st bar from session in the session - fill from session start
                 if self.seenbar or not self.p.skip_first_fill:
-                    self._fillbars(data, sessstart - self._tdunit, dtime_cur)
+                    ret = self._fillbars(data,
+                                         sessstart - self._tdunit, dtime_cur)
 
             self.seenbar = True
             self.dtime_prev = dtime_cur
 
         else:
             # Seen a previous bar and this is in the session - fill up to it
-            self._fillbars(data, self.dtime_prev, dtime_cur)
+            ret = self._fillbars(data, self.dtime_prev, dtime_cur)
             self.dtime_prev = dtime_cur
 
-        return False
+        return ret
 
     def _fillbars(self, data, time_start, time_end, tostack=True):
         '''
@@ -143,15 +146,17 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
         Invalidates the control dtime_prev if requested
         '''
         # Control flag - bars added to the stack
-        dirty = False
+        dirty = 0
 
         time_start += self._tdunit
         while time_start < time_end:
-            dirty = self._fillbar(data, time_start)
+            dirty += self._fillbar(data, time_start)
             time_start += self._tdunit
 
         if dirty and tostack:
             data._save2stack(erase=True)
+
+        return bool(dirty) or not tostack
 
     def _fillbar(self, data, dtime):
         # Prepare an array of the needed size
