@@ -173,6 +173,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # Create the rest on a per data basis
             dt0, dt1 = self.pinf.xreal[0], self.pinf.xreal[-1]
             for data in strategy.datas:
+                if not data.plotinfo.plot:
+                    continue
+
                 self.pinf.xdata = self.pinf.x
                 if len(data) < self.pinf.xlen:
                     self.pinf.xdata = xdata = []
