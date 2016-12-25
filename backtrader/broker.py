@@ -58,13 +58,14 @@ class BrokerBase(with_metaclass(MetaParams, object)):
     def setcommission(self,
                       commission=0.0, margin=None, mult=1.0,
                       commtype=None, percabs=True, stocklike=False,
-                      interest=0.0, interest_long=False,
+                      interest=0.0, interest_long=False, leverage=1.0,
                       name=None):
 
         comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
                             commtype=commtype, stocklike=stocklike,
                             percabs=percabs,
-                            interest=interest, interest_long=interest_long)
+                            interest=interest, interest_long=interest_long,
+                            leverage=leverage)
         self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
