@@ -92,6 +92,10 @@ class CommInfoBase(with_metaclass(MetaParams)):
         positions. If ths is ``True`` and ``interest`` is non-zero the interest
         will be charged on both directions
 
+      - ``leverage`` (def: ``1.0``)
+
+        Amount of leverage for the asset with regards to the needed cash
+
     Attributes:
 
       - ``_stocklike``: Final value to use for Stock-like/Futures-like behavior
@@ -112,6 +116,7 @@ class CommInfoBase(with_metaclass(MetaParams)):
         ('percabs', False),
         ('interest', 0.0),
         ('interest_long', False),
+        ('leverage', 1.0),
     )
 
     def __init__(self):
@@ -150,12 +155,16 @@ class CommInfoBase(with_metaclass(MetaParams)):
     def stocklike(self):
         return self._stocklike
 
+    def get_leverage(self):
+        '''Returns the level of leverage allowed for this comission scheme'''
+        return self.p.leverage
+
     def getsize(self, price, cash):
         '''Returns the needed size to meet a cash operation at a given price'''
         if not self._stocklike:
-            return cash // self.p.margin
+            return int(self.p.leverage * (cash // self.p.margin))
 
-        return cash // price
+        return int(self.p.leverage * (cash // price))
 
     def getoperationcost(self, size, price):
         '''Returns the needed amount of cash an operation would cost'''
