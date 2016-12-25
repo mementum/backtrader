@@ -227,6 +227,8 @@ class BackBroker(bt.BrokerBase):
         self.startingcash = self.cash = self.p.cash
         self._value = self.cash
         self._valuemkt = 0.0  # no open position
+        self._valueunlever = 0.0  # no open position
+        self._leverage = 1.0  # initially nothing is open
         self._unrealized = 0.0  # no open position
 
         self.orders = list()  # will only be appending
@@ -332,6 +334,7 @@ class BackBroker(bt.BrokerBase):
 
     def _get_value(self, datas=None):
         pos_value = 0.0
+        pos_value_unlever = 0.0
         unrealized = 0.0
 
         for data in datas or self.positions:
@@ -353,11 +356,21 @@ class BackBroker(bt.BrokerBase):
             unrealized += comminfo.profitandloss(position.size, position.price,
                                                  data.close[0])
 
+            if dvalue > 0:  # long position - unlever
+                pos_value_unlever += dvalue / comminfo.get_leverage()
+            else:
+                pos_value_unlever += dvalue
+
         self._value = self.cash + pos_value
         self._valuemkt = pos_value
+        self._valueunlever = self.cash + pos_value_unlever
+        self._leverage = pos_value / (pos_value_unlever or 1.0)
         self._unrealized = unrealized
 
         return self._value
+
+    def get_leverage(self):
+        return self._leverage
 
     getvalue = get_value
 
@@ -495,6 +508,9 @@ class BackBroker(bt.BrokerBase):
             else:
                 closedvalue = comminfo.getoperationcost(closed, pprice_orig)
 
+            if closedvalue > 0:  # long position closed
+                closedvalue /= comminfo.get_leverage()  # inc cash with lever
+
             cash += closedvalue + pnl * comminfo.stocklike
             # Calculate and substract commission
             closedcomm = comminfo.getcommission(closed, price)
@@ -518,6 +534,9 @@ class BackBroker(bt.BrokerBase):
                 openedvalue = comminfo.getvaluesize(opened, price)
             else:
                 openedvalue = comminfo.getoperationcost(opened, price)
+
+            if openedvalue > 0:  # long position being opened
+                openedvalue /= comminfo.get_leverage()  # dec cash with level
 
             cash -= openedvalue  # original behavior
 
