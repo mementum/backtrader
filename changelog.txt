@@ -1,3 +1,13 @@
+1.9.20.105
+  - Added pair-trading sample from @remroc: PR #223, #224, #225
+  - Some documentation updates
+  - Leverage support
+  - Closes #227 numfigs type=int in arg parsing
+  - Correct no-plotting of datas
+  - Correct pandasdata integer addressing issue
+  - Correct time comparison when running with runonce=True
+  - Update SessionFiller to more stringent standards in modern versions
+
 1.9.19.105
   - Add time comparison for single line operations
   - Correct plotting error calculations with volume and improve data on data
