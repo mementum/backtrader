@@ -1106,9 +1106,11 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
         - An ``int``: indicating the data that was inserted at that position
 
         - An ``str``: name given to the data when creating it (parameter
-          ``name``) or when adding it cerebro with ``cerebro.addata(..., name=)
+          ``name``) or when adding it cerebro with ``cerebro.adddata(...,
+          name=)``
 
         - A ``data`` instance
+
     '''
 
     params = (

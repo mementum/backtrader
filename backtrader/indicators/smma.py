@@ -29,7 +29,7 @@ class SmoothedMovingAverage(MovingAverageBase):
     Smoothing Moving Average used by Wilder in his 1978 book `New Concepts in
     Technical Trading`
 
-    Defined in his book originalyl as:
+    Defined in his book originally as:
 
       - new_value = (old_value * (period - 1) + new_data) / period
 

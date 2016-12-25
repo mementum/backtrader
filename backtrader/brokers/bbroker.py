@@ -390,6 +390,8 @@ class BackBroker(bt.BrokerBase):
         return os
 
     def getposition(self, data):
+        '''Returns the current position status (a ``Position`` instance) for
+        the given ``data``'''
         return self.positions[data]
 
     def orderstatus(self, order):

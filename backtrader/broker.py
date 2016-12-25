@@ -50,6 +50,8 @@ class BrokerBase(with_metaclass(MetaParams, object)):
         pass
 
     def getcommissioninfo(self, data):
+        '''Retrieves the ``CommissionInfo`` scheme associated with the given
+        ``data``'''
         if data._name in self.comminfo:
             return self.comminfo[data._name]
 
@@ -61,6 +63,14 @@ class BrokerBase(with_metaclass(MetaParams, object)):
                       interest=0.0, interest_long=False, leverage=1.0,
                       name=None):
 
+        '''This method sets a `` CommissionInfo`` object for assets managed in
+        the broker with the parameters. Consult the reference for
+        ``CommInfoBase``
+
+        If name is ``None``, this will be the default for assets for which no
+        other ``CommissionInfo`` scheme can be found
+        '''
+
         comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
                             commtype=commtype, stocklike=stocklike,
                             percabs=percabs,
@@ -69,6 +79,8 @@ class BrokerBase(with_metaclass(MetaParams, object)):
         self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
+        '''Adds a ``CommissionInfo`` object that will be the default for all assets if
+        ``name`` is ``None``'''
         self.comminfo[name] = comminfo
 
     def getcash(self):

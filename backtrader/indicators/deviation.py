@@ -32,9 +32,9 @@ class StandardDeviation(Indicator):
       - If 2 datas are provided as parameters, the 2nd is considered to be the
         mean of the first
 
-      - ``safepow´´ (default: False) If this parameter is True, the standard
+      - ``safepow`` (default: False) If this parameter is True, the standard
         deviation will be calculated as pow(abs(meansq - sqmean), 0.5) to safe
-        guard for possible negative results of ``meansq - sqmean´´ caused by
+        guard for possible negative results of ``meansq - sqmean`` caused by
         the floating point representation.
 
     Formula:

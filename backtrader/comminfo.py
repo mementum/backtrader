@@ -207,6 +207,8 @@ class CommInfoBase(with_metaclass(MetaParams)):
         return abs(size) * self.p.commission
 
     def getcommission(self, size, price):
+        '''Calculates the commission of an operation at a given price
+        '''
         return self._getcommission(size, price, pseudoexec=True)
 
     def confirmexec(self, size, price):

@@ -23,3 +23,9 @@ Reference
    .. automethod:: set_slippage_fixed
 
    .. automethod:: get_orders_open
+
+   .. automethod:: getcommissioninfo
+   .. automethod:: setcommission
+   .. automethod:: addcommissioninfo
+
+   .. automethod:: getposition

@@ -246,3 +246,15 @@ Reference
 .. autoclass:: CommInfoBase
 
 .. autoclass:: CommissionInfo
+
+   .. automethod:: get_leverage
+   .. automethod:: getsize
+   .. automethod:: getoperationcost
+   .. automethod:: getvaluesize
+   .. automethod:: getvalue
+   .. automethod:: getcomission
+   .. automethod:: _getcomission
+   .. automethod:: profitandloss
+   .. automethod:: cashadjust
+   .. automethod:: get_credit_interest
+   .. automethod:: _get_credit_interest
