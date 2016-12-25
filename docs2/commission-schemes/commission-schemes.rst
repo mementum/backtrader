@@ -252,8 +252,8 @@ Reference
    .. automethod:: getoperationcost
    .. automethod:: getvaluesize
    .. automethod:: getvalue
-   .. automethod:: getcomission
-   .. automethod:: _getcomission
+   .. automethod:: getcommission
+   .. automethod:: _getcommission
    .. automethod:: profitandloss
    .. automethod:: cashadjust
    .. automethod:: get_credit_interest

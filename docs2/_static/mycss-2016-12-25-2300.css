@@ -2,7 +2,7 @@
 /* with a fixed navbar the side bar doesn't scroll properly ... activate it
    some javascript takes care of adjusting the size to be close to the bottom*/
 .bs-sidenav {
-    overflow-y: scroll
+    /* overflow-y: scroll */
 }
 
 @import url(https://fonts.googleapis.com/css?family=Lato:100,300,400,700);
@@ -17,7 +17,7 @@ body {
     line-height: 22px;
     color: #000;
 
-    padding-top: 70px; /* for the navbar */
+    /* padding-top: 70px; */ /* for the navbar */
 }
 
 h1, h2, h3, h4, h5, h6 {
