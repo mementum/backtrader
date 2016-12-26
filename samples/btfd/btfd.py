@@ -21,8 +21,9 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# Reference
-# https://estrategiastrading.com/oro-bolsa-estadistica-con-python/
+# References:
+#  - https://www.reddit.com/r/algotrading/comments/5jez2b/can_anyone_replicate_this_strategy/
+#  - http://dark-bid.com/BTFD-only-strategy-that-matters.html
 
 import argparse
 import datetime
