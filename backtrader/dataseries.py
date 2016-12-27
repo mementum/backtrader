@@ -34,7 +34,7 @@ class TimeFrame(object):
     (Ticks, MicroSeconds, Seconds, Minutes,
      Days, Weeks, Months, Years, NoTimeFrame) = range(1, 10)
 
-    Names = ['Ticks', 'MicroSeconds', 'Seconds', 'Minutes',
+    Names = ['', 'Ticks', 'MicroSeconds', 'Seconds', 'Minutes',
              'Days', 'Weeks', 'Months', 'Years', 'NoTimeFrame']
 
     names = Names  # support old naming convention
@@ -43,8 +43,8 @@ class TimeFrame(object):
     def getname(cls, tframe, compression=None):
         if compression == 1:
             # return singular if compression is 1
-            return cls.Names[tframe - 1][:-1]
-        return cls.Names[tframe - 1]
+            return cls.Names[tframe][:-1]
+        return cls.Names[tframe]
 
     @classmethod
     def TFrame(cls, name):
@@ -95,7 +95,7 @@ class DataSeries(LineSeries):
         # returns dictionary with information
         info = OrderedDict()
         info['Name'] = self._name
-        info['Timeframe'] = TimeFrame.names[self._timeframe]
+        info['Timeframe'] = TimeFrame.TName(self._timeframe)
         info['Compression'] = self._compression
 
         return info
