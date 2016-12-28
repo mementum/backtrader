@@ -824,6 +824,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 for cb in self.optcbs:
                     cb(r)  # callback receives finished strategy
 
+            pool.close()
+
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
                     data.stop()
