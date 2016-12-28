@@ -510,10 +510,11 @@ class BackBroker(bt.BrokerBase):
             else:
                 closedvalue = comminfo.getoperationcost(closed, pprice_orig)
 
+            closecash = closedvalue
             if closedvalue > 0:  # long position closed
-                closedvalue /= comminfo.get_leverage()  # inc cash with lever
+                closecash /= comminfo.get_leverage()  # inc cash with lever
 
-            cash += closedvalue + pnl * comminfo.stocklike
+            cash += closecash + pnl * comminfo.stocklike
             # Calculate and substract commission
             closedcomm = comminfo.getcommission(closed, price)
             cash -= closedcomm
@@ -537,10 +538,11 @@ class BackBroker(bt.BrokerBase):
             else:
                 openedvalue = comminfo.getoperationcost(opened, price)
 
+            opencash = openedvalue
             if openedvalue > 0:  # long position being opened
-                openedvalue /= comminfo.get_leverage()  # dec cash with level
+                opencash /= comminfo.get_leverage()  # dec cash with level
 
-            cash -= openedvalue  # original behavior
+            cash -= opencash  # original behavior
 
             openedcomm = comminfo.getcommission(opened, price)
             cash -= openedcomm
