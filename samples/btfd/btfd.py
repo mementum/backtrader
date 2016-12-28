@@ -74,6 +74,33 @@ class St(bt.Strategy):
                 self.order_target_percent(target=self.p.target)
                 self.barexit = len(self) + self.p.hold
 
+    def start(self):
+        print(','.join(['TRADE', 'STATUS', 'Value', 'PNL', 'COMMISSION']))
+
+    def notify_order(self, order):
+        if order.status in [order.Margin, order.Rejected, order.Canceled]:
+            print('ORDER FAILED with status:', order.getstatusname())
+
+    def notify_trade(self, trade):
+        if trade.isclosed:
+            print(','.join(map(str, [
+                'TRADE', 'CLOSE',
+                self.data.num2date(trade.dtclose).date().isoformat(),
+                trade.value,
+                trade.pnl,
+                trade.commission,
+            ]
+            )))
+        elif trade.justopened:
+            print(','.join(map(str, [
+                'TRADE', 'OPEN',
+                self.data.num2date(trade.dtopen).date().isoformat(),
+                trade.value,
+                trade.pnl,
+                trade.commission,
+            ]
+            )))
+
 
 def runstrat(args=None):
     args = parse_args(args)
@@ -86,8 +113,7 @@ def runstrat(args=None):
     # Parse from/to-date
     dtfmt, tmfmt = '%Y-%m-%d', 'T%H:%M:%S'
     for a, d in ((getattr(args, x), x) for x in ['fromdate', 'todate']):
-        strpfmt = dtfmt + tmfmt * ('T' in a)
-        kwargs[d] = datetime.datetime.strptime(a, strpfmt)
+        kwargs[d] = datetime.datetime.strptime(a, dtfmt + tmfmt * ('T' in a))
 
     if not args.offline:
         YahooData = bt.feeds.YahooFinanceData
