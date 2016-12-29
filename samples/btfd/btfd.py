@@ -33,12 +33,13 @@ import backtrader as bt
 
 class ValueUnlever(bt.observers.Value):
     '''Extension of regular Value observer to add leveraged view'''
-    lines = ('value_unlever', 'asset')
-    params = (('assetstart', 100000.0),)
+    lines = ('value_lever', 'asset')
+    params = (('assetstart', 100000.0), ('lever', True),)
 
     def next(self):
         super(ValueUnlever, self).next()
-        self.lines.value_unlever[0] = self._owner.broker._valueunlever
+        if self.p.lever:
+            self.lines.value_lever[0] = self._owner.broker._valuelever
 
         if len(self) == 1:
             self.lines.asset[0] = self.p.assetstart
@@ -134,7 +135,7 @@ def runstrat(args=None):
     cerebro.addstrategy(St, **eval('dict(' + args.strat + ')'))
 
     # Add specific observer
-    cerebro.addobserver(ValueUnlever, **eval('dict(' + args.comminfo + ')'))
+    cerebro.addobserver(ValueUnlever, **eval('dict(' + args.valobserver + ')'))
 
     # Execute
     cerebro.run(**eval('dict(' + args.cerebro + ')'))
