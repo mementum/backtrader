@@ -1,3 +1,13 @@
+1.9.21.105
+  - Closes #230 by closing the pool on completion rather than waiting for
+    garbage collection
+  - Default to show unleveraged value and allow retrieval of leveraged
+    value
+  - Update btfd sample to updated leveraged value
+  - Improve order value reporting with leverage
+  - Correct dataseries TimeFrame name presentation in writers
+  - Doc updates
+
 1.9.20.105
   - Added pair-trading sample from @remroc: PR #223, #224, #225
   - Some documentation updates
