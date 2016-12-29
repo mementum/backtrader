@@ -227,7 +227,10 @@ class BackBroker(bt.BrokerBase):
         self.startingcash = self.cash = self.p.cash
         self._value = self.cash
         self._valuemkt = 0.0  # no open position
-        self._valueunlever = 0.0  # no open position
+
+        self._valuelever = 0.0  # no open position
+        self._valuemktlever = 0.0  # no open position
+
         self._leverage = 1.0  # initially nothing is open
         self._unrealized = 0.0  # no open position
 
@@ -320,19 +323,24 @@ class BackBroker(bt.BrokerBase):
         self.notify(order)
         return True
 
-    def get_value(self, datas=None, mkt=False):
+    def get_value(self, datas=None, mkt=False, lever=False):
         '''Returns the portfolio value of the given datas (if datas is ``None``, then
         the total portfolio value will be returned (alias: ``getvalue``)
         '''
         if datas is None:
             if mkt:
-                return self._valuemkt
+                return self._valuemkt if not lever else self._valuemktlever
 
-            return self._value
+            return self._value if not lever else self._valuelever
 
-        return self._get_value(datas=datas)
+        return self._get_value(datas=datas, lever=lever)
 
-    def _get_value(self, datas=None):
+    getvalue = get_value
+
+    def get_value_lever(self, datas=None, mkt=False):
+        return self.get_value(datas=datas, mkt=mkt)
+
+    def _get_value(self, datas=None, lever=False):
         pos_value = 0.0
         pos_value_unlever = 0.0
         unrealized = 0.0
@@ -347,6 +355,8 @@ class BackBroker(bt.BrokerBase):
                 dvalue = comminfo.getvaluesize(position.size, data.close[0])
 
             if datas and len(datas) == 1:
+                if lever and dvalue > 0:
+                    return dvalue / comminfo.get_leverage()
                 return dvalue  # raw data value requested, short selling is neg
 
             if not self.p.shortcash:
@@ -361,18 +371,19 @@ class BackBroker(bt.BrokerBase):
             else:
                 pos_value_unlever += dvalue
 
-        self._value = self.cash + pos_value
-        self._valuemkt = pos_value
-        self._valueunlever = self.cash + pos_value_unlever
+        self._value = self.cash + pos_value_unlever
+        self._valuemkt = pos_value_unlever
+
+        self._valuelever = self.cash + pos_value
+        self._valuemktlever = pos_value
+
         self._leverage = pos_value / (pos_value_unlever or 1.0)
         self._unrealized = unrealized
 
-        return self._value
+        return self._value if not lever else self._valuelever
 
     def get_leverage(self):
         return self._leverage
-
-    getvalue = get_value
 
     def get_orders_open(self, safe=False):
         '''Returns an iterable with the orders which are still open (either not
