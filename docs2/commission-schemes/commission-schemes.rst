@@ -16,7 +16,7 @@ Using the broker shortcuts
 This keeps the end user away from ``CommissionInfo`` objects because a
 commission scheme can be *created/set* with a single function call. Within the
 regular ``cerebro`` creation/set-up process, just add a call to
-``setcomission`` over the ``broker`` member attribute. The following call sets
+``setcommission`` over the ``broker`` member attribute. The following call sets
 a usual commission scheme for **Eurostoxx50** futures when working with
 *Interactive Brokers*::
 
@@ -118,7 +118,7 @@ To later apply it in another Python module with ``addcommissioninfo``::
 
   ...
 
-  cerebro.broker.addcomissioninfo(commEuroStoxx50, name='Eurostoxxx50')
+  cerebro.broker.addcommissioninfo(commEuroStoxx50, name='Eurostoxxx50')
 
 ``CommissionInfo`` is an object which uses a ``params`` declaration just like
 other objects in the ``backtrader`` environment. As such the above can be also
@@ -135,7 +135,7 @@ And later::
 
   ...
 
-  cerebro.broker.addcomissioninfoCommEuroStoxx50(), name='Eurostoxxx50')
+  cerebro.broker.addcommissioninfoCommEuroStoxx50(), name='Eurostoxxx50')
 
 
 Now a "real" comparison with a SMA Crossover
@@ -192,7 +192,7 @@ The 1st operation has the following prices:
 
   - BUY (Execution) -> 3754.13 / SELL (Execution) -> 3786.93
 
-    - Futures Profit & Loss (with comission): 324.0
+    - Futures Profit & Loss (with commission): 324.0
     - Stocks Profit & Loss (with commission): -4.91
 
   Hey!! Commission has fully eaten up any profit on the ``stocks`` operation

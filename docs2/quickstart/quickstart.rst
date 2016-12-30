@@ -340,7 +340,7 @@ Blistering Barnacles!!! The system made money ... something must be wrong
 The broker says: Show me the money!
 ===================================
 
-And the money is called "comission".
+And the money is called "commission".
 
 Let's add a reasonable *0.1%* commision rate per operation (both for buying and
 selling ... yes the broker is avid ...)
@@ -810,7 +810,7 @@ will be output::
 
 Results:
 
-  * For periods below 18 the strategy (comissionless) loses money.
+  * For periods below 18 the strategy (commissionless) loses money.
   * For periods between 18 and 26 (both included) the strategy makes money.
   * Above 26 money is lost agagin.
 
