@@ -61,6 +61,7 @@ class BrokerBase(with_metaclass(MetaParams, object)):
                       commission=0.0, margin=None, mult=1.0,
                       commtype=None, percabs=True, stocklike=False,
                       interest=0.0, interest_long=False, leverage=1.0,
+                      automargin=False,
                       name=None):
 
         '''This method sets a `` CommissionInfo`` object for assets managed in
@@ -75,7 +76,7 @@ class BrokerBase(with_metaclass(MetaParams, object)):
                             commtype=commtype, stocklike=stocklike,
                             percabs=percabs,
                             interest=interest, interest_long=interest_long,
-                            leverage=leverage)
+                            leverage=leverage, automargin=automargin)
         self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
