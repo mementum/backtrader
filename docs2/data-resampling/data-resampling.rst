@@ -1,4 +1,3 @@
-
 Data Resampling
 ###############
 
@@ -22,7 +21,7 @@ There are two main options that can be controlled
 
   - Compress bars
 
-To do so the use the following parameters during when calling ``resampledata``:
+To do so, use the following parameters when calling ``resampledata``:
 
   - ``timeframe`` (default: bt.TimeFrame.Days)
 
@@ -33,7 +32,7 @@ To do so the use the following parameters during when calling ``resampledata``:
 
     Compress the selected value "n" to 1 bar
 
-Let's see an example from Daily to weekly with a handcrafted script::
+Let's see an example from Daily to Weekly with a handcrafted script::
 
   $ ./resampling-example.py --timeframe weekly --compression 1
 
@@ -128,7 +127,7 @@ should not be touched:
     the resampling/replaying will now:
 
       - Use the bars from *00:00:00* to *00:14:00* for the generation of the
-	15-minutes bar
+        15-minutes bar
 
 The sample code for the resampling test script.
 

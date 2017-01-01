@@ -1,4 +1,3 @@
-
 Mixing Timeframes in Indicators
 ###############################
 
@@ -46,8 +45,8 @@ for ``s1`` and the attempt to fetch it from the underlying array fails.
 
   close1 = self.data.close(-1)
 
-In this example the object ``close1`` (when accessed via ``[0]``) contains
-always the previous values (``-1``) delivered by ``close``. The syntax has been
+In this example the object ``close1`` (when accessed via ``[0]``) always contains
+the previous value (``-1``) delivered by ``close``. The syntax has been
 reused to accomodate adapting timeframes. Let's rewrite the above
 ``pivotpoint`` snippet::
 
@@ -58,7 +57,7 @@ See how the ``()`` is executed with no arguments (in the background a ``None``
 is being supplied). The following is happening:
 
   ``pivotpoint.s1()`` is returning an internal ``LinesCoupler`` object which
-  follows the rythm of the larger scope. This coupler fills itself with the
+  follows the rhythm of the larger scope. This coupler fills itself with the
   latest delivered value from the real ``s1`` (starting with a default value of
   ``NaN``)
 
@@ -88,7 +87,7 @@ With output::
   0074,0074,0003,2005-04-18,2947.79,3010.76,1.00
   ...
 
-At length 74 the 1st instance of ``close < s1`` takes palce.
+At line 74 the 1st instance of ``close < s1`` takes place.
 
 The script also provides insight into the additional possiblity: *couple all
 lines of an indicator*. Before we had::
@@ -136,17 +135,17 @@ For *lines* objects with multiple lines (for example *Indicators* like
       ``Strategy``) will be the reference to adapt larger timeframes (for
       example: ``Months``) to smaller/faster timeframes (for example: ``Days``)
 
-      Another reference can be used if wished
+      Another reference can be used if desired
 
     ``line``
       - If the default ``-1`` is given, all *lines* are coupled.
       - If another integer (for example, ``0`` or ``1``) a single line will be
-	coupled and fetched by index (from ``obj.lines[x]``)
+        coupled and fetched by index (from ``obj.lines[x]``)
       - If a string is passed, the line will be fetched by name.
 
-	In the sample the following could have been done::
+        In the sample, the following could have been done::
 
-	  coupled_s1 = pp(line='s1')
+          coupled_s1 = pp(line='s1')
 
 For *lines* objects with a single line (for example line ``s1`` from the
 indicator ``PivotPoint``):
@@ -157,7 +156,7 @@ Conclusion
 ^^^^^^^^^^
 
 Integrated in the regular ``()`` syntax, data feeds from different timeframes can be
-mixed in indicators, taking always into account that ``cerebro`` needs to be
+mixed in indicators, always taking into account that ``cerebro`` needs to be
 instantiated or created with ``runonce=False``.
 
 Script Code and Usage
