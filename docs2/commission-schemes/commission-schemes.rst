@@ -252,6 +252,7 @@ Reference
    .. automethod:: getoperationcost
    .. automethod:: getvaluesize
    .. automethod:: getvalue
+   .. automethod:: get_margin
    .. automethod:: getcommission
    .. automethod:: _getcommission
    .. automethod:: profitandloss
