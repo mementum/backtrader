@@ -373,7 +373,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
                     continue
 
                 # copy lines of the same name
-                for alias in self.lines.getaliases():
+                for alias in self.lines.getlinealiases():
                     lsrc = getattr(self.p.backfill_from.lines, alias)
                     ldst = getattr(self.lines, alias)
 
