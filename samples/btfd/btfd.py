@@ -53,7 +53,10 @@ class St(bt.Strategy):
         ('fall', -0.01),
         ('hold', 2),
         ('approach', 'highlow'),
-        ('target', 1.0)
+        ('target', 1.0),
+        ('prorder', False),
+        ('prtrade', False),
+        ('prdata', False),
     )
 
     def __init__(self):
@@ -70,19 +73,52 @@ class St(bt.Strategy):
         if self.position:
             if len(self) == self.barexit:
                 self.close()
+                if self.p.prdata:
+                    print(','.join(str(x) for x in
+                                   ['DATA', 'CLOSE',
+                                    self.data.datetime.date().isoformat(),
+                                    self.data.close[0],
+                                    float('NaN')]))
         else:
             if self.pctdown <= self.p.fall:
                 self.order_target_percent(target=self.p.target)
                 self.barexit = len(self) + self.p.hold
 
+                if self.p.prdata:
+                    print(','.join(str(x) for x in
+                                   ['DATA', 'OPEN',
+                                    self.data.datetime.date().isoformat(),
+                                    self.data.close[0],
+                                    self.pctdown[0]]))
+
     def start(self):
-        print(','.join(['TRADE', 'STATUS', 'Value', 'PNL', 'COMMISSION']))
+        if self.p.prtrade:
+            print(','.join(
+                ['TRADE', 'Status', 'Date', 'Value', 'PnL', 'Commission']))
+        if self.p.prorder:
+            print(','.join(
+                ['ORDER', 'Type', 'Date', 'Price', 'Size', 'Commission']))
+        if self.p.prdata:
+            print(','.join(['DATA', 'Action', 'Date', 'Price', 'PctDown']))
 
     def notify_order(self, order):
         if order.status in [order.Margin, order.Rejected, order.Canceled]:
             print('ORDER FAILED with status:', order.getstatusname())
+        elif order.status == order.Completed:
+            if self.p.prorder:
+                print(','.join(map(str, [
+                    'ORDER', 'BUY' * order.isbuy() or 'SELL',
+                    self.data.num2date(order.executed.dt).date().isoformat(),
+                    order.executed.price,
+                    order.executed.size,
+                    order.executed.comm,
+                ]
+                )))
 
     def notify_trade(self, trade):
+        if not self.p.prtrade:
+            return
+
         if trade.isclosed:
             print(','.join(map(str, [
                 'TRADE', 'CLOSE',
