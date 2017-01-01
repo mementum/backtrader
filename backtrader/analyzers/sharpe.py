@@ -181,7 +181,7 @@ class SharpeRatio(Analyzer):
                    self.p.convertrate and self.p.annualize:
 
                     ratio = math.sqrt(factor) * ratio
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, ZeroDivisionError):
                 ratio = None
 
             self.ratio = ratio
