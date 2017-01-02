@@ -1,3 +1,11 @@
+1.9.22.105
+  - Improve unleveraged value by not unleveraging profit and loss
+  - Doc edits from PR #223, #224
+  - Correct refactoring leftover for backfill_from for IBData and OandaData
+  - Extend btfd sample with logs
+  - Add ZeroDivisionError to SharpeRatio
+  - Add automargin to commission info schemes
+
 1.9.21.105
   - Closes #230 by closing the pool on completion rather than waiting for
     garbage collection
