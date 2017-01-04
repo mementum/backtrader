@@ -303,21 +303,20 @@ class VCStore(with_metaclass(MetaSingleton, object)):
     def __init__(self):
         self._connected = False  # modules/objects created
 
-        if not self._load_comtypes():
-            msg = self._RT_TYPELIB, txt
-            txt = 'Failed to import comtypes'
-            msg = self._RT_COMTYPES, txt
-            self.put_notification(msg, *msg)
-            return
+        self.notifs = collections.deque()  # hold notifications to deliver
 
         self.t_vcconn = None  # control connection status
-
-        self.notifs = collections.deque()  # hold notifications to deliver
 
         # hold deques to market data symbols
         self._dqs = collections.deque()
         self._qdatas = dict()
         self._tftable = dict()
+
+        if not self._load_comtypes():
+            txt = 'Failed to import comtypes'
+            msg = self._RT_COMTYPES, txt
+            self.put_notification(msg, *msg)
+            return
 
         vctypelibs = self.find_vchart()
         # Try to load the modules
