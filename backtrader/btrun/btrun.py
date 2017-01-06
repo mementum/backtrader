@@ -35,15 +35,28 @@ import backtrader as bt
 DATAFORMATS = dict(
     btcsv=bt.feeds.BacktraderCSVData,
     vchartcsv=bt.feeds.VChartCSVData,
-    vchart=bt.feeds.VChartData,
-    vcdata=bt.feeds.VCData,
     vcfile=bt.feeds.VChartFile,
-    ibdata=bt.feeds.IBData,
     sierracsv=bt.feeds.SierraChartCSVData,
     yahoocsv=bt.feeds.YahooFinanceCSVData,
     yahoocsv_unreversed=bt.feeds.YahooFinanceCSVData,
     yahoo=bt.feeds.YahooFinanceData,
 )
+
+try:
+    DATAFORMATS['vcdata'] = bt.feeds.VCData
+except AttributeError:
+    pass  # no comtypes available
+
+try:
+    DATAFORMATS['ibdata'] = bt.feeds.IBData,
+except AttributeError:
+    pass  # no ibpy available
+
+try:
+    DATAFORMATS['oandadata'] = bt.feeds.OandaData,
+except AttributeError:
+    pass  # no oandapy available
+
 
 TIMEFRAMES = dict(
     microseconds=bt.TimeFrame.MicroSeconds,
