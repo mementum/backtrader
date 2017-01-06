@@ -220,7 +220,7 @@ Data Contract Check
 
 During the start phase, the *data* feed will try to download the details of the
 specified contract (see the reference for how to specify it). If no such
-contrac is found or multiple matches are found, the data will refuse to carry
+contract is found or multiple matches are found, the data will refuse to carry
 on and will notify it to the system. Some examples.
 
 Simple but unambiguous contract specification::
@@ -602,7 +602,7 @@ strategy will not work as usual because of the initial offset
 Trading with it
 ===============
 
-There is no change with regards to the standar usage. Just use the methods
+There is no change with regards to the standard usage. Just use the methods
 available in the strategy (see the ``Strategy`` reference for a full
 explanation)
 
