@@ -67,7 +67,7 @@ How to apply this to the platform
 +++++++++++++++++++++++++++++++++
 
 Once a ``CommInfoBase`` subclass is in place the trick is to use
-``broker.addcommission`` rather than the usual ``broker.setcommission``. The
+``broker.addcommissioninfo`` rather than the usual ``broker.setcommission``. The
 latter will internally use the legacy ``CommissionInfoObject``.
 
 Easier done than said::
@@ -75,9 +75,9 @@ Easier done than said::
   ...
 
   comminfo = CommInfo_Stocks_PercAbs(commission=0.005)  # 0.5%
-  cerebro.broker.addcommission(comminfo)
+  cerebro.broker.addcommissioninfo(comminfo)
 
-The ``addcommission`` method is defined as follows::
+The ``addcommissioninfo`` method is defined as follows::
 
   def addcommissioninfo(self, comminfo, name=None):
       self.comminfo[name] = comminfo
@@ -116,7 +116,7 @@ Putting it into the system::
       margin=2000  # Margin is needed for futures-like instruments
   )
 
-  cerebro.addcommission(comminfo)
+  cerebro.addcommissioninfo(comminfo)
 
 If the format **0.xx** is preferred as the default, just set param ``percabs``
 to ``True``::
@@ -134,7 +134,7 @@ to ``True``::
       margin=2000  # Margin is needed for futures-like instruments
   )
 
-  cerebro.addcommission(comminfo)
+  cerebro.addcommissioninfo(comminfo)
 
 This all should do the trick.
 
