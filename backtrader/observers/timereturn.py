@@ -64,8 +64,10 @@ class TimeReturn(Observer):
 
     def _plotlabel(self):
         return [
-            TimeFrame.getname(self.p.timeframe, self.p.compression),
-            str(self.p.compression or 1)
+            # Use the final tf/comp values calculated by the return analyzer
+            TimeFrame.getname(self.treturn.timeframe,
+                              self.treturn.compression),
+            str(self.treturn.compression)
         ]
 
     def __init__(self):
