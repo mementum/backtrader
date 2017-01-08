@@ -1,3 +1,11 @@
+1.9.23.105
+  - Benchmark observer will observer after the strategy has reached its
+    minimum period
+  - Refactoring of TimeFrameAnalyzerBase
+  - Ensure NoTimeFrame name is always returned rightly
+  - Documentation updates
+  - btrun will only load data feeds if they can be imported
+
 1.9.22.105
   - Improve unleveraged value by not unleveraging profit and loss
   - Doc edits from PR #223, #224
