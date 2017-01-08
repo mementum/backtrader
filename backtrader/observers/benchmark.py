@@ -47,6 +47,15 @@ class Benchmark(TimeReturn):
         .. note:: this data must have been added to a ``cerebro`` instance with
                   ``addata``, ``resampledata`` or ``replaydata``.
 
+
+      - ``_doprenext`` (default: ``False``)
+
+        Benchmarking will take place from the point at which the strategy kicks
+        in (i.e.: when the minimum period of the strategy has been met).
+
+        Setting this to ``True`` will record benchmarking values from the
+        starting point of the data feeds
+
     Remember that at any moment of a ``run`` the current values can be checked
     by looking at the *lines* by name at index ``0``.
 
@@ -56,7 +65,10 @@ class Benchmark(TimeReturn):
     lines = ('benchmark',)
     plotlines = dict(benchmark=dict(_name='Benchmark'))
 
-    params = (('data', None),)
+    params = (
+        ('data', None),
+        ('_doprenext', False),
+    )
 
     def _plotlabel(self):
         labels = super(Benchmark, self)._plotlabel()
@@ -76,3 +88,7 @@ class Benchmark(TimeReturn):
     def next(self):
         super(Benchmark, self).next()
         self.lines.benchmark[0] = self.tbench.rets[self.treturn.dtkey]
+
+    def prenext(self):
+        if self.p._doprenext:
+            super(TimeReturn, self).prenext()
