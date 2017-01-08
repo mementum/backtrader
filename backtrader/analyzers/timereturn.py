@@ -78,12 +78,16 @@ class TimeReturn(TimeFrameAnalyzerBase):
         each return as keys
     '''
 
-    params = (('data', None),
-              ('firstopen', True))
+    params = (
+        ('data', None),
+        ('firstopen', True),
+        ('_doprenext', True),
+    )
 
     def start(self):
         super(TimeReturn, self).start()
         self._value_start = 0.0
+        self._lastvalue = None
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
             self._lastvalue = self.strategy.broker.getvalue()
@@ -95,9 +99,10 @@ class TimeReturn(TimeFrameAnalyzerBase):
         else:
             self._value = self.p.data[0]  # the data value if tracking data
 
-    def _on_dt_over(self):
+    def on_dt_over(self):
         # next is called in a new timeframe period
-        if self.p.data is None or len(self.p.data) > 1:
+        # if self.p.data is None or len(self.p.data) > 1:
+        if self.p.data is None or self._lastvalue is not None:
             self._value_start = self._lastvalue  # update value_start to last
 
         else:
@@ -106,6 +111,16 @@ class TimeReturn(TimeFrameAnalyzerBase):
                 self._value_start = self.p.data.open[0]
             else:
                 self._value_start = self.p.data[0]
+
+    def prenext(self):
+        if self.p._doprenext:
+            super(TimeReturn, self).prenext()
+
+    def nextstart(self):
+        if not self.p._doprenext:  # nothing done during prenext
+            self.on_dt_over()  # force an update of value_start
+
+        super(TimeReturn, self).nextstart()
 
     def next(self):
         # Calculate the return
