@@ -42,9 +42,6 @@ Steps:
   - Add a parameter to let the caller determine the column position of the P/E
     information
 
-  - Add ``pe`` to the ``linefields`` definition inside ``GenericCSVData`` to
-    make sure our new field gets parsed.
-
 The result::
 
   from backtrader.feeds import GenericCSVData
@@ -58,7 +55,6 @@ The result::
       # add the parameter to the parameters inherited from the base class
       params = (('pe', 8),)
 
-      linefields = GenericCSVData.linefields + ['pe']
 
 And the job is done ...
 
