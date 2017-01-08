@@ -276,24 +276,50 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         pp.pprint(self.get_analysis(), *args, **kwargs)
 
 
-class TimeFrameAnalyzerBase(Analyzer):
+class MetaTimeFrameAnalyzerBase(Analyzer.__class__):
+    def __new__(meta, name, bases, dct):
+        # Hack to support original method name
+        if '_on_dt_over' in dct:
+            dct['on_dt_over'] = dct.pop('_on_dt_over')  # rename method
+
+        return super(MetaTimeFrameAnalyzerBase, meta).__new__(meta, name,
+                                                              bases, dct)
+
+
+class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
+                                           Analyzer)):
     params = (
         ('timeframe', None),
         ('compression', None),
     )
 
-    def start(self):
-        super(TimeFrameAnalyzerBase, self).start()
+    def _start(self):
+        # Override to add specific attributes
         self.timeframe = self.p.timeframe or self.data._timeframe
         self.compression = self.p.compression or self.data._compression
 
         self.dtcmp, self.dtkey = self._get_dt_cmpkey(datetime.datetime.min)
+        super(TimeFrameAnalyzerBase, self)._start()
 
-    def next(self):
+    def _prenext(self):
+        for child in self._children:
+            child._prenext()
+
         if self._dt_over():
-            self._on_dt_over()
+            self.on_dt_over()
 
-    def _on_dt_over(self):
+        self.prenext()
+
+    def _next(self):
+        for child in self._children:
+            child._next()
+
+        if self._dt_over():
+            self.on_dt_over()
+
+        self.next()
+
+    def on_dt_over(self):
         pass
 
     def _dt_over(self):
@@ -304,7 +330,7 @@ class TimeFrameAnalyzerBase(Analyzer):
             dt = self.strategy.datetime.datetime()
             dtcmp, dtkey = self._get_dt_cmpkey(dt)
 
-        if dtcmp > self.dtcmp:
+        if self.dtcmp is None or dtcmp > self.dtcmp:
             self.dtkey, self.dtkey1 = dtkey, self.dtkey
             self.dtcmp, self.dtcmp1 = dtcmp, self.dtcmp
             return True
