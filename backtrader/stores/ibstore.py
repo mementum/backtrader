@@ -648,7 +648,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     def reqHistoricalDataEx(self, contract, enddate, begindate,
                             timeframe, compression,
                             what=None, useRTH=False,
-                            tickerId=None):
+                            tickerId=None, tz=''):
         '''
         Extension of the raw reqHistoricalData proxy, which takes two dates
         rather than a duration, barsize and date
@@ -682,7 +682,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 return self.getTickerQueue(start=True)
 
             return self.reqHistoricalData(
-                contract, enddate, duration, barsize, what, useRTH)
+                contract, enddate, duration, barsize, what, useRTH, tz)
 
         # Check if the requested timeframe/compression is supported by IB
         durations = self.getdurations(timeframe, compression)
@@ -724,10 +724,12 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             what = what or ('TRADES' * (contract.m_secType != 'CFD') or 'BID')
 
         # No timezone is passed -> request in local time
+        if tz:
+            tz = ' ' + tz
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(intdate.strftime('%Y%m%d %H:%M:%S')),
+            bytes(intdate.strftime('%Y%m%d %H:%M:%S') + tz),
             bytes(duration),
             bytes(barsize),
             bytes(what),
@@ -737,7 +739,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         return q
 
     def reqHistoricalData(self, contract, enddate, duration, barsize,
-                          what=None, useRTH=False):
+                          what=None, useRTH=False, tz=''):
         '''Proxy to reqHistorical Data'''
 
         # get a ticker/queue for identification/data delivery
@@ -751,6 +753,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             what = what or ('TRADES' * (contract.m_secType != 'CFD') or 'BID')
 
         # No timezone is passed -> request in local time
+        if tz:
+            tz = ' ' + tz
+
         # split barsize "x time", look in sizes for (tf, comp) get tf
         tframe = self._sizes[barsize.split()[1]][0]
         self.histfmt[tickerId] = tframe >= TimeFrame.Days
@@ -758,7 +763,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(enddate.strftime('%Y%m%d %H:%M:%S')),
+            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + tz),
             bytes(duration),
             bytes(barsize),
             bytes(what),
