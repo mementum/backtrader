@@ -462,7 +462,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 dtend = None
                 if len(self) > 1:
                     # len == 1 ... forwarded for the 1st time
-                    dtbegin = self.datetime.datetime(-1)
+                    # get begin date in utc-like format like msg.datetime
+                    dtbegin = num2date(self.datetime[-1])
                 elif self.fromdate > float('-inf'):
                     dtbegin = num2date(self.fromdate)
                 else:  # 1st bar and no begin set
@@ -475,7 +476,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self.contract, dtend, dtbegin,
                     self._timeframe, self._compression,
                     what=self.p.what,
-                    useRTH=self.p.useRTH)
+                    useRTH=self.p.useRTH, tz='GMT')
 
                 self._state = self._ST_HISTORBACK
                 self._statelivereconn = False  # no longer in live
@@ -551,7 +552,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             self.qhist = self.ib.reqHistoricalDataEx(
                 self.contract, dtend, dtbegin,
                 self._timeframe, self._compression,
-                what=self.p.what, useRTH=self.p.useRTH)
+                what=self.p.what, useRTH=self.p.useRTH, tz='GMT')
 
             self._state = self._ST_HISTORBACK
             return True  # continue before
