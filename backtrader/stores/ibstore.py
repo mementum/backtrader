@@ -220,6 +220,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.iscash = dict()  # tickerIds from cash products (for ex: EUR.JPY)
 
         self.histexreq = dict()  # holds segmented historical requests
+        self.histfmt = dict()  # holds datetimeformat for request
 
         self.acc_cash = AutoDict()  # current total cash per account
         self.acc_value = AutoDict()  # current total value per account
@@ -713,6 +714,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 what, useRTH)
 
         barsize = self.tfcomp_to_size(timeframe, compression)
+        self.hisfmt[tickerId] = timeframe >= TimeFrame.Days
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
@@ -730,7 +732,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             bytes(barsize),
             bytes(what),
             int(useRTH),
-            1)  # dateformat 1 for string, 2 for unix time in seconds
+            2)  # dateformat 1 for string, 2 for unix time in seconds
 
         return q
 
@@ -749,6 +751,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             what = what or ('TRADES' * (contract.m_secType != 'CFD') or 'BID')
 
         # No timezone is passed -> request in local time
+        # split barsize "x time", look in sizes for (tf, comp) get tf
+        tframe = self._sizes[barsize.split()[1]][0]
+        self.histfmt[tickerId] = tframe >= TimeFrame.Days
+
         self.conn.reqHistoricalData(
             tickerId,
             contract,
@@ -757,7 +763,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             bytes(barsize),
             bytes(what),
             int(useRTH),
-            1)
+            2)
 
         return q
 
@@ -906,6 +912,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         tickerId = msg.reqId
         q = self.qs[tickerId]
         if msg.date.startswith('finished-'):
+            self.histfmt.pop(tickerId, None)
             args = self.histexreq.pop(tickerId, None)
             if args is not None:
                 self.reqHistoricalDataEx(*args, tickerId=tickerId)
@@ -915,8 +922,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.cancelQueue(q)
         else:
             dtstr = msg.date  # Format when string req: YYYYMMDD[  HH:MM:SS]
-            dtformat = '%Y%m%d  %H:%M:%S' if len(dtstr) > 8 else '%Y%m%d'
-            msg.date = datetime.strptime(dtstr, dtformat)
+            if self.histfmt[tickerId]:
+                msg.date = datetime.strptime(dtstr, '%Y%m%d')
+            else:
+                msg.date = datetime.utcfromtimestamp(long(dtstr))
 
         q.put(msg)
 
