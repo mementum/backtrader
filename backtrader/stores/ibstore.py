@@ -719,7 +719,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             if not what:
                 what = 'BID'  # default for cash unless otherwise specified
         else:
-            what = what or 'TRADES'
+            what = what or ('TRADES' * (contract.m_secType != 'CFD') or 'BID')
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
@@ -746,7 +746,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             if not what:
                 what = 'BID'  # TRADES doesn't work
         else:
-            what = what or 'TRADES'
+            what = what or ('TRADES' * (contract.m_secType != 'CFD') or 'BID')
 
         # No timezone is passed -> request in local time
         self.conn.reqHistoricalData(
