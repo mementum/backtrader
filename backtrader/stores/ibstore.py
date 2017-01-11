@@ -714,7 +714,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 what, useRTH)
 
         barsize = self.tfcomp_to_size(timeframe, compression)
-        self.hisfmt[tickerId] = timeframe >= TimeFrame.Days
+        self.histfmt[tickerId] = timeframe >= TimeFrame.Days
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
