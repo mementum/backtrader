@@ -257,20 +257,20 @@ def runstrategy():
     )
 
     if args.replay:
-        cerebro.replaydata(dataname=data0, **rekwargs)
+        cerebro.replaydata(data0, **rekwargs)
 
         if data1 is not None:
             rekwargs['timeframe'] = tf1
             rekwargs['compression'] = cp1
-            cerebro.replaydata(dataname=data1, **rekwargs)
+            cerebro.replaydata(data1, **rekwargs)
 
     elif args.resample:
-        cerebro.resampledata(dataname=data0, **rekwargs)
+        cerebro.resampledata(data0, **rekwargs)
 
         if data1 is not None:
             rekwargs['timeframe'] = tf1
             rekwargs['compression'] = cp1
-            cerebro.resampledata(dataname=data1, **rekwargs)
+            cerebro.resampledata(data1, **rekwargs)
 
     else:
         cerebro.adddata(data0)
