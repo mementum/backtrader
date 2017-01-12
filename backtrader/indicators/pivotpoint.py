@@ -35,7 +35,7 @@ class PivotPoint(Indicator):
 
       data = btfeeds.ADataFeed(dataname=x, timeframe=bt.TimeFrame.Days)
       cerebro.adddata(data)
-      data1 = cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
+      cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
 
     In the ``__init__`` method of the strategy:
 
@@ -112,7 +112,7 @@ class FibonacciPivotPoint(Indicator):
 
       data = btfeeds.ADataFeed(dataname=x, timeframe=bt.TimeFrame.Days)
       cerebro.adddata(data)
-      data1 = cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
+      cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
 
     In the ``__init__`` method of the strategy:
 
@@ -192,7 +192,7 @@ class DemarkPivotPoint(Indicator):
 
       data = btfeeds.ADataFeed(dataname=x, timeframe=bt.TimeFrame.Days)
       cerebro.adddata(data)
-      data1 = cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
+      cerebro.resampledata(data, timeframe=bt.TimeFrame.Months)
 
     In the ``__init__`` method of the strategy:
 
