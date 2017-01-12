@@ -56,6 +56,15 @@ class Benchmark(TimeReturn):
         Setting this to ``True`` will record benchmarking values from the
         starting point of the data feeds
 
+      - ``firstopen`` (default: ``False``)
+
+        Keepint it as ``False`` ensures that the 1st comparison point between
+        the value and the benchmark starts at 0%, because the benchmark will
+        not use its opening price.
+
+        See the ``TimeReturn`` analyzer reference for a full explanation of the
+        meaning of the parameter
+
     Remember that at any moment of a ``run`` the current values can be checked
     by looking at the *lines* by name at index ``0``.
 
@@ -68,6 +77,8 @@ class Benchmark(TimeReturn):
     params = (
         ('data', None),
         ('_doprenext', False),
+        # Set to false to ensure the asset is measured at 0% in the 1st tick
+        ('firstopen', False),
     )
 
     def _plotlabel(self):
