@@ -310,6 +310,15 @@ class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
 
         self.prenext()
 
+    def _nextstart(self):
+        for child in self._children:
+            child._nextstart()
+
+        if self._dt_over():
+            self.on_dt_over()
+
+        self.nextstart()
+
     def _next(self):
         for child in self._children:
             child._next()
