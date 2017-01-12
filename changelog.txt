@@ -1,3 +1,11 @@
+1.9.24.105
+  - Complete TimeFrameAnalyzerBase with a call to _nextstart and children
+  - Improve 1st comparison point of benchmark
+  - Documentation updates / samples clean-up
+  - IBData feed timezone and backfill gap corrections
+  - Initial support for CFD products (untested) to request BID and not TRADES
+  - Ensure initialization of backfill_from data feeds
+
 1.9.23.105
   - Benchmark observer will observer after the strategy has reached its
     minimum period
