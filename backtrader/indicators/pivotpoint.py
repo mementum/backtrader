@@ -98,6 +98,10 @@ class PivotPoint(Indicator):
 
         super(PivotPoint, self).__init__()  # enable coopertive inheritance
 
+        if self.p._autoplot:
+            self.plotinfo.plot = False  # disable own plotting
+            self()  # Coupler to follow real object
+
 
 class FibonacciPivotPoint(Indicator):
     '''
@@ -180,6 +184,10 @@ class FibonacciPivotPoint(Indicator):
 
         super(FibonacciPivotPoint, self).__init__()
 
+        if self.p._autoplot:
+            self.plotinfo.plot = False  # disable own plotting
+            self()  # Coupler to follow real object
+
 
 class DemarkPivotPoint(Indicator):
     '''
@@ -252,3 +260,7 @@ class DemarkPivotPoint(Indicator):
         self.lines.r1 = x / 2.0 - self.data.low
 
         super(DemarkPivotPoint, self).__init__()
+
+        if self.p._autoplot:
+            self.plotinfo.plot = False  # disable own plotting
+            self()  # Coupler to follow real object

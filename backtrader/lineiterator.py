@@ -443,7 +443,21 @@ def LinesCoupler(cdata, clock=None, **kwargs):
     obj = ncls(cdata, **kwargs)  # instantiate
     # The clock is set here to avoid it being interpreted as a data by the
     # LineIterator background scanning code
-    obj._clock = clock or obj._owner
+    if clock is None:
+        clock = getattr(cdata, '_clock', None)
+        if clock is not None:
+            nclock = getattr(clock, '_clock', None)
+            if nclock is not None:
+                clock = nclock
+            else:
+                nclock = getattr(clock, 'data', None)
+                if nclock is not None:
+                    clock = nclock
+
+        if clock is None:
+            clock = obj._owner
+
+    obj._clock = clock
     return obj
 
 

@@ -33,15 +33,8 @@ class St(bt.Strategy):
               ('plot_on_daily', False))
 
     def __init__(self):
-        if self.p.usepp1:
-            self.pp = bt.ind.PivotPoint1(self.data1)
-        else:
-            self.pp = pp = bt.ind.PivotPoint(self.data1)
-            pp.plotinfo.plot = False  # deactivate plotting
-            pp1 = self.pp()
-
-        if self.p.plot_on_daily:
-            self.pp.plotinfo.plotmaster = self.data0
+        autoplot = self.p.plot_on_daily
+        self.pp = pp = bt.ind.PivotPoint(self.data1, _autoplot=autoplot)
 
     def next(self):
         txt = ','.join(
@@ -49,6 +42,7 @@ class St(bt.Strategy):
              '%04d' % len(self.data0),
              '%04d' % len(self.data1),
              self.data.datetime.date(0).isoformat(),
+             '%04d' % len(self.pp),
              '%.2f' % self.pp[0]])
 
         print(txt)
@@ -78,9 +72,6 @@ def parse_args():
     parser.add_argument('--data', required=False,
                         default='../../datas/2005-2006-day-001.txt',
                         help='Data to be read in')
-
-    parser.add_argument('--usepp1', required=False, action='store_true',
-                        help='Have PivotPoint look 1 period backwards')
 
     parser.add_argument('--plot', required=False, action='store_true',
                         help=('Plot the result'))
