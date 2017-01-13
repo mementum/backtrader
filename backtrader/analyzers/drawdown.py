@@ -51,7 +51,5 @@ class Drawdown_A(bt.Analyzer):
         # calculate max drawdown length
         self.dd['max_length'] = max(self.dd['max_length'], self.dd['length'])
 
-        print value, self.dd['m'], self.dd['p'], self.dd['max_m'], self.dd['max_p'], self.dd['length'], self.dd['max_length']
-
     def get_analysis(self):
         return self.dd
