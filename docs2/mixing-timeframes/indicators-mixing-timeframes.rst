@@ -56,10 +56,10 @@ reused to accomodate adapting timeframes. Let's rewrite the above
 See how the ``()`` is executed with no arguments (in the background a ``None``
 is being supplied). The following is happening:
 
-  ``pivotpoint.s1()`` is returning an internal ``LinesCoupler`` object which
-  follows the rhythm of the larger scope. This coupler fills itself with the
-  latest delivered value from the real ``s1`` (starting with a default value of
-  ``NaN``)
+  - ``pivotpoint.s1()`` is returning an internal ``LinesCoupler`` object which
+    follows the rhythm of the larger scope. This coupler fills itself with the
+    latest delivered value from the real ``s1`` (starting with a default value
+    of ``NaN``)
 
 But something extra is needed to make the magic work. ``Cerebro`` has to be
 created with::
