@@ -25,6 +25,7 @@ from __future__ import (absolute_import, division, print_function,
 # or prepend an "_" (underscore) to private classes/variables
 
 from .annualreturn import *
+from .drawdown import *
 from .timereturn import *
 from .sharpe import *
 from .tradeanalyzer import *

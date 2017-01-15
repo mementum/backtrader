@@ -1,55 +1,86 @@
-# drawdown analyzer
-class Drawdown_A(bt.Analyzer):
-    '''This analyzer calculates trading system drawdowns stats such as drawdown values in %s and in
-    dollars, max drawdown in %s and in dollars, drawdown length and drawdown max length
+#!/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+###############################################################################
+#
+# Copyright (C) 2016 Daniel Rodriguez
+# Copyright (C) 2016 ab_trader - initial length and money calculations
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import backtrader as bt
+from backtrader.utils import AutoOrderedDict
+
+
+class DrawDown(bt.Analyzer):
+    '''This analyzer calculates trading system drawdowns stats such as drawdown
+    values in %s and in dollars, max drawdown in %s and in dollars, drawdown
+    length and drawdown max length
 
     Params:
 
-      - no params are used
+      - *None*
 
     Methods:
 
-      - get_analysis
+      - ``get_analysis``
 
-        Returns a dictionary with dradown stats as values, the following keys are available:
+        Returns a dictionary (with . notation support and subdctionaries) with
+        drawdown stats as values, the following keys/attributes are available:
 
-        'm' - drawdown value in money
-        'p' - drawdown value in %s
-        'max_m' - max drawdown value in money
-        'max_p' - max drawdown value in %s
-        'length' - drawdown length in bars
-        'max_length' - max drawdown lentgh in bars
+        - ``drawdown`` - drawdown value in 0.xx %
+        - ``moneydown`` - drawdown value in monetary units
+        - ``len`` - drawdown length
+
+        - ``max.drawdown`` - max drawdown value in 0.xx %
+        - ``max.moneydown`` - max drawdown value in monetary units
+        - ``max.len`` - max drawdown length
     '''
 
-    def __init__(self):
-        self.dd = {}
-        self.dd['max_p'] = 0.0
-        self.dd['max_m'] = 0.0
-        self.dd['length'] = 0
-        self.dd['max_length'] = 0
-        self._maxvalue = self.strategy.broker.getvalue()
+    def create_analysis(self):
+        self.rets = AutoOrderedDict()  # dict with . notation
+
+        self.rets.len = 0
+        self.rets.drawdown = 0.0
+        self.rets.moneydown = 0.0
+
+        self.rets.max.len = 0.0
+        self.rets.max.drawdown = 0.0
+        self.rets.max.moneydown = 0.0
+
+        self._maxvalue = float('-inf')  # any value will outdo it
+
+    def stop(self):
+        self.rets._close()  # . notation cannot create more keys
+
+    def notify_cashvalue(self, cash, value):
+        self._value = value  # record current value
+        self._maxvalue = max(self._maxvalue, value)  # update peak value
 
     def next(self):
-        # get current broker value & upadet max broker value if necessary
-        value = self.strategy.broker.getvalue()
-        self._maxvalue = max(self._maxvalue, value)
+        r = self.rets
 
         # calculate current drawdown values
-        self.dd['m'] = value - self._maxvalue
-        self.dd['p'] = self.dd['m'] / self._maxvalue * 100.0
+        r.moneydown = moneydown = self._maxvalue - self._value
+        r.drawdown = drawdown = 100.0 * moneydown / self._maxvalue
 
-        # calculate current max drawdown values
-        self.dd['max_m'] = min(self.dd['max_m'], self.dd['m'])
-        self.dd['max_p'] = min(self.dd['max_p'], self.dd['p'])
+        # maxximum drawdown values
+        r.max.moneydown = max(r.max.moneydown, moneydown)
+        r.max.drawdown = maxdrawdown = max(r.max.drawdown, drawdown)
 
-        # calculate current drawdown length
-        if self.dd['m'] != 0:
-            self.dd['length'] += 1
-        else:
-            self.dd['length'] = 0
-
-        # calculate max drawdown length
-        self.dd['max_length'] = max(self.dd['max_length'], self.dd['length'])
-
-    def get_analysis(self):
-        return self.dd
+        r.len = r.len + 1 if drawdown else 0
+        r.max.len = max(r.max.len, r.len)
