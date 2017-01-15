@@ -59,6 +59,9 @@ class DTFaker(object):
     def __call__(self, idx=0):
         return self._dtime  # simulates data.datetime.datetime()
 
+    def datetime(self, idx=0):
+        return self._dtime
+
     def date(self, idx=0):
         return self._dtime.date()
 
@@ -86,10 +89,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         ('compression', 1),
 
         ('takelate', True),
+
+        ('sessionend', True),
     )
 
     def __init__(self, data):
         self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
+        self.subweeks = self.p.timeframe < TimeFrame.Weeks
         self.componly = (self.subdays and
                          data._timeframe == self.p.timeframe and
                          not (self.p.compression % data._compression)
@@ -159,6 +165,12 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return self._barover_years(data)
 
     def _barover_days(self, data):
+        if self.p.sessionend:
+            # Check if current data time is at/over sessionend
+            bdtime = data.num2date(self.bar.datetime)
+            bsend = datetime.combine(bdtime.date(), data.p.sessionend)
+            return data.datetime.datetime() >= bsend
+
         # Need to compare using localize times and not utc'd times
         return data.datetime.date() > data.num2date(self.bar.datetime).date()
 
@@ -261,18 +273,28 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return self(data, fromcheck=True, forcedata=_forcedata)
 
     def _dataonedge(self, data):
-        if not self.subdays:  # only for subdays
+        if not self.subweeks:  # only for subweeks
             return False
 
-        point, prest = self._gettmpoint(data.datetime.time())
-        if prest:
-            return False  # cannot be on boundary, subunits presetn
+        if self.subdays:
+            point, prest = self._gettmpoint(data.datetime.time())
+            if prest:
+                return False  # cannot be on boundary, subunits presetn
 
-        # Pass through compression to get boundary and rest over boundary
-        bound, brest = divmod(point, self.p.compression)
+            # Pass through compression to get boundary and rest over boundary
+            bound, brest = divmod(point, self.p.compression)
 
-        # if no extra and decomp bound is point
-        return brest == 0 and point == (bound * self.p.compression)
+            # if no extra and decomp bound is point
+            return brest == 0 and point == (bound * self.p.compression)
+
+        if self.p.sessionend:
+            # Days scenario - get datetime to compare in output timezone
+            # because p.sessionend is expected in output timezone
+            bdtime = data.datetime.datetime()
+            bsend = datetime.combine(bdtime.date(), data.p.sessionend)
+            return bdtime == bsend
+
+        return False  # subweeks, not subdays and not sessionend
 
     def _calcadjtime(self, greater=False):
         dt = self.data.num2date(self.bar.datetime)
