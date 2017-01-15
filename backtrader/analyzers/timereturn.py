@@ -84,7 +84,6 @@ class TimeReturn(TimeFrameAnalyzerBase):
     )
 
     def start(self):
-        super(TimeReturn, self).start()
         self._value_start = 0.0
         self._lastvalue = None
         if self.p.data is None:
