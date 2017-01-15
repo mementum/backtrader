@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import backtrader as bt
 from .. import Observer
 
 
@@ -36,10 +37,32 @@ class DrawDown(Observer):
 
     plotinfo = dict(plot=True, subplot=True)
 
+    plotlines = dict(maxdrawdown=dict(_plotskip=True,))
+
+    def __init__(self):
+        self._dd = self._owner._addanalyzer_slave(bt.analyzers.DrawDown)
+
+    def next(self):
+        self.lines.drawdown[0] = self._dd.rets.drawdown  # update drawdown
+        self.lines.maxdrawdown[0] = self._dd.rets.max.drawdown  # update max
+
+
+class DrawDown_Old(Observer):
+    '''This observer keeps track of the current drawdown level (plotted) and
+    the maxdrawdown (not plotted) levels
+
+    Params: None
+    '''
+    _stclock = True
+
+    lines = ('drawdown', 'maxdrawdown',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
     plotlines = dict(maxdrawdown=dict(_plotskip='True',))
 
     def __init__(self):
-        super(DrawDown, self).__init__()
+        super(DrawDown_Old, self).__init__()
 
         self.maxdd = 0.0
         self.peak = float('-inf')
