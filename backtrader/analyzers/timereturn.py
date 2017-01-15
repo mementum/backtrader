@@ -81,7 +81,6 @@ class TimeReturn(TimeFrameAnalyzerBase):
     params = (
         ('data', None),
         ('firstopen', True),
-        ('_doprenext', True),
     )
 
     def start(self):
@@ -111,16 +110,6 @@ class TimeReturn(TimeFrameAnalyzerBase):
                 self._value_start = self.p.data.open[0]
             else:
                 self._value_start = self.p.data[0]
-
-    def prenext(self):
-        if self.p._doprenext:
-            super(TimeReturn, self).prenext()
-
-    def nextstart(self):
-        if not self.p._doprenext:  # nothing done during prenext
-            self.on_dt_over()  # force an update of value_start
-
-        super(TimeReturn, self).nextstart()
 
     def next(self):
         # Calculate the return
