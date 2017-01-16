@@ -10,6 +10,11 @@ AnnualReturn
 
 .. autoclass:: AnnualReturn
 
+DrawDown
+********
+
+.. autoclass:: DrawDown
+
 
 GrossLeverage
 *************

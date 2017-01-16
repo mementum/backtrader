@@ -90,9 +90,9 @@ meaning is:
 
   - ``> 0`` -> ``long indication``
 
-  - ``´< 0`` -> ``short indication``
+  - ``< 0`` -> ``short indication``
 
-  - ``´== 0`` -> *No indication*
+  - ``== 0`` -> *No indication*
 
 The example does simple arithmetic with ``self.data - SMA`` and:
 
@@ -107,7 +107,7 @@ The example does simple arithmetic with ``self.data - SMA`` and:
 ===============
 
 The *constants* indicated below as seen in the example above, are directly
-available from the main *bactrader* module as in::
+available from the main *backtrader* module as in::
 
   import backtrader as bt
 
@@ -145,7 +145,7 @@ There are 5 types of *Signals*, broken in 2 groups.
 **Exit Group**:
 
   This 2 signals are meant to override others and provide criteria for
-  exitins a ``long``/``short`` position
+  exitins a ``long`` / ``short`` position
 
   - ``LONGEXIT``: ``short`` indications are taken to exit ``long``
     positions
