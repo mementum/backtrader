@@ -605,7 +605,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.qs.pop(tickerId, None)
 
         self.iscash.pop(tickerId, None)
-        self.iscfd.pop(tickerId, None)
 
         if sendnone:
             q.put(None)
