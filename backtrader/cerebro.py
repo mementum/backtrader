@@ -1126,9 +1126,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
-        datas = self.datas
+        datas = sorted(self.datas,
+                       key=lambda x: (x._timeframe, x._compression))
         datas1 = datas[1:]
-        data0 = self.datas[0]
+        data0 = datas[0]
         d0ret = True
 
         rs = [i for i, x in enumerate(datas) if x.resampling]
@@ -1251,10 +1252,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # has not moved forward all datas/indicators/observers that
         # were homed before calling once, Hence no "need" to do it
         # here again, because pointers are at 0
-        datas = self.datas
+        datas = sorted(self.datas,
+                       key=lambda x: (x._timeframe, x._compression))
         while True:
             # Check next incoming date in the datas
-            dts = [d.advance_peek() for d in self.datas]
+            dts = [d.advance_peek() for d in datas]
             dt0 = min(dts)
             if dt0 == float('inf'):
                 break  # no data delivers anything
