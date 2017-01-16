@@ -375,8 +375,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         for iocsv in self.indobscsv:
             values.append(iocsv.__class__.__name__)
-            values.append(len(iocsv))
-            values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+            lio = len(iocsv)
+            values.append(lio)
+            if lio:
+                values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+            else:
+                values.extend([''] * iocsv.lines.isize())
 
         return values
 
