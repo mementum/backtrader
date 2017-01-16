@@ -218,7 +218,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
         self.ts = collections.OrderedDict()  # key: queue -> tickerId
         self.iscash = dict()  # tickerIds from cash products (for ex: EUR.JPY)
-
+        self.iscfd = dict()  # tickerIds from cfd products
+		
         self.histexreq = dict()  # holds segmented historical requests
         self.histfmt = dict()  # holds datetimeformat for request
 
@@ -574,13 +575,15 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             # Invalidate tickerId in qs (where it is a key)
             q = self.qs.pop(tickerId, None)  # invalidate old
             iscash = self.iscash.pop(tickerId, None)
-
+            iscfd = self.iscfd.pop(tickerId, None)
+			
             # Update ts: q -> ticker
             tickerId = self.nextTickerId()  # get new tickerId
             self.ts[q] = tickerId  # Update ts: q -> tickerId
             self.qs[tickerId] = q  # Update qs: tickerId -> q
             self.iscash[tickerId] = iscash
-
+            self.iscfd[tickerId] = iscfd
+			
         return tickerId, q
 
     def getTickerQueue(self, start=False):
@@ -595,7 +598,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.qs[tickerId] = q  # can be managed from other thread
             self.ts[q] = tickerId
             self.iscash[tickerId] = False
-
+            self.iscfd[tickerId] = False
+			
         return tickerId, q
 
     def cancelQueue(self, q, sendnone=False):
@@ -605,7 +609,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.qs.pop(tickerId, None)
 
         self.iscash.pop(tickerId, None)
-
+        self.iscfd.pop(tickerId, None)
+		
         if sendnone:
             q.put(None)
 
@@ -716,6 +721,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         barsize = self.tfcomp_to_size(timeframe, compression)
         self.histfmt[tickerId] = timeframe >= TimeFrame.Days
 
+        if contract.m_secType == 'CFD': self.iscfd[tickerId] = True
+		
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
             if not what:
@@ -744,6 +751,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         # get a ticker/queue for identification/data delivery
         tickerId, q = self.getTickerQueue()
+
+        if contract.m_secType == 'CFD': self.iscfd[tickerId] = True
 
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
@@ -832,6 +841,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         tickerId, q = self.getTickerQueue()
         ticks = '233'  # request RTVOLUME tick delivered over tickString
 
+        if contract.m_secType == 'CFD':
+            ticks = ''  # cfd's do not get RTVOLUME		
+            self.iscfd[tickerId] = True
+		
         if contract.m_secType == 'CASH':
             self.iscash[tickerId] = True
             ticks = ''  # cash markets do not get RTVOLUME
@@ -880,7 +893,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # The price field has been seen to be missing in some instances even if
         # "field" is 1
         tickerId = msg.tickerId
-        if self.iscash[tickerId]:
+        if self.iscash[tickerId] or self.iscfd[tickerId]:
             if msg.field == 1:  # Bid Price
                 try:
                     if msg.price == -1.0:
@@ -1467,3 +1480,4 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 return self.acc_cash[account]
             except KeyError:
                 pass
+
