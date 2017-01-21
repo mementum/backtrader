@@ -474,10 +474,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 dtend = msg.datetime if self._usertvol else msg.time
 
                 self.qhist = self.ib.reqHistoricalDataEx(
-                    self.contract, dtend, dtbegin,
-                    self._timeframe, self._compression,
-                    what=self.p.what,
-                    useRTH=self.p.useRTH, tz='GMT')
+                    contract=self.contract, enddate=dtend, begindate=dtbegin,
+                    timeframe=self._timeframe, compression=self._compression,
+                    what=self.p.what, useRTH=self.p.useRTH, tz=self._tz,
+                    sessionend=self.p.sessionend)
 
                 self._state = self._ST_HISTORBACK
                 self._statelivereconn = False  # no longer in live
@@ -551,9 +551,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 dtbegin = num2date(self.fromdate)
 
             self.qhist = self.ib.reqHistoricalDataEx(
-                self.contract, dtend, dtbegin,
-                self._timeframe, self._compression,
-                what=self.p.what, useRTH=self.p.useRTH, tz='GMT')
+                contract=self.contract, enddate=dtend, begindate=dtbegin,
+                timeframe=self._timeframe, compression=self._compression,
+                what=self.p.what, useRTH=self.p.useRTH, tz=self._tz,
+                sessionend=self.p.sessionend)
 
             self._state = self._ST_HISTORBACK
             return True  # continue before
