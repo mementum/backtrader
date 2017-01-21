@@ -106,7 +106,9 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self._firstbar = True
         self.componly = self.componly and not self.subdays
         self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
-                             self.subdays)
+                             self.subweeks)
+
+        self._nexteos = None
 
         # Modify data information according to own parameters
         data.resampling = 1
@@ -165,14 +167,16 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return self._barover_years(data)
 
     def _barover_days(self, data):
-        if self.p.sessionend:
-            # Check if current data time is at/over sessionend
-            bdtime = data.num2date(self.bar.datetime)
-            bsend = datetime.combine(bdtime.date(), data.p.sessionend)
-            return data.datetime.datetime() >= bsend
+        dtime = data.datetime.datetime()
+        if self._nexteos is None:
+            nexteos = datetime.combine(dtime.date(), data.p.sessionend)
 
-        # Need to compare using localize times and not utc'd times
-        return data.datetime.date() > data.num2date(self.bar.datetime).date()
+            while dtime > nexteos:
+                nexteos += timedelta(days=1)
+
+            self._nexteos = nexteos
+
+        return dtime > self._nexteos  # == case handled by onedge
 
     def _barover_weeks(self, data):
         year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
@@ -276,6 +280,19 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         if not self.subweeks:  # only for subweeks
             return False
 
+        dtime = data.datetime.datetime()
+        if self._nexteos is None:
+            nexteos = datetime.combine(dtime.date(), data.p.sessionend)
+
+            while dtime > nexteos:
+                nexteos += timedelta(days=1)
+
+            self._nexteos = nexteos
+
+        if dtime == self._nexteos:
+            self._nexteos = None
+            return True  # for days or subdays, the session is an edge
+
         if self.subdays:
             point, prest = self._gettmpoint(data.datetime.time())
             if prest:
@@ -287,7 +304,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             # if no extra and decomp bound is point
             return brest == 0 and point == (bound * self.p.compression)
 
-        if self.p.sessionend:
+        if False and self.p.sessionend:
             # Days scenario - get datetime to compare in output timezone
             # because p.sessionend is expected in output timezone
             bdtime = data.datetime.datetime()
@@ -298,6 +315,11 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
     def _calcadjtime(self, greater=False):
         dt = self.data.num2date(self.bar.datetime)
+
+        if self.p.timeframe > TimeFrame.Minutes:  # set the end of session
+            dt = datetime.combine(dt, self.data.p.sessionend)
+            return self.data.date2num(dt)  # tz'd time to utc-num
+
         # Get current time
         tm = dt.time()
         # Get the point of the day in the time frame unit (ex: minute 200)
