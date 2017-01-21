@@ -376,7 +376,7 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         while True:
             try:
                 # tmout <> 0 only if resampling/replaying, else no waking up
-                tmout = self.p.qcheck * bool(self.resampling)
+                tmout = self._qcheck * bool(self.resampling)
                 msg = self.q.get(timeout=tmout)
             except queue.Empty:
                 return None

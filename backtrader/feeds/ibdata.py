@@ -394,7 +394,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             if self._state == self._ST_LIVE:
                 try:
                     msg = (self._storedmsg.pop(None, None) or
-                           self.qlive.get(timeout=self.p.qcheck))
+                           self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
                     return None  # indicate timeout situation
 

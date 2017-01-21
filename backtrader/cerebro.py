@@ -1139,7 +1139,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
         onlyresample = len(datas) == len(rsonly)
         noresample = not rsonly
 
+        lastliveall = False
         while d0ret or d0ret is None:
+            liveall = all(d._laststatus == d.LIVE for d in datas)
+            if lastliveall != liveall:
+                for d in datas:
+                    d.do_qcheck(liveall)
+
+                lastliveall = liveall
+
             lastret = False
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
