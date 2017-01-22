@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import datetime
 import collections
 import itertools
 import multiprocessing
@@ -1139,14 +1140,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         onlyresample = len(datas) == len(rsonly)
         noresample = not rsonly
 
-        lastliveall = False
+        ldatas = len(datas)
+        lastqcheck = False
         while d0ret or d0ret is None:
-            liveall = all(d._laststatus == d.LIVE for d in datas)
-            if lastliveall != liveall:
-                for d in datas:
-                    d.do_qcheck(liveall)
-
-                lastliveall = liveall
+            # if any has live data in the buffer, no data will wait anything
+            newqcheck = not any(d.haslivedata() for d in datas)
+            if not newqcheck:
+                # If no data has reached the live status or all, wait for
+                # the next incoming data
+                livecount = sum(d._laststatus == d.LIVE for d in datas)
+                newqcheck = not livecount or livecount == ldatas
 
             lastret = False
             # Notify anything from the store even before moving datas
@@ -1158,7 +1161,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
-            drets = [d.next(ticks=False) for d in datas]
+            # record starting time and tell feeds to discount the elapsed time
+            # from the qcheck value
+            drets = []
+            qstart = datetime.datetime.utcnow()
+            for d in datas:
+                qlapse = datetime.datetime.utcnow() - qstart
+                d.do_qcheck(newqcheck, qlapse.total_seconds())
+                drets.append(d.next(ticks=False))
+
             d0ret = any((dret for dret in drets))
             if not d0ret and any((dret is None for dret in drets)):
                 d0ret = None
