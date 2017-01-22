@@ -36,7 +36,7 @@ import ib.opt as ibopt
 from backtrader import TimeFrame, Position
 from backtrader.metabase import MetaParams
 from backtrader.utils.py3 import bytes, bstr, queue, with_metaclass, long
-from backtrader.utils import AutoDict
+from backtrader.utils import AutoDict, UTC
 
 bytes = bstr  # py2/3 need for ibpy
 
@@ -221,6 +221,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         self.histexreq = dict()  # holds segmented historical requests
         self.histfmt = dict()  # holds datetimeformat for request
+        self.histsend = dict()  # holds sessionend (data time) for request
+        self.histtz = dict()  # holds sessionend (data time) for request
 
         self.acc_cash = AutoDict()  # current total cash per account
         self.acc_value = AutoDict()  # current total value per account
@@ -647,8 +649,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
     def reqHistoricalDataEx(self, contract, enddate, begindate,
                             timeframe, compression,
-                            what=None, useRTH=False,
-                            tickerId=None, tz=''):
+                            what=None, useRTH=False, tz='', sessionend=None,
+                            tickerId=None):
         '''
         Extension of the raw reqHistoricalData proxy, which takes two dates
         rather than a duration, barsize and date
@@ -681,8 +683,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 self.notifs.put((err, (), kwargs))
                 return self.getTickerQueue(start=True)
 
-            return self.reqHistoricalData(
-                contract, enddate, duration, barsize, what, useRTH, tz)
+            return self.reqHistoricalData(contract=contract, enddate=enddate,
+                                          duration=duration, barsize=barsize,
+                                          what=what, useRTH=useRTH, tz=tz,
+                                          sessionend=sessionend)
 
         # Check if the requested timeframe/compression is supported by IB
         durations = self.getdurations(timeframe, compression)
@@ -708,13 +712,15 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             duration = durations[-1]
 
             # Store the calculated data
-            self.histexreq[tickerId] = (
-                contract, enddate, intdate,
-                timeframe, compression,
-                what, useRTH)
+            self.histexreq[tickerId] = dict(
+                contract=contract, enddate=enddate, begindate=intdate,
+                timeframe=timeframe, compression=compression,
+                what=what, useRTH=useRTH)
 
         barsize = self.tfcomp_to_size(timeframe, compression)
         self.histfmt[tickerId] = timeframe >= TimeFrame.Days
+        self.histsend[tickerId] = sessionend
+        self.histtz[tickerId] = tz
 
         if contract.m_secType in ['CASH', 'CFD']:
             self.iscash[tickerId] = True
@@ -723,13 +729,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         else:
             what = what or 'TRADES'
 
-        # No timezone is passed -> request in local time
-        if tz:
-            tz = ' ' + tz
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(intdate.strftime('%Y%m%d %H:%M:%S') + tz),
+            bytes(intdate.strftime('%Y%m%d %H:%M:%S') + ' GMT'),
             bytes(duration),
             bytes(barsize),
             bytes(what),
@@ -739,7 +742,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         return q
 
     def reqHistoricalData(self, contract, enddate, duration, barsize,
-                          what=None, useRTH=False, tz=''):
+                          what=None, useRTH=False, tz='', sessionend=None):
         '''Proxy to reqHistorical Data'''
 
         # get a ticker/queue for identification/data delivery
@@ -752,18 +755,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         else:
             what = what or 'TRADES'
 
-        # No timezone is passed -> request in local time
-        if tz:
-            tz = ' ' + tz
-
         # split barsize "x time", look in sizes for (tf, comp) get tf
         tframe = self._sizes[barsize.split()[1]][0]
         self.histfmt[tickerId] = tframe >= TimeFrame.Days
+        self.histsend[tickerId] = sessionend
+        self.histtz[tickerId] = tz
 
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + tz),
+            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + ' GMT'),
             bytes(duration),
             bytes(barsize),
             bytes(what),
@@ -892,6 +893,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
                 try:
                     rtvol = RTVolume(price=msg.price, tmoffset=self.tmoffset)
+                    # print('rtvol with datetime:', rtvol.datetime)
                 except ValueError:  # price not in message ...
                     pass
                 else:
@@ -918,9 +920,11 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         q = self.qs[tickerId]
         if msg.date.startswith('finished-'):
             self.histfmt.pop(tickerId, None)
-            args = self.histexreq.pop(tickerId, None)
-            if args is not None:
-                self.reqHistoricalDataEx(*args, tickerId=tickerId)
+            self.histsend.pop(tickerId, None)
+            self.histtz.pop(tickerId, None)
+            kargs = self.histexreq.pop(tickerId, None)
+            if kargs is not None:
+                self.reqHistoricalDataEx(tickerId=tickerId, **kargs)
                 return
 
             msg.date = None
@@ -928,7 +932,24 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         else:
             dtstr = msg.date  # Format when string req: YYYYMMDD[  HH:MM:SS]
             if self.histfmt[tickerId]:
-                msg.date = datetime.strptime(dtstr, '%Y%m%d')
+                sessionend = self.histsend[tickerId]
+                dt = datetime.strptime(dtstr, '%Y%m%d')
+                dteos = datetime.combine(dt, sessionend)
+                tz = self.histtz[tickerId]
+                if tz:
+                    dteostz = tz.localize(dteos)
+                    dteosutc = dteostz.astimezone(UTC).replace(tzinfo=None)
+                    # When requesting for example daily bars, the current day
+                    # will be returned with the already happened data. If the
+                    # session end were added, the new ticks wouldn't make it
+                    # through, because they happen before the end of time
+                else:
+                    dteosutc = dteos
+
+                if dteosutc <= datetime.utcnow():
+                    dt = dteosutc
+
+                msg.date = dt
             else:
                 msg.date = datetime.utcfromtimestamp(long(dtstr))
 

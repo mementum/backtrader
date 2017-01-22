@@ -128,6 +128,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ('filters', []),
         ('tz', None),
         ('tzinput', None),
+        ('qcheck', 0.0),  # timeout in seconds (float) to check for events
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
@@ -143,6 +144,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     _feed = None
     _store = None
+
+    _qcheck = 0.0
 
     _tmoffset = datetime.timedelta()
 
@@ -202,6 +205,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             return num2date(self.lines.datetime[0], tz or self._tz, naive)
 
         return num2date(dt, tz or self._tz, naive)
+
+    def haslivedata(self):
+        return False  # must be overriden for those that can
+
+    def do_qcheck(self, onoff, qlapse):
+        # if onoff is True the data will wait p.qcheck for incoming live data
+        # on its queue.
+        qwait = self.p.qcheck if onoff else 0.0
+        qwait = max(0.0, qwait - qlapse)
+        self._qcheck = qwait
 
     def islive(self):
         '''If this returns True, ``Cerebro`` will deactivate ``preload`` and

@@ -405,6 +405,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         else:
             self.ib.cancelRealTimeBars(self.qlive)
 
+    def haslivedata(self):
+        return bool(self._storedmsg or self.qlive)
+
     def _load(self):
         if self.contract is None or self._state == self._ST_OVER:
             return False  # nothing can be done
@@ -413,9 +416,32 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             if self._state == self._ST_LIVE:
                 try:
                     msg = (self._storedmsg.pop(None, None) or
-                           self.qlive.get(timeout=self.p.qcheck))
+                           self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
-                    return None  # indicate timeout situation
+                    if not self._statelivereconn:
+                        return None  # indicate timeout situation
+
+                    # Awaiting data and nothing came in - fake it up until now
+                    dtend = self.num2date(date2num(datetime.datetime.utcnow()))
+                    dtbegin = None
+                    if len(self) > 1:
+                        dtbegin = self.num2date(self.datetime[-1])
+
+                    self.qhist = self.ib.reqHistoricalDataEx(
+                        contract=self.contract,
+                        enddate=dtend, begindate=dtbegin,
+                        timeframe=self._timeframe,
+                        compression=self._compression,
+                        what=self.p.what, useRTH=self.p.useRTH, tz=self._tz,
+                        sessionend=self.p.sessionend)
+
+                    if self._laststatus != self.DELAYED:
+                        self.put_notification(self.DELAYED)
+
+                    self._state = self._ST_HISTORBACK
+
+                    self._statelivereconn = False
+                    continue  # to reenter the loop and hit st_historback
 
                 if msg is None:  # Conn broken during historical/backfilling
                     self.put_notification(self.CONNBROKEN)
@@ -493,10 +519,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 dtend = msg.datetime if self._usertvol else msg.time
 
                 self.qhist = self.ib.reqHistoricalDataEx(
-                    self.contract, dtend, dtbegin,
-                    self._timeframe, self._compression,
-                    what=self.p.what,
-                    useRTH=self.p.useRTH, tz='GMT')
+                    contract=self.contract, enddate=dtend, begindate=dtbegin,
+                    timeframe=self._timeframe, compression=self._compression,
+                    what=self.p.what, useRTH=self.p.useRTH, tz=self._tz,
+                    sessionend=self.p.sessionend)
 
                 self._state = self._ST_HISTORBACK
                 self._statelivereconn = False  # no longer in live
@@ -570,9 +596,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 dtbegin = num2date(self.fromdate)
 
             self.qhist = self.ib.reqHistoricalDataEx(
-                self.contract, dtend, dtbegin,
-                self._timeframe, self._compression,
-                what=self.p.what, useRTH=self.p.useRTH, tz='GMT')
+                contract=self.contract, enddate=dtend, begindate=dtbegin,
+                timeframe=self._timeframe, compression=self._compression,
+                what=self.p.what, useRTH=self.p.useRTH, tz=self._tz,
+                sessionend=self.p.sessionend)
 
             self._state = self._ST_HISTORBACK
             return True  # continue before

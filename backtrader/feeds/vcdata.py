@@ -369,6 +369,9 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         # Accepts a serie (COM Object) to use in ping events
         self._serie = serie
 
+    def haslivedata(self):
+        return self._laststatus == self.LIVE and self.q
+
     def _load(self):
         if self._state == self._ST_NOTFOUND:
             return False  # nothing can be done
@@ -376,7 +379,7 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         while True:
             try:
                 # tmout <> 0 only if resampling/replaying, else no waking up
-                tmout = self.p.qcheck * bool(self.resampling)
+                tmout = self._qcheck * bool(self.resampling)
                 msg = self.q.get(timeout=tmout)
             except queue.Empty:
                 return None
