@@ -333,6 +333,25 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.contract = None
         self.contractdetails = None
 
+        # Get the output timezone (if any)
+        self._tz = self._gettz()
+        # Lines have already been create, set the tz
+        self.lines.datetime._settz(self._tz)
+
+        # This should probably be also called from an override-able method
+        self._tzinput = bt.utils.date.Localizer(self._gettzinput())
+
+        # Convert user input times to the output timezone (or min/max)
+        if self.p.fromdate is None:
+            self.fromdate = float('-inf')
+        else:
+            self.fromdate = self.date2num(self.p.fromdate)
+
+        if self.p.todate is None:
+            self.todate = float('inf')
+        else:
+            self.todate = self.date2num(self.p.todate)
+        
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
             self.p.backfill_from._start()
