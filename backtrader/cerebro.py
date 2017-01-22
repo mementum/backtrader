@@ -1196,12 +1196,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 # make sure only those at dmaster level end up delivering
                 for i, dti in enumerate(dts):
                     if dti is not None:
+                        di = datas[i]
+                        rpi = False and di.replaying   # to check behavior
                         if dti > dt0:
-                            datas[i].rewind()  # cannot deliver yet
+                            if not rpi:  # must see all ticks ...
+                                di.rewind()  # cannot deliver yet
                             # self._plotfillers[i].append(slen)
-                        elif not datas[i].replaying:
+                        elif not di.replaying:
                             # Replay forces tick fill, else force here
-                            datas[i]._tick_fill(force=True)
+                            di._tick_fill(force=True)
 
                         # self._plotfillers2[i].append(slen)  # mark as fill
 
