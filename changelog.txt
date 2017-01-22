@@ -1,3 +1,25 @@
+1.9.25.105
+  - Close #244 by giving feeds the chance to finish initialization by
+    themselves, ensuring proper initialization and allowing early data
+    download (merged and refactored PR #245)
+  - Add support for live data detection and dynamic queue check
+    timeouts to avoid pausing on historical traversal when other feeds
+    are live
+  - Add PR #242 DrawDown length observer
+  - Assimilate PR #240 into cash asset
+  - Fixes #239 by providing empty values if the data or indicator has
+    not produced a value yet
+  - New DrawDown Analyzer and refactoring of DrawDown observer
+  - Closes #235 by updating PivotPoint Family to make plotting work under new
+    sync scheme and automate self-coupling
+  - Some usual documentation updates / typo corrections
+  - Minor corrections/improvements
+  - Address #243 by sorting (timeframe, compression) data feeds internally to
+    avoid forcing users to pass smaller timeframes first
+  - Add end-of-session calculation, including adding end-of-session to daily
+    data from IB
+
+
 1.9.24.105
   - Complete TimeFrameAnalyzerBase with a call to _nextstart and children
   - Improve 1st comparison point of benchmark
