@@ -153,9 +153,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     resampling = 0
     replaying = 0
 
-    def _start(self):
-        self.start()
+    _started = False
 
+    def _start_finish(self):
         # A live feed (for example) may have learnt something about the
         # timezones after the start and that's why the date/time related
         # parameters are converted at this late stage
@@ -181,6 +181,14 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # FIXME: These two are never used and could be removed
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
+
+        self._started = True
+
+    def _start(self):
+        self.start()
+
+        if not self._started:
+            self._start_finish()
 
     def _timeoffset(self):
         return self._tmoffset
