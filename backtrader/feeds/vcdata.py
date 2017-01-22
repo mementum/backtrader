@@ -369,6 +369,9 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         # Accepts a serie (COM Object) to use in ping events
         self._serie = serie
 
+    def haslivedata(self):
+        return self._laststatus == self.LIVE and self.q
+
     def _load(self):
         if self._state == self._ST_NOTFOUND:
             return False  # nothing can be done
