@@ -386,6 +386,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         else:
             self.ib.cancelRealTimeBars(self.qlive)
 
+    def haslivedata(self):
+        return bool(self._storedmsg or self.qlive)
+
     def _load(self):
         if self.contract is None or self._state == self._ST_OVER:
             return False  # nothing can be done
