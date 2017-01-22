@@ -935,17 +935,21 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 sessionend = self.histsend[tickerId]
                 dt = datetime.strptime(dtstr, '%Y%m%d')
                 dteos = datetime.combine(dt, sessionend)
-                dteostz = dteos.replace(tzinfo=self.histtz[tickerId])
-                dteosutc = dteostz.astimezone(UTC).replace(tzinfo=None)
-                # When requesting for example daily bars, the current day will
-                # be returned with the already happened daata. If the session
-                # end were added, the new ticks wouldn't make it through,
-                # because they happen before the end of time
-                if dteosutc > datetime.utcnow():
-                    msg.date = dt
+                tz = self.histtz[tickerId]
+                if tz:
+                    dteostz = tz.localize(dteos)
+                    dteosutc = dteostz.astimezone(UTC).replace(tzinfo=None)
+                    # When requesting for example daily bars, the current day
+                    # will be returned with the already happened data. If the
+                    # session end were added, the new ticks wouldn't make it
+                    # through, because they happen before the end of time
                 else:
-                    msg.date = dteosutc
+                    dteosutc = dteos
 
+                if dteosutc <= datetime.utcnow():
+                    dt = dteosutc
+
+                msg.date = dt
             else:
                 msg.date = datetime.utcfromtimestamp(long(dtstr))
 
