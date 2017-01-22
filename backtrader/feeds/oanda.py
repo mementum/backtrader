@@ -199,6 +199,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
 
         self._statelivereconn = False  # if reconnecting in live state
         self._storedmsg = dict()  # keep pending live message (under None)
+        self.qlive = queue.Queue()
 
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
@@ -248,6 +249,9 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         '''Stops and tells the store to stop'''
         super(OandaData, self).stop()
         self.o.stop()
+
+    def haslivedata(self):
+        return bool(self._storedmsg or self.qlive)  # do not return the objs
 
     def _load(self):
         if self._state == self._ST_OVER:
