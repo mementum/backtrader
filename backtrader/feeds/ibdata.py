@@ -357,7 +357,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return
 
         if self._state == self._ST_START:
-            self._finish_start()  # to finish initialization
+            self._start_finish()  # to finish initialization
             self._st_start()
 
     def stop(self):

@@ -205,7 +205,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             self._state = self._ST_FROM
             self.p.backfill_from._start()
         else:
-            self._finish_start()
+            self._start_finish()
             self._state = self._ST_START  # initial state for _load
             self._st_start()
 
