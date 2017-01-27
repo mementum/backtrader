@@ -400,6 +400,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     msg = (self._storedmsg.pop(None, None) or
                            self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
+                    if True:
+                        return None
+
+                    # Code invalidated until further checking is done
                     if not self._statelivereconn:
                         return None  # indicate timeout situation
 
