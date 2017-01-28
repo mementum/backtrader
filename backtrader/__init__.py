@@ -23,6 +23,9 @@ from __future__ import (absolute_import, division, print_function,
 
 from .version import __version__, __btversion__
 
+from .errors import *
+from . import errors as errors
+
 from .utils import num2date, date2num, time2num, num2time
 
 from .linebuffer import *

@@ -874,67 +874,73 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
-            strat = stratcls(*sargs, **skwargs)
+            try:
+                strat = stratcls(*sargs, **skwargs)
+            except bt.errors.StrategySkipError:
+                continue  # do not add strategy to the mix
+
             if self.p.oldsync:
                 strat._oldsync = True  # tell strategy to use old clock update
             if self.p.tradehistory:
                 strat.set_tradehistory()
             runstrats.append(strat)
 
-        # loop separated for clarity
-        defaultsizer = self.sizers.get(None, (None, None, None))
-        for idx, strat in enumerate(runstrats):
-            if self.p.stdstats:
-                strat._addobserver(False, observers.Broker)
-                if self.p.oldbuysell:
-                    strat._addobserver(True, observers.BuySell)
-                else:
-                    strat._addobserver(True, observers.BuySell, barplot=True)
+        if runstrats:
+            # loop separated for clarity
+            defaultsizer = self.sizers.get(None, (None, None, None))
+            for idx, strat in enumerate(runstrats):
+                if self.p.stdstats:
+                    strat._addobserver(False, observers.Broker)
+                    if self.p.oldbuysell:
+                        strat._addobserver(True, observers.BuySell)
+                    else:
+                        strat._addobserver(True, observers.BuySell,
+                                           barplot=True)
 
-                if self.p.oldtrades or len(self.datas) == 1:
-                    strat._addobserver(False, observers.Trades)
-                else:
-                    strat._addobserver(False, observers.DataTrades)
+                    if self.p.oldtrades or len(self.datas) == 1:
+                        strat._addobserver(False, observers.Trades)
+                    else:
+                        strat._addobserver(False, observers.DataTrades)
 
-            for multi, obscls, obsargs, obskwargs in self.observers:
-                strat._addobserver(multi, obscls, *obsargs, **obskwargs)
+                for multi, obscls, obsargs, obskwargs in self.observers:
+                    strat._addobserver(multi, obscls, *obsargs, **obskwargs)
 
-            for indcls, indargs, indkwargs in self.indicators:
-                strat._addindicator(indcls, *indargs, **indkwargs)
+                for indcls, indargs, indkwargs in self.indicators:
+                    strat._addindicator(indcls, *indargs, **indkwargs)
 
-            for ancls, anargs, ankwargs in self.analyzers:
-                strat._addanalyzer(ancls, *anargs, **ankwargs)
+                for ancls, anargs, ankwargs in self.analyzers:
+                    strat._addanalyzer(ancls, *anargs, **ankwargs)
 
-            sizer, sargs, skwargs = self.sizers.get(idx, defaultsizer)
-            if sizer is not None:
-                strat._addsizer(sizer, *sargs, **skwargs)
+                sizer, sargs, skwargs = self.sizers.get(idx, defaultsizer)
+                if sizer is not None:
+                    strat._addsizer(sizer, *sargs, **skwargs)
 
-            strat._start()
+                strat._start()
+
+                for writer in self.runwriters:
+                    if writer.p.csv:
+                        writer.addheaders(strat.getwriterheaders())
+
+            if not predata:
+                for strat in runstrats:
+                    strat.qbuffer(self._exactbars, replaying=self._doreplay)
 
             for writer in self.runwriters:
-                if writer.p.csv:
-                    writer.addheaders(strat.getwriterheaders())
+                writer.start()
 
-        if not predata:
+            if self._dopreload and self._dorunonce:
+                if self.p.oldsync:
+                    self._runonce_old(runstrats)
+                else:
+                    self._runonce(runstrats)
+            else:
+                if self.p.oldsync:
+                    self._runnext_old(runstrats)
+                else:
+                    self._runnext(runstrats)
+
             for strat in runstrats:
-                strat.qbuffer(self._exactbars, replaying=self._doreplay)
-
-        for writer in self.runwriters:
-            writer.start()
-
-        if self._dopreload and self._dorunonce:
-            if self.p.oldsync:
-                self._runonce_old(runstrats)
-            else:
-                self._runonce(runstrats)
-        else:
-            if self.p.oldsync:
-                self._runnext_old(runstrats)
-            else:
-                self._runnext(runstrats)
-
-        for strat in runstrats:
-            strat._stop()
+                strat._stop()
 
         self._broker.stop()
 
