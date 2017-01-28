@@ -61,6 +61,9 @@ class DTFaker(object):
 
         self.sessionend = data.p.sessionend
 
+    def __len__(self):
+        return len(self.data)
+
     def __call__(self, idx=0):
         return self._dtime  # simulates data.datetime.datetime()
 
@@ -175,8 +178,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return self._barover_years(data)
 
     def _eosset(self):
-        dt = self.data.datetime[0]
         if self._nexteos is None:
+            dt = self.data.datetime[0]
             nexteos = datetime.combine(num2date(self.data.datetime[0]),
                                        self.data.p.sessionend)
 
@@ -364,6 +367,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             ph, pm = divmod(point, 60 * 60 * 1e6)
             pm, psec = divmod(pm, 60 * 1e6)
             ps, pus = divmod(psec, 1e6)
+        elif self.p.timeframe == TimeFrame.Days:
+            # last resort
+            eost = self._nexteos.time()
+            ph = eost.hour
+            pm = eost.minute
+            ps = eost.second
+            pus = eost.microsecond
 
         if ph > 23:  # went over midnight:
             extradays = ph // 24
