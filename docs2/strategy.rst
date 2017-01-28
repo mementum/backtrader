@@ -14,6 +14,14 @@ The *Strategy's* expressed lifecycle in methods
        def __init__(self):
            self.sma = btind.SimpleMovingAverage(period=15)
 
+     .. note::
+
+	A strategy can be interrupted during *birth* by raising a
+	``StrategySkipError`` exception from the module ``backtrader.errors``
+
+	This will avoid going through the strategy during a backtesting. See
+	the section `Exceptions`_
+
   1. Birth: ``start``
 
      The world (``cerebro``) tells the strategy is time to start kicking. A
