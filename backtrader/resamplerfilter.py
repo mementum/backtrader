@@ -195,10 +195,21 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         if seteos:
             self._eosset()
 
+        equal = data.datetime[0] == self._nextdteos
+        grter = data.datetime[0] > self._nextdteos
+
         if exact:
-            ret = data.datetime[0] == self._nextdteos
+            ret = equal
         else:
-            ret = data.datetime[0] >= self._nextdteos
+            # if the compared data goes over the endofsession
+            # make sure the resampled bar is open and has something before that
+            # end of session. It could be a weekend and nothing was delivered
+            # until Monday
+            if grter:
+                ret = (self.bar.isopen() and
+                       self.bar.datetime <= self._nextdteos)
+            else:
+                ret = equal
 
         if ret:
             self._lasteos = self._nexteos
@@ -490,8 +501,9 @@ class Resampler(_BaseResampler):
             self.bar.bupdate(data)  # update new or existing bar
             data.backwards()  # remove used bar
 
-        if onedge or \
-           self._checkbarover(data, fromcheck=fromcheck, forcedata=forcedata):
+        if self.bar.isopen() and \
+           (onedge or self._checkbarover(data, fromcheck=fromcheck,
+                                         forcedata=forcedata)):
 
             dodeliver = False
             if forcedata is not None:
