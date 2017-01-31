@@ -20,7 +20,7 @@ The *Strategy's* expressed lifecycle in methods
 	``StrategySkipError`` exception from the module ``backtrader.errors``
 
 	This will avoid going through the strategy during a backtesting. See
-	the section `Exceptions`_
+	the section ``Exceptions``
 
   1. Birth: ``start``
 

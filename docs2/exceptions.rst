@@ -8,8 +8,8 @@ affected part.
 
 But the time has come and some exceptions may slowly get added to the platform.
 
-Hierarcy
-********
+Hierarchy
+*********
 
 The base class for all exceptions is ``BacktraderError`` (which is a direct
 subclass of ``Exception``)
