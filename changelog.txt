@@ -1,3 +1,12 @@
+1.9.26.105
+  - Adapt order_target_value to short cash semantics in broker
+  - Several refinements to resampling to deliver synchronized bars on end of
+    session
+  - Add exceptions and strategy skip exception
+  - IBData - Deactivate code for faster downloads during absence of live data
+    to avoid breaking reconnection code
+  - Allow selective order based skipping of coc
+
 1.9.25.105
   - Close #244 by giving feeds the chance to finish initialization by
     themselves, ensuring proper initialization and allowing early data
