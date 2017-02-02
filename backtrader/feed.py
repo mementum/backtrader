@@ -145,6 +145,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     _feed = None
     _store = None
 
+    _clone = False
     _qcheck = 0.0
 
     _tmoffset = datetime.timedelta()
@@ -668,6 +669,7 @@ class CSVFeedBase(FeedBase):
 
 
 class DataClone(AbstractDataBase):
+    _clone = True
 
     def __init__(self):
         self.data = self.p.dataname
