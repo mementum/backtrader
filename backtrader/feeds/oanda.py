@@ -181,6 +181,13 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         '''Starts the Oanda connecction and gets the real contract and
         contractdetails if it exists'''
         super(OandaData, self).start()
+
+        # Create attributes as soon as possible
+        self._statelivereconn = False  # if reconnecting in live state
+        self._storedmsg = dict()  # keep pending live message (under None)
+        self.qlive = queue.Queue()
+        self._state = self._ST_OVER
+
         # Kickstart store and get queue to wait on
         self.o.start(data=self)
 
@@ -196,10 +203,6 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             self.put_notification(self.NOTSUBSCRIBED)
             self._state = self._ST_OVER
             return
-
-        self._statelivereconn = False  # if reconnecting in live state
-        self._storedmsg = dict()  # keep pending live message (under None)
-        self.qlive = queue.Queue()
 
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
