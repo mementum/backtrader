@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015,2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -223,6 +223,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return None  # nothing can be done
 
         tzs = self.p.tz if tzstr else self.contractdetails.m_timeZoneId
+
+        if tzs == 'CST':  # reported by TWS, not compatible with pytz. patch it
+            tzs = 'CST6CDT'
+
         try:
             tz = pytz.timezone(tzs)
         except pytz.UnknownTimeZoneError:
@@ -400,6 +404,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     msg = (self._storedmsg.pop(None, None) or
                            self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
+                    if True:
+                        return None
+
+                    # Code invalidated until further checking is done
                     if not self._statelivereconn:
                         return None  # indicate timeout situation
 

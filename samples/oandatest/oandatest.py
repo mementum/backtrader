@@ -394,7 +394,7 @@ def parse_args(pargs=None):
                         required=False, action='store_true',
                         help='resample to chosen timeframe')
 
-    parser.add_argument('--timeframe', default=bt.TimeFrame.Names[0],
+    parser.add_argument('--timeframe', default=bt.TimeFrame.Names[1],
                         choices=bt.TimeFrame.Names,
                         required=False, action='store',
                         help='TimeFrame for Resample/Replay')

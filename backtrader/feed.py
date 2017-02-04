@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -145,6 +145,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     _feed = None
     _store = None
 
+    _clone = False
     _qcheck = 0.0
 
     _tmoffset = datetime.timedelta()
@@ -668,6 +669,7 @@ class CSVFeedBase(FeedBase):
 
 
 class DataClone(AbstractDataBase):
+    _clone = True
 
     def __init__(self):
         self.data = self.p.dataname

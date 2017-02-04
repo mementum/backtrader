@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,8 +20,40 @@
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+						
+import backtrader as bt
 
-# The modules below should/must define __all__ with the objects wishes
-# or prepend an "_" (underscore) to private classes/variables
 
-from .fixedsize import *
+class PercentSizer(bt.Sizer):
+    '''This sizer return percents of available cash
+
+    Params:
+      - ``percents`` (default: ``2``)
+    '''
+
+    params = (
+        ('percents', 20),
+    )
+
+    def __init__(self):
+        pass
+
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        position = self.broker.getposition(data)
+        if not position:
+            size = cash / data.close[0] * (self.params.percents / 100)
+        else:
+            size = position.size
+
+        return size
+
+
+class AllInSizer(PercentSizer):
+    '''This sizer return all available cash of broker
+
+     Params:
+       - ``percents`` (default: ``100``)
+     '''
+    params = (
+        ('percents', 100),
+    )

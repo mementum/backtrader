@@ -21,7 +21,16 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the objects wishes
-# or prepend an "_" (underscore) to private classes/variables
 
-from .fixedsize import *
+__all__ = ['BacktraderError', 'StrategySkipError']
+
+
+class BacktraderError(Exception):
+    '''Base exception for all other exceptions'''
+    pass
+
+
+class StrategySkipError(BacktraderError):
+    '''Requests the platform to skip this strategy for backtesting. To be
+    raised during the initialization (``__init__``) phase of the instance'''
+    pass

@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -626,7 +626,7 @@ class BackBroker(bt.BrokerBase):
 
     def _try_exec_market(self, order, popen, phigh, plow):
         ago = 0
-        if self.p.coc:
+        if self.p.coc and order.info.get('coc', True):
             dtcoc = order.created.dt
             exprice = order.created.pclose
         else:
