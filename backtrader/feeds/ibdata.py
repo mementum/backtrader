@@ -223,6 +223,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return None  # nothing can be done
 
         tzs = self.p.tz if tzstr else self.contractdetails.m_timeZoneId
+
+        if tzs == 'CST':  # reported by TWS, not compatible with pytz. patch it
+            tzs = 'CST6CDT'
+
         try:
             tz = pytz.timezone(tzs)
         except pytz.UnknownTimeZoneError:
