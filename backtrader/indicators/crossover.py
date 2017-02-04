@@ -91,6 +91,8 @@ class CrossOver(Indicator):
       - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
       - crossover = upcross - downcross
     '''
+    _mindatas = 2
+
     lines = ('crossover',)
 
     plotinfo = dict(plotymargin=0.05, plotyhlines=[-1.0, 1.0])
