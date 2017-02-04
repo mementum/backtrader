@@ -1,3 +1,13 @@
+1.9.27.105
+  - Patch CST timezone name to CST6CDT
+  - Support automatic argument wrapping as line objects in CrossOver
+  - Initialize attributes before rejection can happen in OandaData
+  - Stop considering clones to decide if live feeds have to wait or not to
+    avoid cpu hogging
+  - Use _mindatas to decide how many from the parent datas to pass if none
+    is specified by the user
+  - Some doc corrections
+
 1.9.26.105
   - Adapt order_target_value to short cash semantics in broker
   - Several refinements to resampling to deliver synchronized bars on end of
