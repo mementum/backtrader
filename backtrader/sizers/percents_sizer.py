@@ -20,7 +20,7 @@
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-						
+
 import backtrader as bt
 
 
@@ -28,7 +28,7 @@ class PercentSizer(bt.Sizer):
     '''This sizer return percents of available cash
 
     Params:
-      - ``percents`` (default: ``2``)
+      - ``percents`` (default: ``20``)
     '''
 
     params = (

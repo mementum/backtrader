@@ -15,3 +15,15 @@ FixedReverser
 *************
 
 .. autoclass:: FixedReverser
+
+
+PercentSizer
+************
+
+.. autoclass:: PercentSizer
+
+
+AllInSizer
+**********
+
+.. autoclass:: AllInSizer
