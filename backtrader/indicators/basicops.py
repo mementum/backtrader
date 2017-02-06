@@ -70,6 +70,36 @@ class OperationN(PeriodN):
             dst[i] = func(src[i - period + 1: i + 1])
 
 
+class BaseApplyN(OperationN):
+    '''
+    Base class for ApplyN and others which may take a ``func`` as a parameter
+    but want to define the lines in the indicator.
+
+    Calculates ``func`` for a given period where func is given as a parameter,
+    aka named argument or ``kwarg``
+
+    Formula:
+      - lines[0] = func(data, period)
+
+    Any extra lines defined beyond the first (index 0) are not calculated
+    '''
+    params = (('func', None),)
+
+    def __init__(self):
+        self.func = self.p.func
+        super(BaseApplyN, self).__init__()
+
+
+class ApplyN(BaseApplyN):
+    '''
+    Calculates ``func`` for a given period
+
+    Formula:
+      - line = func(data, period)
+    '''
+    lines = ('apply',)
+
+
 class Highest(OperationN):
     '''
     Calculates the highest value for the data in a given period
