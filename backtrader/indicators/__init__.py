@@ -55,11 +55,13 @@ from .cci import *
 from .crossover import *
 from .dpo import *
 from .directionalmove import *
+from .dv2 import *
 from .envelope import *
 from .macd import *
 from .momentum import *
 from .oscillator import *
 from .percentchange import *
+from .percentrank import *
 from .pivotpoint import *
 from .prettygoodoscillator import *
 from .priceoscillator import *
