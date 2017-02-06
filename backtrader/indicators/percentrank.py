@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,25 +22,21 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import math
-from . import Indicator
+
+from . import BaseApplyN
 
 
-class PercentRank(Indicator):
+__all__ = ['PercentRank', 'PctRank']
+
+
+class PercentRank(BaseApplyN):
     '''
       Measures the percent rank of the current value with respect to that
       of period bars ago
     '''
     alias = ('PctRank',)
     lines = ('pctrank',)
-    params = (('period', 50),)
-
-    def __init__(self):
-        self.addminperiod(self.p.period)
-
-    def next(self):
-        self.lines.pctrank[0] = \
-            (math.fsum([x < self.data[0] 
-                       for x in self.data.get(size=self.p.period)])
-            / self.p.period)
-        super(PercentRank, self).__init__()
-
+    params = (
+        ('period', 50),
+        ('func', lambda d: math.fsum(x < d[-1] for x in d) / len(d)),
+    )
