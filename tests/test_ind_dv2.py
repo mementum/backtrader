@@ -28,10 +28,10 @@ import backtrader.indicators as btind
 
 chkdatas = 1
 chkvals = [
-    ['0.900000', '0.880000', '0.980000'],
+    ['17.460317', '55.952381', '80.555556'],
 ]
 
-chkmin = 50
+chkmin = 253
 chkind = btind.DV2
 
 
