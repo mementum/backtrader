@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 from datetime import datetime
 import itertools
 
-from .. import feed
+from .. import feed, TimeFrame
 from ..utils import date2num
 
 
@@ -82,7 +82,7 @@ class GenericCSVData(feed.CSVDataBase):
 
         dt = datetime.strptime(dtfield, dtformat)
 
-        if self.p.timeframe >= bt.TimeFrame.Days:
+        if self.p.timeframe >= TimeFrame.Days:
             # check if the expected end of session is larger than parsed
             expeos = datetime.combine(dt.date(), self.p.sessionend)
             if expeos > dt:
