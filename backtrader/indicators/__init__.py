@@ -55,7 +55,6 @@ from .cci import *
 from .crossover import *
 from .dpo import *
 from .directionalmove import *
-from .dv2 import *
 from .envelope import *
 from .macd import *
 from .momentum import *
@@ -71,6 +70,8 @@ from .trix import *
 from .ultimateoscillator import *
 from .williams import *
 
+
+from .dv2 import *  # depends on percentrank
 
 # Depends on Momentum
 from .kst import *

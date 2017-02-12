@@ -21,34 +21,30 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import testcommon
 
-from . import Indicator, SMA, PercentRank
+import backtrader as bt
+import backtrader.indicators as btind
+
+chkdatas = 1
+chkvals = [
+    ['0.900000', '0.880000', '0.980000'],
+]
+
+chkmin = 50
+chkind = btind.DV2
 
 
-__all__ = ['DV2']
+def test_run(main=False):
+    datas = [testcommon.getdata(i) for i in range(chkdatas)]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals)
 
 
-class DV2(Indicator):
-    '''
-    RSI(2) alternative
-    Developed by David Varadi of http://cssanalytics.wordpress.com/
-
-    This seems to be the *Bounded* version.
-
-    See also:
-
-      - http://web.archive.org/web/20131216100741/http://quantingdutchman.wordpress.com/2010/08/06/dv2-indicator-for-amibroker/
-
-    '''
-    params = (
-        ('period', 252),
-        ('maperiod', 2),
-        ('_movav', SMA),
-    )
-    lines = ('dv2',)
-
-    def __init__(self):
-        chl = self.data.close / ((self.data.high + self.data.low) / 2.0)
-        dvu = self.p._movav(chl, period=self.p.maperiod)
-        self.lines.dv2 = PercentRank(dvu, period=self.p.period) * 100
-        super(DV2, self).__init__()
+if __name__ == '__main__':
+    test_run(main=True)
