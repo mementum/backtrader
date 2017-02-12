@@ -1,3 +1,6 @@
+1.9.29.108
+  - Correct csvgeneric import
+
 1.9.28.108
   - Set eos time from param.sessionend in csv timeframes
   - Improve support for timeframe/compression in btrun
