@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
-import datetime
+from datetime import date, datetime
 import io
 import itertools
 
@@ -89,13 +89,8 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         i = itertools.count(0)
 
         dttxt = linetokens[next(i)]
-        y, m, d = int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10])
-
-        # get the time from the sessionend parameter
-        hh = self.p.sessionend.hour
-        mm = self.p.sessionend.minute
-        ss = self.p.sessionend.second
-        dtnum = date2num(datetime.datetime(y, m, d, hh, mm, ss))
+        dt = date(int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10]))
+        dtnum = date2num(datetime.combine(dt, self.p.sessionend))
 
         self.lines.datetime[0] = dtnum
         o = float(linetokens[next(i)])
@@ -188,7 +183,7 @@ class YahooFinanceData(YahooFinanceCSVData):
                ((fromdate.month - 1), fromdate.day, fromdate.year)
         todate = self.params.todate
         if todate is None:
-            todate = datetime.date.today()
+            todate = date.today()
         url += '&d=%d&e=%d&f=%d' % \
                ((todate.month - 1), todate.day, todate.year)
         url += '&g=%s' % self.params.period

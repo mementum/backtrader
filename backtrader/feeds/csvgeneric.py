@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+from datetime import datetime
 import itertools
 
 from .. import feed
@@ -80,7 +80,14 @@ class GenericCSVData(feed.CSVDataBase):
             dtfield += 'T' + linetokens[self.p.time]
             dtformat += 'T' + self.p.tmformat
 
-        dt = datetime.datetime.strptime(dtfield, dtformat)
+        dt = datetime.strptime(dtfield, dtformat)
+
+        if self.p.timeframe >= bt.TimeFrame.Days:
+            # check if the expected end of session is larger than parsed
+            expeos = datetime.combine(dt.date(), self.p.sessionend)
+            if expeos > dt:
+                dt = expeos  # replace with right end of session
+
         self.lines.datetime[0] = date2num(dt)
 
         # The rest of the fields can be done with the same procedure
