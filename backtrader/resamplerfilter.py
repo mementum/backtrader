@@ -374,7 +374,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             ph, pm = divmod(point, 60 * 60)
             pm, ps = divmod(pm, 60)
             pus = 0
-        elif self.p.timeframe == TimeFrame.MicroSeconds:
+        elif self.p.timeframe <= TimeFrame.MicroSeconds:
             ph, pm = divmod(point, 60 * 60 * 1e6)
             pm, psec = divmod(pm, 60 * 1e6)
             ps, pus = divmod(psec, 1e6)
