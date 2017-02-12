@@ -1,3 +1,11 @@
+1.9.28.108
+  - Set eos time from param.sessionend in csv timeframes
+  - Improve support for timeframe/compression in btrun
+  - Add ApplyN indicator (and base for it and variants BaseApplyN)
+  - Add PercentSizer and AllInSizer
+  - Add DV2 Indicator
+  - Add PercentRank Indicator
+
 1.9.27.105
   - Patch CST timezone name to CST6CDT
   - Support automatic argument wrapping as line objects in CrossOver
