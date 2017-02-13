@@ -31,7 +31,7 @@ import backtrader as bt
 from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
                         metabase)
 
-from backtrader.utils.py3 import with_metaclass, zip, range
+from backtrader.utils.py3 import with_metaclass, zip, range, string_types
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -201,7 +201,28 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the
         timezone'''
-        return bt.utils.date.Localizer(self.p.tz)
+        # If no object has been provided by the user and a timezone can be
+        # found via contractdtails, then try to get it from pytz, which may or
+        # may not be available.
+        tzstr = isinstance(self.p.tz, string_types)
+        if self.p.tz is None or not tzstr:
+            return bt.utils.date.Localizer(self.p.tz)
+
+        try:
+            import pytz  # keep the import very local
+        except ImportError:
+            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+
+        tzs = self.p.tz
+        if tzs == 'CST':  # usual alias
+            tzs = 'CST6CDT'
+
+        try:
+            tz = pytz.timezone(tzs)
+        except pytz.UnknownTimeZoneError:
+            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+
+        return tz
 
     def date2num(self, dt):
         if self._tz is not None:
