@@ -25,7 +25,8 @@ from collections import OrderedDict
 import itertools
 import sys
 
-from .utils.py3 import zip
+import backtrader as bt
+from .utils.py3 import zip, string_types
 
 
 def findbases(kls, topclass):
@@ -205,14 +206,34 @@ class MetaParams(MetaBase):
         # (and hence "repetition")
         newparams = dct.pop('params', ())
 
+        packs = 'packages'
+        newpackages = tuple(dct.pop(packs, ()))  # remove before creation
+
+        fpacks = 'frompackages'
+        fnewpackages = tuple(dct.pop(fpacks, ()))  # remove before creation
+
         # Create the new class - this pulls predefined "params"
         cls = super(MetaParams, meta).__new__(meta, name, bases, dct)
 
         # Pulls the param class out of it - default is the empty class
         params = getattr(cls, 'params', AutoInfoClass)
 
+        # Pulls the packages class out of it - default is the empty class
+        packages = tuple(getattr(cls, packs, ()))
+        fpackages = tuple(getattr(cls, fpacks, ()))
+
         # get extra (to the right) base classes which have a param attribute
         morebasesparams = [x.params for x in bases[1:] if hasattr(x, 'params')]
+
+        # Get extra packages, add them to the packages and put all in the class
+        for y in [x.packages for x in bases[1:] if hasattr(x, packs)]:
+            packages += tuple(y)
+
+        for y in [x.frompackages for x in bases[1:] if hasattr(x, fpacks)]:
+            fpackages += tuple(y)
+
+        cls.packages = packages + newpackages
+        cls.frompackages = fpackages + fnewpackages
 
         # Subclass and store the newly derived params class
         cls.params = params._derive(name, newparams, morebasesparams)
@@ -220,6 +241,33 @@ class MetaParams(MetaBase):
         return cls
 
     def donew(cls, *args, **kwargs):
+        clsmod = sys.modules[cls.__module__]
+        # import specified packages
+        for p in cls.packages:
+            if isinstance(p, (tuple, list)):
+                p, palias = p
+            else:
+                palias = p
+
+            pmod = __import__(p)
+            setattr(clsmod, palias, pmod)
+
+        # import from specified packages - the 2nd part is a string or iterable
+        for p, frompackage in cls.frompackages:
+            if isinstance(frompackage, string_types):
+                frompackage = (frompackage,)  # make it a tuple
+
+            for fp in frompackage:
+                if isinstance(fp, (tuple, list)):
+                    fp, falias = fp
+                else:
+                    fp, falias = fp, fp  # assumed is string
+
+                # complain "not string" without fp (unicode vs bytes)
+                pmod = __import__(p, fromlist=[str(fp)])
+                pattr = getattr(pmod, fp)
+                setattr(clsmod, falias, pattr)
+
         # Create params and set the values from the kwargs
         params = cls.params()
         for pname, pdef in cls.params._getitems():
