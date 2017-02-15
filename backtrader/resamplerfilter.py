@@ -391,7 +391,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             ph %= 24
 
         # Replace intraday parts with the calculated ones and update it
-        dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+        dt = dt.replace(hour=int(ph), minute=int(pm),
+                        second=int(ps), microsecond=int(pus))
         if extradays:
             dt += timedelta(days=extradays)
         dtnum = self.data.date2num(dt)
