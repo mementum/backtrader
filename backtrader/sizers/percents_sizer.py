@@ -23,6 +23,8 @@ from __future__ import (absolute_import, division, print_function,
 
 import backtrader as bt
 
+__all__ = ['PercentSizer', 'AllInSizer']
+
 
 class PercentSizer(bt.Sizer):
     '''This sizer return percents of available cash
