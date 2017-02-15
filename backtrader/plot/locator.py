@@ -216,6 +216,8 @@ class AutoDateLocator(ADLocator):
 
             locator = RRuleLocator(self._dates, rrule, self.tz)
         else:
+            if usemicro:
+                interval = 1  # not set because the for else: was met
             locator = MicrosecondLocator(interval, tz=self.tz)
 
         locator.set_axis(self.axis)
