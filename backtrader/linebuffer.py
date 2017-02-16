@@ -31,7 +31,10 @@ with appends, forwarding, rewinding, resetting and other
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+
 import array
+import numpy as np
+import pandas as pd
 import collections
 import datetime
 from itertools import islice
@@ -43,6 +46,8 @@ from .lineroot import LineRoot, LineSingle, LineMultiple
 from . import metabase
 from .utils import num2date, time2num
 
+
+USEPD = True
 
 NAN = float('NaN')
 
@@ -111,7 +116,10 @@ class LineBuffer(LineSingle):
             self.array = collections.deque(maxlen=self.maxlen + self.extrasize)
             self.useislice = True
         else:
-            self.array = array.array(str('d'))
+            # if not USEPD:
+            # self.array = array.array(str('d'))
+            # else:
+            self.array = pd.Series(dtype=np.float64)
             self.useislice = False
 
         self.lencount = 0
@@ -255,7 +263,14 @@ class LineBuffer(LineSingle):
         self.lencount += size
 
         for i in range(size):
-            self.array.append(value)
+            # if not USEPD:
+            # self.array.append(value)
+            # else:
+                # print('len before append:', len(self.array))
+            self.array = self.array.append(
+                pd.Series([value], index=[len(self.array)]))
+                # print('len after append:', len(self.array))
+                # print('after append:', self.array)
 
     def backwards(self, size=1, force=False):
         ''' Moves the logical index backwards and reduces the buffer as much as needed
@@ -268,7 +283,13 @@ class LineBuffer(LineSingle):
         self.set_idx(self._idx - size, force=force)
         self.lencount -= size
         for i in range(size):
-            self.array.pop()
+            # if not USEPD:
+            # self.array.pop()
+            # else:
+            # print('before pop len self.array is:', len(self.array))
+            # print('self.array is:', self.array)
+            self.array.pop(len(self.array) - 1)
+            # print('after pop len self.array is:', len(self.array))
 
     def rewind(self, size=1):
         self.idx -= size
@@ -295,7 +316,10 @@ class LineBuffer(LineSingle):
         '''
         self.extension += size
         for i in range(size):
-            self.array.append(value)
+            # if not USEPD:
+            # self.array.append(value)
+            # else:
+            self.array = self.array.append(pd.Series([value]))
 
     def addbinding(self, binding):
         ''' Adds another line binding
