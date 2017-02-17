@@ -61,3 +61,35 @@ class BacktraderCSVData(feed.CSVDataBase):
 
 class BacktraderCSV(feed.CSVFeedBase):
     DataCls = BacktraderCSVData
+
+
+class BacktraderCSVData(feed.CSVDataBase):
+    '''
+    Parses a self-defined CSV Data used for testing.
+
+    Specific parameters:
+
+      - ``dataname``: The filename to parse or a file-like object
+    '''
+
+    _F = ['datetime', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
+
+    def start(self):
+        import pandas as pd
+        import numpy as np
+
+        feed.DataBase.start(self)  # skip CSVDataBase
+
+        self.df = pd.read_csv(self.p.dataname,
+                              sep=self.p.separator,
+                              names=self._F,
+                              index_col=False,
+                              # dtype=np.float64,
+                              skiprows=1,
+                              parse_dates=True,)
+
+    def preload(self):
+        for f, l in ((x, getattr(self.l, x)) for x in self._F[1:]):
+            l.array = self.df[f]
+
+        print(self.df[self._F[0]])
