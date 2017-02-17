@@ -171,7 +171,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.plotind(None, ptop, subinds=self.dplotsover[ptop])
 
             # Create the rest on a per data basis
-            dt0, dt1 = self.pinf.xreal[0], self.pinf.xreal.iloc[-1]
+            dt0, dt1 = self.pinf.xreal[0], self.pinf.xreal[-1]
             for data in strategy.datas:
                 if not data.plotinfo.plot:
                     continue
@@ -389,8 +389,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
 
-            if not math.isnan(lplot.iloc[-1]):
-                label += ' %.2f' % lplot.iloc[-1]
+            if not math.isnan(lplot[-1]):
+                label += ' %.2f' % lplot[-1]
 
             plotkwargs = dict()
             linekwargs = lineplotinfo._getkwargs(skip_=True)
@@ -416,9 +416,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             self.pinf.zorder[ax] = plottedline.get_zorder()
 
-            if not math.isnan(lplot.iloc[-1]):
+            if not math.isnan(lplot[-1]):
                 # line has valid values, plot a tag for the last value
-                self.drawtag(ax, len(self.pinf.xreal), lplot.iloc[-1],
+                self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
                              facecolor='white',
                              edgecolor=self.pinf.color(ax))
 
@@ -602,7 +602,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             datalabel += ' (%d %s)' % (data._compression, tfname)
 
         datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
-                     (opens.iloc[-1], highs.iloc[-1], lows.iloc[-1], closes.iloc[-1])
+                     (opens[-1], highs[-1], lows[-1], closes[-1])
 
         if self.pinf.sch.style.startswith('line'):
             if axdatamaster is None:
@@ -635,7 +635,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.pinf.zorder[ax] = plotted[0].get_zorder()
 
         # Code to place a label at the right hand side with the last value
-        self.drawtag(ax, len(self.pinf.xreal), closes.iloc[-1],
+        self.drawtag(ax, len(self.pinf.xreal), closes[-1],
                      facecolor='white', edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
