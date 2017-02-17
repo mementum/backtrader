@@ -416,6 +416,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self._last()
         self.home()
 
+        for l in self.lines:
+            l.pandize()
+
     def _last(self, datamaster=None):
         # Last chance for filters to deliver something
         ret = 0
@@ -656,11 +659,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
             self.f = None
 
     def preload(self):
-        while self.load():
-            pass
-
-        self._last()
-        self.home()
+        super(CSVDataBase, self).preload()
 
         # preloaded - no need to keep the object around - breaks multip in 3.x
         self.f.close()

@@ -316,7 +316,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                     if self._oldsync:
                         observer.advance()
                     else:
-                        observer.forward()
+                        observer.advance()
 
                 if minperstatus < 0:
                     observer.next()
@@ -422,6 +422,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         # change operators back to stage 1 - allows reuse of datas
         self._stage1()
+
+        self.lines.datetime.pandize()
 
     def stop(self):
         '''Called right before the backtesting is about to be stopped'''

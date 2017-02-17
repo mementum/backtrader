@@ -32,12 +32,16 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-import numpy as np
-import bcolz
+import array
 import collections
 import datetime
 from itertools import islice
 import math
+
+import bcolz
+import dask
+import numpy as np
+import pandas as pd
 
 from .utils.py3 import range, with_metaclass, string_types
 
@@ -47,6 +51,10 @@ from .utils import num2date, time2num
 
 
 NAN = np.nan
+
+# 0 - no bcolz, 1 - only for internal buffers, 2 - also for loaded datas
+BCOLZLEVEL = 0
+PANDIZE = 1
 
 
 class LineBuffer(LineSingle):
@@ -113,16 +121,21 @@ class LineBuffer(LineSingle):
             self.array = collections.deque(maxlen=self.maxlen + self.extrasize)
             self.useislice = True
         else:
-            # if not USEPD:
-            # self.array = array.array(str('d'))
-            # else:
-            cp = bcolz.cparams(clevel=0, shuffle=0)
-            self.array = bcolz.carray([], dflt=NAN, cparams=cp, safe=True)
+            if BCOLZLEVEL > 1:
+                # Start directly with bcolz arrays
+                # cp = bcolz.cparams(clevel=2, cname='blosclz')  # , shuffle=0)
+                self.array = bcolz.fill(0, dflt=NAN, dtype=np.float64)
+            else:
+                self.array = array.array(str('d'))
+
             self.useislice = False
 
         self.lencount = 0
         self.idx = -1
         self.extension = 0
+
+    def pandize(self, reuse=False):
+        self.array = pd.Series(self.array, dtype=np.float64)
 
     def qbuffer(self, savemem=0, extrasize=0):
         self.mode = self.QBuffer
@@ -260,8 +273,23 @@ class LineBuffer(LineSingle):
         self.idx += size
         self.lencount += size
 
+        if size > 1:
+            if BCOLZLEVEL >= 1:
+                # Use bcolz also for resized arrays
+                self.array = bcolz.fill(size, dflt=NAN,
+                                        expectedlen=size, dtype=np.float64)
+            else:
+                if not PANDIZE:
+                    self.array = array.array(str('d'), [NAN] * size)
+                else:
+                    self.array = pd.Series([NAN] * size, dtype=np.float64)
+            return
+
         # print('will resize to (len) + size = :', len(self.array), size)
         # self.array.resize(len(self.array) + size)
+        if False and len(self) == 1:
+            print(self._owner, 'current len:', len(self))
+            print('array is:', self.array)
         for i in range(size):
             self.array.append(value)
 
@@ -273,9 +301,14 @@ class LineBuffer(LineSingle):
             buffer
         '''
         # Go directly to property setter to support force
+        # print('BACKWARDS')
         self.set_idx(self._idx - size, force=force)
         self.lencount -= size
-        self.array.resize(len(self.array) - size)
+        try:
+            self.array.resize(len(self.array) - size)
+        except:
+            for i in range(size):
+                self.array.pop()
 
     def rewind(self, size=1):
         self.idx -= size
@@ -344,8 +377,13 @@ class LineBuffer(LineSingle):
         '''
         larray = self.array
         blen = self.buflen()
+        if True and len(self.bindings) == 1:
+            self.bindings[0].array = larray
+            return
+
         for binding in self.bindings:
-            binding.array[0:blen] = larray[0:blen]
+            # binding.array[0:blen] = larray[0:blen]
+            binding.array = larray.copy()
 
     def bind2lines(self, binding=0):
         '''
