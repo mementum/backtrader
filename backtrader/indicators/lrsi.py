@@ -21,14 +21,18 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from . import Indicator
+from . import PeriodN
 
-__all__ = ['LaguerreRSI']
+__all__ = ['LaguerreRSI', 'LRSI']
 
-class LaguerreRSI(Indicator):
+
+class LaguerreRSI(PeriodN):
     alias = ('LRSI',)
     lines = ('lrsi',)
-    params = (('gamma', 0.5),)
+    params = (
+        ('gamma', 0.5),
+        ('period', 6),
+    )
 
     plotinfo = dict(
         plotymargin=0.15,
@@ -36,44 +40,40 @@ class LaguerreRSI(Indicator):
     )
 
     def __init__(self):
-        self.addminperiod(6)
-        self.l0 = [0, 0]
-        self.l1 = [0, 0]
-        self.l2 = [0, 0]
-        self.l3 = [0, 0]
+        self.l0, self.l1, self.l2, self.l3 = 0.0, 0.0, 0.0, 0.0
 
         super(LaguerreRSI, self).__init__()
 
-    def next(self):
-        tp = (self.data.high + self.data.low) / 2
-        self.l0.insert(0, ((1 - self.p.gamma) * tp +
-                           self.p.gamma * self.l0[0]))
-        self.l1.insert(0, (-self.p.gamma * self.l0[0] + self.l0[1] +
-                           self.p.gamma * self.l1[0]))
-        self.l2.insert(0, (-self.p.gamma * self.l1[0] + self.l1[1] +
-                           self.p.gamma * self.l2[0]))
-        self.l3.insert(0, (-self.p.gamma * self.l2[0] + self.l2[1] +
-                           self.p.gamma * self.l3[0]))
-        del self.l0[2:]
-        del self.l1[2:]
-        del self.l2[2:]
-        del self.l3[2:]
+    def prenext(self):
+        self.next(notpre=False)
 
-        cd = 0
-        cu = 0
-        if self.l0[0] >= self.l1[0]:
-            cu = self.l0[0] - self.l1[0]
+    def next(self, notpre=True):
+        tp_0 = (self.data.high + self.data.low) / 2  # price point
+        l0_1 = self.l0  # cache previous intermediate values
+        l1_1 = self.l1
+        l2_1 = self.l2
+
+        g = self.p.gamma  # avoid more lookups
+        self.l0 = l0 = (1 - g) * tp_0 + g * l0_1 * notpre  # interm values
+        self.l1 = l1 = -g * l0 + l0_1 + g * l1_1 * notpre
+        self.l2 = l2 = -g * l1 + l1_1 + g * l2_1 * notpre
+        self.l3 = l3 = -g * l2 + l2_1 + g * self.l3 * notpre
+
+        cd = 0.0
+        cu = 0.0
+        if l0 >= l1:
+            cu = l0 - 11
         else:
-            cd = self.l1[0] - self.l0[0]
+            cd = l1 - l0
 
-        if self.l1[0] >= self.l2[0]:
-            cu = cu + self.l1[0] - self.l2[0]
+        if l1 >= l2:
+            cu = cu + l1 - l2
         else:
-            cd = cd + self.l2[0] - self.l1[0]
+            cd = cd + l2 - l1
 
-        if self.l2[0] >= self.l3[0]:
-            cu = cu + self.l2[0] - self.l3[0]
+        if l2 >= l3:
+            cu = cu + l2 - l3
         else:
-            cd = cd + self.l3[0] - self.l2[0]
+            cd = cd + l3 - l2
 
-        self.lines.lrsi[0] = cu / (cu + cd)
+        self.lines.lrsi[0] = cu / (cu + cd)  # store line value
