@@ -116,7 +116,8 @@ class LineBuffer(LineSingle):
             # if not USEPD:
             # self.array = array.array(str('d'))
             # else:
-            self.array = bcolz.carray([], dflt=NAN)
+            cp = bcolz.cparams(clevel=0, shuffle=0)
+            self.array = bcolz.carray([], dflt=NAN, cparams=cp, safe=True)
             self.useislice = False
 
         self.lencount = 0
