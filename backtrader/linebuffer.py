@@ -261,7 +261,8 @@ class LineBuffer(LineSingle):
 
         # print('will resize to (len) + size = :', len(self.array), size)
         # self.array.resize(len(self.array) + size)
-        self.array.append(value)
+        for i in range(size):
+            self.array.append(value)
 
     def backwards(self, size=1, force=False):
         ''' Moves the logical index backwards and reduces the buffer as much as needed
