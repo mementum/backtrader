@@ -63,7 +63,7 @@ class BacktraderCSV(feed.CSVFeedBase):
     DataCls = BacktraderCSVData
 
 
-class BacktraderCSVData(feed.CSVDataBase):
+class BacktraderCSVData2(feed.CSVDataBase):
     '''
     Parses a self-defined CSV Data used for testing.
 
@@ -90,6 +90,8 @@ class BacktraderCSVData(feed.CSVDataBase):
 
     def preload(self):
         for f, l in ((x, getattr(self.l, x)) for x in self._F[1:]):
-            l.array = self.df[f]
+            l.array = self._df[f]
 
-        print(self.df[self._F[0]])
+        f0 = self._F[0]
+        self._df[f0] = pd_todatetime(self._df[f0])
+        self._df[f0] = pp
