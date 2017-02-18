@@ -358,7 +358,7 @@ class Average(PeriodN):
             math.fsum(self.data.get(size=self.p.period)) / self.p.period
 
     if 0:
-        def once1(self, start, end):
+        def once(self, start, end):
             src = self.data.array
             dst = self.line.array
             period = self.p.period
@@ -371,7 +371,6 @@ class Average(PeriodN):
             pass
 
         def once(self, start, end):
-            print('HOW OFTEN AM I CALLED')
             src = self.data.array
             dst = self.line.array
             period = self.p.period

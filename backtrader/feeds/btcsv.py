@@ -63,6 +63,10 @@ class BacktraderCSV(feed.CSVFeedBase):
     DataCls = BacktraderCSVData
 
 
+import pandas as pd
+import numpy as np
+
+
 class BacktraderCSVData2(feed.CSVDataBase):
     '''
     Parses a self-defined CSV Data used for testing.
@@ -75,23 +79,22 @@ class BacktraderCSVData2(feed.CSVDataBase):
     _F = ['datetime', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
 
     def start(self):
-        import pandas as pd
-        import numpy as np
+        feed.DataBase.start(self)  # skip CSVDataBase's own start
 
-        feed.DataBase.start(self)  # skip CSVDataBase
-
-        self.df = pd.read_csv(self.p.dataname,
-                              sep=self.p.separator,
-                              names=self._F,
-                              index_col=False,
-                              # dtype=np.float64,
-                              skiprows=1,
-                              parse_dates=True,)
+        self._df = pd.read_csv(self.p.dataname,
+                               sep=self.p.separator,
+                               names=self._F,
+                               index_col=False,
+                               skiprows=1,
+                               )
 
     def preload(self):
         for f, l in ((x, getattr(self.l, x)) for x in self._F[1:]):
             l.array = self._df[f]
 
         f0 = self._F[0]
-        self._df[f0] = pd_todatetime(self._df[f0])
-        self._df[f0] = pp
+        dts = pd.to_datetime(self._df[f0])
+        getattr(self.l, f0).array = dts.apply(date2num)
+
+        self._last()
+        self.home()
