@@ -367,11 +367,17 @@ class Average(PeriodN):
                 dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
 
     else:
+        def oncestart(self, start, end):
+            pass
+
         def once(self, start, end):
+            print('HOW OFTEN AM I CALLED')
             src = self.data.array
             dst = self.line.array
             period = self.p.period
-            dst = src.rolling(window=20, center=False).mean()
+            src2 = src.iloc[start - period:end]
+            self.line.array.iloc[start:end] = (
+                src2.rolling(window=period, center=False).mean())
 
 
 class ExponentialSmoothing(Average):
