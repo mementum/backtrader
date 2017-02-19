@@ -179,7 +179,7 @@ class LineBuffer(LineSingle):
         return len(self.array) - self.extension
 
     def __getitem__(self, ago):
-        return self.array[self.idx + ago]
+        return self.array.iat[self.idx + ago]
 
     def get(self, ago=0, size=1):
         ''' Returns a slice of the array relative to *ago*
