@@ -96,7 +96,7 @@ The example then::
 Omitting the Data Feeds
 =======================
 
-The example above can be further simplfied to::
+The example above can be further simplified to::
 
   class MyStrategy(bt.Strategy):
       params = dict(period=20)
@@ -231,7 +231,7 @@ Shorthand access to lines do exist:
   - Complex objects like Strategies and Indicators offer quick access to data's
     lines
 
-    - ``self.data_name`` offers a direct acccess to ``self.data.lines.name``
+    - ``self.data_name`` offers a direct access to ``self.data.lines.name``
     - Which also applies to the numbered data variables: ``self.data1_name`` ->
       ``self.data1.lines.name``
 
@@ -294,7 +294,7 @@ feeds can also be quickly accessed by number:
 Accessing ``lines`` in *Data Feeds*
 ===================================
 
-Inside *data feeds* the ``lines`` can also be accessed ommitting the
+Inside *data feeds* the ``lines`` can also be accessed omitting the
 ``lines``. This makes it more natural to work with thinks like ``close``
 prices.
 
@@ -350,7 +350,7 @@ The difference between ``len`` and ``buflen``
     Data Feed
 
 If both return the same value, either no data has been preloaded or the
-processing of bars has consumen all preloaded bars (and unless the system is
+processing of bars has consumed all preloaded bars (and unless the system is
 connected to a live feed, this will mean the end of processing)
 
 Inheritance of Lines and Params
@@ -418,8 +418,8 @@ follows::
   def next(self):
     self.line[0] = math.fsum(self.data.get(0, size=self.p.period)) / self.p.period
 
-Accesing previous `set` points has been modeled following the definition Python
-makes for ``-1`` when accesing an array/iterable
+Accessing previous `set` points has been modeled following the definition Python
+makes for ``-1`` when accessing an array/iterable
 
   - It points to the last item of the array
 
@@ -520,7 +520,7 @@ The ``()`` (empty call) notation comes to the rescue::
 Here the larger timeframe indicator, ``sma1`` is *coupled* to the daily
 timeframe with ``sma1()``. This returns an object which is compatible with the
 larger numbers of bars of ``sma0`` and copies the values produced by ``sma1``,
-effectivelly spreading the 52 weekly bars in 250 daily bars
+effectively spreading the 52 weekly bars in 250 daily bars
 
 
 Operators, using natural constructs
@@ -534,7 +534,7 @@ Stage 1 - Operators Create Objects
 ==================================
 
 An example has already been seen even if not explicitly meant for this. During
-the intialization phase (__init__ method) of objects like Indicators and
+the initialization phase (__init__ method) of objects like Indicators and
 Strategies, operators create objects that can be operated upon, assigned or kept
 as reference for later using during the evaluation phase of the Strategy's
 logic.
@@ -579,8 +579,8 @@ A more complete use case is shown during the initialization of a Strategy::
 
 	  sma_dist_small = sma_dist_to_high < 3.5
 
-	  # Unfortunately "and" cannot be overriden in Python being
-	  # a language construst and not an operator and thus a
+	  # Unfortunately "and" cannot be overridden in Python being
+	  # a language construct and not an operator and thus a
 	  # function has to be provided by the platform to emulate it
 
 	  sell_sig = bt.And(close_over_sma, sma_dist_small)
@@ -594,7 +594,7 @@ Stage 2 - Operators true to nature
 
 Let's first remember that a strategy has a ``next`` method which is called for
 every bar the system processes. This is where operators are actually in the
-stage 2 mode. Buiding on the previous example::
+stage 2 mode. Building on the previous example::
 
   class MyStrategy(bt.Strategy):
 
@@ -607,8 +607,8 @@ stage 2 mode. Buiding on the previous example::
 
 	  sma_dist_small = sma_dist_to_high < 3.5
 
-	  # Unfortunately "and" cannot be overriden in Python being
-	  # a language construst and not an operator and thus a
+	  # Unfortunately "and" cannot be overridden in Python being
+	  # a language construct and not an operator and thus a
 	  # function has to be provided by the platform to emulate it
 
 	  self.sell_sig = bt.And(close_over_sma, sma_dist_small)
@@ -676,7 +676,7 @@ Functions:
 
     ``Sum`` actually uses ``math.fsum`` as the underlying operation because the
     platform works with floating point numbers and applying a regular ``sum``
-    may have an impatct on precision.
+    may have an impact on precision.
 
   - ``reduce`` -> ``Reduce``
 
