@@ -23,10 +23,22 @@ from __future__ import (absolute_import, division, print_function,
 
 from . import PeriodN
 
+
 __all__ = ['LaguerreRSI', 'LRSI']
 
 
 class LaguerreRSI(PeriodN):
+    '''
+    Defined by John F. Ehlers in `Cybernetic Analysis for Stock and Futures`,
+    2004, published by Wiley. `ISBN: 978-0-471-46307-8`
+
+    The Laguerre RSI tries to implements a better RSI by providing a sort of
+    *Time Warp without Time Travel* using a Laguerre filter. This provides for
+    faster reactions to price changes
+
+    ``gamma`` is meant to have values between ``0.2`` and ``0.8``, with the
+    best balance found theoretically at the default of ``0.5``
+    '''
     alias = ('LRSI',)
     lines = ('lrsi',)
     params = (
@@ -41,39 +53,35 @@ class LaguerreRSI(PeriodN):
 
     def __init__(self):
         self.l0, self.l1, self.l2, self.l3 = 0.0, 0.0, 0.0, 0.0
-
         super(LaguerreRSI, self).__init__()
 
-    def prenext(self):
-        self.next(notpre=False)
-
-    def next(self, notpre=True):
-        tp_0 = (self.data.high + self.data.low) / 2  # price point
+    def next(self):
         l0_1 = self.l0  # cache previous intermediate values
         l1_1 = self.l1
         l2_1 = self.l2
 
         g = self.p.gamma  # avoid more lookups
-        self.l0 = l0 = (1 - g) * tp_0 + g * l0_1 * notpre  # interm values
-        self.l1 = l1 = -g * l0 + l0_1 + g * l1_1 * notpre
-        self.l2 = l2 = -g * l1 + l1_1 + g * l2_1 * notpre
-        self.l3 = l3 = -g * l2 + l2_1 + g * self.l3 * notpre
+        self.l0 = l0 = (1.0 - g) * self.data + g * l0_1
+        self.l1 = l1 = -g * l0 + l0_1 + g * l1_1
+        self.l2 = l2 = -g * l1 + l1_1 + g * l2_1
+        self.l3 = l3 = -g * l2 + l2_1 + g * self.l3
 
-        cd = 0.0
         cu = 0.0
+        cd = 0.0
         if l0 >= l1:
-            cu = l0 - 11
+            cu = l0 - l1
         else:
             cd = l1 - l0
 
         if l1 >= l2:
-            cu = cu + l1 - l2
+            cu += l1 - l2
         else:
-            cd = cd + l2 - l1
+            cd += l2 - l1
 
         if l2 >= l3:
-            cu = cu + l2 - l3
+            cu += l2 - l3
         else:
-            cd = cd + l3 - l2
+            cd += l3 - l2
 
-        self.lines.lrsi[0] = cu / (cu + cd)  # store line value
+        den = cu + cd
+        self.lines.lrsi[0] = 1.0 if not den else cu / den
