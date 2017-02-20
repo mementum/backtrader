@@ -250,7 +250,16 @@ class MetaParams(MetaBase):
                 palias = p
 
             pmod = __import__(p)
-            setattr(clsmod, palias, pmod)
+
+            plevels = p.split('.')
+            if p == palias and len(plevels) > 1:  # 'os.path' not aliased
+                setattr(clsmod, pmod.__name__, pmod)  # set 'os' in module
+
+            else:  # aliased and/or dots
+                for plevel in plevels[1:]:  # recurse down the mod
+                    pmod = getattr(pmod, plevel)
+
+                setattr(clsmod, palias, pmod)
 
         # import from specified packages - the 2nd part is a string or iterable
         for p, frompackage in cls.frompackages:
