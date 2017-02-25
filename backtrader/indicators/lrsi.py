@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 from . import PeriodN
 
 
-__all__ = ['LaguerreRSI', 'LRSI']
+__all__ = ['LaguerreRSI', 'LRSI', 'LaguerreFilter', 'LAGF']
 
 
 class LaguerreRSI(PeriodN):
@@ -51,9 +51,7 @@ class LaguerreRSI(PeriodN):
         plotyticks=[0.0, 0.2, 0.5, 0.8, 1.0]
     )
 
-    def __init__(self):
-        self.l0, self.l1, self.l2, self.l3 = 0.0, 0.0, 0.0, 0.0
-        super(LaguerreRSI, self).__init__()
+    l0, l1, l2, l3 = 0.0, 0.0, 0.0, 0.0
 
     def next(self):
         l0_1 = self.l0  # cache previous intermediate values
@@ -88,14 +86,19 @@ class LaguerreRSI(PeriodN):
 
 
 class LaguerreFilter(PeriodN):
+    '''
+    Defined by John F. Ehlers in `Cybernetic Analysis for Stock and Futures`,
+    2004, published by Wiley. `ISBN: 978-0-471-46307-8`
+
+    ``gamma`` is meant to have values between ``0.2`` and ``0.8``, with the
+    best balance found theoretically at the default of ``0.5``
+    '''
     alias = ('LAGF',)
     lines = ('lfilter',)
     params = (('gamma', 0.5),)
     plotinfo = dict(subplot=False)
 
-    def __init__(self):
-        self.l0, self.l1, self.l2, self.l3 = 0.0, 0.0, 0.0, 0.0
-        super(LaguerreFilter, self).__init__()
+    l0, l1, l2, l3 = 0.0, 0.0, 0.0, 0.0
 
     def next(self):
         l0_1 = self.l0  # cache previous intermediate values
