@@ -165,7 +165,7 @@ else:
 
             # Prepare dictionary for subclassing
             clsdict = {
-                '__module__': clsmodule,
+                '__module__': cls.__module__,
                 '__doc__': str(_tabstract),
                 '_tabstract': _tabstract,  # keep ref for lookback calcs
                 '_iscandle': iscandle,
