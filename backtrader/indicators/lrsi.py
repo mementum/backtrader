@@ -85,3 +85,26 @@ class LaguerreRSI(PeriodN):
 
         den = cu + cd
         self.lines.lrsi[0] = 1.0 if not den else cu / den
+
+
+class LaguerreFilter(PeriodN):
+    alias = ('LAGF',)
+    lines = ('lfilter',)
+    params = (('gamma', 0.5),)
+    plotinfo = dict(subplot=False)
+
+    def __init__(self):
+        self.l0, self.l1, self.l2, self.l3 = 0.0, 0.0, 0.0, 0.0
+        super(LaguerreFilter, self).__init__()
+
+    def next(self):
+        l0_1 = self.l0  # cache previous intermediate values
+        l1_1 = self.l1
+        l2_1 = self.l2
+
+        g = self.p.gamma  # avoid more lookups
+        self.l0 = l0 = (1.0 - g) * self.data + g * l0_1
+        self.l1 = l1 = -g * l0 + l0_1 + g * l1_1
+        self.l2 = l2 = -g * l1 + l1_1 + g * l2_1
+        self.l3 = l3 = -g * l2 + l2_1 + g * self.l3
+        self.lines.lfilter[0] = (l0 + (2 * l1) + (2 * l2) + l3) / 6
