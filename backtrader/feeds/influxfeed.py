@@ -24,8 +24,6 @@ from __future__ import (absolute_import, division, print_function,
 import backtrader as bt
 import backtrader.feed as feed
 from ..utils import date2num
-from influxdb import InfluxDBClient as idbclient
-from influxdb.exceptions import InfluxDBClientError
 import datetime as dt
 
 TIMEFRAMES = dict(
@@ -41,6 +39,11 @@ TIMEFRAMES = dict(
 
 
 class InfluxDB(feed.DataBase):
+    frompakages = (
+        ('influxdb', [('InfluxDBClient', 'idbclient')]),
+        ('influxdb.exceptions', 'InfluxDBClientError')
+    )
+
     params = (
         ('host', '127.0.0.1'),
         ('port', '8086'),
