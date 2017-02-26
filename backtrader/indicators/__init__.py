@@ -65,6 +65,7 @@ from .percentrank import *
 from .pivotpoint import *
 from .prettygoodoscillator import *
 from .priceoscillator import *
+from .psar import *
 from .rsi import *
 from .stochastic import *
 from .trix import *
