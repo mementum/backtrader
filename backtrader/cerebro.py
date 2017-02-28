@@ -613,7 +613,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, iplot=True, useplotly=False,
+    def plot(self, plotter=None, numfigs=1, iplot=True, start=0, end=-1,
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -627,6 +627,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
         displayed inline
 
+        ``start``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the start
+        of the plot
+
+        ``end``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the end
+        of the plot
         '''
         if self._exactbars > 0:
             return
@@ -637,14 +644,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 plotter = plot.Plot_OldSync(**kwargs)
             else:
                 plotter = plot.Plot(**kwargs)
-
-        if useplotly:
-            try:
-                from plotly import __version__ as plyversion
-            except ImportError:
-                useplotly = False
-            else:
-                numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
 
         # pfillers = {self.datas[i]: self._plotfillers[i]
         # for i, x in enumerate(self._plotfillers)}
@@ -657,28 +656,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    useplotly=useplotly)
+                                    start=start, end=end)
                 # pfillers=pfillers2)
 
                 figs.append(rfig)
 
             plotter.show()
         return figs
-
-    def plotly(self, plotter=None, numfigs=1, **kwargs):
-        '''
-        Plots the strategies inside cerebro in plotly offline if available
-
-        If ``plotter`` is None a default ``Plot`` instance is created and
-        ``kwargs`` are passed to it during instantiation.
-
-        ``numfigs`` split the plot in the indicated number of charts reducing
-        chart density if wished
-
-          If ``plotly`` is really available this will be capped down to 1 to
-          let plotly take over and control those features
-        '''
-        self.plot(plotter=plotter, numfigs=numfigs, useplotly=True, **kwargs)
 
     def __call__(self, iterstrat):
         '''

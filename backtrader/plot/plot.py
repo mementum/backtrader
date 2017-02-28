@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import bisect
 import collections
+import datetime
 import itertools
 import math
 import operator
@@ -36,7 +37,7 @@ import matplotlib.legend as mlegend
 import matplotlib.ticker as mticker
 
 from ..utils.py3 import range, with_metaclass
-from .. import AutoInfoClass, MetaParams, TimeFrame
+from .. import AutoInfoClass, MetaParams, TimeFrame, date2num
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
@@ -111,7 +112,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True,
+             start=0, end=-1, **kwargs):
         # pfillers={}):
         if not strategy.datas:
             return
@@ -131,11 +133,18 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.sortdataindicators(strategy)
         self.calcrows(strategy)
 
-        slen = len(strategy)
+        st_dtime = strategy.lines.datetime.plot()
+        if isinstance(start, datetime.date):
+            start = bisect.bisect_left(st_dtime, date2num(start))
+
+        if isinstance(end, datetime.date):
+            end = bisect.bisect_right(st_dtime, date2num(end))
+
+        slen = len(st_dtime[start:end])
         d, m = divmod(slen, numfigs)
         pranges = list()
         for i in range(numfigs):
-            a = d * i
+            a = d * i + start
             if i == (numfigs - 1):
                 d += m  # add remainder to last stint
             b = a + d
