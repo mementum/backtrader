@@ -84,11 +84,23 @@ class GenericCSVData(feed.CSVDataBase):
 
         if self.p.timeframe >= TimeFrame.Days:
             # check if the expected end of session is larger than parsed
-            expeos = datetime.combine(dt.date(), self.p.sessionend)
-            if expeos > dt:
-                dt = expeos  # replace with right end of session
+            if self._tzinput:
+                dtin = self._tzinput.localize(dt)  # pytz compatible-ized
+            else:
+                dtin = dt
 
-        self.lines.datetime[0] = date2num(dt)
+            dtnum = date2num(dtin)  # utc'ize
+
+            dteos = datetime.combine(dt.date(), self.p.sessionend)
+            dteosnum = self.date2num(dteos)  # utc'ize
+
+            if dteosnum > dtnum:
+                self.lines.datetime[0] = dteosnum
+            else:
+                # Avoid reconversion if already converted dtin == dt
+                self.l.datetime[0] = date2num(dt) if self._tzinput else dtnum
+        else:
+            self.lines.datetime[0] = date2num(dt)
 
         # The rest of the fields can be done with the same procedure
         for linefield in (x for x in self.getlinealiases() if x != 'datetime'):
