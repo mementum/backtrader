@@ -79,3 +79,5 @@ from .dv2 import *  # depends on percentrank
 from .kst import *
 
 from .ichimoku import *
+
+from .hurst import *
