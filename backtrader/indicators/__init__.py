@@ -81,3 +81,4 @@ from .kst import *
 from .ichimoku import *
 
 from .hurst import *
+from .ols import *
