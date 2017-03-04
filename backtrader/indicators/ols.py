@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import backtrader as bt
 from . import PeriodN
 
 
@@ -33,13 +34,13 @@ class OLS_Slope_InterceptN(PeriodN):
     Calculates a linear regression using ``statsmodel.OLS`` (Ordinary least
     squares) of data1 on data0
 
-    Uses ``pandas`` and ``statsmodel``
+    Uses ``pandas`` and ``statsmodels``
     '''
     _mindatas = 2  # ensure at least 2 data feeds are passed
 
     packages = (
         ('pandas', 'pd'),
-        ('statsmodel', 'sm'),
+        ('statsmodels.api', 'sm'),
     )
     lines = ('slope', 'intercept',)
     params = (('period', 10),)
@@ -58,7 +59,7 @@ class OLS_TransformationN(PeriodN):
     '''
     Calculates the ``zscore`` for data0 and data1. Although it doesn't directly
     uses any external package it relies on ``OLS_SlopeInterceptN`` which uses
-    ``pandas`` and ``statsmodel``
+    ``pandas`` and ``statsmodels``
     '''
     _mindatas = 2  # ensure at least 2 data feeds are passed
     lines = ('spread', 'spread_mean', 'spread_std', 'zscore',)
@@ -121,5 +122,5 @@ class CointN(PeriodN):
     def next(self):
         x, y = (pd.Series(d.get(size=self.p.period)) for d in self.datas)
         score, pvalue, _ = coint(x, y, regression=self.p.regression)
-        self.lines.score[0] = 0
-        self.lines.pvalue[0] = 0
+        self.lines.score[0] = score
+        self.lines.pvalue[0] = pvalue
