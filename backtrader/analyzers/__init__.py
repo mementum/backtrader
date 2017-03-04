@@ -38,3 +38,6 @@ from .returns import *
 from .vwr import *
 
 from .logreturnsrolling import *
+
+from .calmar import *
+from .periodstats import *

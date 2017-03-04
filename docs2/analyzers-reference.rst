@@ -10,10 +10,21 @@ AnnualReturn
 
 .. autoclass:: AnnualReturn
 
+Calmar
+******
+
+.. autoclass:: Calmar
+
 DrawDown
 ********
 
 .. autoclass:: DrawDown
+
+TimeDrawDown
+************
+
+.. autoclass:: TimeDrawDown
+
 
 
 GrossLeverage
@@ -37,6 +48,11 @@ LogReturnsRolling
 *****************
 
 .. autoclass:: LogReturnsRolling
+
+PeriodStats
+***********
+
+.. autoclass:: PeriodStats
 
 Returns
 *******
