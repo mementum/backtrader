@@ -36,6 +36,12 @@ class AutoDictList(dict):
         return value
 
 
+class DotDict(dict):
+    # If the attribut is not found in the usual places try the dict itself
+    def __getattr__(self, key):
+        return self[key]
+
+
 class AutoDict(dict):
     _closed = False
 
