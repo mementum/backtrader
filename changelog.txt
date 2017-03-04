@@ -1,3 +1,12 @@
+1.9.31.116
+  - Add Indicator HurstExponent (requires numpy)
+  - Allow plotting specific date ranges with start and end named arguments
+    to plot
+  - Address #269 missing last bar backfill_from
+  - Fix typo (#271) in frompackages import for InfluxDB feed
+  - Add OLS_Slope_InterceptN, OLS_BetaN, OLS_TransformationN and Coint
+  - Ensure broker has prices even if tick_xxx is not defined
+
 1.9.30.111
   - Add LaguerreRSI PR #265
   - Add LaguerreFilter PR #267
