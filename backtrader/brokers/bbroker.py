@@ -806,10 +806,10 @@ class BackBroker(bt.BrokerBase):
     def _try_exec(self, order):
         data = order.data
 
-        popen = data.tick_open or data.open[0]
-        phigh = data.tick_high or data.high[0]
-        plow = data.tick_low or data.low[0]
-        pclose = data.tick_close or data.close[0]
+        popen = getattr(data, 'tick_open', None) or data.open[0]
+        phigh = getattr(data, 'tick_high', None) or data.high[0]
+        plow = getattr(data, 'tick_low', None) or data.low[0]
+        plow = getattr(data, 'tick_close', None) or data.close[0]
 
         pcreated = order.created.price
         plimit = order.created.pricelimit
