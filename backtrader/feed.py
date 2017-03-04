@@ -142,6 +142,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _getstatusname(cls, status):
         return cls._NOTIFNAMES[status]
 
+    _compensate = None
     _feed = None
     _store = None
 
@@ -318,6 +319,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         else:
             self._filters.append((p, args, kwargs))
+
+    def compensate(self, other):
+        '''Call it to let the broker know that actions on this asset will
+        compensate open positions in another'''
+
+        self._compensate = other
 
     def _tick_nullify(self):
         # These are the updating prices in case the new bar is "updated"
