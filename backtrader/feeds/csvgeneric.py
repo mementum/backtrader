@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
+from datetime import datetime
 import itertools
 
-from .. import feed
+from .. import feed, TimeFrame
 from ..utils import date2num
 
 
@@ -80,8 +80,27 @@ class GenericCSVData(feed.CSVDataBase):
             dtfield += 'T' + linetokens[self.p.time]
             dtformat += 'T' + self.p.tmformat
 
-        dt = datetime.datetime.strptime(dtfield, dtformat)
-        self.lines.datetime[0] = date2num(dt)
+        dt = datetime.strptime(dtfield, dtformat)
+
+        if self.p.timeframe >= TimeFrame.Days:
+            # check if the expected end of session is larger than parsed
+            if self._tzinput:
+                dtin = self._tzinput.localize(dt)  # pytz compatible-ized
+            else:
+                dtin = dt
+
+            dtnum = date2num(dtin)  # utc'ize
+
+            dteos = datetime.combine(dt.date(), self.p.sessionend)
+            dteosnum = self.date2num(dteos)  # utc'ize
+
+            if dteosnum > dtnum:
+                self.lines.datetime[0] = dteosnum
+            else:
+                # Avoid reconversion if already converted dtin == dt
+                self.l.datetime[0] = date2num(dt) if self._tzinput else dtnum
+        else:
+            self.lines.datetime[0] = date2num(dt)
 
         # The rest of the fields can be done with the same procedure
         for linefield in (x for x in self.getlinealiases() if x != 'datetime'):

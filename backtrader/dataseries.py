@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,16 +80,17 @@ class DataSeries(LineSeries):
         return headers
 
     def getwritervalues(self):
-        values = [self._name, len(self)]
+        l = len(self)
+        values = [self._name, l]
 
-        dtstr = self.datetime.datetime(0)
-        values.append(dtstr)
-
-        for line in self.LineOrder[1:]:
-            values.append(self.lines[line][0])
-
-        for i in range(len(self.LineOrder), self.lines.size()):
-            values.append(self.lines[i][0])
+        if l:
+            values.append(self.datetime.datetime(0))
+            for line in self.LineOrder[1:]:
+                values.append(self.lines[line][0])
+            for i in range(len(self.LineOrder), self.lines.size()):
+                values.append(self.lines[i][0])
+        else:
+            values.extend([''] * self.lines.size())  # no values yet
 
         return values
 

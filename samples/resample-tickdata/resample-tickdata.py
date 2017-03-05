@@ -42,6 +42,7 @@ def runstrat():
     data = btfeeds.GenericCSVData(
         dataname=datapath,
         dtformat='%Y-%m-%dT%H:%M:%S.%f',
+        timeframe=bt.TimeFrame.Ticks,
     )
 
     # Handy dictionary for the argument timeframe conversion

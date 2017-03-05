@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,11 +81,9 @@ class TimeReturn(TimeFrameAnalyzerBase):
     params = (
         ('data', None),
         ('firstopen', True),
-        ('_doprenext', True),
     )
 
     def start(self):
-        super(TimeReturn, self).start()
         self._value_start = 0.0
         self._lastvalue = None
         if self.p.data is None:
@@ -111,16 +109,6 @@ class TimeReturn(TimeFrameAnalyzerBase):
                 self._value_start = self.p.data.open[0]
             else:
                 self._value_start = self.p.data[0]
-
-    def prenext(self):
-        if self.p._doprenext:
-            super(TimeReturn, self).prenext()
-
-    def nextstart(self):
-        if not self.p._doprenext:  # nothing done during prenext
-            self.on_dt_over()  # force an update of value_start
-
-        super(TimeReturn, self).nextstart()
 
     def next(self):
         # Calculate the return

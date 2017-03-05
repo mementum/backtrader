@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ import backtrader as bt
 from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
                         metabase)
 
-from backtrader.utils.py3 import with_metaclass, zip, range
+from backtrader.utils.py3 import with_metaclass, zip, range, string_types
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
 
@@ -128,6 +128,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ('filters', []),
         ('tz', None),
         ('tzinput', None),
+        ('qcheck', 0.0),  # timeout in seconds (float) to check for events
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
@@ -144,15 +145,18 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     _feed = None
     _store = None
 
+    _clone = False
+    _qcheck = 0.0
+
     _tmoffset = datetime.timedelta()
 
     # Set to non 0 if resampling/replaying
     resampling = 0
     replaying = 0
 
-    def _start(self):
-        self.start()
+    _started = False
 
+    def _start_finish(self):
         # A live feed (for example) may have learnt something about the
         # timezones after the start and that's why the date/time related
         # parameters are converted at this late stage
@@ -179,6 +183,14 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
 
+        self._started = True
+
+    def _start(self):
+        self.start()
+
+        if not self._started:
+            self._start_finish()
+
     def _timeoffset(self):
         return self._tmoffset
 
@@ -189,7 +201,28 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the
         timezone'''
-        return bt.utils.date.Localizer(self.p.tz)
+        # If no object has been provided by the user and a timezone can be
+        # found via contractdtails, then try to get it from pytz, which may or
+        # may not be available.
+        tzstr = isinstance(self.p.tz, string_types)
+        if self.p.tz is None or not tzstr:
+            return bt.utils.date.Localizer(self.p.tz)
+
+        try:
+            import pytz  # keep the import very local
+        except ImportError:
+            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+
+        tzs = self.p.tz
+        if tzs == 'CST':  # usual alias
+            tzs = 'CST6CDT'
+
+        try:
+            tz = pytz.timezone(tzs)
+        except pytz.UnknownTimeZoneError:
+            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+
+        return tz
 
     def date2num(self, dt):
         if self._tz is not None:
@@ -202,6 +235,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             return num2date(self.lines.datetime[0], tz or self._tz, naive)
 
         return num2date(dt, tz or self._tz, naive)
+
+    def haslivedata(self):
+        return False  # must be overriden for those that can
+
+    def do_qcheck(self, onoff, qlapse):
+        # if onoff is True the data will wait p.qcheck for incoming live data
+        # on its queue.
+        qwait = self.p.qcheck if onoff else 0.0
+        qwait = max(0.0, qwait - qlapse)
+        self._qcheck = qwait
 
     def islive(self):
         '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
@@ -647,6 +690,7 @@ class CSVFeedBase(FeedBase):
 
 
 class DataClone(AbstractDataBase):
+    _clone = True
 
     def __init__(self):
         self.data = self.p.dataname

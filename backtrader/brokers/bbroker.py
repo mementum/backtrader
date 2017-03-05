@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -626,7 +626,7 @@ class BackBroker(bt.BrokerBase):
 
     def _try_exec_market(self, order, popen, phigh, plow):
         ago = 0
-        if self.p.coc:
+        if self.p.coc and order.info.get('coc', True):
             dtcoc = order.created.dt
             exprice = order.created.pclose
         else:
@@ -806,10 +806,18 @@ class BackBroker(bt.BrokerBase):
     def _try_exec(self, order):
         data = order.data
 
-        popen = data.tick_open or data.open[0]
-        phigh = data.tick_high or data.high[0]
-        plow = data.tick_low or data.low[0]
-        pclose = data.tick_close or data.close[0]
+        popen = getattr(data, 'tick_open', None)
+        if popen is None:
+            popen = data.open[0]
+        phigh = getattr(data, 'tick_high', None)
+        if phigh is None:
+            phigh = data.high[0]
+        plow = getattr(data, 'tick_low', None)
+        if plow is None:
+            plow = data.low[0]
+        pclose = getattr(data, 'tick_close', None)
+        if pclose is None:
+            pclose = data.close[0]
 
         pcreated = order.created.price
         plimit = order.created.pricelimit

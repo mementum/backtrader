@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import datetime
 import collections
 import itertools
 import multiprocessing
@@ -612,7 +613,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, iplot=True, useplotly=False,
+    def plot(self, plotter=None, numfigs=1, iplot=True, start=0, end=-1,
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -626,6 +627,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
         displayed inline
 
+        ``start``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the start
+        of the plot
+
+        ``end``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the end
+        of the plot
         '''
         if self._exactbars > 0:
             return
@@ -636,14 +644,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 plotter = plot.Plot_OldSync(**kwargs)
             else:
                 plotter = plot.Plot(**kwargs)
-
-        if useplotly:
-            try:
-                from plotly import __version__ as plyversion
-            except ImportError:
-                useplotly = False
-            else:
-                numfigs = 1  # Let plotly manage zoom, panning ... only 1 fig
 
         # pfillers = {self.datas[i]: self._plotfillers[i]
         # for i, x in enumerate(self._plotfillers)}
@@ -656,28 +656,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    useplotly=useplotly)
+                                    start=start, end=end)
                 # pfillers=pfillers2)
 
                 figs.append(rfig)
 
             plotter.show()
         return figs
-
-    def plotly(self, plotter=None, numfigs=1, **kwargs):
-        '''
-        Plots the strategies inside cerebro in plotly offline if available
-
-        If ``plotter`` is None a default ``Plot`` instance is created and
-        ``kwargs`` are passed to it during instantiation.
-
-        ``numfigs`` split the plot in the indicated number of charts reducing
-        chart density if wished
-
-          If ``plotly`` is really available this will be capped down to 1 to
-          let plotly take over and control those features
-        '''
-        self.plot(plotter=plotter, numfigs=numfigs, useplotly=True, **kwargs)
 
     def __call__(self, iterstrat):
         '''
@@ -873,67 +858,73 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         for stratcls, sargs, skwargs in iterstrat:
             sargs = self.datas + list(sargs)
-            strat = stratcls(*sargs, **skwargs)
+            try:
+                strat = stratcls(*sargs, **skwargs)
+            except bt.errors.StrategySkipError:
+                continue  # do not add strategy to the mix
+
             if self.p.oldsync:
                 strat._oldsync = True  # tell strategy to use old clock update
             if self.p.tradehistory:
                 strat.set_tradehistory()
             runstrats.append(strat)
 
-        # loop separated for clarity
-        defaultsizer = self.sizers.get(None, (None, None, None))
-        for idx, strat in enumerate(runstrats):
-            if self.p.stdstats:
-                strat._addobserver(False, observers.Broker)
-                if self.p.oldbuysell:
-                    strat._addobserver(True, observers.BuySell)
-                else:
-                    strat._addobserver(True, observers.BuySell, barplot=True)
+        if runstrats:
+            # loop separated for clarity
+            defaultsizer = self.sizers.get(None, (None, None, None))
+            for idx, strat in enumerate(runstrats):
+                if self.p.stdstats:
+                    strat._addobserver(False, observers.Broker)
+                    if self.p.oldbuysell:
+                        strat._addobserver(True, observers.BuySell)
+                    else:
+                        strat._addobserver(True, observers.BuySell,
+                                           barplot=True)
 
-                if self.p.oldtrades or len(self.datas) == 1:
-                    strat._addobserver(False, observers.Trades)
-                else:
-                    strat._addobserver(False, observers.DataTrades)
+                    if self.p.oldtrades or len(self.datas) == 1:
+                        strat._addobserver(False, observers.Trades)
+                    else:
+                        strat._addobserver(False, observers.DataTrades)
 
-            for multi, obscls, obsargs, obskwargs in self.observers:
-                strat._addobserver(multi, obscls, *obsargs, **obskwargs)
+                for multi, obscls, obsargs, obskwargs in self.observers:
+                    strat._addobserver(multi, obscls, *obsargs, **obskwargs)
 
-            for indcls, indargs, indkwargs in self.indicators:
-                strat._addindicator(indcls, *indargs, **indkwargs)
+                for indcls, indargs, indkwargs in self.indicators:
+                    strat._addindicator(indcls, *indargs, **indkwargs)
 
-            for ancls, anargs, ankwargs in self.analyzers:
-                strat._addanalyzer(ancls, *anargs, **ankwargs)
+                for ancls, anargs, ankwargs in self.analyzers:
+                    strat._addanalyzer(ancls, *anargs, **ankwargs)
 
-            sizer, sargs, skwargs = self.sizers.get(idx, defaultsizer)
-            if sizer is not None:
-                strat._addsizer(sizer, *sargs, **skwargs)
+                sizer, sargs, skwargs = self.sizers.get(idx, defaultsizer)
+                if sizer is not None:
+                    strat._addsizer(sizer, *sargs, **skwargs)
 
-            strat._start()
+                strat._start()
+
+                for writer in self.runwriters:
+                    if writer.p.csv:
+                        writer.addheaders(strat.getwriterheaders())
+
+            if not predata:
+                for strat in runstrats:
+                    strat.qbuffer(self._exactbars, replaying=self._doreplay)
 
             for writer in self.runwriters:
-                if writer.p.csv:
-                    writer.addheaders(strat.getwriterheaders())
+                writer.start()
 
-        if not predata:
+            if self._dopreload and self._dorunonce:
+                if self.p.oldsync:
+                    self._runonce_old(runstrats)
+                else:
+                    self._runonce(runstrats)
+            else:
+                if self.p.oldsync:
+                    self._runnext_old(runstrats)
+                else:
+                    self._runnext(runstrats)
+
             for strat in runstrats:
-                strat.qbuffer(self._exactbars, replaying=self._doreplay)
-
-        for writer in self.runwriters:
-            writer.start()
-
-        if self._dopreload and self._dorunonce:
-            if self.p.oldsync:
-                self._runonce_old(runstrats)
-            else:
-                self._runonce(runstrats)
-        else:
-            if self.p.oldsync:
-                self._runnext_old(runstrats)
-            else:
-                self._runnext(runstrats)
-
-        for strat in runstrats:
-            strat._stop()
+                strat._stop()
 
         self._broker.stop()
 
@@ -1126,9 +1117,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         '''
-        datas = self.datas
+        datas = sorted(self.datas,
+                       key=lambda x: (x._timeframe, x._compression))
         datas1 = datas[1:]
-        data0 = self.datas[0]
+        data0 = datas[0]
         d0ret = True
 
         rs = [i for i, x in enumerate(datas) if x.resampling]
@@ -1138,7 +1130,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
         onlyresample = len(datas) == len(rsonly)
         noresample = not rsonly
 
+        clonecount = sum(d._clone for d in datas)
+        ldatas = len(datas)
+        ldatas_noclones = ldatas - clonecount
+        lastqcheck = False
         while d0ret or d0ret is None:
+            # if any has live data in the buffer, no data will wait anything
+            newqcheck = not any(d.haslivedata() for d in datas)
+            if not newqcheck:
+                # If no data has reached the live status or all, wait for
+                # the next incoming data
+                livecount = sum(d._laststatus == d.LIVE for d in datas)
+                newqcheck = not livecount or livecount == ldatas_noclones
+
             lastret = False
             # Notify anything from the store even before moving datas
             # because datas may not move due to an error reported by the store
@@ -1149,7 +1153,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
-            drets = [d.next(ticks=False) for d in datas]
+            # record starting time and tell feeds to discount the elapsed time
+            # from the qcheck value
+            drets = []
+            qstart = datetime.datetime.utcnow()
+            for d in datas:
+                qlapse = datetime.datetime.utcnow() - qstart
+                d.do_qcheck(newqcheck, qlapse.total_seconds())
+                drets.append(d.next(ticks=False))
+
             d0ret = any((dret for dret in drets))
             if not d0ret and any((dret is None for dret in drets)):
                 d0ret = None
@@ -1187,12 +1199,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 # make sure only those at dmaster level end up delivering
                 for i, dti in enumerate(dts):
                     if dti is not None:
+                        di = datas[i]
+                        rpi = False and di.replaying   # to check behavior
                         if dti > dt0:
-                            datas[i].rewind()  # cannot deliver yet
+                            if not rpi:  # must see all ticks ...
+                                di.rewind()  # cannot deliver yet
                             # self._plotfillers[i].append(slen)
-                        elif not datas[i].replaying:
+                        elif not di.replaying:
                             # Replay forces tick fill, else force here
-                            datas[i]._tick_fill(force=True)
+                            di._tick_fill(force=True)
 
                         # self._plotfillers2[i].append(slen)  # mark as fill
 
@@ -1251,10 +1266,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # has not moved forward all datas/indicators/observers that
         # were homed before calling once, Hence no "need" to do it
         # here again, because pointers are at 0
-        datas = self.datas
+        datas = sorted(self.datas,
+                       key=lambda x: (x._timeframe, x._compression))
         while True:
             # Check next incoming date in the datas
-            dts = [d.advance_peek() for d in self.datas]
+            dts = [d.advance_peek() for d in datas]
             dt0 = min(dts)
             if dt0 == float('inf'):
                 break  # no data delivers anything

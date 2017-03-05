@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -375,8 +375,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         for iocsv in self.indobscsv:
             values.append(iocsv.__class__.__name__)
-            values.append(len(iocsv))
-            values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+            lio = len(iocsv)
+            values.append(lio)
+            if lio:
+                values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+            else:
+                values.extend([''] * iocsv.lines.isize())
 
         return values
 
@@ -729,7 +733,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
           - If ``target`` > ``pos.size`` -> buy ``target - pos.size``
 
-          - If ``target`` < ``pos.size`` -> sell ``target - pos.size``
+          - If ``target`` < ``pos.size`` -> sell ``pos.size - target``
 
         It returns either:
 
@@ -745,7 +749,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        if target > possize:
+        if not target and possize:
+            return self.close(data=data, size=possize,
+                              price=price, plimit=plimit,
+                              exectype=exectype, valid=valid,
+                              tradeid=tradeid, **kwargs)
+
+        elif target > possize:
             return self.buy(data=data, size=target - possize,
                             price=price, plimit=plimit,
                             exectype=exectype, valid=valid,
@@ -770,16 +780,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         The current ``value`` is taken into account as the start point to
         achieve ``target``
 
-        The ``position.size`` is used to determine if a position is ``long`` /
-        ``short``
-
-          - If ``target`` > ``value``
-            - buy if ``pos.size >= 0`` (Increase a long position)
-            - sell if ``pos.size < 0`` (Increase a short position)
-
-          - If ``target`` < ``value``
-            - sell if ``pos.size >= 0`` (Decrease a long position)
-            - buy if ``pos.size < 0`` (Decrease a short position)
+          - If no ``target`` then close postion on data
+          - If ``target`` > ``value`` then buy on data
+          - If ``target`` < ``value`` then sell on data
 
         It returns either:
 
@@ -787,7 +790,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
           or
 
-          - ``None`` if no order has been issued (``target == position.size``)
+          - ``None`` if no order has been issued
         '''
 
         if isinstance(data, string_types):
@@ -802,31 +805,24 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         # Make sure a price is there
         price = price if price is not None else data.close[0]
 
-        if target > value:
-            size = comminfo.getsize(price, target - value)
-            if possize >= 0:
-                return self.buy(data=data, size=size,
-                                price=price, plimit=plimit,
-                                exectype=exectype, valid=valid,
-                                tradeid=tradeid, **kwargs)
-            else:
-                return self.sell(data=data, size=size,
-                                 price=price, plimit=plimit,
-                                 exectype=exectype, valid=valid,
-                                 tradeid=tradeid, **kwargs)
+        if not target and possize:  # closing a position
+            return self.close(data=data, size=possize,
+                              price=price, plimit=plimit,
+                              exectype=exectype, valid=valid,
+                              tradeid=tradeid, **kwargs)
 
+        elif target > value:
+            size = comminfo.getsize(price, target - value)
+            return self.buy(data=data, size=size,
+                            price=price, plimit=plimit,
+                            exectype=exectype, valid=valid,
+                            tradeid=tradeid, **kwargs)
         elif target < value:
             size = comminfo.getsize(price, value - target)
-            if possize >= 0:
-                return self.sell(data=data, size=size,
-                                 price=price, plimit=plimit,
-                                 exectype=exectype, valid=valid,
-                                 tradeid=tradeid, **kwargs)
-            else:
-                return self.buy(data=data, size=size,
-                                price=price, plimit=plimit,
-                                exectype=exectype, valid=valid,
-                                tradeid=tradeid, **kwargs)
+            return self.sell(data=data, size=size,
+                             price=price, plimit=plimit,
+                             exectype=exectype, valid=valid,
+                             tradeid=tradeid, **kwargs)
 
         return None  # no execution size == possize
 

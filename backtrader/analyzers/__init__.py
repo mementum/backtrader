@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from __future__ import (absolute_import, division, print_function,
 # or prepend an "_" (underscore) to private classes/variables
 
 from .annualreturn import *
+from .drawdown import *
 from .timereturn import *
 from .sharpe import *
 from .tradeanalyzer import *

@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015,2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -181,6 +181,13 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         '''Starts the Oanda connecction and gets the real contract and
         contractdetails if it exists'''
         super(OandaData, self).start()
+
+        # Create attributes as soon as possible
+        self._statelivereconn = False  # if reconnecting in live state
+        self._storedmsg = dict()  # keep pending live message (under None)
+        self.qlive = queue.Queue()
+        self._state = self._ST_OVER
+
         # Kickstart store and get queue to wait on
         self.o.start(data=self)
 
@@ -197,13 +204,11 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             self._state = self._ST_OVER
             return
 
-        self._statelivereconn = False  # if reconnecting in live state
-        self._storedmsg = dict()  # keep pending live message (under None)
-
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
             self.p.backfill_from._start()
         else:
+            self._start_finish()
             self._state = self._ST_START  # initial state for _load
             self._st_start()
 
@@ -249,6 +254,9 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         super(OandaData, self).stop()
         self.o.stop()
 
+    def haslivedata(self):
+        return bool(self._storedmsg or self.qlive)  # do not return the objs
+
     def _load(self):
         if self._state == self._ST_OVER:
             return False
@@ -257,7 +265,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             if self._state == self._ST_LIVE:
                 try:
                     msg = (self._storedmsg.pop(None, None) or
-                           self.qlive.get(timeout=self.p.qcheck))
+                           self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
                     return None  # indicate timeout situation
 

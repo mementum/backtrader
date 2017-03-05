@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,6 +91,8 @@ class CrossOver(Indicator):
       - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
       - crossover = upcross - downcross
     '''
+    _mindatas = 2
+
     lines = ('crossover',)
 
     plotinfo = dict(plotymargin=0.05, plotyhlines=[-1.0, 1.0])

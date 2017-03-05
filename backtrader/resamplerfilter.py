@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ from datetime import datetime, date, timedelta
 from .dataseries import TimeFrame, _Bar
 from .utils.py3 import with_metaclass
 from . import metabase
-from .utils.date import date2num
+from .utils.date import date2num, num2date
 
 
 class DTFaker(object):
@@ -44,20 +44,31 @@ class DTFaker(object):
     # to ensure the returned datetime object is localized according to the
     # expected output by the user (local timezone or any specified)
 
-    def __init__(self, data):
+    def __init__(self, data, forcedata=None):
         self.data = data
 
         # Aliases
         self.datetime = self
         self.p = self
 
-        _dtime = datetime.utcnow() + data._timeoffset()
-        self._dt = dt = date2num(_dtime)
-        self._dtime = data.num2date(dt)
+        if forcedata is None:
+            _dtime = datetime.utcnow() + data._timeoffset()
+            self._dt = dt = date2num(_dtime)  # utc-like time
+            self._dtime = data.num2date(dt)  # localized time
+        else:
+            self._dt = forcedata.datetime[0]  # utc-like time
+            self._dtime = forcedata.datetime.datetime()  # localized time
+
         self.sessionend = data.p.sessionend
+
+    def __len__(self):
+        return len(self.data)
 
     def __call__(self, idx=0):
         return self._dtime  # simulates data.datetime.datetime()
+
+    def datetime(self, idx=0):
+        return self._dtime
 
     def date(self, idx=0):
         return self._dtime.date()
@@ -86,10 +97,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         ('compression', 1),
 
         ('takelate', True),
+
+        ('sessionend', True),
     )
 
     def __init__(self, data):
         self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
+        self.subweeks = self.p.timeframe < TimeFrame.Weeks
         self.componly = (self.subdays and
                          data._timeframe == self.p.timeframe and
                          not (self.p.compression % data._compression)
@@ -100,7 +114,9 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self._firstbar = True
         self.componly = self.componly and not self.subdays
         self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
-                             self.subdays)
+                             self.subweeks)
+
+        self._nexteos = None
 
         # Modify data information according to own parameters
         data.resampling = 1
@@ -118,8 +134,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         # Time already delivered
         return len(data) > 1 and data.datetime[0] <= data.datetime[-1]
 
-    def _checkbarover(self, data, fromcheck=False):
-        chkdata = DTFaker(data) if fromcheck else data
+    def _checkbarover(self, data, fromcheck=False, forcedata=None):
+        chkdata = DTFaker(data, forcedata) if fromcheck else data
 
         isover = False
         if not self._barover(chkdata):
@@ -127,7 +143,10 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
         if self.subdays and self.p.bar2edge:
             isover = True
-        elif not fromcheck:  # fromcheck doesn't increase compcount
+        elif True or not fromcheck:  # fromcheck doesn't increase compcount
+            # The comment besides elif seems to be from very old code and no
+            # longer apply.
+            # CHECK: if the condition check can be removed
             # over time/date limit - increase number of bars completed
             self.compcount += 1
             if not (self.compcount % self.p.compression):
@@ -158,9 +177,50 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         elif tframe == TimeFrame.Years:
             return self._barover_years(data)
 
+    def _eosset(self):
+        if self._nexteos is None:
+            dt = self.data.datetime[0]
+            nexteos = datetime.combine(num2date(self.data.datetime[0]),
+                                       self.data.p.sessionend)
+
+            nextdteos = self.data.date2num(nexteos)  # localized -> utc-like
+            while dt > nextdteos:
+                nexteos += timedelta(days=1)
+                nextdteos = date2num(nexteos)
+
+            self._nexteos = nexteos
+            self._nextdteos = nextdteos
+
+    def _eoscheck(self, data, seteos=True, exact=False):
+        if seteos:
+            self._eosset()
+
+        equal = data.datetime[0] == self._nextdteos
+        grter = data.datetime[0] > self._nextdteos
+
+        if exact:
+            ret = equal
+        else:
+            # if the compared data goes over the endofsession
+            # make sure the resampled bar is open and has something before that
+            # end of session. It could be a weekend and nothing was delivered
+            # until Monday
+            if grter:
+                ret = (self.bar.isopen() and
+                       self.bar.datetime <= self._nextdteos)
+            else:
+                ret = equal
+
+        if ret:
+            self._lasteos = self._nexteos
+            self._lastdteos = self._nextdteos
+            self._nexteos = None
+            self._nextdteos = float('-inf')
+
+        return ret
+
     def _barover_days(self, data):
-        # Need to compare using localize times and not utc'd times
-        return data.datetime.date() > data.num2date(self.bar.datetime).date()
+        return self._eoscheck(data)
 
     def _barover_weeks(self, data):
         year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
@@ -209,21 +269,15 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return point, restpoint
 
     def _barover_subdays(self, data):
-        # Put session end in context of last bar datetime
-        bdtime = data.num2date(self.bar.datetime)
-        bdate = bdtime.date()
-        bsend = data.date2num(datetime.combine(bdate, data.p.sessionend))
-
-        if data.datetime[0] > bsend:
-            # Next session is on (defaults to next day)
+        if self._eoscheck(data):
             return True
 
         if data.datetime[0] < self.bar.datetime:
             return False
 
-        # Get time objects for the comparisons
-        tm = bdtime.time()
-        bartm = data.datetime.time()
+        # Get time objects for the comparisons - in utc-like format
+        tm = num2date(self.bar.datetime).time()
+        bartm = num2date(data.datetime[0]).time()
 
         point, _ = self._gettmpoint(tm)
         barpoint, _ = self._gettmpoint(bartm)
@@ -261,21 +315,40 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return self(data, fromcheck=True, forcedata=_forcedata)
 
     def _dataonedge(self, data):
-        if not self.subdays:  # only for subdays
+        if not self.subweeks:  # only for subweeks
             return False
 
-        point, prest = self._gettmpoint(data.datetime.time())
-        if prest:
-            return False  # cannot be on boundary, subunits presetn
+        if self._eoscheck(data, exact=True):
+            return True
 
-        # Pass through compression to get boundary and rest over boundary
-        bound, brest = divmod(point, self.p.compression)
+        if self.subdays:
+            point, prest = self._gettmpoint(data.datetime.time())
+            if prest:
+                return False  # cannot be on boundary, subunits presetn
 
-        # if no extra and decomp bound is point
-        return brest == 0 and point == (bound * self.p.compression)
+            # Pass through compression to get boundary and rest over boundary
+            bound, brest = divmod(point, self.p.compression)
+
+            # if no extra and decomp bound is point
+            return brest == 0 and point == (bound * self.p.compression)
+
+        # Code overriden by eoscheck
+        if False and self.p.sessionend:
+            # Days scenario - get datetime to compare in output timezone
+            # because p.sessionend is expected in output timezone
+            bdtime = data.datetime.datetime()
+            bsend = datetime.combine(bdtime.date(), data.p.sessionend)
+            return bdtime == bsend
+
+        return False  # subweeks, not subdays and not sessionend
 
     def _calcadjtime(self, greater=False):
+        if self._nexteos is None:
+            # Session has been exceeded - end of session is the mark
+            return self._lastdteos  # utc-like
+
         dt = self.data.num2date(self.bar.datetime)
+
         # Get current time
         tm = dt.time()
         # Get the point of the day in the time frame unit (ex: minute 200)
@@ -301,17 +374,25 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             ph, pm = divmod(point, 60 * 60)
             pm, ps = divmod(pm, 60)
             pus = 0
-        elif self.p.timeframe == TimeFrame.MicroSeconds:
+        elif self.p.timeframe <= TimeFrame.MicroSeconds:
             ph, pm = divmod(point, 60 * 60 * 1e6)
             pm, psec = divmod(pm, 60 * 1e6)
             ps, pus = divmod(psec, 1e6)
+        elif self.p.timeframe == TimeFrame.Days:
+            # last resort
+            eost = self._nexteos.time()
+            ph = eost.hour
+            pm = eost.minute
+            ps = eost.second
+            pus = eost.microsecond
 
         if ph > 23:  # went over midnight:
             extradays = ph // 24
             ph %= 24
 
         # Replace intraday parts with the calculated ones and update it
-        dt = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
+        dt = dt.replace(hour=int(ph), minute=int(pm),
+                        second=int(ps), microsecond=int(pus))
         if extradays:
             dt += timedelta(days=extradays)
         dtnum = self.data.date2num(dt)
@@ -326,10 +407,6 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         Depending on param ``rightedge`` uses the starting boundary or the
         ending one
         '''
-        if forcedata is not None:
-            self.bar.datetime = forcedata.datetime[0]
-            return True
-
         dtnum = self._calcadjtime(greater=greater)
         if greater and dtnum <= self.bar.datetime:
             return False
@@ -425,8 +502,9 @@ class Resampler(_BaseResampler):
             self.bar.bupdate(data)  # update new or existing bar
             data.backwards()  # remove used bar
 
-        if onedge or forcedata is not None or \
-           self._checkbarover(data, fromcheck=fromcheck):
+        if self.bar.isopen() and \
+           (onedge or self._checkbarover(data, fromcheck=fromcheck,
+                                         forcedata=forcedata)):
 
             dodeliver = False
             if forcedata is not None:
@@ -435,6 +513,9 @@ class Resampler(_BaseResampler):
                 if tframe == TimeFrame.Ticks:  # Ticks is already the lowest
                     dodeliver = True
                 elif tframe == TimeFrame.Minutes:
+                    dtnum = self._calcadjtime(greater=True)
+                    dodeliver = dtnum <= forcedata.datetime[0]
+                elif tframe == TimeFrame.Days:
                     dtnum = self._calcadjtime(greater=True)
                     dodeliver = dtnum <= forcedata.datetime[0]
             else:
@@ -452,7 +533,6 @@ class Resampler(_BaseResampler):
                 self.bar.bupdate(data)  # update new or existing bar
                 data.backwards()  # remove used bar
 
-        # return True  # tell the system to fetch a new bar (stack or source)
         return True
 
 
