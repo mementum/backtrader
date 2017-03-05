@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -165,7 +165,7 @@ else:
 
             # Prepare dictionary for subclassing
             clsdict = {
-                '__module__': clsmodule,
+                '__module__': cls.__module__,
                 '__doc__': str(_tabstract),
                 '_tabstract': _tabstract,  # keep ref for lookback calcs
                 '_iscandle': iscandle,

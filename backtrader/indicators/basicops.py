@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,6 +68,36 @@ class OperationN(PeriodN):
 
         for i in range(start, end):
             dst[i] = func(src[i - period + 1: i + 1])
+
+
+class BaseApplyN(OperationN):
+    '''
+    Base class for ApplyN and others which may take a ``func`` as a parameter
+    but want to define the lines in the indicator.
+
+    Calculates ``func`` for a given period where func is given as a parameter,
+    aka named argument or ``kwarg``
+
+    Formula:
+      - lines[0] = func(data, period)
+
+    Any extra lines defined beyond the first (index 0) are not calculated
+    '''
+    params = (('func', None),)
+
+    def __init__(self):
+        self.func = self.p.func
+        super(BaseApplyN, self).__init__()
+
+
+class ApplyN(BaseApplyN):
+    '''
+    Calculates ``func`` for a given period
+
+    Formula:
+      - line = func(data, period)
+    '''
+    lines = ('apply',)
 
 
 class Highest(OperationN):

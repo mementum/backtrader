@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -500,10 +500,18 @@ class BackBroker(bt.BrokerBase):
         # Get comminfo object for the data
         comminfo = self.getcommissioninfo(order.data)
 
+        # Check if something has to be compensated
+        if order.data._compensate is not None:
+            data = order.data._compensate
+            cinfocomp = self.getcommissioninfo(data)  # for actual commission
+        else:
+            data = order.data
+            cinfocomp = comminfo
+
         # Adjust position with operation size
         if ago is not None:
             # Real execution with date
-            position = self.positions[order.data]
+            position = self.positions[data]
             pprice_orig = position.price
 
             psize, pprice, opened, closed = position.pseudoupdate(size, price)
@@ -559,7 +567,7 @@ class BackBroker(bt.BrokerBase):
 
             cash -= opencash  # original behavior
 
-            openedcomm = comminfo.getcommission(opened, price)
+            openedcomm = cinfocomp.getcommission(opened, price)
             cash -= openedcomm
 
             if cash < 0.0:
@@ -599,13 +607,13 @@ class BackBroker(bt.BrokerBase):
             comminfo.confirmexec(execsize, price)
 
             # do a real position update if something was executed
-            position.update(execsize, price, order.data.datetime.datetime())
+            position.update(execsize, price, data.datetime.datetime())
 
             if closed and self.p.int2pnl:  # Assign accumulated interest data
-                closedcomm += self.d_credit.pop(order.data, 0.0)
+                closedcomm += self.d_credit.pop(data, 0.0)
 
             # Execute and notify the order
-            order.execute(dtcoc or order.data.datetime[ago],
+            order.execute(dtcoc or data.datetime[ago],
                           execsize, price,
                           closed, closedvalue, closedcomm,
                           opened, openedvalue, openedcomm,
@@ -626,7 +634,7 @@ class BackBroker(bt.BrokerBase):
 
     def _try_exec_market(self, order, popen, phigh, plow):
         ago = 0
-        if self.p.coc:
+        if self.p.coc and order.info.get('coc', True):
             dtcoc = order.created.dt
             exprice = order.created.pclose
         else:
@@ -806,10 +814,18 @@ class BackBroker(bt.BrokerBase):
     def _try_exec(self, order):
         data = order.data
 
-        popen = data.tick_open or data.open[0]
-        phigh = data.tick_high or data.high[0]
-        plow = data.tick_low or data.low[0]
-        pclose = data.tick_close or data.close[0]
+        popen = getattr(data, 'tick_open', None)
+        if popen is None:
+            popen = data.open[0]
+        phigh = getattr(data, 'tick_high', None)
+        if phigh is None:
+            phigh = data.high[0]
+        plow = getattr(data, 'tick_low', None)
+        if plow is None:
+            plow = data.low[0]
+        pclose = getattr(data, 'tick_close', None)
+        if pclose is None:
+            pclose = data.close[0]
 
         pcreated = order.created.price
         plimit = order.created.pricelimit

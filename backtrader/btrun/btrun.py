@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,9 +86,17 @@ def btrun(pargs=''):
 
     tf, cp = None, None
     if args.resample is not None:
-        tf, cp = args.resample.split(':')
+        tfcp = args.resample.split(':')
     elif args.replay is not None:
-        tf, cp = args.replay.split(':')
+        tfcp = args.replay.split(':')
+
+    # compression may be skipped and it will default to 1
+    if len(tfcp) == 1 or tfcp[1] == '':
+        tf, cp = tfcp[0], 1
+    else:
+        tf, cp = tfcp
+
+    cp = int(cp)  # convert any value to int
 
     tf = TIMEFRAMES.get(tf, None)
 

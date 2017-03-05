@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,6 +47,28 @@ class DrawDown(Observer):
         self.lines.maxdrawdown[0] = self._dd.rets.max.drawdown  # update max
 
 
+class DrawDownLength(Observer):
+    '''This observer keeps track of the current drawdown length (plotted) and
+    the drawdown max length (not plotted)
+
+    Params: None
+    '''
+    _stclock = True
+
+    lines = ('len', 'maxlen',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
+    plotlines = dict(maxlength=dict(_plotskip=True,))
+
+    def __init__(self):
+        self._dd = self._owner._addanalyzer_slave(bt.analyzers.DrawDown)
+
+    def next(self):
+        self.lines.len[0] = self._dd.rets.len  # update drawdown length
+        self.lines.maxlen[0] = self._dd.rets.max.len  # update max length
+
+        
 class DrawDown_Old(Observer):
     '''This observer keeps track of the current drawdown level (plotted) and
     the maxdrawdown (not plotted) levels

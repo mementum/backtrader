@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import operator
 import sys
 
 from .utils.py3 import map, range, zip, with_metaclass, string_types
+from .utils import DotDict
 
 from .lineroot import LineRoot, LineSingle
 from .linebuffer import LineActions, LineNum
@@ -67,9 +68,9 @@ class MetaLineIterator(LineSeries.__class__):
         newargs = args[lastarg:]
 
         # If no datas have been passed to an indicator ... use the
-        # main data of the owner, easing up adding "self.data" ...
+        # main datas of the owner, easing up adding "self.data" ...
         if not _obj.datas and isinstance(_obj, (IndicatorBase, ObserverBase)):
-            _obj.datas = [_obj._owner.datas[0]]
+            _obj.datas = _obj._owner.datas[0:mindatas]
 
         # For each found data add access member -
         # for the first data 2 (data and data0)
@@ -92,6 +93,9 @@ class MetaLineIterator(LineSeries.__class__):
                     setattr(_obj, 'data%d_%d' % (d, l), line)
 
         # Parameter values have now been set before __init__
+        _obj.dnames = DotDict([(d._name, d)
+                               for d in _obj.datas if getattr(d, '_name', '')])
+
         return _obj, newargs, kwargs
 
     def dopreinit(cls, _obj, *args, **kwargs):
