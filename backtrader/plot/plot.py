@@ -595,6 +595,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         else:
             if data.plotinfo.plotmaster is None:
                 ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
+            elif getattr(data.plotinfo, 'sameaxis', False):
+                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                ax = axdatamaster
             else:
                 axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
                 ax = axdatamaster.twinx()
