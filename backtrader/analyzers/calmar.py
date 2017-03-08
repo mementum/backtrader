@@ -63,6 +63,8 @@ class Calmar(bt.TimeFrameAnalyzerBase):
       - ``calmar`` the latest calculated calmar ratio
     '''
 
+    packages = ('collections', 'math',)
+
     params = (
         ('timeframe', bt.TimeFrame.Months),  # default in calmar
         ('period', 36),
