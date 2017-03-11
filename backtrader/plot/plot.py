@@ -193,9 +193,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     for dt in (x for x in dts if dt0 <= x <= dt1):
                         dtidx = bisect.bisect_left(xreal, dt)
                         xdata.append(dtidx)
+
                     self.pinf.xstart = bisect.bisect_left(
                         dts, xreal[xdata[0]])
-                    self.pinf.xend = 1 + bisect.bisect_left(
+                    self.pinf.xend = bisect.bisect_right(
                         dts, xreal[xdata[-1]])
 
                 for ind in self.dplotsup[data]:
