@@ -442,7 +442,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         if not order.executed.size:
             return
 
-        tradedata = order.data
+        tradedata = order.data._compensate
+        if tradedata is None:
+            tradedata = order.data
+
         datatrades = self._trades[tradedata][order.tradeid]
         if not datatrades:
             trade = Trade(data=tradedata, tradeid=order.tradeid,
