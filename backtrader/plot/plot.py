@@ -113,7 +113,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       **kwargs)
 
     def plot(self, strategy, figid=0, numfigs=1, iplot=True,
-             start=0, end=-1, **kwargs):
+             start=None, end=None, **kwargs):
         # pfillers={}):
         if not strategy.datas:
             return
@@ -134,11 +134,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.calcrows(strategy)
 
         st_dtime = strategy.lines.datetime.plot()
+        if start is None:
+            start = 0
+        if end is None:
+            end = len(st_dtime)
+
         if isinstance(start, datetime.date):
             start = bisect.bisect_left(st_dtime, date2num(start))
 
         if isinstance(end, datetime.date):
             end = bisect.bisect_right(st_dtime, date2num(end))
+
+        if end < 0:
+            end = len(st_dtime) + 1 + end  # -1 =  len() -2 = len() - 1
 
         slen = len(st_dtime[start:end])
         d, m = divmod(slen, numfigs)
@@ -194,10 +202,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                         dtidx = bisect.bisect_left(xreal, dt)
                         xdata.append(dtidx)
 
-                    self.pinf.xstart = bisect.bisect_left(
-                        dts, xreal[xdata[0]])
-                    self.pinf.xend = bisect.bisect_right(
-                        dts, xreal[xdata[-1]])
+                    if False:
+                        self.pinf.xstart = bisect.bisect_left(
+                            dts, xreal[xdata[0]])
+                        self.pinf.xend = bisect.bisect_right(
+                            dts, xreal[xdata[-1]])
 
                 for ind in self.dplotsup[data]:
                     self.plotind(
