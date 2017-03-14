@@ -7,6 +7,8 @@
   - Update sample in contrib pair trading PR #273
   - PR #274 number of tranches to FixedSize Sizer and add FixedSizeTarget
   - Close #280 exception when get pyfolio analyzer agaist multiple data
+  - Close #277 (inc PR #277) by entering re-calculation of xstart and xend
+    plotting indices
 
 1.9.31.116
   - Add Indicator HurstExponent (requires numpy)
