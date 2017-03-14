@@ -194,7 +194,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     continue
 
                 self.pinf.xdata = self.pinf.x
-                if len(data) < self.pinf.xlen:
+                xd = data.datetime.plotrange(self.pinf.xstart, self.pinf.xend)
+                if len(xd) < self.pinf.xlen:
                     self.pinf.xdata = xdata = []
                     xreal = self.pinf.xreal
                     dts = data.datetime.plot()
@@ -202,11 +203,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                         dtidx = bisect.bisect_left(xreal, dt)
                         xdata.append(dtidx)
 
-                    if False:
-                        self.pinf.xstart = bisect.bisect_left(
-                            dts, xreal[xdata[0]])
-                        self.pinf.xend = bisect.bisect_right(
-                            dts, xreal[xdata[-1]])
+                    self.pinf.xstart = bisect.bisect_left(dts, xreal[xdata[0]])
+                    self.pinf.xend = bisect.bisect_right(dts, xreal[xdata[-1]])
 
                 for ind in self.dplotsup[data]:
                     self.plotind(
