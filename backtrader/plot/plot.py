@@ -64,6 +64,7 @@ class PInfo(object):
         self.coloridx = collections.defaultdict(lambda: -1)
         self.handles = collections.defaultdict(list)
         self.labels = collections.defaultdict(list)
+        self.legpos = collections.defaultdict(int)
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
@@ -683,32 +684,37 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(data, ind, subinds=self.dplotsover[ind], masterax=ax)
 
         handles, labels = ax.get_legend_handles_labels()
+        a = axdatamaster or ax
         if handles:
             # put data and volume legend entries in the 1st positions
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
             # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+
+            ai = self.pinf.legpos[a]
             if self.pinf.sch.volume and voloverlay:
                 if volplot:
                     # even if volume plot was requested, there may be no volume
-                    labels.insert(0, vollabel)
-                    handles.insert(0, volplot)
+                    labels.insert(ai, vollabel)
+                    handles.insert(ai, volplot)
 
             didx = labels.index(datalabel)
-            labels.insert(0, labels.pop(didx))
-            handles.insert(0, handles.pop(didx))
+            labels.insert(ai, labels.pop(didx))
+            handles.insert(ai, handles.pop(didx))
 
             if axdatamaster is None:
                 self.pinf.handles[ax] = handles
                 self.pinf.labels[ax] = labels
             else:
-                self.pinf.handles[axdatamaster].extend(handles)
-                self.pinf.labels[axdatamaster].extend(labels)
+                self.pinf.handles[axdatamaster] = handles
+                self.pinf.labels[axdatamaster] = labels
+                # self.pinf.handles[axdatamaster].extend(handles)
+                # self.pinf.labels[axdatamaster].extend(labels)
 
-            h = self.pinf.handles[axdatamaster or ax]
-            l = self.pinf.labels[axdatamaster or ax]
+            h = self.pinf.handles[a]
+            l = self.pinf.labels[a]
 
-            axlegend = axdatamaster or ax
+            axlegend = a
             legend = axlegend.legend(h, l,
                                      loc='upper left',
                                      frameon=False, shadow=False,
@@ -726,6 +732,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                              subinds=self.dplotsover[downind],
                              upinds=self.dplotsup[downind],
                              downinds=self.dplotsdown[downind])
+
+        self.pinf.legpos[a] = len(self.pinf.handles[a])
 
     def show(self):
         self.mpyplot.show()
