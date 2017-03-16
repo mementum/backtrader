@@ -661,7 +661,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data, isbuy=True)
+        size = size if size is not None else self.getsizing(data, isbuy=True)
 
         return self.broker.buy(
             self, data,
@@ -682,7 +682,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data, isbuy=False)
+        size = size if size is not None else self.getsizing(data, isbuy=True)
 
         return self.broker.sell(
             self, data,
@@ -710,7 +710,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        size = abs(size or possize)
+        size = abs(size if size is not None else possize)
 
         if possize > 0:
             return self.sell(data=data, size=size, price=price, plimit=plimit,
