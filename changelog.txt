@@ -1,3 +1,8 @@
+1.9.33.116
+  - Make sure sizer is only used if size is not None (default)
+  - Doc corrections
+  - Improve legend presentation in sameaxis mode
+
 1.9.32.116
   - Added Calmar, TimeDrawDown and PeriodStats analyzers
   - Reach data by names as dict or dot notation
