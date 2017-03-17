@@ -103,12 +103,12 @@ Market
 Execution:
 
   - Opening price of the next set of Open/High/Low/Close prices (commonly
-  referred as *bar*)
+    referred as *bar*)
 
 Rationale:
 
   - If the logic has executed at point X in time and issued a ``Market`` order,
-  the next price spot that will happen is the upcoming ``open`` price
+    the next price spot that will happen is the upcoming ``open`` price
 
 .. note::
 
@@ -125,8 +125,8 @@ Execution:
 Rationale:
 
   - Most **backtesting** feeds contain already **closed** bars and the order
-  will execute immediately with the ``close`` price of the next bar. A daily
-  data feed is the most common example.
+    will execute immediately with the ``close`` price of the next bar. A daily
+    data feed is the most common example.
 
     But the system could be fed with "tick" prices and the actual bar
     (time/date wise) is being udpated constantly with the new ticks, without
@@ -150,7 +150,7 @@ Execution:
 Price Matching:
 
    - ``backtrader`` tries to provide **most realistic execution price** for
-   ``Limit`` orders.
+     ``Limit`` orders.
 
      Using the 4 price spots (Open/High/Low/Close) it can be partially inferred
      if the requested ``price`` can be improved.
