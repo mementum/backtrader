@@ -243,6 +243,9 @@ class BackBroker(bt.BrokerBase):
 
         self.submitted = collections.deque()
 
+        self._ocos = dict()
+        self._ocol = collections.defaultdict(list)
+
     def get_notification(self):
         try:
             return self.notifs.popleft()
@@ -321,6 +324,7 @@ class BackBroker(bt.BrokerBase):
 
         order.cancel()
         self.notify(order)
+        self._ococheck(order)
         return True
 
     def get_value(self, datas=None, mkt=False, lever=False):
@@ -456,9 +460,32 @@ class BackBroker(bt.BrokerBase):
         self.pending.append(order)
         self.notify(order)
 
+    def _ococheck(self, order):
+        # ocoref = self._ocos[order.ref] or order.ref  # a parent or self
+        parentref = self._ocos[order.ref]
+        ocoref = self._ocos.get(parentref, None)
+        ocol = self._ocol.pop(ocoref, None)
+        if ocol:
+            for i in range(len(self.pending) - 1, -1, -1):
+                o = self.pending[i]
+                if o is not None and o.ref in ocol:
+                    del self.pending[i]
+                    o.cancel()
+                    self.notify(o)
+
+    def _ocoize(self, order, oco):
+        oref = order.ref
+        if oco is None:
+            self._ocos[oref] = None  # no parent
+            self._ocol[oref].append(oref)  # create ocogroup
+        else:
+            ocoref = self._ocos[oco.ref]  # ref to group leader
+            self._ocos[oref] = ocoref  # ref to group leader
+            self._ocol[ocoref].append(oref)  # add to group
+
     def buy(self, owner, data,
             size, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0,
+            exectype=None, valid=None, tradeid=0, oco=None,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
@@ -466,12 +493,13 @@ class BackBroker(bt.BrokerBase):
                          exectype=exectype, valid=valid, tradeid=tradeid)
 
         order.addinfo(**kwargs)
+        self._ocoize(order, oco)
 
         return self.submit(order)
 
     def sell(self, owner, data,
              size, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0,
+             exectype=None, valid=None, tradeid=0, oco=None,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
@@ -479,6 +507,7 @@ class BackBroker(bt.BrokerBase):
                           exectype=exectype, valid=valid, tradeid=tradeid)
 
         order.addinfo(**kwargs)
+        self._ocoize(order, oco)
 
         return self.submit(order)
 
@@ -623,11 +652,13 @@ class BackBroker(bt.BrokerBase):
             order.addcomminfo(comminfo)
 
             self.notify(order)
+            self._ococheck(order)
 
         if popened and not opened:
             # opened was not executed - not enough cash
             order.margin()
             self.notify(order)
+            self._ococheck(order)
 
     def notify(self, order):
         self.notifs.append(order.clone())
@@ -868,18 +899,19 @@ class BackBroker(bt.BrokerBase):
         self.cash -= credit
 
         # Iterate once over all elements of the pending queue
-        for i in range(len(self.pending)):
-
+        self.pending.append(None)
+        while True:
             order = self.pending.popleft()
+            if order is None:
+                break
 
             if order.expire():
                 self.notify(order)
-                continue
-
-            self._try_exec(order)
-
-            if order.alive():
-                self.pending.append(order)
+                self._ococheck(order)
+            else:
+                self._try_exec(order)
+                if order.alive():
+                    self.pending.append(order)
 
         # Operations have been executed ... adjust cash end of bar
         for data, pos in self.positions.items():

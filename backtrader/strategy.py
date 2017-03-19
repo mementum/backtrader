@@ -558,7 +558,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0, **kwargs):
+            exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
         '''Create a buy (long) order and send it to the broker
 
           - ``data`` (default: ``None``)
@@ -639,6 +639,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             back to the *strategy* when notifying changes to the status of the
             orders.
 
+          - ``oco`` (default: ``None``)
+
+            Another ``order`` instance. This order will become part of an OCO
+            (Order Cancel Others) group. The execution of one of the orders,
+            immediately cancels all others in the same group
+
           - ``**kwargs``: additional broker implementations may support extra
             parameters. ``backtrader`` will pass the *kwargs* down to the
             created order objects
@@ -666,11 +672,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.buy(
             self, data,
             size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
+            exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+            **kwargs)
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0, **kwargs):
+             exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
         '''
         To create a selll (short) order and send it to the broker
 
@@ -687,11 +694,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         return self.broker.sell(
             self, data,
             size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
+            exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+            **kwargs)
 
     def close(self,
               data=None, size=None, price=None, plimit=None,
-              exectype=None, valid=None, tradeid=0, **kwargs):
+              exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
         '''
         Counters a long/short position closing it
 
@@ -714,12 +722,12 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         if possize > 0:
             return self.sell(data=data, size=size, price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+                             exectype=exectype, valid=valid, tradeid=tradeid,
+                             oco=None, **kwargs)
         elif possize < 0:
             return self.buy(data=data, size=size, price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
+                            exectype=exectype, valid=valid, tradeid=tradeid,
+                            oco=None, **kwargs)
 
         return None
 
