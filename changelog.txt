@@ -1,3 +1,7 @@
+1.9.34.116
+  - Docs updates
+  - OCO implementation
+
 1.9.33.116
   - Make sure sizer is only used if size is not None (default)
   - Doc corrections
