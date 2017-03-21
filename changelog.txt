@@ -1,6 +1,10 @@
+1.9.35.116
+  - Catch limit/stop order creation earlier in Oanda Store
+  - StopTrail/StopTrailLimit orders for backtesting
+
 1.9.34.116
   - Docs updates
-  - OCO implementation
+  - OCO implementation for backtesting
 
 1.9.33.116
   - Make sure sizer is only used if size is not None (default)
