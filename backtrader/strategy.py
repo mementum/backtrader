@@ -558,7 +558,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            **kwargs):
         '''Create a buy (long) order and send it to the broker
 
           - ``data`` (default: ``None``)
@@ -592,6 +594,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             to set the implicit *Limit* order, once the *Stop* has been
             triggered (for which ``price`` has been used)
 
+          - ``trailamount`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is an
+            absolute amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop
+
+          - ``trailpercent`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is a
+            percentage amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop (if ``trailamount`` is also specified it will be used)
+
           - ``exectype`` (default: ``None``)
 
             Possible values:
@@ -609,6 +625,18 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             - ``Order.StopLimit``. An order which is triggered at ``price`` and
               executed as an implicit *Limit* order with price given by
               ``pricelimit``
+
+            - ``Order.Close``. An order which can only be executed with the
+              closing price of the session (usually during a closing auction)
+
+            - ``Order.StopTrail``. An order which is triggered at ``price``
+              minus ``trailamount`` (or ``trailpercent``) and which is updated
+              if the price moves away from the stop
+
+            - ``Order.StopTrailLimit``. An order which is triggered at
+              ``price`` minus ``trailamount`` (or ``trailpercent``) and which
+              is updated if the price moves away from the stop
+
 
           - ``valid`` (default: ``None``)
 
@@ -673,11 +701,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             self, data,
             size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+            trailamount=trailamount, trailpercent=trailpercent,
             **kwargs)
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
+             exectype=None, valid=None, tradeid=0, oco=None,
+             trailamount=None, trailpercent=None,
+             **kwargs):
         '''
         To create a selll (short) order and send it to the broker
 
@@ -695,11 +726,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             self, data,
             size=abs(size), price=price, plimit=plimit,
             exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+            trailamount=trailamount, trailpercent=trailpercent,
             **kwargs)
 
     def close(self,
               data=None, size=None, price=None, plimit=None,
-              exectype=None, valid=None, tradeid=0, oco=None, **kwargs):
+              exectype=None, valid=None, tradeid=0, oco=None,
+              trailamount=None, trailpercent=None,
+              **kwargs):
         '''
         Counters a long/short position closing it
 
@@ -721,13 +755,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size if size is not None else possize)
 
         if possize > 0:
-            return self.sell(data=data, size=size, price=price, plimit=plimit,
-                             exectype=exectype, valid=valid, tradeid=tradeid,
-                             oco=None, **kwargs)
+            return self.sell(
+                data=data, size=size, price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
+                trailamount=trailamount, trailpercent=trailpercent,
+                **kwargs)
         elif possize < 0:
-            return self.buy(data=data, size=size, price=price, plimit=plimit,
-                            exectype=exectype, valid=valid, tradeid=tradeid,
-                            oco=None, **kwargs)
+            return self.buy(
+                data=data, size=size, price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
+                trailamount=trailamount, trailpercent=trailpercent,
+                **kwargs)
 
         return None
 

@@ -486,11 +486,13 @@ class BackBroker(bt.BrokerBase):
     def buy(self, owner, data,
             size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
                          size=size, price=price, pricelimit=plimit,
-                         exectype=exectype, valid=valid, tradeid=tradeid)
+                         exectype=exectype, valid=valid, tradeid=tradeid,
+                         trailamount=trailamount, trailpercent=trailpercent)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -500,11 +502,13 @@ class BackBroker(bt.BrokerBase):
     def sell(self, owner, data,
              size, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
+             trailamount=None, trailpercent=None,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
                           size=size, price=price, pricelimit=plimit,
-                          exectype=exectype, valid=valid, tradeid=tradeid)
+                          exectype=exectype, valid=valid, tradeid=tradeid,
+                          trailamount=trailamount, trailpercent=trailpercent)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -731,7 +735,7 @@ class BackBroker(bt.BrokerBase):
                 # day high above req price ... match limit price
                 self._execute(order, ago=0, price=plimit)
 
-    def _try_exec_stop(self, order, popen, phigh, plow, pcreated):
+    def _try_exec_stop(self, order, popen, phigh, plow, pcreated, pclose):
         if order.isbuy():
             if popen >= pcreated:
                 # price penetrated with an open gap - use open
@@ -751,6 +755,10 @@ class BackBroker(bt.BrokerBase):
                 # price penetrated during the session - use trigger price
                 p = self._slip_down(plow, pcreated)
                 self._execute(order, ago=0, price=p)
+
+        # not (completely) executed and trailing stop
+        if order.alive() and order.exectype == Order.StopTrail:
+            order.trailadjust(pclose)
 
     def _try_exec_stoplimit(self, order,
                             popen, phigh, plow, pclose,
@@ -795,6 +803,10 @@ class BackBroker(bt.BrokerBase):
                     if plimit <= pcreated:
                         p = self._slip_down(plow, pcreated, lim=True)
                         self._execute(order, ago=0, price=p)
+
+        # not (completely) executed and trailing stop
+        if order.alive() and order.exectype == Order.StopTrailLimit:
+            order.trailadjust(pclose)
 
     def _slip_up(self, pmax, price, doslip=True, lim=False):
         if not doslip:
@@ -870,13 +882,14 @@ class BackBroker(bt.BrokerBase):
         elif order.exectype == Order.Limit:
             self._try_exec_limit(order, popen, phigh, plow, pcreated)
 
-        elif order.exectype == Order.StopLimit and order.triggered:
+        elif (order.triggered and
+              order.exectype in [Order.StopLimit, Order.StopTrailLimit]):
             self._try_exec_limit(order, popen, phigh, plow, plimit)
 
-        elif order.exectype == Order.Stop:
-            self._try_exec_stop(order, popen, phigh, plow, pcreated)
+        elif order.exectype in [Order.Stop, Order.StopTrail]:
+            self._try_exec_stop(order, popen, phigh, plow, pcreated, pclose)
 
-        elif order.exectype == Order.StopLimit:
+        elif order.exectype in [Order.StopLimit, Order.StopTrailLimit]:
             self._try_exec_stoplimit(order,
                                      popen, phigh, plow, pclose,
                                      pcreated, plimit)

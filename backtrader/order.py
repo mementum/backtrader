@@ -102,6 +102,8 @@ class OrderData(object):
         Note: if no price is given and no pricelimite is given, the closing
         price at the time or order creation will be used as reference
       - pricelimit: holds pricelimit for StopLimit (which has trigger first)
+      - trailamount: absolute price distance in trailing stops
+      - trailpercent: percentage price distance in trailing stops
 
       - value: market value for the entire bit size
       - comm: commission for the entire bit execution
@@ -126,7 +128,7 @@ class OrderData(object):
     # thread making an append and with no need for a lock
 
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0,
-                 pclose=0.0):
+                 pclose=0.0, trailamount=0.0, trailpercent=0.0):
 
         self.pclose = pclose
         self.exbits = collections.deque()  # for historical purposes
@@ -137,6 +139,8 @@ class OrderData(object):
         self.remsize = remsize
         self.price = price
         self.pricelimit = pricelimit
+        self.trailamount = trailamount
+        self.trailpercent = trailpercent
 
         if not pricelimit:
             # if no pricelimit is given, use the given price
@@ -208,7 +212,8 @@ class OrderData(object):
 class OrderBase(with_metaclass(MetaParams, object)):
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None),
-        ('pricelimit', None), ('exectype', None), ('valid', None),
+        ('pricelimit', None), ('trailamount', None), ('trailpercent', None),
+        ('exectype', None), ('valid', None),
         ('tradeid', 0),
         ('simulated', False),
     )
@@ -221,8 +226,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
     # Volume Restrictions for orders
     V_None = range(1)
 
-    Market, Close, Limit, Stop, StopLimit = range(5)
-    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
+    Market, Close, Limit, Stop, StopLimit, StopTrail, StopTrailLimit = range(7)
+    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit', 'StopTrail',
+                 'StopTrailLimit']
 
     OrdTypes = ['Buy', 'Sell']
     Buy, Sell = range(2)
@@ -259,6 +265,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         tojoin.append('Size: {}'.format(self.size))
         tojoin.append('Price: {}'.format(self.price))
         tojoin.append('Price Limit: {}'.format(self.pricelimit))
+        tojoin.append('TrailAmount: {}'.format(self.trailamount))
+        tojoin.append('TrailPercent: {}'.format(self.trailpercent))
         tojoin.append('ExecType: {}'.format(self.exectype))
         tojoin.append('ExecType: {}'.format(self.getordername()))
         tojoin.append('CommInfo: {}'.format(self.comminfo))
@@ -286,8 +294,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # Set a reference price if price is not set using
         # the close price
+        pclose = self.data.close[0]
         if not self.price and not self.pricelimit:
-            price = self.data.close[0]
+            price = pclose
         else:
             price = self.price
 
@@ -296,7 +305,15 @@ class OrderBase(with_metaclass(MetaParams, object)):
                                  size=self.size,
                                  price=price,
                                  pricelimit=self.pricelimit,
-                                 pclose=self.data.close[0])
+                                 pclose=pclose,
+                                 trailamount=self.trailamount,
+                                 trailpercent=self.trailpercent)
+
+        # Adjust price in case a trailing limit is wished
+        if self.exectype in [Order.StopTrail, Order.StopTrailLimit]:
+            price = self.created.price
+            self.created.price = float('inf' * self.isbuy() or '-inf')
+            self.trailadjust(price)
 
         self.executed = OrderData(remsize=self.size)
         self.position = 0
@@ -469,6 +486,22 @@ class OrderBase(with_metaclass(MetaParams, object)):
         '''Marks an order as expired. Returns True if it worked'''
         self.status = self.Expired
         return True
+
+    def trailadjust(self, price):
+        if self.trailamount:
+            pamount = self.trailamount
+        elif self.trailpercent:
+            pamount = price * self.trailpercent
+        else:
+            pamount = 0.0
+
+        # Stop sell is below (-), stop buy is above, move only if needed
+        if self.isbuy():
+            price += pamount
+            self.created.price = min(price, self.created.price)
+        else:
+            price -= pamount
+            self.created.price = max(price, self.created.price)
 
 
 class Order(OrderBase):
