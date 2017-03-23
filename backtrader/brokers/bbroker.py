@@ -476,7 +476,7 @@ class BackBroker(bt.BrokerBase):
     def _ocoize(self, order, oco):
         oref = order.ref
         if oco is None:
-            self._ocos[oref] = None  # no parent
+            self._ocos[oref] = oref  # current order is parent
             self._ocol[oref].append(oref)  # create ocogroup
         else:
             ocoref = self._ocos[oco.ref]  # ref to group leader
