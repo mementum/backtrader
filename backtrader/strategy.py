@@ -771,8 +771,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def order_target_size(self, data=None, target=0,
                           price=None, plimit=None,
-                          exectype=None, valid=None,
-                          tradeid=0, **kwargs):
+                          exectype=None, valid=None, tradeid=0, oco=None,
+                          trailamount=None, trailpercent=None,
+                          **kwargs):
 
         '''
         Place an order to rebalance a position to have final size of ``target``
@@ -820,8 +821,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def order_target_value(self, data=None, target=0.0,
                            price=None, plimit=None,
-                           exectype=None, valid=None,
-                           tradeid=0, **kwargs):
+                           exectype=None, valid=None, tradeid=0, oco=None,
+                           trailamount=None, trailpercent=None,
+                           **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target``
@@ -877,9 +879,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def order_target_percent(self, data=None, target=0.0,
                              price=None, plimit=None,
-                             exectype=None, valid=None,
-                             tradeid=0, **kwargs):
-
+                             exectype=None, valid=None, tradeid=0, oco=None,
+                             trailamount=None, trailpercent=None,
+                             **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target`` percentage of current portfolio ``value``
