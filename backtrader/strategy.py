@@ -736,11 +736,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             limitoffset=limitoffset,
             **kwargs)
 
-    def close(self,
-              data=None, size=None, price=None, plimit=None,
-              exectype=None, valid=None, tradeid=0, oco=None,
-              trailamount=None, trailpercent=None,
-              **kwargs):
+    def close(self, data=None, size=None, **kwargs):
         '''
         Counters a long/short position closing it
 
@@ -762,26 +758,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         size = abs(size if size is not None else possize)
 
         if possize > 0:
-            return self.sell(
-                data=data, size=size, price=price, plimit=plimit,
-                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
-                trailamount=trailamount, trailpercent=trailpercent,
-                **kwargs)
+            return self.sell(data=data, size=size, **kwargs)
         elif possize < 0:
-            return self.buy(
-                data=data, size=size, price=price, plimit=plimit,
-                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
-                trailamount=trailamount, trailpercent=trailpercent,
-                **kwargs)
+            return self.buy(data=data, size=size, **kwargs)
 
         return None
 
-    def order_target_size(self, data=None, target=0,
-                          price=None, plimit=None,
-                          exectype=None, valid=None, tradeid=0, oco=None,
-                          trailamount=None, trailpercent=None,
-                          **kwargs):
-
+    def order_target_size(self, data=None, target=0, **kwargs):
         '''
         Place an order to rebalance a position to have final size of ``target``
 
@@ -807,30 +790,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         possize = self.getposition(data, self.broker).size
         if not target and possize:
-            return self.close(data=data, size=possize,
-                              price=price, plimit=plimit,
-                              exectype=exectype, valid=valid,
-                              tradeid=tradeid, **kwargs)
+            return self.close(data=data, size=possize, **kwargs)
 
         elif target > possize:
-            return self.buy(data=data, size=target - possize,
-                            price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
+            return self.buy(data=data, size=target - possize, **kwargs)
 
         elif target < possize:
-            return self.sell(data=data, size=possize - target,
-                             price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+            return self.sell(data=data, size=possize - target, **kwargs)
 
         return None  # no execution target == possize
 
-    def order_target_value(self, data=None, target=0.0,
-                           price=None, plimit=None,
-                           exectype=None, valid=None, tradeid=0, oco=None,
-                           trailamount=None, trailpercent=None,
-                           **kwargs):
+    def order_target_value(self, data=None, target=0.0, price=None, **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target``
@@ -857,38 +827,27 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        value = self.broker.getvalue(datas=[data])
-        comminfo = self.broker.getcommissioninfo(data)
-
-        # Make sure a price is there
-        price = price if price is not None else data.close[0]
-
         if not target and possize:  # closing a position
-            return self.close(data=data, size=possize,
-                              price=price, plimit=plimit,
-                              exectype=exectype, valid=valid,
-                              tradeid=tradeid, **kwargs)
+            return self.close(data=data, size=possize, price=price, **kwargs)
 
-        elif target > value:
-            size = comminfo.getsize(price, target - value)
-            return self.buy(data=data, size=size,
-                            price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
-        elif target < value:
-            size = comminfo.getsize(price, value - target)
-            return self.sell(data=data, size=size,
-                             price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+        else:
+            value = self.broker.getvalue(datas=[data])
+            comminfo = self.broker.getcommissioninfo(data)
+
+            # Make sure a price is there
+            price = price if price is not None else data.close[0]
+
+            if target > value:
+                size = comminfo.getsize(price, target - value)
+                return self.buy(data=data, size=size, price=price, **kwargs)
+
+            elif target < value:
+                size = comminfo.getsize(price, value - target)
+                return self.sell(data=data, size=size, price=price, **kwargs)
 
         return None  # no execution size == possize
 
-    def order_target_percent(self, data=None, target=0.0,
-                             price=None, plimit=None,
-                             exectype=None, valid=None, tradeid=0, oco=None,
-                             trailamount=None, trailpercent=None,
-                             **kwargs):
+    def order_target_percent(self, data=None, target=0.0, **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target`` percentage of current portfolio ``value``
@@ -932,13 +891,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        value = self.broker.getvalue()
-        target_value = value * target
+        target *= self.broker.getvalue()
 
-        return self.order_target_value(data=data, target=target_value,
-                                       price=price, plimit=plimit,
-                                       exectype=exectype, valid=valid,
-                                       tradeid=tradeid, **kwargs)
+        return self.order_target_value(data=data, target=target, **kwargs)
 
     def getposition(self, data=None, broker=None):
         '''
