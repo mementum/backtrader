@@ -486,13 +486,14 @@ class BackBroker(bt.BrokerBase):
     def buy(self, owner, data,
             size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
-            trailamount=None, trailpercent=None,
+            trailamount=None, trailpercent=None, limitoffset=None,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
                          size=size, price=price, pricelimit=plimit,
                          exectype=exectype, valid=valid, tradeid=tradeid,
-                         trailamount=trailamount, trailpercent=trailpercent)
+                         trailamount=trailamount, trailpercent=trailpercent,
+                         llimitoffset=limitoffset)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -502,13 +503,14 @@ class BackBroker(bt.BrokerBase):
     def sell(self, owner, data,
              size, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
-             trailamount=None, trailpercent=None,
+             trailamount=None, trailpercent=None, limitoffset=None,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
                           size=size, price=price, pricelimit=plimit,
                           exectype=exectype, valid=valid, tradeid=tradeid,
-                          trailamount=trailamount, trailpercent=trailpercent)
+                          trailamount=trailamount, trailpercent=trailpercent,
+                          llimitoffset=limitoffset)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
