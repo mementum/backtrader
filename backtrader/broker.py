@@ -99,15 +99,17 @@ class BrokerBase(with_metaclass(MetaParams, object)):
     def cancel(self, order):
         raise NotImplementedError
 
-    def buy(self, owner, data, size, price=None, plimit=None, exectype=None,
-            valid=None, tradeid=0, oco=None, trailamount=None,
-            trailpercent=None, limitoffset=None, **kwargs):
+    def buy(self, owner, data, size, price=None, plimit=None,
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            **kwargs):
 
         raise NotImplementedError
 
-    def sell(self, owner, data, size, price=None, plimit=None, exectype=None,
-             valid=None, tradeid=0, oco=None, trailamount=None,
-             trailpercent=None, limitoffset=None, **kwargs):
+    def sell(self, owner, data, size, price=None, plimit=None,
+             exectype=None, valid=None, tradeid=0, oco=None,
+             trailamount=None, trailpercent=None,
+             **kwargs):
 
         raise NotImplementedError
 
