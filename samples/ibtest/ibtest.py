@@ -39,6 +39,11 @@ class TestStrategy(bt.Strategy):
         valid=None,
         cancel=0,
         donotsell=False,
+        stoptrail=False,
+        stoptraillimit=False,
+        trailamount=None,
+        trailpercent=None,
+        limitoffset=None,
     )
 
     def __init__(self):
@@ -129,6 +134,26 @@ class TestStrategy(bt.Strategy):
                                   valid=self.p.valid)
 
             self.orderid.append(self.order)
+
+            if self.p.stoptrail:
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.StopTrail,
+                          # price=round(self.data0.close[0] * 0.90, 2),
+                          valid=self.p.valid,
+                          trailamount=self.p.trailamount,
+                          trailpercent=self.p.trailpercent)
+
+            elif self.p.stoptraillimit:
+                p = round(self.data0.close[0] - self.p.trailamount, 2)
+                # p = self.data0.close[0]
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.StopTrailLimit,
+                          price=p,
+                          plimit=p + self.p.limitoffset,
+                          valid=self.p.valid,
+                          trailamount=self.p.trailamount,
+                          trailpercent=self.p.trailpercent)
+
         elif self.position.size > 0 and not self.p.donotsell:
             if self.order is None:
                 self.order = self.sell(size=self.p.stake // 2,
@@ -269,7 +294,12 @@ def runstrategy():
                         stopafter=args.stopafter,
                         valid=valid,
                         cancel=args.cancel,
-                        donotsell=args.donotsell)
+                        donotsell=args.donotsell,
+                        stoptrail=args.stoptrail,
+                        stoptraillimit=args.traillimit,
+                        trailamount=args.trailamount,
+                        trailpercent=args.trailpercent,
+                        limitoffset=args.limitoffset)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -454,6 +484,28 @@ def parse_args():
     parser.add_argument('--valid', default=None, type=int,
                         required=False, action='store',
                         help='Seconds to keep the order alive (0 means DAY)')
+
+    pgroup = parser.add_mutually_exclusive_group(required=False)
+    pgroup.add_argument('--stoptrail',
+                        required=False, action='store_true',
+                        help='Issue a stoptraillimit after buy( do not sell')
+
+    pgroup.add_argument('--traillimit',
+                        required=False, action='store_true',
+                        help='Issue a stoptrail after buying (do not sell')
+
+    pgroup = parser.add_mutually_exclusive_group(required=False)
+    pgroup.add_argument('--trailamount', default=None, type=float,
+                        required=False, action='store',
+                        help='trailamount for StopTrail order')
+
+    pgroup.add_argument('--trailpercent', default=None, type=float,
+                        required=False, action='store',
+                        help='trailpercent for StopTrail order')
+
+    parser.add_argument('--limitoffset', default=None, type=float,
+                        required=False, action='store',
+                        help='limitoffset for StopTrailLimit orders')
 
     parser.add_argument('--cancel', default=0, type=int,
                         required=False, action='store',
