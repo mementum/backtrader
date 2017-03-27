@@ -860,20 +860,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             return self.close(data=data, size=possize,
                               price=price, plimit=plimit,
                               exectype=exectype, valid=valid,
-                              tradeid=tradeid, **kwargs)
+                              tradeid=tradeid, oco=oco, **kwargs)
 
         elif target > value:
             size = comminfo.getsize(price, target - value)
             return self.buy(data=data, size=size,
                             price=price, plimit=plimit,
                             exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
+                            tradeid=tradeid, oco=oco, **kwargs)
         elif target < value:
             size = comminfo.getsize(price, value - target)
             return self.sell(data=data, size=size,
                              price=price, plimit=plimit,
                              exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+                             tradeid=tradeid, oco=oco, **kwargs)
 
         return None  # no execution size == possize
 
