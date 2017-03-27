@@ -89,9 +89,14 @@ A ``filter`` must conform to a given interface, being this:
 
       **RETURN VALUES**:
 
-        - ``True``: the inner data fetching loop of the data feed must
+        - ``True``: the inner data fetching loop of the data feed must retry
+	  fetching data from the feed, becaue the length of the stream was
+	  manipulated
 
-    In the case of a class based filter 2 additiona methods can be implemented
+	- ``False`` even if data may have been edited (example: changed
+	  ``close`` price), the length of the stream has remain untouched
+
+    In the case of a class based filter 2 additional methods can be implemented
 
     - ``last`` with the following signature::
 
@@ -169,7 +174,7 @@ from the data feed objects which are meant as a *pseudo-API for Filters* are:
     ``value``
 
   - ``data._addtostack(bar, stash=False)``: adds ``bar`` to a stack for later
-    processiong. ``bar`` is an iterable containing as many values as ``lines``
+    processing. ``bar`` is an iterable containing as many values as ``lines``
     has the data feed.
 
     If ``stash=False`` the bar added to the stack will be consumed immediately
@@ -221,7 +226,7 @@ Logic:
       bar.
 
     - An ``C`` bar whic also doesn't exist. The reality is that it will be
-      delivered like a tic ``CCCC``
+      delivered like a tick ``CCCC``
 
     - The volume if distributed between the 2 parts
 
@@ -241,8 +246,8 @@ This filter works together with:
 
 The use case:
 
-  - Seeing soemthing like if the maximum today is the highest maximum in the
-    last 20 sessins an issuing a ``Close`` order which gets executed with the
+  - Seeing something like if the maximum today is the highest maximum in the
+    last 20 sessions an issuing a ``Close`` order which gets executed with the
     2nd tick.
 
 The code::

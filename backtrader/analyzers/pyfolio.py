@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ class PyFolio(bt.Analyzer):
         #
         # Positions
         pss = self.rets['positions']
-        ps = [[k] + v for k, v in iteritems(pss)]
+        ps = [[k] + v[-2:] for k, v in iteritems(pss)]
         cols = ps.pop(0)  # headers are in the first entry
         positions = DF.from_records(ps, index=cols[0], columns=cols)
         positions.index = pandas.to_datetime(positions.index)

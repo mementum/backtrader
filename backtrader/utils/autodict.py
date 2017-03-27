@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,12 @@ class AutoDictList(dict):
     def __missing__(self, key):
         value = self[key] = list()
         return value
+
+
+class DotDict(dict):
+    # If the attribut is not found in the usual places try the dict itself
+    def __getattr__(self, key):
+        return self[key]
 
 
 class AutoDict(dict):

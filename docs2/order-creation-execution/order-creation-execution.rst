@@ -102,13 +102,13 @@ Market
 
 Execution:
 
-  Opening price of the next set of Open/High/Low/Close prices (commonly referred
-  as *bar*)
+  - Opening price of the next set of Open/High/Low/Close prices (commonly
+    referred as *bar*)
 
 Rationale:
 
-  If the logic has executed at point X in time and issued a ``Market`` order,
-  the next price spot that will happen is the upcoming ``open`` price
+  - If the logic has executed at point X in time and issued a ``Market`` order,
+    the next price spot that will happen is the upcoming ``open`` price
 
 .. note::
 
@@ -120,90 +120,92 @@ Close
 
 Execution:
 
-  Using the ``close`` price of the next barwhen the next bar actually CLOSES
+  - Using the ``close`` price of the next barwhen the next bar actually CLOSES
 
 Rationale:
 
-  Most **backtesting** feeds contain already **closed** bars and the order will
-  execute immediately with the ``close`` price of the next bar. A daily data
-  feed is the most common example.
+  - Most **backtesting** feeds contain already **closed** bars and the order
+    will execute immediately with the ``close`` price of the next bar. A daily
+    data feed is the most common example.
 
-  But the system could be fed with "tick" prices and the actual bar (time/date
-  wise) is being udpated constantly with the new ticks, without actually moving
-  to the **next** bar (because time and/or date have not changed)
+    But the system could be fed with "tick" prices and the actual bar
+    (time/date wise) is being udpated constantly with the new ticks, without
+    actually moving to the **next** bar (because time and/or date have not
+    changed)
 
-  Only when the time or date changes, the bar has actually been closed and the
-  order gets executed
+    Only when the time or date changes, the bar has actually been closed and
+    the order gets executed
 
 Limit
 -----
 
 Execution:
 
-  The ``price`` set at order creation if the ``data`` touches it, starting with the
-  next price bar.
+  - The ``price`` set at order creation if the ``data`` touches it, starting
+    with the next price bar.
 
-  The order will be canceled if ``valid`` is set and the time point is reached
+    The order will be canceled if ``valid`` is set and the time point is
+    reached
 
 Price Matching:
 
-   ``backtrader`` tries to provide **most realistic execution price** for
-   ``Limit`` orders.
+   - ``backtrader`` tries to provide **most realistic execution price** for
+     ``Limit`` orders.
 
-   Using the 4 price spots (Open/High/Low/Close) it can be partially inferred if
-   the requested ``price`` can be improved.
+     Using the 4 price spots (Open/High/Low/Close) it can be partially inferred
+     if the requested ``price`` can be improved.
 
-   For ``Buy`` Orders
+     For ``Buy`` Orders
 
-     - Case 1:
+       - Case 1:
 
-       If the ``open`` price of the bar is below the limit price the order
-       executes immediately with the ``open`` price. The order has been swept
-       during the opening phase of the session
+	 If the ``open`` price of the bar is below the limit price the order
+	 executes immediately with the ``open`` price. The order has been swept
+	 during the opening phase of the session
 
-     - Case 2:
+       - Case 2:
 
-       If the ``open`` price has not penetrated below the limit price but the
-       ``low`` price is below the limit price, then the limit price has been
-       seen during the session and the order can be executed
+	 If the ``open`` price has not penetrated below the limit price but the
+         ``low`` price is below the limit price, then the limit price has been
+         seen during the session and the order can be executed
 
-   The logic is obviously inverted for ``Sell`` orders.
+     The logic is obviously inverted for ``Sell`` orders.
 
 Stop
 ----
 
 Execution:
 
-  The trigger ``price`` set at order creation if the ``data`` touches it,
-  starting with the next price bar.
+  - The trigger ``price`` set at order creation if the ``data`` touches it,
+    starting with the next price bar.
 
-  The order will be canceled if ``valid`` is set and the time point is reached
+    The order will be canceled if ``valid`` is set and the time point is reached
 
 Price Matching:
 
-   ``backtrader`` tries to provide **most realistic trigger price** for
-   ``Stop`` orders.
+   - ``backtrader`` tries to provide **most realistic trigger price** for
+     ``Stop`` orders.
 
-   Using the 4 price spots (Open/High/Low/Close) it can be partially inferred if
-   the requested ``price`` can be improved.
+     Using the 4 price spots (Open/High/Low/Close) it can be partially inferred
+     if the requested ``price`` can be improved.
 
-   For ```Stop`` orders which ``Buy``
+     For ```Stop`` orders which ``Buy``
 
-     - Case 1:
+       - Case 1:
 
-       If the ``open`` price of the bar is above the stop price the order is
-       executed immediately with the ``open`` price.
+         If the ``open`` price of the bar is above the stop price the order is
+         executed immediately with the ``open`` price.
 
-       Intended to stop a loss if the price is moving upwards against an
-       existing short position
+         Intended to stop a loss if the price is moving upwards against an
+         existing short position
 
-     - Case 2:
+       - Case 2:
 
-       If the ``open`` price has not penetrated above the stop price but the
-       ``high`` price is above the stop price, then the stop price has been
-       seen during the session and the order can be executed
+         If the ``open`` price has not penetrated above the stop price but the
+         ``high`` price is above the stop price, then the stop price has been
+         seen during the session and the order can be executed
 
-   The logic is obviously inverted for ``Stop`` orders which ``Sell``.
+     The logic is obviously inverted for ``Stop`` orders which ``Sell``.
 
 
 StopLimit
@@ -211,7 +213,8 @@ StopLimit
 
 Execution:
 
-  The trigger ``price`` sets the order in motion starting with the next price bar.
+  - The trigger ``price`` sets the order in motion starting with the next
+    price bar.
 
 Price Matching:
 

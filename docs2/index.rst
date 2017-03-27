@@ -16,6 +16,7 @@ Contents:
    quickstart/quickstart
    concepts
    operating
+   exceptions
    cerebro
    strategy
    sizers/sizers

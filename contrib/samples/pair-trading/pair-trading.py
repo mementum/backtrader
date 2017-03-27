@@ -15,68 +15,6 @@ import datetime
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
-import statsmodels.api as sm
-import pandas as pd
-
-class OLS_Transformation(btind.PeriodN):
-    lines = (('slope'),('intercept'),('spread'),('spread_mean'),('spread_std'),('zscore'),)
-    params = (('period', 10),)
-
-    def __init__(self):
-        self.addminperiod(self.p.period)
-
-    def next(self):
-        p0 =  pd.Series(self.data0.get(size=self.p.period))
-        p1 =  sm.add_constant(pd.Series(self.data1.get(size=self.p.period)),prepend=True)
-        slope, intercept = sm.OLS(p0,p1).fit().params
-        self.lines.slope[0] = slope
-        self.lines.intercept[0] = intercept
-        self.lines.spread[0] = self.data0.close[0] - (slope * self.data1.close[0] + intercept)
-        self.lines.spread_mean[0] = pd.Series(self.lines.spread.get(size=self.p.period)).mean()
-        self.lines.spread_std[0] = pd.Series(self.lines.spread.get(size=self.p.period)).std()
-        self.lines.zscore[0] = (self.lines.spread[0] - self.lines.spread_mean[0])/self.lines.spread_std[0]
-
-
-class OLS_Beta(bt.indicators.PeriodN):
-    _mindatas = 2  # ensure at least 2 data feeds are passed
-    lines = (('beta'),)
-    params = (('period', 10),)
-
-    def next(self):
-        y, x = (pd.Series(d.get(size=self.p.period)) for d in (self.data0, self.data1))
-        r_beta = pd.ols(y=y, x=x, window_type='full_sample')
-        self.lines.beta[0] = r_beta.beta['x']
-
-class Spread(bt.indicators.PeriodN):
-    _mindatas = 2  # ensure at least 2 data feeds are passed
-    lines = (('spread'),)
-    params = (('period', 10),)
-
-    def next(self):
-        y, x = (pd.Series(d.get(size=self.p.period)) for d in (self.data0, self.data1))
-        r_beta = pd.ols(y=y, x=x, window_type='full_sample')
-        self.lines.spread[0] = self.data1[0] - r_beta.beta['x'] * self.data0[0]
-
-class ZScore(bt.indicators.PeriodN):
-    _mindatas = 2  # ensure at least 2 data feeds are passed
-    lines = (('zscore'),('upper'),('lower'),('up_medium'),('low_medium'),)
-    params = (('period', 10),('upper',2),('lower',-2),('up_medium',0.5),('low_medium',-0.5),)
-
-    def __init__(self):
-        self.spread = Spread(self.data0, self.data1, period=self.p.period, plot=False)
-        self.spread_mean = btind.MovAv.SMA(self.spread, period=self.p.period, plot=False)
-        self.spread_std = btind.StandardDeviation(self.spread, period=self.p.period, plot=False)
-
-    def next(self):
-        # Step 1: Construct ZScore
-        if self.spread_std[0]>0:
-            self.lines.zscore[0] = (self.spread[0] - self.spread_mean[0])/self.spread_std[0]
-        if self.spread_std[0]==0:
-            self.lines.zscore[0] = 0
-        self.lines.upper[0]=self.p.upper
-        self.lines.lower[0] = self.p.lower
-        self.lines.up_medium[0]=self.p.up_medium
-        self.lines.low_medium[0] = self.p.low_medium
 
 
 class PairTradingStrategy(bt.Strategy):
@@ -86,12 +24,12 @@ class PairTradingStrategy(bt.Strategy):
         qty1=0,
         qty2=0,
         printout=True,
-        upper = 2.1,
-        lower = -2.1,
-        up_medium = 0.5,
-        low_medium = -0.5,
-        status = 0,
-        portfolio_value = 10000,
+        upper=2.1,
+        lower=-2.1,
+        up_medium=0.5,
+        low_medium=-0.5,
+        status=0,
+        portfolio_value=10000,
     )
 
     def log(self, txt, dt=None):
@@ -132,11 +70,14 @@ class PairTradingStrategy(bt.Strategy):
         self.portfolio_value = self.p.portfolio_value
 
         # Signals performed with PD.OLS :
-        self.zscore = ZScore(self.data0,self.data1, period=self.p.period, upper=self.p.upper, lower=self.p.lower, up_medium=self.p.up_medium, low_medium=self.p.low_medium)
+        self.transform = btind.OLS_TransformationN(self.data0, self.data1,
+                                                   period=self.p.period)
+        self.zscore = self.transform.zscore
 
         # Checking signals built with StatsModel.API :
-        # self.ols_transfo = OLS_Transformation(self.data0, self.data1, period=self.p.period, plot=True)
-
+        # self.ols_transfo = btind.OLS_Transformation(self.data0, self.data1,
+        #                                             period=self.p.period,
+        #                                             plot=True)
 
     def next(self):
 
@@ -155,7 +96,6 @@ class PairTradingStrategy(bt.Strategy):
 
         print('status is', self.status)
         print('zscore is', self.zscore[0])
-
 
         # Step 2: Check conditions for SHORT & place the order
         # Checking the condition for SHORT

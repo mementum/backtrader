@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import bisect
 import collections
+import datetime
 import itertools
 import math
 import operator
@@ -36,7 +37,7 @@ import matplotlib.legend as mlegend
 import matplotlib.ticker as mticker
 
 from ..utils.py3 import range, with_metaclass
-from .. import AutoInfoClass, MetaParams, TimeFrame
+from .. import AutoInfoClass, MetaParams, TimeFrame, date2num
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
@@ -63,6 +64,7 @@ class PInfo(object):
         self.coloridx = collections.defaultdict(lambda: -1)
         self.handles = collections.defaultdict(list)
         self.labels = collections.defaultdict(list)
+        self.legpos = collections.defaultdict(int)
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
@@ -111,7 +113,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True, useplotly=False):
+    def plot(self, strategy, figid=0, numfigs=1, iplot=True,
+             start=None, end=None, **kwargs):
         # pfillers={}):
         if not strategy.datas:
             return
@@ -131,11 +134,26 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.sortdataindicators(strategy)
         self.calcrows(strategy)
 
-        slen = len(strategy)
+        st_dtime = strategy.lines.datetime.plot()
+        if start is None:
+            start = 0
+        if end is None:
+            end = len(st_dtime)
+
+        if isinstance(start, datetime.date):
+            start = bisect.bisect_left(st_dtime, date2num(start))
+
+        if isinstance(end, datetime.date):
+            end = bisect.bisect_right(st_dtime, date2num(end))
+
+        if end < 0:
+            end = len(st_dtime) + 1 + end  # -1 =  len() -2 = len() - 1
+
+        slen = len(st_dtime[start:end])
         d, m = divmod(slen, numfigs)
         pranges = list()
         for i in range(numfigs):
-            a = d * i
+            a = d * i + start
             if i == (numfigs - 1):
                 d += m  # add remainder to last stint
             b = a + d
@@ -177,13 +195,17 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     continue
 
                 self.pinf.xdata = self.pinf.x
-                if len(data) < self.pinf.xlen:
+                xd = data.datetime.plotrange(self.pinf.xstart, self.pinf.xend)
+                if len(xd) < self.pinf.xlen:
                     self.pinf.xdata = xdata = []
                     xreal = self.pinf.xreal
                     dts = data.datetime.plot()
                     for dt in (x for x in dts if dt0 <= x <= dt1):
                         dtidx = bisect.bisect_left(xreal, dt)
                         xdata.append(dtidx)
+
+                    self.pinf.xstart = bisect.bisect_left(dts, xreal[xdata[0]])
+                    self.pinf.xend = bisect.bisect_right(dts, xreal[xdata[-1]])
 
                 for ind in self.dplotsup[data]:
                     self.plotind(
@@ -586,6 +608,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         else:
             if data.plotinfo.plotmaster is None:
                 ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
+            elif getattr(data.plotinfo, 'sameaxis', False):
+                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                ax = axdatamaster
             else:
                 axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
                 ax = axdatamaster.twinx()
@@ -659,32 +684,37 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(data, ind, subinds=self.dplotsover[ind], masterax=ax)
 
         handles, labels = ax.get_legend_handles_labels()
+        a = axdatamaster or ax
         if handles:
             # put data and volume legend entries in the 1st positions
             # because they are "collections" they are considered after Line2D
             # for the legend entries, which is not our desire
             # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
+
+            ai = self.pinf.legpos[a]
             if self.pinf.sch.volume and voloverlay:
                 if volplot:
                     # even if volume plot was requested, there may be no volume
-                    labels.insert(0, vollabel)
-                    handles.insert(0, volplot)
+                    labels.insert(ai, vollabel)
+                    handles.insert(ai, volplot)
 
             didx = labels.index(datalabel)
-            labels.insert(0, labels.pop(didx))
-            handles.insert(0, handles.pop(didx))
+            labels.insert(ai, labels.pop(didx))
+            handles.insert(ai, handles.pop(didx))
 
             if axdatamaster is None:
                 self.pinf.handles[ax] = handles
                 self.pinf.labels[ax] = labels
             else:
-                self.pinf.handles[axdatamaster].extend(handles)
-                self.pinf.labels[axdatamaster].extend(labels)
+                self.pinf.handles[axdatamaster] = handles
+                self.pinf.labels[axdatamaster] = labels
+                # self.pinf.handles[axdatamaster].extend(handles)
+                # self.pinf.labels[axdatamaster].extend(labels)
 
-            h = self.pinf.handles[axdatamaster or ax]
-            l = self.pinf.labels[axdatamaster or ax]
+            h = self.pinf.handles[a]
+            l = self.pinf.labels[a]
 
-            axlegend = axdatamaster or ax
+            axlegend = a
             legend = axlegend.legend(h, l,
                                      loc='upper left',
                                      frameon=False, shadow=False,
@@ -702,6 +732,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                              subinds=self.dplotsover[downind],
                              upinds=self.dplotsup[downind],
                              downinds=self.dplotsdown[downind])
+
+        self.pinf.legpos[a] = len(self.pinf.handles[a])
 
     def show(self):
         self.mpyplot.show()

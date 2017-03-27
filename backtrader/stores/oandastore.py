@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015,2016 Daniel Rodriguez
+# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -558,6 +558,9 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
             self.broker._cancel(oref)
 
+    _X_ORDER_CREATE = ('STOP_ORDER_CREATE',
+                       'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE',)
+
     def _transaction(self, trans):
         # Invoked from Streaming Events. May actually receive an event for an
         # oid which has not yet been returned after creating an order. Hence
@@ -572,6 +575,8 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                 except KeyError:
                     return  # cannot do anythin else
 
+        elif ttype in self._X_ORDER_CREATE:
+            oid = trans['id']
         elif ttype == 'ORDER_FILLED':
             oid = trans['orderId']
 
@@ -583,9 +588,6 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             self._process_transaction(oid, trans)
         except KeyError:  # not yet seen, keep as pending
             self._transpend[oid].append(trans)
-
-    _X_ORDER_CREATE = ('STOP_ORDER_CREATE',
-                       'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE',)
 
     _X_ORDER_FILLED = ('MARKET_ORDER_CREATE',
                        'ORDER_FILLED', 'TAKE_PROFIT_FILLED',
