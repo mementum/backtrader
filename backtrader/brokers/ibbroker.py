@@ -327,7 +327,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
                    tradeid=0, **kwargs):
 
         order = IBOrder(action, owner=owner, data=data,
-                        size=size, price=price, plimit=plimit,
+                        size=size, price=price, pricelimit=plimit,
                         exectype=exectype, valid=valid,
                         tradeid=tradeid,
                         m_clientId=self.ib.clientId,
