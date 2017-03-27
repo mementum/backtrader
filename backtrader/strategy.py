@@ -757,13 +757,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         if possize > 0:
             return self.sell(
                 data=data, size=size, price=price, plimit=plimit,
-                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
                 trailamount=trailamount, trailpercent=trailpercent,
                 **kwargs)
         elif possize < 0:
             return self.buy(
                 data=data, size=size, price=price, plimit=plimit,
-                exectype=exectype, valid=valid, tradeid=tradeid, oco=None,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
                 trailamount=trailamount, trailpercent=trailpercent,
                 **kwargs)
 
