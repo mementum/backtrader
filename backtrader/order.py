@@ -331,9 +331,12 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # Adjust price in case a trailing limit is wished
         if self.exectype in [Order.StopTrail, Order.StopTrailLimit]:
+            self._limitoffset = self.created.price - self.created.pricelimit
             price = self.created.price
             self.created.price = float('inf' * self.isbuy() or '-inf')
             self.trailadjust(price)
+        else:
+            self._limitoffset = 0.0
 
         self.executed = OrderData(remsize=self.size)
         self.position = 0
@@ -577,6 +580,30 @@ class Order(OrderBase):
             return True
 
         return False
+
+    def trailadjust(self, price):
+        if self.trailamount:
+            pamount = self.trailamount
+        elif self.trailpercent:
+            pamount = price * self.trailpercent
+        else:
+            pamount = 0.0
+
+        # Stop sell is below (-), stop buy is above, move only if needed
+        if self.isbuy():
+            price += pamount
+            if price < self.created.price:
+                self.created.price = price
+                if self.exectype == Order.StopTrailLimit:
+                    self.created.pricelimit = price - self._limitoffset
+        else:
+            price -= pamount
+            if price > self.created.price:
+                self.created.price = price
+                if self.exectype == Order.StopTrailLimit:
+                    # limitoffset is negative when pricelimit was greater
+                    # the - allows increasing the price limit if stop increases
+                    self.created.pricelimit = price - self._limitoffset
 
 
 class BuyOrder(Order):
