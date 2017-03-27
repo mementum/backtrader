@@ -113,6 +113,8 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         Order.Close: bytes('MOC'),
         Order.Stop: bytes('STP'),
         Order.StopLimit: bytes('STPLMT'),
+        Order.StopTrail: bytes('TRAIL'),
+        Order.StopTrailLimit: bytes('TRAIL LIMIT'),
     }
 
     def __init__(self, action, **kwargs):
@@ -149,6 +151,21 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         elif self.exectype == self.StopLimit:
             self.m_lmtPrice = self.pricelimit  # req limit execution
             self.m_auxPrice = self.price  # trigger price
+        elif self.exectype == self.StopTrail:
+            if self.trailamount is not None:
+                self.m_auxPrice = self.trailamount
+            elif self.trailpercent is not None:
+                # value expected in % format ... multiply 100.0
+                self.m_trailingPercent = self.trailpercent * 100.0
+        elif self.exectype == self.StopTrailLimit:
+            self.m_trailStopPrice = self.m_lmtPrice = self.price
+            # The limit offset is set relative to the price difference in TWS
+            self.m_lmtPrice = self.pricelimit
+            if self.trailamount is not None:
+                self.m_auxPrice = self.trailamount
+            elif self.trailpercent is not None:
+                # value expected in % format ... multiply 100.0
+                self.m_trailingPercent = self.trailpercent * 100.0
 
         self.m_totalQuantity = abs(self.size)  # ib takes only positives
 
