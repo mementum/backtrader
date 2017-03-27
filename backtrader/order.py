@@ -150,6 +150,8 @@ class OrderData(object):
             # price must always be set if pricelimit is set ...
             self.price = pricelimit
 
+        self.plimit = pricelimit
+
         self.value = 0.0
         self.comm = 0.0
         self.margin = None
@@ -157,6 +159,14 @@ class OrderData(object):
 
         self.psize = 0
         self.pprice = 0
+
+    def _getplimit(self):
+        return self._plimit
+
+    def _setplimit(self, val):
+        self._plimit = val
+
+    plimit = property(_getplimit, _setplimit)
 
     def __len__(self):
         return len(self.exbits)
@@ -245,6 +255,14 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
     refbasis = itertools.count(1)  # for a unique identifier per order
 
+    def _getplimit(self):
+        return self._plimit
+
+    def _setplimit(self, val):
+        self._plimit = val
+
+    plimit = property(_getplimit, _setplimit)
+
     def __getattr__(self, name):
         # Return attr from params if not found in order
         return getattr(self.params, name)
@@ -285,6 +303,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.triggered = False
 
         self.status = Order.Created
+
+        self.plimit = self.p.pricelimit  # alias via property
 
         if self.exectype is None:
             self.exectype = Order.Market
