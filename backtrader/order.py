@@ -104,7 +104,6 @@ class OrderData(object):
       - pricelimit: holds pricelimit for StopLimit (which has trigger first)
       - trailamount: absolute price distance in trailing stops
       - trailpercent: percentage price distance in trailing stops
-      - limitoffset: offsetting of limit for StopTrailLimit
 
       - value: market value for the entire bit size
       - comm: commission for the entire bit execution
@@ -129,8 +128,7 @@ class OrderData(object):
     # thread making an append and with no need for a lock
 
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0,
-                 pclose=0.0,
-                 trailamount=0.0, trailpercent=0.0, limitoffset=0.0):
+                 pclose=0.0, trailamount=0.0, trailpercent=0.0):
 
         self.pclose = pclose
         self.exbits = collections.deque()  # for historical purposes
@@ -143,7 +141,6 @@ class OrderData(object):
         self.pricelimit = pricelimit
         self.trailamount = trailamount
         self.trailpercent = trailpercent
-        self.limitoffset = limitoffset
 
         if not pricelimit:
             # if no pricelimit is given, use the given price
@@ -216,7 +213,6 @@ class OrderBase(with_metaclass(MetaParams, object)):
     params = (
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('trailamount', None), ('trailpercent', None),
-        ('limitoffset', None),
         ('exectype', None), ('valid', None),
         ('tradeid', 0),
         ('simulated', False),
@@ -271,7 +267,6 @@ class OrderBase(with_metaclass(MetaParams, object)):
         tojoin.append('Price Limit: {}'.format(self.pricelimit))
         tojoin.append('TrailAmount: {}'.format(self.trailamount))
         tojoin.append('TrailPercent: {}'.format(self.trailpercent))
-        tojoin.append('LimitOffset: {}'.format(self.limitoffset))
         tojoin.append('ExecType: {}'.format(self.exectype))
         tojoin.append('ExecType: {}'.format(self.getordername()))
         tojoin.append('CommInfo: {}'.format(self.comminfo))
@@ -312,8 +307,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
                                  pricelimit=self.pricelimit,
                                  pclose=pclose,
                                  trailamount=self.trailamount,
-                                 trailpercent=self.trailpercent,
-                                 limitoffset=self.limitoffset)
+                                 trailpercent=self.trailpercent)
 
         # Adjust price in case a trailing limit is wished
         if self.exectype in [Order.StopTrail, Order.StopTrailLimit]:
