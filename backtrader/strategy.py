@@ -559,7 +559,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def buy(self, data=None,
             size=None, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
-            trailamount=None, trailpercent=None, limitoffset=None,
+            trailamount=None, trailpercent=None,
             **kwargs):
         '''Create a buy (long) order and send it to the broker
 
@@ -607,11 +607,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             percentage amount which determines the distance to the price (below
             for a Sell order and above for a buy order) to keep the trailing
             stop (if ``trailamount`` is also specified it will be used)
-
-          - ``limitoffset`` (default: ``None``)
-
-            If the order type is StopTrailLimit, the limit price will be
-            adjusted in the same direction as the stop price by the amount here
 
           - ``exectype`` (default: ``None``)
 
@@ -702,18 +697,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         data = data or self.datas[0]
         size = size if size is not None else self.getsizing(data, isbuy=True)
 
-        return self.broker.buy(
-            self, data,
-            size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
-            trailamount=trailamount, trailpercent=trailpercent,
-            limitoffset=limitoffset,
-            **kwargs)
+        if size:
+            return self.broker.buy(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+                trailamount=trailamount, trailpercent=trailpercent,
+                **kwargs)
+
+        return None
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
-             trailamount=None, trailpercent=None, limitoffset=None,
+             trailamount=None, trailpercent=None,
              **kwargs):
         '''
         To create a selll (short) order and send it to the broker
@@ -728,13 +725,15 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         data = data or self.datas[0]
         size = size if size is not None else self.getsizing(data, isbuy=True)
 
-        return self.broker.sell(
-            self, data,
-            size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
-            trailamount=trailamount, trailpercent=trailpercent,
-            limitoffset=limitoffset,
-            **kwargs)
+        if size:
+            return self.broker.sell(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+                trailamount=trailamount, trailpercent=trailpercent,
+                **kwargs)
+
+        return None
 
     def close(self, data=None, size=None, **kwargs):
         '''
