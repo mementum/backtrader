@@ -508,30 +508,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         return True
 
     def trailadjust(self, price):
-        if self.trailamount:
-            pamount = self.trailamount
-        elif self.trailpercent:
-            pamount = price * self.trailpercent
-        else:
-            pamount = 0.0
-
-        # Stop sell is below (-), stop buy is above, move only if needed
-        if self.isbuy():
-            price += pamount
-            if price < self.created.price:
-                self.created.price = price
-                if self.exectype == Order.StopTrailLimit:
-                    # or to avoid None
-                    plmt = self.created.pricelimit + (self.limitoffset or 0.0)
-                    self.created.pricelimit = plmt
-        else:
-            price -= pamount
-            if price > self.created.price:
-                self.created.price = price
-                if self.exectype == Order.StopTrailLimit:
-                    # or to avoid None
-                    plmt = self.created.pricelimit - (self.limitoffset or 0.0)
-                    self.created.pricelimit = plmt
+        pass  # generic interface
 
 
 class Order(OrderBase):
