@@ -20,10 +20,6 @@ backtrader
    :alt: Travis-ci Build Status
    :scale: 100%
    :target: https://travis-ci.org/mementum/backtrader
-.. image:: https://readthedocs.org/projects/backtrader/badge/?version=latest
-   :alt: Documentation Status
-   :scale: 100%
-   :target: https://www.backtrader.com/docu
 .. image:: https://img.shields.io/pypi/pyversions/backtrader.svg
    :alt: Python versions
    :scale: 100%
@@ -72,7 +68,8 @@ Live Trading and backtesting platform written in Python.
       installed ``pytz``)
     - *Visual Chart* (needs a fork of ``comtypes`` until a pull request is
       integrated in the release and benefits from ``pytz``)
-    - *Oanda* (needs ``oandapy``) (REST API Only - v20 does not support streaming)
+    - *Oanda* (needs ``oandapy``) (REST API Only - v20 did not support
+      streaming when implemented)
 
   - Data feeds from csv/files, online sources or from *pandas* and *blaze*
   - Filters for datas (like breaking a daily bar into chunks to simulate intraday)
@@ -86,9 +83,9 @@ Live Trading and backtesting platform written in Python.
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
     integration
   - Flexible definition of commission schemes
-  - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop* and
-    *StopLimit* orders, slippage and continuous cash adjustmet for future-like
-    instruments
+  - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop*,
+    *StopLimit*, *StopTrail*, *StopTrailLimit*and *OCO*, orders, slippage and
+    continuous cash adjustmet for future-like instruments
   - Plotting (requires matplotlib)
 
 Documentation
@@ -102,7 +99,7 @@ Read the full documentation at:
 
   - `Documentation <http://www.backtrader.com/docu>`_
 
-List of built-in Indicators (105)
+List of built-in Indicators (116)
 
   - `Indicators Reference <http://www.backtrader.com/docu/indautoref.html>`_
 
@@ -110,10 +107,10 @@ Python 2/3 Support
 ==================
 
   - Python ``2.7``
-  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5``
+  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5`` / ``3.6``
 
-  - It also works with *pypy* and *pypy3* (no plotting - ``matplotlib`` is not
-    supported under *pypy*)
+  - It also works with ``pypy`` and ``pypy3`` (no plotting - ``matplotlib`` is
+    not supported under *pypy*)
 
 Compatibility is tested during development with ``2.7`` and ``3.5``
 
@@ -129,13 +126,13 @@ From *pypi*:
 
   - ``pip install backtrader``
 
-  - ``pip install backtrader[matplotlib]``
+  - ``pip install backtrader[plotting]``
 
     If ``matplotlib`` is not installed and you wish to do some plotting
 
 .. note:: The minimum matplotlib version is ``1.4.1``
 
-An example for *IB*  Data Feeds/Trading:
+An example for *IB* Data Feeds/Trading:
 
   - ``IbPy`` doesn't seem to be in PyPi. Do either::
 
