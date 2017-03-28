@@ -1,3 +1,12 @@
+1.9.36.116
+  - StopTrail/StopTrailLimit/Oco for Interactive Brokers
+  - PR #290 for child OCO orders
+  - Oco and other generic parameters passed transparently from any order
+    generating method (ex: order_target_size) down to buy and sell
+  - Correct pricelimit parameter in ib
+  - Use strategy datetime instead of data0 and ensure a complete header in
+    Positions analyzer
+
 1.9.35.116
   - Catch limit/stop order creation earlier in Oanda Store
   - StopTrail/StopTrailLimit orders for backtesting
