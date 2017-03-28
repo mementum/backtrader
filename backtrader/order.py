@@ -224,7 +224,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         ('owner', None), ('data', None), ('size', None), ('price', None),
         ('pricelimit', None), ('trailamount', None), ('trailpercent', None),
         ('exectype', None), ('valid', None),
-        ('tradeid', 0),
+        ('tradeid', 0), ('oco', None),
         ('simulated', False),
     )
 

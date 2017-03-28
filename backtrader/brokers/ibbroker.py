@@ -25,6 +25,7 @@ import collections
 from copy import copy
 from datetime import date, datetime, timedelta
 import threading
+import uuid
 
 import ib.ext.Order
 import ib.opt as ibopt
@@ -194,6 +195,9 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
 
         self.m_tif = bytes(tif)
 
+        # OCA
+        self.m_ocaType = 1  # Cancel all remaining orders with block
+
         # pass any custom arguments to the order
         for k in kwargs:
             setattr(self, (not hasattr(self, k)) * 'm_' + k, kwargs[k])
@@ -320,6 +324,12 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
     def submit(self, order):
         order.submit(self)
+
+        # ocoize if needed
+        if order.oco is None:  # Generate a UniqueId
+            order.m_ocaGroup = bytes(uuid.uuid4())
+        else:
+            order.m_ocaGroup = self.orderbyid[order.oco.m_orderId].m_ocaGroup
 
         self.orderbyid[order.m_orderId] = order
         self.ib.placeOrder(order.m_orderId, order.data.contract, order)

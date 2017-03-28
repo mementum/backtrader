@@ -44,6 +44,7 @@ class TestStrategy(bt.Strategy):
         trailamount=None,
         trailpercent=None,
         limitoffset=None,
+        oca=False,
     )
 
     def __init__(self):
@@ -128,14 +129,21 @@ class TestStrategy(bt.Strategy):
             return
 
         if self.datastatus and not self.position and len(self.orderid) < 1:
+            exectype = self.p.exectype if not self.p.oca else bt.Order.Limit
             self.order = self.buy(size=self.p.stake,
-                                  exectype=self.p.exectype,
+                                  exectype=exectype,
                                   price=round(self.data0.close[0] * 0.90, 2),
                                   valid=self.p.valid)
 
             self.orderid.append(self.order)
 
-            if self.p.stoptrail:
+            if self.p.oca:
+                self.buy(size=self.p.stake,
+                         exectype=bt.Order.Limit,
+                         price=round(self.data0.close[0] * 0.80, 2),
+                         oco=self.order)
+
+            elif self.p.stoptrail:
                 self.sell(size=self.p.stake,
                           exectype=bt.Order.StopTrail,
                           # price=round(self.data0.close[0] * 0.90, 2),
@@ -299,7 +307,8 @@ def runstrategy():
                         stoptraillimit=args.traillimit,
                         trailamount=args.trailamount,
                         trailpercent=args.trailpercent,
-                        limitoffset=args.limitoffset)
+                        limitoffset=args.limitoffset,
+                        oca=args.oca)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -493,6 +502,10 @@ def parse_args():
     pgroup.add_argument('--traillimit',
                         required=False, action='store_true',
                         help='Issue a stoptrail after buying (do not sell')
+
+    pgroup.add_argument('--oca',
+                        required=False, action='store_true',
+                        help='Test oca by putting 2 orders in a group')
 
     pgroup = parser.add_mutually_exclusive_group(required=False)
     pgroup.add_argument('--trailamount', default=None, type=float,
