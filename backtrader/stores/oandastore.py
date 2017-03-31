@@ -545,7 +545,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
     def _t_order_cancel(self):
         while True:
             order = self.q_orderclose.get()
-            if oref is None:
+            if order is None:
                 break
 
             oid = self._orders.get(oref, None)
