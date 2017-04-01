@@ -783,6 +783,222 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         return None
 
+    def buy_bracket(self, data=None, size=None, price=None, plimit=None,
+                    exectype=bt.Order.Limit, valid=None, tradeid=0,
+                    trailamount=None, trailpercent=None, oargs={},
+                    stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+                    limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+                    **kwargs):
+        '''
+        Create a bracket order group (low side - buy order - high side). The
+        default behavior is as follows:
+
+          - Issue a **buy** order with execution ``Limit``
+
+          - Issue a *low side* bracket **sell** order with execution ``Stop``
+
+          - Issue a *high side* bracket **sell** order with execution
+            ``Limit``.
+
+        See below for the different parameters
+
+          - ``data`` (default: ``None``)
+
+            For which data the order has to be created. If ``None`` then the
+            first data in the system, ``self.datas[0] or self.data0`` (aka
+            ``self.data``) will be used
+
+          - ``size`` (default: ``None``)
+
+            Size to use (positive) of units of data to use for the order.
+
+            If ``None`` the ``sizer`` instance retrieved via ``getsizer`` will
+            be used to determine the size.
+
+            **Note**: The same size is applied to all 3 orders of the bracket
+
+          - ``price`` (default: ``None``)
+
+            Price to use (live brokers may place restrictions on the actual
+            format if it does not comply to minimum tick size requirements)
+
+            ``None`` is valid for ``Market`` and ``Close`` orders (the market
+            determines the price)
+
+            For ``Limit``, ``Stop`` and ``StopLimit`` orders this value
+            determines the trigger point (in the case of ``Limit`` the trigger
+            is obviously at which price the order should be matched)
+
+          - ``plimit`` (default: ``None``)
+
+            Only applicable to ``StopLimit`` orders. This is the price at which
+            to set the implicit *Limit* order, once the *Stop* has been
+            triggered (for which ``price`` has been used)
+
+          - ``trailamount`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is an
+            absolute amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop
+
+          - ``trailpercent`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is a
+            percentage amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop (if ``trailamount`` is also specified it will be used)
+
+          - ``exectype`` (default: ``bt.Order.Limit``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``valid`` (default: ``None``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``tradeid`` (default: ``0``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``oargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the main side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+          - ``**kwargs``: additional broker implementations may support extra
+            parameters. ``backtrader`` will pass the *kwargs* down to the
+            created order objects
+
+            Possible values: (see the documentation for the method ``buy``
+
+            **Note**: this ``kwargs`` will be applied to the 3 orders of a
+            bracket. See below for specific keyword arguments for the low and
+            high side orders
+
+          - ``stopprice`` (default: ``None``)
+
+            Specific price for the *low side* stop order
+
+          - ``stopexec`` (default: ``bt.Order.Stop``)
+
+            Specific execution type for the *low side* order
+
+          - ``stopargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the low side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+          - ``limitprice`` (default: ``None``)
+
+            Specific price for the *high side* stop order
+
+          - ``stopexec`` (default: ``bt.Order.Limit``)
+
+            Specific execution type for the *high side* order
+
+          - ``limitargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the high side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+        Returns:
+
+          - A list containing the 3 orders [order, stop side, limit side]
+
+        '''
+
+        kargs = dict(size=size,
+                     data=data, price=price, plimit=plimit, exectype=exectype,
+                     valid=valid, tradeid=tradeid,
+                     trailamount=trailamount, trailpercent=trailpercent)
+        kargs.update(oargs)
+        kargs.update(kwargs)
+        kargs['transmit'] = False
+        o = self.buy(**kargs)
+
+        # low side / stop
+        kargs = dict(data=data, price=stopprice, exectype=stopexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(stopargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = False
+        kargs['size'] = o.size
+        ostop = self.sell(**kargs)
+
+        # high side / limit
+        kargs = dict(data=data, price=limitprice, exectype=limitexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(limitargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = True
+        kargs['size'] = o.size
+        olimit = self.sell(**kargs)
+
+        return [o, ostop, olimit]
+
+    def sell_bracket(self, data=None,
+                     size=None, price=None, plimit=None,
+                     exectype=bt.Order.Limit, valid=None, tradeid=0,
+                     trailamount=None, trailpercent=None,
+                     oargs={},
+                     stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+                     limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+                     **kwargs):
+        '''
+        Create a bracket order group (low side - buy order - high side). The
+        default behavior is as follows:
+
+          - Issue a **sell** order with execution ``Limit``
+
+          - Issue a *high side* bracket **buy** order with execution ``Stop``
+
+          - Issue a *low side* bracket **buy** order with execution ``Limit``.
+
+        See ``bracket_buy`` for the meaning of the parameters
+
+        Returns:
+
+          - A list containing the 3 orders [order, stop side, limit side]
+
+        '''
+
+        kargs = dict(size=size,
+                     data=data, price=price, plimit=plimit, exectype=exectype,
+                     valid=valid, tradeid=tradeid,
+                     trailamount=trailamount, trailpercent=trailpercent)
+        kargs.update(oargs)
+        kargs.update(kwargs)
+        kargs['transmit'] = False
+        o = self.sell(**kargs)
+
+        # high side / limit
+        kargs = dict(data=data, price=stopprice, exectype=stopexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(stopargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = False
+        kargs['size'] = o.size
+        ostop = self.buy(**kargs)
+
+        # low side / stop
+        kargs = dict(data=data, price=limitprice, exectype=limitexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(limitargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = True
+        kargs['size'] = o.size
+        olimit = self.buy(**kargs)
+
+        return [o, ostop, olimit]
+
     def order_target_size(self, data=None, target=0, **kwargs):
         '''
         Place an order to rebalance a position to have final size of ``target``
