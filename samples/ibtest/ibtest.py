@@ -45,6 +45,7 @@ class TestStrategy(bt.Strategy):
         trailpercent=None,
         limitoffset=None,
         oca=False,
+        bracket=False,
     )
 
     def __init__(self):
@@ -130,14 +131,34 @@ class TestStrategy(bt.Strategy):
 
         if self.datastatus and not self.position and len(self.orderid) < 1:
             exectype = self.p.exectype if not self.p.oca else bt.Order.Limit
+            close = self.data0.close[0]
+            price = round(close * 0.90, 2)
             self.order = self.buy(size=self.p.stake,
                                   exectype=exectype,
-                                  price=round(self.data0.close[0] * 0.90, 2),
-                                  valid=self.p.valid)
+                                  price=price,
+                                  valid=self.p.valid,
+                                  transmit=not self.p.bracket)
 
             self.orderid.append(self.order)
 
-            if self.p.oca:
+            if self.p.bracket:
+                # low side
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.Stop,
+                          price=round(price * 0.90, 2),
+                          valid=self.p.valid,
+                          transmit=False,
+                          parent=self.order)
+
+                # high side
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.Limit,
+                          price=round(close * 1.10, 2),
+                          valid=self.p.valid,
+                          transmit=True,
+                          parent=self.order)
+
+            elif self.p.oca:
                 self.buy(size=self.p.stake,
                          exectype=bt.Order.Limit,
                          price=round(self.data0.close[0] * 0.80, 2),
@@ -308,7 +329,8 @@ def runstrategy():
                         trailamount=args.trailamount,
                         trailpercent=args.trailpercent,
                         limitoffset=args.limitoffset,
-                        oca=args.oca)
+                        oca=args.oca,
+                        bracket=args.bracket)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -506,6 +528,10 @@ def parse_args():
     pgroup.add_argument('--oca',
                         required=False, action='store_true',
                         help='Test oca by putting 2 orders in a group')
+
+    pgroup.add_argument('--bracket',
+                        required=False, action='store_true',
+                        help='Test bracket orders by issuing high/low sides')
 
     pgroup = parser.add_mutually_exclusive_group(required=False)
     pgroup.add_argument('--trailamount', default=None, type=float,
