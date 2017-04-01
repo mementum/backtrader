@@ -236,12 +236,16 @@ class BackBroker(bt.BrokerBase):
 
         self.orders = list()  # will only be appending
         self.pending = collections.deque()  # popleft and append(right)
+        self._toactivate = collections.deque()  # to activate in next cycle
 
         self.positions = collections.defaultdict(Position)
         self.d_credit = collections.defaultdict(float)  # credit per data
         self.notifs = collections.deque()
 
         self.submitted = collections.deque()
+
+        # to keep dependent orders if needed
+        self._pchildren = collections.defaultdict(collections.deque)
 
         self._ocos = dict()
         self._ocol = collections.defaultdict(list)
@@ -315,7 +319,7 @@ class BackBroker(bt.BrokerBase):
 
     setcash = set_cash
 
-    def cancel(self, order):
+    def cancel(self, order, bracket=False):
         try:
             self.pending.remove(order)
         except ValueError:
@@ -325,6 +329,8 @@ class BackBroker(bt.BrokerBase):
         order.cancel()
         self.notify(order)
         self._ococheck(order)
+        if not bracket:
+            self._bracketize(order, cancel=True)
         return True
 
     def get_value(self, datas=None, mkt=False, lever=False):
@@ -422,6 +428,26 @@ class BackBroker(bt.BrokerBase):
         return o.status
 
     def submit(self, order):
+        oref = order.ref
+        pref = getattr(order.parent, 'ref', oref)  # parent ref or self
+
+        if oref != pref:
+            if pref not in self._pchildren:
+                order.reject()  # parent not there - may have been rejected
+                self.notify_order(order)  # reject child, notify
+                return order
+
+        pc = self._pchildren[pref]
+        pc.append(order)  # store in parent/children queue
+
+        if order.transmit:  # if single order, sent and queue cleared
+            # if parent-child, the parent will be sent, the other kept
+            rets = [self.transmit(x) for x in pc]
+            return rets[-1]  # last one is the one triggering transmission
+
+        return order
+
+    def transmit(self, order):
         if self.p.checksubmit:
             order.submit()
             self.submitted.append(order)
@@ -452,6 +478,8 @@ class BackBroker(bt.BrokerBase):
 
             order.margin()
             self.notify(order)
+            self._ococheck(order)
+            self._bracketize(order, cancel=True)
 
     def submit_accept(self, order):
         order.pannotated = None
@@ -459,6 +487,23 @@ class BackBroker(bt.BrokerBase):
         order.accept()
         self.pending.append(order)
         self.notify(order)
+
+    def _bracketize(self, order, cancel=False):
+        oref = order.ref
+        pref = getattr(order.parent, 'ref', oref)
+        parent = oref == pref
+
+        pc = self._pchildren[pref]  # defdict - guaranteed
+        if cancel or not parent:  # cancel left or child exec -> cancel other
+            while pc:
+                self.cancel(pc.popleft(), bracket=True)  # idempotent
+
+            del self._pchildren[pref]  # defdict guaranteed
+
+        else:  # not cancel -> parent exec'd
+            pc.popleft()  # remove parent
+            for o in pc:  # activate childnre
+                self._toactivate.append(o)
 
     def _ococheck(self, order):
         # ocoref = self._ocos[order.ref] or order.ref  # a parent or self
@@ -487,12 +532,14 @@ class BackBroker(bt.BrokerBase):
             size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
                          size=size, price=price, pricelimit=plimit,
                          exectype=exectype, valid=valid, tradeid=tradeid,
-                         trailamount=trailamount, trailpercent=trailpercent)
+                         trailamount=trailamount, trailpercent=trailpercent,
+                         parent=parent, transmit=transmit)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -503,12 +550,14 @@ class BackBroker(bt.BrokerBase):
              size, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
+             parent=None, transmit=True,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
                           size=size, price=price, pricelimit=plimit,
                           exectype=exectype, valid=valid, tradeid=tradeid,
-                          trailamount=trailamount, trailpercent=trailpercent)
+                          trailamount=trailamount, trailpercent=trailpercent,
+                          parent=parent, transmit=transmit)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -663,6 +712,7 @@ class BackBroker(bt.BrokerBase):
             order.margin()
             self.notify(order)
             self._ococheck(order)
+            self._bracketize(order, cancel=True)
 
     def notify(self, order):
         self.notifs.append(order.clone())
@@ -895,6 +945,9 @@ class BackBroker(bt.BrokerBase):
                                      pcreated, plimit)
 
     def next(self):
+        while self._toactivate:
+            self._toactivate.popleft().activate()
+
         if self.p.checksubmit:
             self.check_submitted()
 
@@ -921,10 +974,19 @@ class BackBroker(bt.BrokerBase):
             if order.expire():
                 self.notify(order)
                 self._ococheck(order)
+                self._bracketize(order, cancel=True)
+
+            elif not order.active():
+                self.pending.append(order)  # cannot yet be processed
+
             else:
                 self._try_exec(order)
                 if order.alive():
                     self.pending.append(order)
+
+                elif order.status == Order.Completed:
+                    # a bracket parent order may have been executed
+                    self._bracketize(order)
 
         # Operations have been executed ... adjust cash end of bar
         for data, pos in self.positions.items():
