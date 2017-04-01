@@ -430,7 +430,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
             self.info[key] = val
 
     def __eq__(self, other):
-        return self.ref == other.ref
+        return other is not None and self.ref == other.ref
 
     def __ne__(self, other):
         return self.ref != other.ref
