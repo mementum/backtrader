@@ -1,3 +1,13 @@
+1.9.37.117
+  - Add new samples (OCO, StopTrail/Limit, LRSI, partial-plot, psar,
+    future-spot)
+  - Add Bracket order support
+  - Bracket order for IB and adapted sample
+  - Correct cancel order message reception in OandaStore
+  - Cosmectic changes to quickstart examples
+  - Document bracket, stoptrail/limit, oco, partial-plotting, same axis
+    plotting, future-vs-spot
+
 1.9.36.116
   - StopTrail/StopTrailLimit/Oco for Interactive Brokers
   - PR #290 for child OCO orders
