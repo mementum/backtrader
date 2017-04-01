@@ -27,6 +27,10 @@ Contents:
    filler
    order
    order-creation-execution/order-creation-execution
+   order-creation-execution/oco/oco
+   order-creation-execution/trail/stoptrail
+   order-creation-execution/bracket/bracket
+   order-creation-execution/futurespot/future-vs-spot
    datafeed
    datafeed-develop-csv
    datafeed-develop-general/datafeed-develop-general
@@ -54,6 +58,8 @@ Contents:
    position
    trade
    plotting/plotting
+   plotting/ranges/plotting-date-ranges
+   plotting/sameaxis/plot-sameaxis
    optimization-improvements
    automated-bt-run/automated-bt-run
    memory-savings/memory-savings
