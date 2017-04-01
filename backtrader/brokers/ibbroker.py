@@ -170,7 +170,9 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
 
         self.m_totalQuantity = abs(self.size)  # ib takes only positives
 
-        self.m_transmit = True
+        self.m_transmit = self.transmit
+        if self.parent is not None:
+            self.m_parentId = self.parent.m_orderId
 
         # Time In Force: DAY, GTC, IOC, GTD
         if self.valid is None:
