@@ -303,6 +303,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.comminfo = None
         self.triggered = False
 
+        self._active = self.parent is None
         self.status = Order.Created
 
         self.plimit = self.p.pricelimit  # alias via property
@@ -403,6 +404,12 @@ class OrderBase(with_metaclass(MetaParams, object)):
     def ordtypename(self, ordtype=None):
         '''Returns the name for a given ordtype or the one of the order'''
         return self.OrdTypes[self.ordtype if ordtype is None else ordtype]
+
+    def active(self):
+        return self._active
+
+    def activate(self):
+        self._active = True
 
     def alive(self):
         '''Returns True if the order is in a status in which it can still be
