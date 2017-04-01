@@ -221,10 +221,11 @@ class OrderData(object):
 
 class OrderBase(with_metaclass(MetaParams, object)):
     params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None),
-        ('pricelimit', None), ('trailamount', None), ('trailpercent', None),
-        ('exectype', None), ('valid', None),
-        ('tradeid', 0), ('oco', None),
+        ('owner', None), ('data', None),
+        ('size', None), ('price', None), ('pricelimit', None),
+        ('exectype', None), ('valid', None), ('tradeid', 0), ('oco', None),
+        ('trailamount', None), ('trailpercent', None),
+        ('parent', None), ('transmit', True),
         ('simulated', False),
     )
 
