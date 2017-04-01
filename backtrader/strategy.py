@@ -560,6 +560,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             size=None, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
             **kwargs):
         '''Create a buy (long) order and send it to the broker
 
@@ -637,7 +638,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
               ``price`` minus ``trailamount`` (or ``trailpercent``) and which
               is updated if the price moves away from the stop
 
-
           - ``valid`` (default: ``None``)
 
             Possible values:
@@ -673,6 +673,23 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             (Order Cancel Others) group. The execution of one of the orders,
             immediately cancels all others in the same group
 
+          - ``parent`` (default: ``None``)
+
+            Controls the relationship of a group of orders, for example a buy
+            which is bracketed by a high-side limit sell and a low side stop
+            sell. The high/low side orders remain inactive until the parent
+            order has been either executed (they become active) or is
+            canceled/expires (the children are also canceled) bracket orders
+            have the same size
+
+          - ``transmit`` (default: ``True``)
+
+            Indicates if the order has to be **transmitted**, ie: not only
+            placed in the broker but also issued. This is meant for example to
+            control bracket orders, in which one disables the transmission for
+            the parent and 1st set of children and activates it for the last
+            children, which triggers the full placement of all bracket orders.
+
           - ``**kwargs``: additional broker implementations may support extra
             parameters. ``backtrader`` will pass the *kwargs* down to the
             created order objects
@@ -703,6 +720,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 size=abs(size), price=price, plimit=plimit,
                 exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
                 trailamount=trailamount, trailpercent=trailpercent,
+                parent=parent, transmit=transmit,
                 **kwargs)
 
         return None
@@ -711,6 +729,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
              size=None, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
+             parent=None, transmit=True,
              **kwargs):
         '''
         To create a selll (short) order and send it to the broker
@@ -731,6 +750,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 size=abs(size), price=price, plimit=plimit,
                 exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
                 trailamount=trailamount, trailpercent=trailpercent,
+                parent=parent, transmit=transmit,
                 **kwargs)
 
         return None
