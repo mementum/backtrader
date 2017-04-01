@@ -56,7 +56,7 @@ class TestStrategy(bt.Strategy):
 
         # Check if an order has been completed
         # Attention: broker could reject order if not enougth cash
-        if order.status in [order.Completed, order.Canceled, order.Margin]:
+        if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
                     'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
@@ -74,8 +74,8 @@ class TestStrategy(bt.Strategy):
 
             self.bar_executed = len(self)
 
-        # Write down: no pending order
-        self.order = None
+        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
+            self.log('Order Canceled/Margin/Rejected')
 
     def notify_trade(self, trade):
         if not trade.isclosed:
