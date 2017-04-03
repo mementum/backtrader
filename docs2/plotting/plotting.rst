@@ -336,6 +336,50 @@ The slower line ``percD`` is plotted with a *dashed* style. And the names of
 the lines are changed to include fancy ``%`` signs (``%K`` and ``%D``) which
 cannot be used in name definitions in *Python*
 
+Methods controlling plotting
+----------------------------
+
+When dealing with *Indicators* and *Observers* the following methods are
+supported to further control plotting:
+
+  - ``_plotlabel(self)``
+
+    Which should return a list of things to conform the labels which will be
+    placed in between parentheses after the name of the *Indicators* or
+    *Observer*
+
+    An example from the ``RSI`` indicator::
+
+      def _plotlabel(self):
+          plabels = [self.p.period]
+          plabels += [self.p.movav] * self.p.notdefault('movav')
+          return plabels
+
+    As can be seen this method returns:
+
+      - An ``int`` which indicates the period configured for the ``RSI`` and if
+	the default moving average has been changed, the specific class
+
+	In the background both will be converted to a string. In the case of
+	the *class* an effort will be made to just print the name of the class
+	rather than the complete ``module.name`` combination.
+
+  - ``_plotinit(self)``
+
+    Which is called at the beginning of plotting to do whatever specific
+    initialization the indicator may need. Again, an example from ``RSI``::
+
+      def _plotinit(self):
+          self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
+
+    Here the code assigns a value to ``plotyhlines`` to have horizontal lines
+    (the ``hlines`` part) plotted at specific ``y`` values.
+
+    The values of the parameters ``upperband`` and ``lowerband`` are used for
+    this, which cannot be known in advance, because the parameters can be
+    changed by the end user
+
+
 System-wide plotting options
 ============================
 
