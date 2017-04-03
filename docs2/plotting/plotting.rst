@@ -102,6 +102,7 @@ These are controlled by this data set in *Indicators* and *Observers*::
                     plotskip=False,
                     plotabove=False,
                     plotlinelabels=False,
+                    plotlinevalues=True,
                     plotymargin=0.0,
                     plotyhlines=[],
                     plotyticks=[],
@@ -168,6 +169,10 @@ The meaning of the options
     display the name of the 2 lines and its markers: ``Buy`` and ``Sell`` to
     make it clear for the end user what is what.
 
+  - ``plotlinevalues``: controls whether the legend for the lines in indicators
+    and observers has the last plotted value. Can be controlled on a per-line
+    basis with ``_plotvalue`` for each line
+
   - ``plotymargin``: margin to add to the top and bottom of individual
     subcharts on the graph
 
@@ -230,6 +235,9 @@ with an underscore (``_``):
 
   - ``_plotskip`` (*boolean*) which indicates that plotting of a specific line
     has to be skipped if set to ``True``
+
+  - ``_plotvalue`` (*boolean*) to control if the legend of this line will
+    contain the last plotted value (default is ``True``)
 
   - ``_name`` (*string*) which changes the plot name of a specific line
 
