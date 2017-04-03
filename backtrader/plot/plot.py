@@ -411,8 +411,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
 
-            if not math.isnan(lplot[-1]):
-                label += ' %.2f' % lplot[-1]
+            if ind.plotinfo.plotlinevalues:  # generic for indicator
+                plotlinevalue = lineplotinfo._get('_plotvalue', True)
+                if plotlinevalue and not math.isnan(lplot[-1]):
+                    label += ' %.2f' % lplot[-1]
 
             plotkwargs = dict()
             linekwargs = lineplotinfo._getkwargs(skip_=True)
