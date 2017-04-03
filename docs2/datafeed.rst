@@ -85,8 +85,6 @@ Parameters:
 CSV Data Feeds Common parameters
 ********************************
 
-This data feed can download data directly from Yahoo and feed into the system.
-
 Parameters (additional to the common ones):
 
   - ``headers`` (default: True)
