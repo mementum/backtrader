@@ -150,6 +150,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                     plotskip=False,
                     plotabove=False,
                     plotlinelabels=False,
+                    plotlinevalues=True,
                     plotymargin=0.0,
                     plotyhlines=[],
                     plotyticks=[],
