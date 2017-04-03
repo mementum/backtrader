@@ -74,6 +74,8 @@ class TestStrategy(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
 
+        self.order = None
+
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
