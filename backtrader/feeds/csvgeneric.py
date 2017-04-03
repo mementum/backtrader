@@ -26,11 +26,11 @@ import itertools
 
 from .. import feed, TimeFrame
 from ..utils import date2num
+from ..utils.py3 import integer_types, string_types
 
 
 class GenericCSVData(feed.CSVDataBase):
-    '''
-    Parses a CSV file according to the order and field presence defined by the
+    '''Parses a CSV file according to the order and field presence defined by the
     parameters
 
     Specific parameters (or specific meaning):
@@ -49,10 +49,24 @@ class GenericCSVData(feed.CSVDataBase):
         Value that will be used if a value which should be there is missing
         (the CSV field is empty)
 
-      - ``dtformat``: Format used to parse the datetime CSV field
+      - ``dtformat``: Format used to parse the datetime CSV field. See the
+        python strptime/strftime documentation for the format.
+
+        If a numeric value is specified, it will be interpreted as follows
+
+          - ``1``: The value is a Unix timestamp of type ``int`` representing
+            the number of seconds since Jan 1st, 1970
+
+          - ``2``: The value is a Unix timestamp of type ``float``
+
+        If a **callable** is passed
+
+          - it will accept a string and return a `datetime.datetime` python
+            instance
 
       - ``tmformat``: Format used to parse the time CSV field if "present"
         (the default for the "time" CSV field is not to be present)
+
     '''
 
     params = (
@@ -70,17 +84,36 @@ class GenericCSVData(feed.CSVDataBase):
         ('openinterest', 6),
     )
 
+    def start(self):
+        super(GenericCSVData, self).start()
+
+        if isinstance(self.p.dtformat, string_types):
+            self._dtstr = True
+        elif isinstance(self.p.dtformat, integer_types):
+            self._dtstr = False
+            idt = int(self.p.dtformat)
+            if idt == 1:
+                self._dtconvert = lambda x: datetime.utcfromtimestamp(int(x))
+            elif idt == 2:
+                self._dtconvert = lambda x: datetime.utcfromtimestamp(float(x))
+
+        else:  # assume callable
+            self._dtconvert = self.p.dtformat
+
     def _loadline(self, linetokens):
         # Datetime needs special treatment
         dtfield = linetokens[self.p.datetime]
-        dtformat = self.p.dtformat
+        if self._dtstr:
+            dtformat = self.p.dtformat
 
-        if self.p.time >= 0:
-            # add time value and format if it's in a separate field
-            dtfield += 'T' + linetokens[self.p.time]
-            dtformat += 'T' + self.p.tmformat
+            if self.p.time >= 0:
+                # add time value and format if it's in a separate field
+                dtfield += 'T' + linetokens[self.p.time]
+                dtformat += 'T' + self.p.tmformat
 
-        dt = datetime.strptime(dtfield, dtformat)
+            dt = datetime.strptime(dtfield, dtformat)
+        else:
+            dt = self._dtconvert(dtfield)
 
         if self.p.timeframe >= TimeFrame.Days:
             # check if the expected end of session is larger than parsed
