@@ -668,7 +668,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.pinf.zorder[ax] = plotted[0].get_zorder()
 
         # Code to place a label at the right hand side with the last value
-        vtags = ind.plotinfo._get('plotvaluetags', True)
+        vtags = data.plotinfo._get('plotvaluetags', True)
         if self.pinf.sch.valuetags and vtags:
             self.drawtag(ax, len(self.pinf.xreal), closes[-1],
                          facecolor='white', edgecolor=self.pinf.sch.loc)
