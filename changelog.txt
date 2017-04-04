@@ -1,4 +1,10 @@
-1.9.37.117
+1.9.38.116
+  - Plotting control options for last value in legend and right hand side
+    tag
+  - Documentation improvements
+  - Support numeric timestamps in CSVGenericData
+
+1.9.37.116
   - Add new samples (OCO, StopTrail/Limit, LRSI, partial-plot, psar,
     future-spot)
   - Add Bracket order support
