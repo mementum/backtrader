@@ -103,6 +103,7 @@ These are controlled by this data set in *Indicators* and *Observers*::
                     plotabove=False,
                     plotlinelabels=False,
                     plotlinevalues=True,
+                    plotvaluetags=True,
                     plotymargin=0.0,
                     plotyhlines=[],
                     plotyticks=[],
@@ -173,6 +174,10 @@ The meaning of the options
     and observers has the last plotted value. Can be controlled on a per-line
     basis with ``_plotvalue`` for each line
 
+  - ``plotvaluetags``: controls whether a value tag with the last value is
+    plotted on the right hand side of the line. Can be controlled on a per-line
+    basis with ``_plotvaluetag`` for each line
+
   - ``plotymargin``: margin to add to the top and bottom of individual
     subcharts on the graph
 
@@ -238,6 +243,9 @@ with an underscore (``_``):
 
   - ``_plotvalue`` (*boolean*) to control if the legend of this line will
     contain the last plotted value (default is ``True``)
+
+  - ``_plotvaluetag`` (*boolean*) to control if a righ hand side tag with the
+    last value is plotted (default is ``True``)
 
   - ``_name`` (*string*) which changes the plot name of a specific line
 
@@ -499,6 +507,12 @@ options are documented in the code::
           self.legendind = True
           # Location of the legend for indicators (see matplotlib)
           self.legendindloc = 'upper left'
+
+	  # Plot the last value of a line after the Object name
+	  self.linevalues = True
+
+          # Plot a tag at the end of each line with the last value
+          self.valuetags = True
 
           # Default color for horizontal lines (see plotinfo.plothlines)
           self.hlinescolor = '0.66'  # shade of gray

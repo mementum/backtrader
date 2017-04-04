@@ -411,7 +411,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
 
-            if ind.plotinfo.plotlinevalues:  # generic for indicator
+            # Global and generic for indicator
+            if self.pinf.sch.linevalues and ind.plotinfo.plotlinevalues:
                 plotlinevalue = lineplotinfo._get('_plotvalue', True)
                 if plotlinevalue and not math.isnan(lplot[-1]):
                     label += ' %.2f' % lplot[-1]
@@ -440,11 +441,14 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             self.pinf.zorder[ax] = plottedline.get_zorder()
 
-            if not math.isnan(lplot[-1]):
-                # line has valid values, plot a tag for the last value
-                self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
-                             facecolor='white',
-                             edgecolor=self.pinf.color(ax))
+            vtags = lineplotinfo._get('plotvaluetags', True)
+            if self.pinf.sch.valuetags and vtags:
+                linetag = lineplotinfo._get('_plotvaluetag', True)
+                if linetag and not math.isnan(lplot[-1]):
+                    # line has valid values, plot a tag for the last value
+                    self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
+                                 facecolor='white',
+                                 edgecolor=self.pinf.color(ax))
 
             farts = (('_gt', operator.gt), ('_lt', operator.lt), ('', None),)
             for fcmp, fop in farts:
@@ -628,8 +632,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             tfname = TimeFrame.getname(data._timeframe, data._compression)
             datalabel += ' (%d %s)' % (data._compression, tfname)
 
-        datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
-                     (opens[-1], highs[-1], lows[-1], closes[-1])
+        plinevalues = getattr(data.plotinfo, 'plotlinevalues', True)
+        if self.pinf.sch.linevalues and plinevalues:
+            datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
+                         (opens[-1], highs[-1], lows[-1], closes[-1])
 
         if self.pinf.sch.style.startswith('line'):
             if axdatamaster is None:
@@ -662,8 +668,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         self.pinf.zorder[ax] = plotted[0].get_zorder()
 
         # Code to place a label at the right hand side with the last value
-        self.drawtag(ax, len(self.pinf.xreal), closes[-1],
-                     facecolor='white', edgecolor=self.pinf.sch.loc)
+        vtags = ind.plotinfo._get('plotvaluetags', True)
+        if self.pinf.sch.valuetags and vtags:
+            self.drawtag(ax, len(self.pinf.xreal), closes[-1],
+                         facecolor='white', edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
         # make sure "over" indicators do not change our scale
