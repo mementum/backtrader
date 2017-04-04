@@ -307,12 +307,12 @@ Data TimeFrames and Compressions
 ================================
 
 Data feeds in the *backtrader* ecosystem, support the ``timeframe`` and
-``compression`` parameters during creation for informational purposes. These
+``compression`` parameters during creation. These
 parameters are also accessible as attributes with ``data._timeframe`` and
 ``data._compression``
 
-The significance of *timeframe/compression* combinations was useful when
-passing the data to a ``cerebro`` instance via ``resampledata`` or
+The significance of *timeframe/compression* combinations has a specific purpose
+whenpassing the data to a ``cerebro`` instance via ``resampledata`` or
 ``replaydata``, to let the internal resampler/replayer objects to understand
 what the intended target is.  ``._timeframe`` and ``._compression`` will be
 overwritten in the data when resampled/replayed.

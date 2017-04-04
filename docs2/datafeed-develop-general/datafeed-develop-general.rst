@@ -71,8 +71,17 @@ Having the following meanings:
 
   - ``name`` is cosmetic for plotting purposes
 
-  - ``timeframe`` and ``compression`` are cosmetic and informative. They really
-    play a role in Data Resampling and Data Replaying.
+  - ``timeframe`` indicates the temporal working reference
+
+    Potential values: ``Ticks``, ``Seconds``, ``Minutes``, ``Days``, ``Weeks``,
+    ``Months`` and ``Years``
+
+  - ``compression`` (default: 1)
+
+    Number of actual bars per bar. Informative. Only effective in Data
+    Resampling/Replaying.
+
+  - ``compression``
 
   - ``sessionend`` if passed (a datetime.time object) will be added to the
     datafeed ``datetime`` line which allows identifying the end of the session
@@ -90,7 +99,7 @@ Initialization
 --------------
 
 The binary VisualChart data files can contain either daily (.fd extension) or
-intraday data (.min extension). Here the informative parameter ``timeframe``
+intraday data (.min extension). Here the parameter ``timeframe``
 will be used to distinguish which type of file is being read.
 
 During ``__init__`` constants which differ for each type are set up.
