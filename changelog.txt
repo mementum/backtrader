@@ -1,3 +1,6 @@
+1.9.39.116
+  - Fix #294 which break plotting by plotting with no indicators/observers
+
 1.9.38.116
   - Plotting control options for last value in legend and right hand side
     tag
