@@ -84,21 +84,20 @@ def btrun(pargs=''):
 
     cerebro = bt.Cerebro(**cer_kwargs)
 
-    tf, cp = None, None
-    if args.resample is not None:
-        tfcp = args.resample.split(':')
-    elif args.replay is not None:
-        tfcp = args.replay.split(':')
+    if args.resample is not None or args.replay is not None:
+        if args.resample is not None:
+            tfcp = args.resample.split(':')
+        elif args.replay is not None:
+            tfcp = args.replay.split(':')
 
-    # compression may be skipped and it will default to 1
-    if len(tfcp) == 1 or tfcp[1] == '':
-        tf, cp = tfcp[0], 1
-    else:
-        tf, cp = tfcp
+        # compression may be skipped and it will default to 1
+        if len(tfcp) == 1 or tfcp[1] == '':
+            tf, cp = tfcp[0], 1
+        else:
+            tf, cp = tfcp
 
-    cp = int(cp)  # convert any value to int
-
-    tf = TIMEFRAMES.get(tf, None)
+        cp = int(cp)  # convert any value to int
+        tf = TIMEFRAMES.get(tf, None)
 
     for data in getdatas(args):
         if args.resample is not None:
