@@ -452,8 +452,8 @@ class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
             for i, sublabel in enumerate(sublabels):
                 # if isinstance(sublabel, LineSeries): ## DOESN'T WORK ???
                 if hasattr(sublabel, 'plotinfo'):
-                    sublabels[i] = sublabel.plotinfo.plotname or \
-                        sublabel.__name__
+                    sublabels[i] = (sublabel.plotinfo._get('plotname', '') or
+                                    sublabel.__name__)
             label += ' (%s)' % ', '.join(map(str, sublabels))
         return label
 
