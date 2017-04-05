@@ -182,12 +182,12 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
 
     def _cancel(self, oref):
         order = self.orders[oref]
-        order.cancel(self)
+        order.cancel()
         self.notify(order)
 
     def _expire(self, oref):
         order = self.orders[oref]
-        order.expire(self)
+        order.expire()
         self.notify(order)
 
     def _fill(self, oref, size, price, **kwargs):
