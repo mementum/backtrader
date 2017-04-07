@@ -1,3 +1,8 @@
+1.9.40.116
+  - Correct expire and cancel in OandaStore
+  - Correct BollingerBands to use the chosen movav for the StdDev calcs
+  - Ensure parameters wit plotinfo and no plotname get a name granted
+
 1.9.39.116
   - Fix #294 which break plotting by plotting with no indicators/observers
 
