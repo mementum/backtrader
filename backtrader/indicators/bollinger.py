@@ -56,7 +56,8 @@ class BollingerBands(Indicator):
 
     def __init__(self):
         self.lines.mid = ma = self.p.movav(self.data, period=self.p.period)
-        stddev = self.p.devfactor * StdDev(self.data, ma, period=self.p.period)
+        stddev = self.p.devfactor * StdDev(self.data, ma, period=self.p.period,
+                                           movav=self.p.movav)
         self.lines.top = ma + stddev
         self.lines.bot = ma - stddev
 
