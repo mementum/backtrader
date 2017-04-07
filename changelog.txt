@@ -1,4 +1,5 @@
 1.9.40.116
+  - Fix #295 by only managing tf and cp if resample/replay have been specified
   - Correct expire and cancel in OandaStore
   - Correct BollingerBands to use the chosen movav for the StdDev calcs
   - Ensure parameters wit plotinfo and no plotname get a name granted
