@@ -37,7 +37,7 @@ from . import observers
 from .writer import WriterFile
 from .utils import OrderedDict
 from .strategy import Strategy, SignalStrategy
-
+from .tradingcal import TradingCalendar, PandasMarketCalendar
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
@@ -259,6 +259,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._broker = BackBroker()
 
+        self._tradingcal = TradingCalendar()
+
     @staticmethod
     def iterize(iterable):
         '''Handy function which turns things into things that can be iterated upon
@@ -274,6 +276,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def add_tradingcalendar(self, cal):
+        '''Adds a global trading calendar to the system. Individual data feeds
+        may have separate calendars which override the global one
+
+        ``cal`` can be an instance of ``TradingCalendar`` a string or an
+        instance of ``pandas_market_calendar``. A string will be will be
+        instantiated as a ``PandasMarketCalendar`` (which needs the module
+        ``pandas_market_calendar`` installed in the system
+        '''
+        if isinstance(cal, string_types):
+            cal = PandasMarketCalendar(calendar=cal)
+        elif hasattr(cal, 'valid_days'):
+            cal = PandasMarketCalendar(calendar=cal)
+
+        self._trading_calendar = cal
 
     def add_signal(self, sigtype, sigcls, *sigargs, **sigkwargs):
         '''Adds a signal to the system which will be later added to a
