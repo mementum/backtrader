@@ -1,3 +1,8 @@
+1.9.41.116
+  - Keep processing orders after create in OandaStore after change to process
+    new messages
+  - Manage CFDs also as cash data in rqtMktData
+
 1.9.40.116
   - Fix #295 by only managing tf and cp if resample/replay have been specified
   - Correct expire and cancel in OandaStore
