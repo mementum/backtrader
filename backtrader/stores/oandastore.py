@@ -610,6 +610,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
         elif ttype in self._X_ORDER_CREATE:
             self.broker._accept(oref)
+            self._ordersrev[oid] = oref
 
         elif ttype in 'ORDER_CANCEL':
             reason = trans['reason']
