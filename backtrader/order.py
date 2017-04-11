@@ -316,7 +316,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # Set a reference price if price is not set using
         # the close price
-        pclose = self.data.close[0]
+        pclose = self.data.close[0] if not self.simulated else self.price
         if not self.price and not self.pricelimit:
             price = pclose
         else:
