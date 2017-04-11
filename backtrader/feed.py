@@ -129,6 +129,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ('tz', None),
         ('tzinput', None),
         ('qcheck', 0.0),  # timeout in seconds (float) to check for events
+        ('calendar', None),
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
@@ -183,6 +184,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # FIXME: These two are never used and could be removed
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
+
+        self._calendar = self.p.calendar
 
         self._started = True
 
