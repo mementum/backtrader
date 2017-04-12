@@ -303,7 +303,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         return self.value
 
     def getposition(self, data, clone=True):
-        return self.ib.getposition(data.contract, clone=clone)
+        return self.ib.getposition(data.tradecontract, clone=clone)
 
     def cancel(self, order):
         try:
@@ -334,13 +334,13 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             order.m_ocaGroup = self.orderbyid[order.oco.m_orderId].m_ocaGroup
 
         self.orderbyid[order.m_orderId] = order
-        self.ib.placeOrder(order.m_orderId, order.data.contract, order)
+        self.ib.placeOrder(order.m_orderId, order.data.tradecontract, order)
         self.notify(order)
 
         return order
 
     def getcommissioninfo(self, data):
-        contract = data.contract
+        contract = data.tradecontract
         try:
             mult = float(contract.m_multiplier)
         except (ValueError, TypeError):
