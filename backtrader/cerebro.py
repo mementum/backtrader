@@ -259,7 +259,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._broker = BackBroker()
 
-        self._tradingcal = TradingCalendar()
+        self._tradingcal = None  # TradingCalendar()
 
     @staticmethod
     def iterize(iterable):
@@ -282,7 +282,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         may have separate calendars which override the global one
 
         ``cal`` can be an instance of ``TradingCalendar`` a string or an
-        instance of ``pandas_market_calendar``. A string will be will be
+        instance of ``pandas_market_calendars``. A string will be will be
         instantiated as a ``PandasMarketCalendar`` (which needs the module
         ``pandas_market_calendar`` installed in the system
         '''
@@ -291,7 +291,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         elif hasattr(cal, 'valid_days'):
             cal = PandasMarketCalendar(calendar=cal)
 
-        self._trading_calendar = cal
+        self._tradingcal = cal
 
     def add_signal(self, sigtype, sigcls, *sigargs, **sigkwargs):
         '''Adds a signal to the system which will be later added to a
