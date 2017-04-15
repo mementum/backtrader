@@ -235,6 +235,18 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
     def __rmul__(self, other):
         return self._roperation(other, operator.__mul__)
 
+    def __div__(self, other):
+        return self._operation(other, operator.__div__)
+
+    def __rdiv__(self, other):
+        return self._roperation(other, operator.__div__)
+
+    def __floordiv__(self, other):
+        return self._operation(other, operator.__floordiv__)
+
+    def __rfloordiv__(self, other):
+        return self._roperation(other, operator.__floordiv__)
+
     def __truediv__(self, other):
         return self._operation(other, operator.__truediv__)
 
