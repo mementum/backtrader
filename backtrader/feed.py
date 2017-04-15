@@ -306,7 +306,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def setenvironment(self, env):
         '''Keep a reference to the environment'''
-        self._env = self
+        self._env = env
 
     def getenvironment(self):
         return self._env
