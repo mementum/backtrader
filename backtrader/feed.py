@@ -200,31 +200,34 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def _gettzinput(self):
         '''Can be overriden by classes to return a timezone for input'''
-        return self.p.tzinput
+        return self._tzparse(self.p.tzinput)
 
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the
         timezone'''
+        return self._tzparse(self.p.tz)
+
+    def _tzparse(self, tz):
         # If no object has been provided by the user and a timezone can be
         # found via contractdtails, then try to get it from pytz, which may or
         # may not be available.
-        tzstr = isinstance(self.p.tz, string_types)
-        if self.p.tz is None or not tzstr:
-            return bt.utils.date.Localizer(self.p.tz)
+        tzstr = isinstance(tz, string_types)
+        if tz is None or not tzstr:
+            return bt.utils.date.Localizer(tz)
 
         try:
             import pytz  # keep the import very local
         except ImportError:
-            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+            return bt.utils.date.Localizer(tz)    # nothing can be done
 
-        tzs = self.p.tz
+        tzs = tz
         if tzs == 'CST':  # usual alias
             tzs = 'CST6CDT'
 
         try:
             tz = pytz.timezone(tzs)
         except pytz.UnknownTimeZoneError:
-            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
+            return bt.utils.date.Localizer(tz)    # nothing can be done
 
         return tz
 
