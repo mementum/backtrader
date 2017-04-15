@@ -76,6 +76,10 @@ class DTFaker(object):
     def time(self, idx=0):
         return self._dtime.time()
 
+    @property
+    def _calendar(self):
+        return self.data._calendar
+
     def __getitem__(self, idx):
         return self._dt if idx == 0 else float('-inf')
 
@@ -179,17 +183,23 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
     def _eosset(self):
         if self._nexteos is None:
-            dt = self.data.datetime[0]
-            nexteos = datetime.combine(num2date(self.data.datetime[0]),
-                                       self.data.p.sessionend)
+            if self.data._calendar is None:
+                dt = self.data.datetime[0]
+                nexteos = datetime.combine(num2date(self.data.datetime[0]),
+                                           self.data.p.sessionend)
 
-            nextdteos = self.data.date2num(nexteos)  # localized -> utc-like
-            while dt > nextdteos:
-                nexteos += timedelta(days=1)
-                nextdteos = date2num(nexteos)
+                nextdteos = self.data.date2num(nexteos)  # locl'ed -> utc-like
+                while dt > nextdteos:
+                    nexteos += timedelta(days=1)
+                    nextdteos = date2num(nexteos)
 
-            self._nexteos = nexteos
-            self._nextdteos = nextdteos
+                self._nexteos = nexteos
+                self._nextdteos = nextdteos
+            else:
+                day = num2date(self.data.datetime[0])
+                _, ctime = self.data._calendar.schedule(day, self.data._tz)
+                self._nexteos = ctime  # already in UTC
+                self._nextdteos = date2num(ctime)
 
     def _eoscheck(self, data, seteos=True, exact=False):
         if seteos:
@@ -222,14 +232,19 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     def _barover_days(self, data):
         return self._eoscheck(data)
 
-    def _barover_weeks(self, data):
-        year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
-        yearweek = year * 100 + week
+    if True:
+        def _barover_weeks(self, data):
+            year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
+            yearweek = year * 100 + week
 
-        baryear, barweek, _ = data.datetime.date().isocalendar()
-        bar_yearweek = baryear * 100 + barweek
+            baryear, barweek, _ = data.datetime.date().isocalendar()
+            bar_yearweek = baryear * 100 + barweek
 
-        return bar_yearweek > yearweek
+            return bar_yearweek > yearweek
+
+    else:
+        def _barover_weeks(self, data):
+            return data._calendar.last_weekday(data.datetime.day())
 
     def _barover_months(self, data):
         dt = data.num2date(self.bar.datetime).date()
@@ -315,22 +330,44 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         return self(data, fromcheck=True, forcedata=_forcedata)
 
     def _dataonedge(self, data):
-        if not self.subweeks:  # only for subweeks
-            return False
+        if not self.subweeks:
+            if data._calendar is None:
+                return False, True  # nothing can be done
+
+            tframe = self.p.timeframe
+            ret = False
+            if tframe == TimeFrame.Weeks:  # Ticks is already the lowest
+                ret = data._calendar.last_weekday(data.datetime.date())
+            elif tframe == TimeFrame.Months:
+                ret = data._calendar.last_monthday(data.datetime.date())
+            elif tframe == TimeFrame.Years:
+                ret = data._calendar.last_yearday(data.datetime.date())
+
+            if ret:
+                # Data must be consumed but compression may not be met yet
+                # Prevent barcheckover from being called because it could again
+                # increase compcount
+                docheckover = False
+                self.compcount += 1
+                ret = not (self.compcount % self.p.compression)
+            else:
+                docheckover = True
+
+            return ret, docheckover
 
         if self._eoscheck(data, exact=True):
-            return True
+            return True, True
 
         if self.subdays:
             point, prest = self._gettmpoint(data.datetime.time())
             if prest:
-                return False  # cannot be on boundary, subunits presetn
+                return False, True  # cannot be on boundary, subunits present
 
             # Pass through compression to get boundary and rest over boundary
             bound, brest = divmod(point, self.p.compression)
 
             # if no extra and decomp bound is point
-            return brest == 0 and point == (bound * self.p.compression)
+            return (brest == 0 and point == (bound * self.p.compression), True)
 
         # Code overriden by eoscheck
         if False and self.p.sessionend:
@@ -340,7 +377,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             bsend = datetime.combine(bdtime.date(), data.p.sessionend)
             return bdtime == bsend
 
-        return False  # subweeks, not subdays and not sessionend
+        return False, True  # subweeks, not subdays and not sessionend
 
     def _calcadjtime(self, greater=False):
         if self._nexteos is None:
@@ -479,6 +516,7 @@ class Resampler(_BaseResampler):
         '''Called for each set of values produced by the data source'''
         consumed = False
         onedge = False
+        docheckover = True
         if not fromcheck:
             if self._latedata(data):
                 if not self.p.takelate:
@@ -494,18 +532,22 @@ class Resampler(_BaseResampler):
             if self.componly:  # only if not subdays
                 consumed = True
 
-            elif self._dataonedge(data):  # for subdays
-                consumed = True
-                onedge = True
+            else:
+                onedge, docheckover = self._dataonedge(data)  # for subdays
+                consumed = onedge
 
         if consumed:
             self.bar.bupdate(data)  # update new or existing bar
             data.backwards()  # remove used bar
 
-        if self.bar.isopen() and \
-           (onedge or self._checkbarover(data, fromcheck=fromcheck,
-                                         forcedata=forcedata)):
-
+        # if self.bar.isopen and (onedge or (docheckover and checkbarover))
+        cond = self.bar.isopen()
+        if cond:  # original is and, the 2nd term must also be true
+            if not onedge:  # onedge true is sufficient
+                if docheckover:
+                    cond = self._checkbarover(data, fromcheck=fromcheck,
+                                              forcedata=forcedata)
+        if cond:
             dodeliver = False
             if forcedata is not None:
                 # check our delivery time is not larger than that of forcedata
@@ -605,9 +647,9 @@ class Replayer(_BaseResampler):
             elif self.componly:  # only if not subdays
                 consumed = True
 
-            elif self._dataonedge(data):  # for subdays
-                consumed = True
-                onedge = True
+            else:
+                onedge, docheckover = self._dataonedge(data)  # for subdays
+                consumed = onedge
 
             data._tick_fill(force=True)  # update
 
@@ -616,7 +658,12 @@ class Replayer(_BaseResampler):
             if takinglate:
                 self.bar.datetime = data.datetime[-1] + 0.000001
 
-        if onedge or self._checkbarover(data, fromcheck=fromcheck):
+        # if onedge or (checkbarover and self._checkbarover)
+        cond = onedge
+        if not cond:  # original is or, if true it would suffice
+            if docheckover:
+                cond = self._checkbarover(data, fromcheck=fromcheck)
+        if cond:
             if not onedge and self.doadjusttime:  # insert tick with adjtime
                 adjusted = self._adjusttime(greater=True)
                 if adjusted:
