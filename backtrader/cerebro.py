@@ -41,6 +41,7 @@ from .tradingcal import TradingCalendar, PandasMarketCalendar
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
+
 class OptReturn(object):
     def __init__(self, params, **kwargs):
         self.p = self.params = params
@@ -475,6 +476,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if data.islive():
             self._dolive = True
 
+        return data
+
     def chaindata(self, *args, **kwargs):
         '''
         Chains several data feeds into one
@@ -489,6 +492,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             dname = args[0]._dataname
         d = bt.feeds.Chainer(dataname=dname, *args)
         self.adddata(d, name=dname)
+
+        return d
 
     def rolloverdata(self, *args, **kwargs):
         '''Chains several data feeds into one
@@ -507,6 +512,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         d = bt.feeds.RollOver(dataname=dname, *args, **kwargs)
         self.adddata(d, name=dname)
 
+        return d
+
     def replaydata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
@@ -524,6 +531,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.adddata(dataname, name=name)
         self._doreplay = True
 
+        return dataname
+
     def resampledata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
@@ -540,6 +549,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         dataname.resample(**kwargs)
         self.adddata(dataname, name=name)
         self._doreplay = True
+
+        return dataname
 
     def optcallback(self, cb):
         '''
