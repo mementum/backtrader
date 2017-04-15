@@ -34,6 +34,7 @@ from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
 from backtrader.utils.py3 import with_metaclass, zip, range, string_types
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
+from .tradingcal import PandasMarketCalendar
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
@@ -185,7 +186,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
 
-        self._calendar = self.p.calendar
+        self._calendar = cal = self.p.calendar
+        if cal is None:
+            self._calendar = self._env._tradingcal
+        elif isinstance(cal, string_types):
+            self._calendar = PandasMarketCalendar(calendar=cal)
 
         self._started = True
 
@@ -722,6 +727,8 @@ class DataClone(AbstractDataBase):
         # Copy tz infos
         self._tz = self.data._tz
         self.lines.datetime._settz(self._tz)
+
+        self._calendar = self.data._calendar
 
         # input has already been converted by guest data
         self._tzinput = None  # no need to further converr
