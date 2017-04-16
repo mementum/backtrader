@@ -311,3 +311,7 @@ Reference
    .. automethod:: signal_accumulate
 
    .. automethod:: signal_strategy
+
+   .. automethod:: addcalendar
+
+   .. automethod:: addtz
