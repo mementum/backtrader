@@ -3,6 +3,8 @@
   - Add tz support for strategies
   - Docs updates
   - Add multi/tradingcalendar samples
+  - Add div/floordiv operations to lines
+  - Return data references in all cerebro methods adding data stream
 
 1.9.41.116
   - Keep processing orders after create in OandaStore after change to process
