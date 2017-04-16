@@ -27,7 +27,8 @@ import itertools
 import multiprocessing
 
 import backtrader as bt
-from .utils.py3 import map, range, zip, with_metaclass, string_types
+from .utils.py3 import (map, range, zip, with_metaclass, string_types,
+                        integer_types)
 
 from . import linebuffer
 from . import indicator
@@ -35,9 +36,10 @@ from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .utils import OrderedDict
+from .utils import OrderedDict, tzparse
 from .strategy import Strategy, SignalStrategy
-from .tradingcal import TradingCalendar, PandasMarketCalendar
+from .tradingcal import (TradingCalendarBase, TradingCalendar,
+                         PandasMarketCalendar)
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
@@ -214,6 +216,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         If the old behavior with data0 as the master of the system is wished,
         set this parameter to true
+
+      - ``tz`` (default: ``None``)
+
+        Adds a global timezone for strategies. The argument ``tz`` can be
+
+          - ``None``: in this case the datetime displayed by strategies will be
+            in UTC, which has been always the standard behavior
+
+          - ``pytz`` instance. It will be used as such to convert UTC times to
+            the chosen timezone
+
+          - ``string``. Instantiating a ``pytz`` instance will be attempted.
+
+          - ``integer``. Use, for the strategy, the same timezone as the
+            corresponding ``data`` in the ``self.datas`` iterable (``0`` would
+            use the timezone from ``data0``)
     '''
 
     params = (
@@ -232,6 +250,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('writer', False),
         ('tradehistory', False),
         ('oldsync', False),
+        ('tz', None),
     )
 
     def __init__(self):
@@ -278,19 +297,50 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return niterable
 
-    def add_tradingcalendar(self, cal):
+    def addtz(self, tz):
+        '''
+        This can also be done with the parameter ``tz``
+
+        Adds a global timezone for strategies. The argument ``tz`` can be
+
+          - ``None``: in this case the datetime displayed by strategies will be
+            in UTC, which has been always the standard behavior
+
+          - ``pytz`` instance. It will be used as such to convert UTC times to
+            the chosen timezone
+
+          - ``string``. Instantiating a ``pytz`` instance will be attempted.
+
+          - ``integer``. Use, for the strategy, the same timezone as the
+            corresponding ``data`` in the ``self.datas`` iterable (``0`` would
+            use the timezone from ``data0``)
+
+        '''
+        self.p.tz = tz
+
+    def addcalendar(self, cal):
         '''Adds a global trading calendar to the system. Individual data feeds
         may have separate calendars which override the global one
 
         ``cal`` can be an instance of ``TradingCalendar`` a string or an
         instance of ``pandas_market_calendars``. A string will be will be
         instantiated as a ``PandasMarketCalendar`` (which needs the module
-        ``pandas_market_calendar`` installed in the system
+        ``pandas_market_calendar`` installed in the system.
+
+        If a subclass of `TradingCalendarBase` is passed (not an instance) it
+        will be instantiated
         '''
         if isinstance(cal, string_types):
             cal = PandasMarketCalendar(calendar=cal)
         elif hasattr(cal, 'valid_days'):
             cal = PandasMarketCalendar(calendar=cal)
+
+        else:
+            try:
+                if issubclass(cal, TradingCalendarBase):
+                    cal = cal()
+            except TypeError:  # already an instance
+                pass
 
         self._tradingcal = cal
 
@@ -898,6 +948,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 strat.set_tradehistory()
             runstrats.append(strat)
 
+        tz = self.p.tz
+        if isinstance(tz, integer_types):
+            tz = self.datas[tz]._tz
+        else:
+            tz = tzparse(tz)
+
         if runstrats:
             # loop separated for clarity
             defaultsizer = self.sizers.get(None, (None, None, None))
@@ -928,6 +984,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if sizer is not None:
                     strat._addsizer(sizer, *sargs, **skwargs)
 
+                strat._settz(tz)
                 strat._start()
 
                 for writer in self.runwriters:

@@ -336,6 +336,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             else:
                 analyzer._prenext()
 
+    def _settz(self, tz):
+        self.lines.datetime._settz(tz)
+
     def _start(self):
         self._periodset()
 
