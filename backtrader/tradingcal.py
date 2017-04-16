@@ -185,6 +185,7 @@ class PandasMarketCalendar(TradingCalendarBase):
     '''
     params = (
         ('calendar', None),  # A pandas_market_calendars instance or exch name
+        ('cachesize', 365),  # Number of days to cache in advance
     )
 
     def __init__(self):
@@ -197,6 +198,7 @@ class PandasMarketCalendar(TradingCalendarBase):
         import pandas as pd  # guaranteed because of pandas_market_calendars
         self.dcache = pd.DatetimeIndex([0.0])
         self.idcache = pd.DataFrame(index=pd.DatetimeIndex([0.0]))
+        self.csize = timedelta(days=self.p.cachesize)
 
     def _nextday(self, day):
         '''
@@ -210,7 +212,7 @@ class PandasMarketCalendar(TradingCalendarBase):
             i = self.dcache.searchsorted(day)
             if i == len(self.dcache):
                 # keep a cache of 1 year to speed up searching
-                self.dcache = self._calendar.valid_days(day, day + ONEYEAR)
+                self.dcache = self._calendar.valid_days(day, day + self.csize)
                 continue
 
             d = self.dcache[i].to_pydatetime()
@@ -228,7 +230,7 @@ class PandasMarketCalendar(TradingCalendarBase):
             i = self.idcache.index.searchsorted(day.date())
             if i == len(self.idcache):
                 # keep a cache of 1 year to speed up searching
-                self.idcache = self._calendar.schedule(day, day + ONEYEAR)
+                self.idcache = self._calendar.schedule(day, day + self.csize)
                 continue
 
             st = (x.tz_localize(None) for x in self.idcache.iloc[i, 0:2])
