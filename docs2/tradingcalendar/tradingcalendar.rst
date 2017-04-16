@@ -1,5 +1,5 @@
-Multi Example
-*************
+Trading Calendar
+****************
 
 Release ``1.9.42.116`` adds support for *Trading Calendars*. This is useful
 when resampling in for example the following scenarios:
