@@ -42,7 +42,6 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = range(7)
 WEEKEND = [SATURDAY, SUNDAY]
 ISOWEEKEND = [ISOSATURDAY, ISOSUNDAY]
 ONEDAY = timedelta(days=1)
-ONEYEAR = timedelta(days=365)
 
 
 class TradingCalendarBase(with_metaclass(MetaParams, object)):
@@ -105,6 +104,37 @@ class TradingCalendarBase(with_metaclass(MetaParams, object)):
 
 
 class TradingCalendar(TradingCalendarBase):
+    '''
+    Wrapper of ``pandas_market_calendars`` for a trading calendar. The package
+    ``pandas_market_calendar`` must be installed
+
+    Params:
+
+      - ``open`` (default ``time.min``)
+
+        Regular start of the session
+
+      - ``close`` (default ``time.max``)
+
+        Regular end of the session
+
+      - ``holidays`` (default ``[]``)
+
+        List of non-trading days (``datetime.datetime`` instances)
+
+      - ``earlydays`` (default ``[]``)
+
+        List of tuples determining the date and opening/closing times of days
+        which do not conform to the regular trading hours where each tuple has
+        (``datetime.datetime``, ``datetime.time``, ``datetime.time`` )
+
+      - ``offdays`` (default ``ISOWEEKEND``)
+
+        A list of weekdays in ISO format (Monday: 1 -> Sunday: 7) in which the
+        market doesn't trade. This is usually Saturday and Sunday and hence the
+        default
+
+    '''
     params = (
         ('open', time.min),
         ('close', _time_max),
@@ -169,12 +199,20 @@ class PandasMarketCalendar(TradingCalendarBase):
     Wrapper of ``pandas_market_calendars`` for a trading calendar. The package
     ``pandas_market_calendar`` must be installed
 
-    The param ``calendar`` accepts the following:
+    Params:
 
-      - string: the name of one of the calendars supported, for example
-        `NYSE`. The wrapper will attempt to get a calendar instance
+      - ``calendar`` (default ``None``)
 
-      - calendar instance: as returned by ``get_calendar('NYSE')``
+        The param ``calendar`` accepts the following:
+
+        - string: the name of one of the calendars supported, for example
+          `NYSE`. The wrapper will attempt to get a calendar instance
+
+        - calendar instance: as returned by ``get_calendar('NYSE')``
+
+      - ``cachesize`` (default ``365``)
+
+        Number of days to cache in advance for lookup
 
     See also:
 
