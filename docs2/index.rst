@@ -36,6 +36,7 @@ Contents:
    datafeed-develop-general/datafeed-develop-general
    extending-a-datafeed
    pandas-datafeed/pandas-datafeed
+   tradingcalendar/tradingcalendar
    data-resampling/data-resampling
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
