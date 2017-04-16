@@ -427,15 +427,22 @@ class BackBroker(bt.BrokerBase):
 
         return o.status
 
-    def submit(self, order):
+    def _take_children(self, order):
         oref = order.ref
         pref = getattr(order.parent, 'ref', oref)  # parent ref or self
 
         if oref != pref:
             if pref not in self._pchildren:
                 order.reject()  # parent not there - may have been rejected
-                self.notify_order(order)  # reject child, notify
-                return order
+                self.notify(order)  # reject child, notify
+                return None
+
+        return pref
+
+    def submit(self, order):
+        pref = self._take_children(order)
+        if pref is None:  # order has not been taken
+            return order
 
         pc = self._pchildren[pref]
         pc.append(order)  # store in parent/children queue
@@ -464,6 +471,10 @@ class BackBroker(bt.BrokerBase):
 
         while self.submitted:
             order = self.submitted.popleft()
+
+            if self._take_children(order) is None:  # children not taken
+                continue
+
             comminfo = self.getcommissioninfo(order.data)
 
             position = positions.setdefault(
