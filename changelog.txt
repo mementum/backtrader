@@ -1,3 +1,9 @@
+1.9.42.116
+  - Add tradingcalendar
+  - Add tz support for strategies
+  - Docs updates
+  - Add multi/tradingcalendar samples
+
 1.9.41.116
   - Keep processing orders after create in OandaStore after change to process
     new messages
