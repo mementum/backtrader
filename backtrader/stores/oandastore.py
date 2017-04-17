@@ -482,6 +482,8 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             okwargs['lowerBound'] = order.created.pricelimit
             okwargs['upperBound'] = order.created.pricelimit
 
+        if order.exectype == bt.Order.StopTrail:
+            okwargs['trailingStopLossDistance'] = order.trailamount
         okwargs.update(**kwargs)  # anything from the user
 
         self.q_ordercreate.put((order.ref, okwargs,))
