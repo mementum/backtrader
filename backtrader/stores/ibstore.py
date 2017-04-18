@@ -1324,11 +1324,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # the event indicates it's over. It's only false once, and can be used
         # to find out if it has at least been downloaded once
         self._event_accdownload.set()
-        if False:
-            if self.port_update:
-                self.broker.push_portupdate()
-
-                self.port_update = False
 
     @ibregister
     def updatePortfolio(self, msg):
