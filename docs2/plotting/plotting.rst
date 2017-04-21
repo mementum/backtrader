@@ -266,6 +266,54 @@ with an underscore (``_``):
 
     ``alpha`` and ``width`` are options for *matplotlib*
 
+  - ``_fill_gt`` / ``_less_gt``
+
+    Allow filling between the given line and:
+
+      - Another line
+
+      - A numeric value
+
+    The arguments is an iterable of 2 elements in which:
+
+      - The 1st argument is a *string* (name of reference line) or a numeric
+	value
+
+	The filling will be done in between the own values and the values of
+	the line or the numeric value
+
+      - The 2nd argument is either:
+
+	- A string with a colour name (*matplotlib* compatible) or hex
+	  specification (see *matloplit* examples)
+
+	or
+
+	- An iterable where the 1st element is the string/hex value for the
+	  colour and the second element is a numeric value specifying the alpha
+	  transparency (default: ``0.20`` controlled with ``fillalpha`` in a
+	  plotting scheme)
+
+      Examples::
+
+	# Fill for myline when above other_line with colour red
+	plotlines = dict(
+	    myline=dict(_fill_gt('other_line', 'red'))
+	)
+
+	# Fill for myline when above 50 with colour red
+	plotlines = dict(
+	    myline=dict(_fill_gt(50, 'red))
+	)
+
+	# Fill for myline when above other_line with colour red and 50%
+	# transparency (1.0 means "no transparency")
+
+	plotlines = dict(
+	    myline=dict(_fill_gt('other_line', ('red', 0.50)))
+	)
+
+
 Passing options to a not yet known line
 ---------------------------------------
 
@@ -353,7 +401,7 @@ the lines are changed to include fancy ``%`` signs (``%K`` and ``%D``) which
 cannot be used in name definitions in *Python*
 
 Methods controlling plotting
-----------------------------
+============================
 
 When dealing with *Indicators* and *Observers* the following methods are
 supported to further control plotting:
@@ -476,6 +524,9 @@ options are documented in the code::
           # Wether the candlesticks have to be filled or be transparent
           self.barupfill = True
           self.bardownfill = True
+
+          # Wether the candlesticks have to be filled or be transparent
+          self.fillalpha = 0.20
 
           # Wether to plot volume or not. Note: if the data in question has no
           # volume values, volume plotting will be skipped even if this is True
