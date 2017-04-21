@@ -122,6 +122,9 @@ class PlotScheme(object):
         self.barupfill = True
         self.bardownfill = True
 
+        # Wether the candlesticks have to be filled or be transparent
+        self.fillalpha = 0.20
+
         # Wether to plot volume or not. Note: if the data in question has no
         # volume values, volume plotting will be skipped even if this is True
         self.volume = True

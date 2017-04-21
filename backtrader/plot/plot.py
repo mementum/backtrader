@@ -466,9 +466,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     if fop is not None:
                         kwargs['where'] = fop(y1, y2)
 
+                    falpha = self.pinf.sch.fillalpha
+                    if isinstance(fcol, (list, tuple)):
+                        fcol, falpha = fcol
+
                     ax.fill_between(self.pinf.xdata, y1, y2,
                                     facecolor=fcol,
-                                    alpha=0.20,
+                                    alpha=falpha,
                                     interpolate=True,
                                     **kwargs)
 
