@@ -745,7 +745,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size if size is not None else self.getsizing(data, isbuy=True)
+        size = size if size is not None else self.getsizing(data, isbuy=False)
 
         if size:
             return self.broker.sell(
