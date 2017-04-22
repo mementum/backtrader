@@ -1,3 +1,11 @@
+1.9.43.116
+  - Oanda support for bracket orders
+  - Oanda support for stop trailing order
+  - Filling in plotting support numeric values and control of alpha blending
+  - Documentation updates (filling, addobservermulti)
+  - Fix wrong calling of sizer with fixed isbuy=True after refactoring for
+    mixing of buy/sell and order_target_xxx
+
 1.9.42.116
   - Add tradingcalendar
   - Add tz support for strategies
