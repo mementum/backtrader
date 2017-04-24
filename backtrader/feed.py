@@ -206,16 +206,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def _getnexteos(self):
         '''Returns the next eos using a trading calendar if available'''
-        dt = self.datetime[0]
+        dt = self.lines.datetime[0]
         dtime = num2date(dt)
         if self._calendar is None:
             nexteos = datetime.datetime.combine(dtime, self.p.sessionend)
             nextdteos = self.date2num(nexteos)  # locl'ed -> utc-like
-            while dt > nextdteos:
-                nexteos += datetime.timedelta(days=1)  # localized
-                nextdteos = self.date2num(nexteos)  # -> utc-like
+            nexteos = num2date(nextdteos)  # utc
+            while dtime > nexteos:
+                nexteos += datetime.timedelta(days=1)  # already utc-like
 
-            nexteos = num2date(nextdteos)
+            nextdteos = date2num(nexteos)  # -> utc-like
 
         else:
             # returns times in utc
