@@ -22,6 +22,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-__version__ = '1.9.43.116'
+__version__ = '1.9.44.116'
 
 __btversion__ = tuple(int(x) for x in __version__.split('.'))
