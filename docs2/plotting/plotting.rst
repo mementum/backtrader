@@ -266,7 +266,7 @@ with an underscore (``_``):
 
     ``alpha`` and ``width`` are options for *matplotlib*
 
-  - ``_fill_gt`` / ``_less_gt``
+  - ``_fill_gt`` / ``_fill_lt``
 
     Allow filling between the given line and:
 
