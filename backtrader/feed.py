@@ -204,6 +204,26 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _timeoffset(self):
         return self._tmoffset
 
+    def _getnexteos(self):
+        '''Returns the next eos using a trading calendar if available'''
+        dt = self.datetime[0]
+        dtime = num2date(dt)
+        if self._calendar is None:
+            nexteos = datetime.datetime.combine(dtime, self.p.sessionend)
+            nextdteos = self.date2num(nexteos)  # locl'ed -> utc-like
+            while dt > nextdteos:
+                nexteos += datetime.timedelta(days=1)  # localized
+                nextdteos = self.date2num(nexteos)  # -> utc-like
+
+            nexteos = num2date(nextdteos)
+
+        else:
+            # returns times in utc
+            _, nexteos = self._calendar.schedule(dtime, self._tz)
+            nextdteos = date2num(nexteos)  # nextos is already utc
+
+        return nexteos, nextdteos
+
     def _gettzinput(self):
         '''Can be overriden by classes to return a timezone for input'''
         return tzparse(self.p.tzinput)

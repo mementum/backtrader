@@ -89,6 +89,9 @@ class DTFaker(object):
     def date2num(self, *args, **kwargs):
         return self.data.date2num(*args, **kwargs)
 
+    def _getnexteos(self):
+        return self.data._getnexteos()
+
 
 class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     params = (
@@ -183,23 +186,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
     def _eosset(self):
         if self._nexteos is None:
-            if self.data._calendar is None:
-                dt = self.data.datetime[0]
-                nexteos = datetime.combine(num2date(self.data.datetime[0]),
-                                           self.data.p.sessionend)
-
-                nextdteos = self.data.date2num(nexteos)  # locl'ed -> utc-like
-                while dt > nextdteos:
-                    nexteos += timedelta(days=1)
-                    nextdteos = date2num(nexteos)
-
-                self._nexteos = nexteos
-                self._nextdteos = nextdteos
-            else:
-                day = num2date(self.data.datetime[0])
-                _, ctime = self.data._calendar.schedule(day, self.data._tz)
-                self._nexteos = ctime  # already in UTC
-                self._nextdteos = date2num(ctime)
+            self._nexteos, self._nextdteos = self.data._getnexteos()
+            return
 
     def _eoscheck(self, data, seteos=True, exact=False):
         if seteos:
