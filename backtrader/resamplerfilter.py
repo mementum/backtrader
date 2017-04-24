@@ -232,8 +232,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     def _barover_days(self, data):
         return self._eoscheck(data)
 
-    if True:
-        def _barover_weeks(self, data):
+    def _barover_weeks(self, data):
+        if self.data._calendar is None:
             year, week, _ = data.num2date(self.bar.datetime).date().isocalendar()
             yearweek = year * 100 + week
 
@@ -241,10 +241,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             bar_yearweek = baryear * 100 + barweek
 
             return bar_yearweek > yearweek
-
-    else:
-        def _barover_weeks(self, data):
-            return data._calendar.last_weekday(data.datetime.day())
+        else:
+            return data._calendar.last_weekday(data.datetime.date())
 
     def _barover_months(self, data):
         dt = data.num2date(self.bar.datetime).date()
