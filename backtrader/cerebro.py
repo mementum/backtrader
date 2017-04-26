@@ -900,10 +900,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return self.runstrats
 
+    def _init_stcount(self):
+        self.stcount = itertools.count(0)
+
+    def _next_stid(self):
+        return next(self.stcount)
+
     def runstrategies(self, iterstrat, predata=False):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
+        self._init_stcount()
+
         self.runningstrats = runstrats = list()
         for store in self.stores:
             store.start()

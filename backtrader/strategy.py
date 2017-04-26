@@ -67,6 +67,7 @@ class MetaStrategy(StrategyBase.__class__):
 
         # Find the owner and store it
         _obj.env = _obj.cerebro = cerebro = findowner(_obj, bt.Cerebro)
+        _obj._id = cerebro._next_stid()
 
         return _obj, args, kwargs
 
