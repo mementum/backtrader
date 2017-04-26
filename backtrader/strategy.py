@@ -66,7 +66,7 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = super(MetaStrategy, cls).donew(*args, **kwargs)
 
         # Find the owner and store it
-        _obj.env = findowner(_obj, bt.Cerebro)
+        _obj.env = _obj.cerebro = cerebro = findowner(_obj, bt.Cerebro)
 
         return _obj, args, kwargs
 
