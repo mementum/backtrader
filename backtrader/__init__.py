@@ -60,6 +60,7 @@ from .writer import *
 from .signal import *
 
 from .cerebro import *
+from .schedule import *
 
 from . import utils as utils
 
@@ -78,6 +79,7 @@ from . import signals as signals
 from . import sizers as sizers
 from . import stores as stores
 from . import brokers as brokers
+from . import schedule as schedule
 
 from . import talib as talib
 
