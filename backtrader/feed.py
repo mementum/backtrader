@@ -206,6 +206,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def _getnexteos(self):
         '''Returns the next eos using a trading calendar if available'''
+        if not len(self):
+            return datetime.datetime.min, 0.0
+
         dt = self.lines.datetime[0]
         dtime = num2date(dt)
         if self._calendar is None:
