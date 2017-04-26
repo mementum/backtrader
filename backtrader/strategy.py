@@ -518,6 +518,26 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
 
+    def schedule_timer(self, when, offset=None, repeat=None,
+                       weekdays=None, tzdata=None,
+                       cb=None, *args, **kwargs):
+
+        if cb is None:
+            cb = [self._id]
+
+        return self.cerebro.schedule_timer(
+            when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, tzdata=tzdata,
+            cb=cb, *args, **kwargs)
+
+    def notify_timer(self, tid, when, *args, **kwargs):
+        '''
+        Receives a timer notification where ``tid`` is the timer id returned by
+        ``schedule_call``, ``when`` is the timer time and ``args`` and
+        ``kwargs`` are any additional arguments passed to ``schedule_call``
+        '''
+        pass
+
     def notify_cashvalue(self, cash, value):
         '''
         Receives the current cash, value status of the strategy's broker
