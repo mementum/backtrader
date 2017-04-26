@@ -38,6 +38,12 @@ else:
 
 DSTDIFF = DSTOFFSET - STDOFFSET
 
+# To avoid rounding errors taking dates to next day
+TIME_MAX = datetime.time(23, 59, 59, 999990)
+
+# To avoid rounding errors taking dates to next day
+TIME_MIN = datetime.time.min
+
 
 def tzparse(tz):
     # If no object has been provided by the user and a timezone can be
