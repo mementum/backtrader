@@ -40,6 +40,7 @@ from .utils import OrderedDict, tzparse
 from .strategy import Strategy, SignalStrategy
 from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
+from .schedule import Schedule
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
@@ -281,6 +282,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._tradingcal = None  # TradingCalendar()
 
+        self._pretimers_tm = list()
+
     @staticmethod
     def iterize(iterable):
         '''Handy function which turns things into things that can be iterated upon
@@ -296,6 +299,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def schedule_timer(self,  when, offset=None, repeat=None,
+                       weekdays=None, tzdata=None,
+                       cb=None, *args, **kwargs):
+        '''
+        repeat: ``datetime.timedelta``, that indicates how often the call has
+        to
+        '''
+        tkwargs = locals().copy()
+        tkwargs.pop('self')
+        self._pretimers_tm.append(tkwargs)
+        return len(self._pretimers_tm)
 
     def addtz(self, tz):
         '''
@@ -1006,6 +1021,24 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for writer in self.runwriters:
                 writer.start()
 
+            # Prepare timers
+            self._timers = []
+            for i, pretimer in enumerate(self._pretimers_tm, 1):
+                sch = Schedule(
+                    tid=i,
+                    cerebro=self,
+                    runstrats=runstrats,
+                    when=pretimer['when'],
+                    offset=pretimer['offset'],
+                    repeat=pretimer['repeat'],
+                    weekdays=pretimer['weekdays'],
+                    tzdata=pretimer['tzdata'],
+                    cb=pretimer['cb'],
+                    *pretimer['args'],
+                    **pretimer['kwargs']
+                )
+                self._timers.append(sch)
+
             if self._dopreload and self._dorunonce:
                 if self.p.oldsync:
                     self._runonce_old(runstrats)
@@ -1224,6 +1257,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         onlyresample = len(datas) == len(rsonly)
         noresample = not rsonly
 
+        timers = self._timers
+
         clonecount = sum(d._clone for d in datas)
         ldatas = len(datas)
         ldatas_noclones = ldatas - clonecount
@@ -1325,6 +1360,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
+            if d0ret or lastret:  # if any bar, check timers before broker
+                for t in timers:
+                    t.schedcheck(dt0)
+
             self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
@@ -1362,6 +1401,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # here again, because pointers are at 0
         datas = sorted(self.datas,
                        key=lambda x: (x._timeframe, x._compression))
+
+        timers = self._timers
+
         while True:
             # Check next incoming date in the datas
             dts = [d.advance_peek() for d in datas]
@@ -1379,6 +1421,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 else:
                     # self._plotfillers[i].append(slen)
                     pass
+
+            for t in timers:
+                t.schedcheck(dt0)
 
             self._brokernotify()
             if self._event_stop:  # stop if requested
