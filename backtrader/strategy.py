@@ -521,6 +521,85 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def schedule_timer(self, when, offset=None, repeat=None,
                        weekdays=None, tzdata=None,
                        cb=None, *args, **kwargs):
+        '''
+        **Note**: can be called during ``__init__`` or ``start``
+
+        Schedules a timer to invoke either a specified callback or the
+        ``notify_timer`` of one or more strategies.
+
+        Arguments:
+
+          - ``when``: can be
+
+            - ``datetime.time`` instance (see below ``tzdata``)
+            - ``bt.schedule.SESSION_START`` to reference a session start
+            - ``bt.schedule.SESSION_END`` to reference a session end
+
+         - ``offset`` which must be a ``datetime.timedelta`` instance
+
+           Used to offset the value ``when``. It has a meaningful use in
+           combination with ``SESSION_START`` and ``SESSION_END``, to indicated
+           things like a timer being called ``15 minutes`` after the session
+           start.
+
+          - ``repeat`` which must be a ``datetime.timedelta`` instance
+
+            Indicates if after a 1st call, further calls will be scheduled
+            within the same session at the scheduled ``repeat`` delta
+
+            Once the timer goes over the end of the session it is reset to the
+            original value for ``when``
+
+          - ``weekdays`` which can be an iterable with integers indicating on
+            which days (iso codes, Monday is 1, Sunday is 7) the callbacks can
+            be actually invoked
+
+            If not specified, the callback will be active on all days
+
+          - ``tzdata`` which can be either ``None`` (default), a ``pytz``
+            instance or a ``data feed`` instance.
+
+            ``None``: ``when`` is interpreted at face value (which translates
+            to handling it as if it where UTC even if it's not)
+
+            ``pytz`` instance: ``when`` will be interpreted as being specified
+            in the local time specified by the timezone instance.
+
+            ``data feed`` instance: ``when`` will be interpreted as being
+            specified in the local time specified by the ``tz`` parameter of
+            the data feed instance.
+
+            **Note**: If ``when`` is either ``SESSION_START`` or
+              ``SESSION_END`` and ``tzdata`` is ``None``, the 1st *data feed*
+              in the system (aka ``self.data0``) will be used as the reference
+              to find out the session times.
+
+          - ``cb`` (default: ``None``) which can be either a *callable* or
+            ``None`` , with the latter indicating that ``notify_timer`` has to
+            be invoked.
+
+          - ``*args``: any extra args will be passed to the callable in ``cb``
+            or to ``notify_timer`` in the strategies
+
+          - ``**kwargs``: any extra kwargs will be passed to the callable in
+            ``cb`` or to ``notify_timer`` in the strategies
+
+        Return Value:
+
+          - An integer which is the timer id (``tid``)
+
+        About the callable or ``notify_timer``. The signature will be
+
+        callable(tid, when, *args, **kwargs) or in strategies:
+        ``notify_timer(tid, when, *args, **kwargs)
+
+          - ``tid`` is the timer id returned by ``schedule_timer``
+          - ``when`` is the actual time at which the timer was called
+
+            The actual time can be later, but the system may have not be able
+            to call the timer before. This value is the timer value and no the
+            system time.
+        '''
 
         if cb is None:
             cb = [self._id]
