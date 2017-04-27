@@ -317,3 +317,5 @@ Reference
    .. automethod:: addcalendar
 
    .. automethod:: addtz
+
+   .. automethod:: schedule_timer
