@@ -300,12 +300,32 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return niterable
 
-    def schedule_timer(self, when, offset=None, repeat=None,
-                       weekdays=None, tzdata=None,
-                       cb=None, *args, **kwargs):
+    def notify_timer(self, tid, when, *args, **kwargs):
         '''
-        Schedules a timer to invoke either a specified callback or the
-        ``notify_timer`` of one or more strategies.
+        Receives a timer notification where ``tid`` is the timer id returned by
+        ``schedule_call``, ``when`` is the timer time and ``args`` and
+        ``kwargs`` are any additional arguments passed to ``schedule_call``
+
+        The actual time can be later, but the system may have not be able to
+        call the timer before. This value is the timer value and no the system
+        time.
+        '''
+        pass
+
+    def _schedule_timer(self, owner, when, offset=None, repeat=None,
+                        weekdays=None, tzdata=None, strats=False,
+                        *args, **kwargs):
+
+        tkwargs = locals().copy()
+        tkwargs.pop('self')
+        self._pretimers_tm.append(tkwargs)
+        return len(self._pretimers_tm)
+
+    def schedule_timer(self, when, offset=None, repeat=None,
+                       weekdays=None, tzdata=None, strats=False,
+                       *args, **kwargs):
+        '''
+        Schedules a timer to invoke ``notify_timer``
 
         Arguments:
 
@@ -354,36 +374,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
               in the system (aka ``self.data0``) will be used as the reference
               to find out the session times.
 
-          - ``cb`` (default: ``None``) which can be either a *callable* or an
-            iterable with indices to the strategies for which ``notify_timer``
-            will be invoked (all strategies if ``cb=None``)
+          - ``strats`` (default: ``False``) call also the ``notify_timer`` of
+            strategies
 
-          - ``*args``: any extra args will be passed to the callable in ``cb``
-            or to ``notify_timer`` in the strategies
+          - ``*args``: any extra args will be passed to ``notify_timer``
 
-          - ``**kwargs``: any extra kwargs will be passed to the callable in
-            ``cb`` or to ``notify_timer`` in the strategies
+          - ``**kwargs``: any extra kwargs will be passed to ``notify_timer``
 
         Return Value:
 
           - An integer which is the timer id (``tid``)
 
-        About the callable or ``notify_timer``. The signature will be
-
-        callable(tid, when, *args, **kwargs) or in strategies:
-        ``notify_timer(tid, when, *args, **kwargs)
-
-          - ``tid`` is the timer id returned by ``schedule_timer``
-          - ``when`` is the actual time at which the timer was called
-
-            The actual time can be later, but the system may have not be able
-            to call the timer before. This value is the timer value and no the
-            system time.
         '''
-        tkwargs = locals().copy()
-        tkwargs.pop('self')
-        self._pretimers_tm.append(tkwargs)
-        return len(self._pretimers_tm)
+        return self._schedule_timer(
+            owner=self, when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, tzdata=tzdata, strats=strats,
+            *args, **kwargs)
 
     def addtz(self, tz):
         '''
@@ -1097,16 +1103,22 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # Prepare timers
             self._timers = []
             for i, pretimer in enumerate(self._pretimers_tm, 1):
+                # preprocess tzdata if needed
+                when = pretimer['when']
+                tzdata = pretimer['tzdata']
+                if isinstance(when, integer_types):  # tzdata cannot be None
+                    if tzdata is None:
+                        tzdata = self.datas[0]
+
                 sch = Schedule(
                     tid=i,
-                    cerebro=self,
-                    runstrats=runstrats,
-                    when=pretimer['when'],
+                    owner=pretimer['owner'],
+                    strats=pretimer['strats'],
+                    when=when,
                     offset=pretimer['offset'],
                     repeat=pretimer['repeat'],
                     weekdays=pretimer['weekdays'],
-                    tzdata=pretimer['tzdata'],
-                    cb=pretimer['cb'],
+                    tzdata=tzdata,
                     *pretimer['args'],
                     **pretimer['kwargs']
                 )
@@ -1435,7 +1447,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             if d0ret or lastret:  # if any bar, check timers before broker
                 for t in timers:
-                    t.schedcheck(dt0)
+                    if not t.schedcheck(dt0):
+                        continue
+
+                    t.owner.notify_timer(t.tid, t.lastwhen,
+                                         *t.args, **t.kwargs)
+
+                    if t.strats:
+                        for strat in runstrats:
+                            strat.notify_timer(t.tid, t.lastwhen,
+                                               *t.args, **t.kwargs)
 
             self._brokernotify()
             if self._event_stop:  # stop if requested
@@ -1496,7 +1517,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     pass
 
             for t in timers:
-                t.schedcheck(dt0)
+                if not t.schedcheck(dt0):
+                    continue
+
+                t.owner.notify_timer(t.tid, t.lastwhen,
+                                     *t.args, **t.kwargs)
+
+                if t.strats:
+                    for strat in runstrats:
+                        strat.notify_timer(t.tid, t.lastwhen,
+                                           *t.args, **t.kwargs)
 
             self._brokernotify()
             if self._event_stop:  # stop if requested

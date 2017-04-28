@@ -319,3 +319,5 @@ Reference
    .. automethod:: addtz
 
    .. automethod:: schedule_timer
+
+   .. automethod:: notify_timer

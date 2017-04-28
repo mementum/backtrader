@@ -520,7 +520,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def schedule_timer(self, when, offset=None, repeat=None,
                        weekdays=None, tzdata=None,
-                       cb=None, *args, **kwargs):
+                       *args, **kwargs):
         '''
         **Note**: can be called during ``__init__`` or ``start``
 
@@ -574,46 +574,29 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
               in the system (aka ``self.data0``) will be used as the reference
               to find out the session times.
 
-          - ``cb`` (default: ``None``) which can be either a *callable* or
-            ``None`` , with the latter indicating that ``notify_timer`` has to
-            be invoked.
+          - ``*args``: any extra args will be passed to ``notify_timer``
 
-          - ``*args``: any extra args will be passed to the callable in ``cb``
-            or to ``notify_timer`` in the strategies
-
-          - ``**kwargs``: any extra kwargs will be passed to the callable in
-            ``cb`` or to ``notify_timer`` in the strategies
+          - ``**kwargs``: any extra kwargs will be passed to ``notify_timer``
 
         Return Value:
 
           - An integer which is the timer id (``tid``)
 
-        About the callable or ``notify_timer``. The signature will be
-
-        callable(tid, when, *args, **kwargs) or in strategies:
-        ``notify_timer(tid, when, *args, **kwargs)
-
-          - ``tid`` is the timer id returned by ``schedule_timer``
-          - ``when`` is the actual time at which the timer was called
-
-            The actual time can be later, but the system may have not be able
-            to call the timer before. This value is the timer value and no the
-            system time.
         '''
-
-        if cb is None:
-            cb = [self._id]
-
-        return self.cerebro.schedule_timer(
-            when=when, offset=offset, repeat=repeat,
-            weekdays=weekdays, tzdata=tzdata,
-            cb=cb, *args, **kwargs)
+        return self.cerebro._schedule_timer(
+            owner=self, when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, tzdata=tzdata, strats=False,
+            *args, **kwargs)
 
     def notify_timer(self, tid, when, *args, **kwargs):
         '''
         Receives a timer notification where ``tid`` is the timer id returned by
         ``schedule_call``, ``when`` is the timer time and ``args`` and
         ``kwargs`` are any additional arguments passed to ``schedule_call``
+
+        The actual time can be later, but the system may have not be able to
+        call the timer before. This value is the timer value and no the system
+        time.
         '''
         pass
 

@@ -24,6 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 from datetime import date, datetime, timedelta
+import itertools
 
 from .feed import AbstractDataBase
 from .utils import date2num, num2date
@@ -41,44 +42,36 @@ class Schedule(object):
     SESSION_TIME, SESSION_START, SESSION_END = (SESSION_TIME, SESSION_START,
                                                 SESSION_END)
 
-    def __init__(self, tid,
-                 cerebro, runstrats,
+    def __init__(self, tid, owner, strats,
                  when, offset, repeat, weekdays, tzdata,
-                 cb, *args, **kwargs):
+                 *args, **kwargs):
 
-        fields = [
-            'cerebro', 'runstrats', 'tid',
-            'when', 'offset', 'repeat', 'weekdays', 'tzdata',
-        ]
-        l = locals()
-        for f in fields:
-            setattr(self, f, l[f])
+        self.tid = tid  # identifier
 
-        self.cbargs = args, kwargs
+        self.owner = owner  # for external reference purposes only
+        self.strats = strats  # boolean for external reference
 
-        if isinstance(cb, collections.Callable):
-            self.cb = cb
-        else:  # assume cb is iterable with indices to strategies
-            self.cb = None
-            self.cbs = [runstrats[i] for i in cb or range(len(runstrats))]
+        self.when = when
+        self.offset = offset
+        self.repeat = repeat
+        self.weekdays = weekdays
+        self.tzdata = tzdata
+        self.args = args
+        self.kwargs = kwargs
 
-        if not isinstance(when, integer_types):  # must be time/datetime
-            self.stype = SESSION_TIME
-        else:
-            self.stype = when
-            if self.tzdata is None:
-                self.tzdata = cerebro.datas[0]
+        # write down the 'reset when' value
+        if not isinstance(when, integer_types):  # expect time/datetime
+            self._rwhen = self.when
+        elif when == SESSION_START:
+            self._rwhen = self.tzdata.p.sessionstart
+        elif when == SESSION_END:
+            self._rwhen = self.tzdata.p.sessionend
 
         self._isdata = isinstance(self.tzdata, AbstractDataBase)
         self._reset_when()
 
     def _reset_when(self, ddate=datetime.min):
-        if self.stype == SESSION_TIME:
-            self._when = self.when
-        elif self.stype == SESSION_START:
-            self._when = self.tzdata.p.sessionstart
-        elif self.stype == SESSION_END:
-            self._when = self.tzdata.p.sessionend
+        self._when = self._rwhen
 
         self._lastcall = ddate
         self.dtwhen = self.dwhen = None
@@ -88,7 +81,7 @@ class Schedule(object):
         ddate = d.date()
 
         if self._lastcall == ddate:  # not repeating, awaiting date change
-            return
+            return False
 
         dwhen = self.dwhen
         dtwhen = self.dtwhen
@@ -106,18 +99,14 @@ class Schedule(object):
 
             self.dtwhen = dtwhen
 
-        if dt >= dtwhen:
-            cbargs, cbkwargs = self.cbargs
-            if self.cb is not None:
-                self.cb(self.tid, dwhen, *cbargs, **cbkwargs)
-            else:
-                for cb in self.cbs:
-                    cb.notify_timer(self.tid, dwhen, *cbargs, **cbkwargs)
+        if dt < dtwhen:
+            return False  # timer target not met
 
-            if not self.repeat:  # cannot repeat
-                self._reset_when(ddate)  # reset and mark as called on ddate
-                return
+        self.lastwhen = dwhen
 
+        if not self.repeat:  # cannot repeat
+            self._reset_when(ddate)  # reset and mark as called on ddate
+        else:
             if self._isdata:  # eos provided by data
                 nexteos, _ = self.tzdata._getnexteos()
             else:  # generic eos
@@ -130,7 +119,7 @@ class Schedule(object):
                     break
 
                 if dwhen > d:  # gone over current date
-                    self.dtwhen = date2num(dwhen)  # float timestamp
+                    self.dtwhen = dtwhen = date2num(dwhen)  # float timestamp
                     # Get the localized expected next time
                     if self._isdata:
                         self.dwhen = self.tzdata.num2date(dtwhen)
@@ -138,3 +127,5 @@ class Schedule(object):
                         self.dwhen = num2date(dtwhen, tz=tzdata)
 
                     break
+
+        return True  # timer target was met
