@@ -3,6 +3,7 @@
 ###############################################################################
 #
 # Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2017 Dimitri John Ledkov
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,32 +23,30 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from .csvgeneric import *
-from .btcsv import *
-from .vchartcsv import *
-from .vchart import *
-from .yahoo import *
-from .sierrachart import *
-from .mt4csv import *
-from .pandafeed import *
-from .influxfeed import *
-try:
-    from .ibdata import *
-except ImportError:
-    pass  # The user may not have ibpy installed
-
-try:
-    from .vcdata import *
-except ImportError:
-    pass  # The user may not have something installed
-
-try:
-    from .oanda import OandaData
-except ImportError:
-    pass  # The user may not have something installed
+from . import GenericCSVData
 
 
-from .vchartfile import VChartFile
+class MT4CSVData(GenericCSVData):
+    '''
+    Parses a `Metatrader4 <https://www.metaquotes.net/en/metatrader4>`_ History
+    center CSV exported file.
 
-from .rollover import RollOver
-from .chainer import Chainer
+    Specific parameters (or specific meaning):
+
+      - ``dataname``: The filename to parse or a file-like object
+
+      - Uses GenericCSVData and simply modifies the params
+    '''
+
+    params = (
+        ('dtformat', '%Y.%m.%d'),
+        ('tmformat', '%H:%M'),
+        ('datetime', 0),
+        ('time',  1),
+        ('open',  2),
+        ('high',  3),
+        ('low',   4),
+        ('close', 5),
+        ('volume', 6),
+        ('openinterest', -1),
+    )
