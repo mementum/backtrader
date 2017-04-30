@@ -755,7 +755,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
     def show(self):
         self.mpyplot.show()
 
-    def savefig(self, filename='backtrader-plot.pdf'):
+    def savefig(self, filename='backtrader-plot.png'):
         fig = self.mpyplot.gcf()
         fig.set_size_inches(16, 9)
         self.mpyplot.savefig(filename, dpi=300, bbox_inches='tight')
