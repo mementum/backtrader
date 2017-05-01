@@ -189,6 +189,13 @@ class BackBroker(bt.BrokerBase):
            is *closed* and any order should first be matched against the prices
            in the next bar
 
+        - ``coo`` (default: ``False``)
+
+          *Cheat-On-Open* Setting this to ``True`` with ``set_coo`` enables
+           matching a ``Market`` order to the opening price, by for example
+           using a timer with ``cheat`` set to ``True``, because such a timer
+           gets executed before the broker has evaluated
+
         - ``int2pnl`` (default: ``True``)
 
           Assign generated interest (if any) to the profit and loss of
@@ -218,6 +225,7 @@ class BackBroker(bt.BrokerBase):
         ('slip_limit', True),
         ('slip_out', False),
         ('coc', False),
+        ('coo', False),
         ('int2pnl', True),
         ('shortcash', True),
     )
@@ -265,6 +273,10 @@ class BackBroker(bt.BrokerBase):
     def set_coc(self, coc):
         '''Configure the Cheat-On-Close method to buy the close on order bar'''
         self.p.coc = coc
+
+    def set_coo(self, coo):
+        '''Configure the Cheat-On-Open method to buy the close on order bar'''
+        self.p.coo = coo
 
     def set_shortcash(self, shortcash):
         '''Configure the shortcash parameters'''
@@ -734,7 +746,7 @@ class BackBroker(bt.BrokerBase):
             dtcoc = order.created.dt
             exprice = order.created.pclose
         else:
-            if order.data.datetime[0] <= order.created.dt:
+            if not self.p.coo and order.data.datetime[0] <= order.created.dt:
                 return    # can only execute after creation time
 
             dtcoc = None
