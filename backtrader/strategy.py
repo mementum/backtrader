@@ -468,11 +468,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._orderspending = list()
         self._tradespending = list()
 
-    def _addnotification(self, order):
+    def _addnotification(self, order, quicknotify=False):
         if not order.p.simulated:
             self._orderspending.append(order)
 
+        if quicknotify:
+            qorders = [order]
+            qtrades = []
+
         if not order.executed.size:
+            if quicknotify:
+                self._notify(qorders=qorders, qtrades=qtrades)
             return
 
         tradedata = order.data._compensate
@@ -502,6 +508,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
                 if trade.isclosed:
                     self._tradespending.append(trade)
+                    if quicknotify:
+                        qtrades.append(trade)
 
             # Update it if needed
             if exbit.opened:
@@ -523,22 +531,42 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 # "opens" a position but "closes" the trade
                 if trade.isclosed:
                     self._tradespending.append(trade)
+                    if quicknotify:
+                        qtrades.append(trade)
 
             if trade.justopened:
                 self._tradespending.append(trade)
+                if quicknotify:
+                    qtrades.append(trade)
 
-    def _notify(self):
-        for order in self._orderspending:
+        if quicknotify:
+            self._notify(qorders=qorders, qtrades=qtrades)
+
+    def _notify(self, qorders=[], qtrades=[]):
+        if self.cerebro.p.quicknotify:
+            # need to know if quicknotify is on, to not reprocess pendingorders
+            # and pendingtrades, which have to exist for things like observers
+            # which look into it
+            procorders = qorders
+            proctrades = qtrades
+        else:
+            procorders = self._orderspending
+            proctrades = self._tradespending
+
+        for order in procorders:
             self.notify_order(order)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_order(order)
 
-        for trade in self._tradespending:
+        for trade in proctrades:
             self.notify_trade(trade)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_trade(trade)
+
+        if qorders:
+            return  # cash is notified on a regular basis
 
         cash = self.broker.getcash()
         value = self.broker.getvalue()
@@ -1515,15 +1543,16 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
     def signal_add(self, sigtype, signal):
         self._signals[sigtype].append(signal)
 
-    def _notify(self):
+    def _notify(self, qorders=[], qtrades=[]):
         # Nullify the sentinel if done
+        procorders = qorders or self._orderspending
         if self._sentinel is not None:
-            for order in self._orderspending:
+            for order in procorders:
                 if order == self._sentinel and not order.alive():
                     self._sentinel = None
                     break
 
-        super(SignalStrategy, self)._notify()
+        super(SignalStrategy, self)._notify(qorders=qorders, qtrades=qtrades)
 
     def _next_catch(self):
         self._next_signal()

@@ -254,6 +254,16 @@ class Cerebro(with_metaclass(MetaParams, object)):
         with ``True`` to activate ``cheat_on_open`` execution. Will only do it
         if ``cheat_on_open`` is also ``True``
 
+      - ``quicknotify`` (default: ``False``)
+
+        Broker notifications are delivered right before the delivery of the
+        *next* prices. For backtesting this has no implications, but with live
+        brokers a notification can take place long before the bar is
+        delivered. When set to ``True`` notifications will be delivered as soon
+        as possible (see ``qcheck`` in live feeds)
+
+        Set to ``False`` for compatibility. May be changed to ``True``
+
     '''
 
     params = (
@@ -275,6 +285,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('tz', None),
         ('cheat_on_open', False),
         ('broker_coo', False),
+        ('quicknotify', False),
     )
 
     def __init__(self):
@@ -1265,7 +1276,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if owner is None:
                 owner = self.runningstrats[0]  # default
 
-            owner._addnotification(order)
+            owner._addnotification(order, quicknotify=self.p.quicknotify)
 
     def _runnext_old(self, runstrats):
         '''
