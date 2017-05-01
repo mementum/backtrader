@@ -55,7 +55,7 @@ if PY2:
 
     from io import StringIO
 
-    from urllib2 import urlopen
+    from urllib2 import urlopen, ProxyHandler, build_opener, install_opener
     from urllib import quote as urlquote
 
     def iterkeys(d): return d.iterkeys()
@@ -101,7 +101,8 @@ else:
 
     from io import StringIO
 
-    from urllib.request import urlopen
+    from urllib.request import (urlopen, ProxyHandler, build_opener,
+                                install_opener)
     from urllib.parse import quote as urlquote
 
     def iterkeys(d): return iter(d.keys())
