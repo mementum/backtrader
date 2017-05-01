@@ -245,12 +245,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
         For cheat_on_open order execution, it is also necessary to make the
         call ``cerebro.broker.set_coo(True)`` or instantite a broker with
         ``BackBroker(coo=True)`` (where *coo* stands for cheat-on-open) or set
-        the ``broker_coo`` parameter to ``True`` (see below)
+        the ``broker_coo`` parameter to ``True``. Cerebro will do it
+        automatically unless disabled below.
 
-      - ``broker_coo`` (default: ``False``)
+      - ``broker_coo`` (default: ``True``)
 
         This will automatically invoke the ``set_coo`` method of the broker
-        with ``True`` to activate ``cheat_on_open`` execution
+        with ``True`` to activate ``cheat_on_open`` execution. Will only do it
+        if ``cheat_on_open`` is also ``True``
 
     '''
 
@@ -1075,7 +1077,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for store in self.stores:
             store.start()
 
-        if self.p.broker_coo:  # try to activate in broker
+        if self.p.cheat_on_open and self.p.broker_coo:
+            # try to activate in broker
             if hasattr(self._broker, 'set_coo'):
                 self._broker.set_coo(True)
 
