@@ -18,6 +18,7 @@ Contents:
    operating
    exceptions
    cerebro
+   cerebro/cheat-on-open/cheat-on-open
    strategy
    sizers/sizers
    order_target/order_target
