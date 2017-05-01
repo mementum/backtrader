@@ -1,3 +1,12 @@
+1.9.44.116
+  - Timer calls implementation
+  - Broker support for cheat-on-open
+  - Add cheat_on_open to cerebro to allow next_open
+  - Finish trading calendar resampling for weeks
+  - Support Yahoo download over proxies
+  - Doc corrections/additions
+  - Support quick broker notifications
+
 1.9.43.116
   - Oanda support for bracket orders
   - Oanda support for stop trailing order
