@@ -26,8 +26,8 @@ from datetime import date, datetime
 import io
 import itertools
 
-from ..utils.py3 import urlopen, urlquote
-
+from ..utils.py3 import (urlopen, urlquote, ProxyHandler, build_opener,
+                         install_opener)
 
 from .. import feed
 from ..utils import date2num
@@ -147,6 +147,11 @@ class YahooFinanceData(YahooFinanceCSVData):
         The server url. Someone might decide to open a Yahoo compatible service
         in the future.
 
+      - ``proxies``
+
+        A dict indicating which proxy to go through for the download as in
+        {'http': 'http://myproxy.com'} or {'http': 'http://127.0.0.1:8080'}
+
       - ``period``
 
         The timeframe to download data in. Pass 'w' for weekly and 'm' for
@@ -171,6 +176,7 @@ class YahooFinanceData(YahooFinanceCSVData):
       '''
 
     params = (('baseurl', 'http://ichart.yahoo.com/table.csv?'),
+              ('proxies', {}),
               ('period', 'd'), ('buffered', True), ('reverse', True))
 
     def start(self):
@@ -188,6 +194,11 @@ class YahooFinanceData(YahooFinanceCSVData):
                ((todate.month - 1), todate.day, todate.year)
         url += '&g=%s' % self.params.period
         url += '&ignore=.csv'
+
+        if self.p.proxies:
+            proxy = ProxyHandler(self.p.proxies)
+            opener = build_opener(proxy)
+            install_opener(opener)
 
         try:
             datafile = urlopen(url)
