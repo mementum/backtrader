@@ -284,7 +284,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('oldsync', False),
         ('tz', None),
         ('cheat_on_open', False),
-        ('broker_coo', False),
+        ('broker_coo', True),
         ('quicknotify', False),
     )
 
