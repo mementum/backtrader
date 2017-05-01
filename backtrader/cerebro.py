@@ -272,6 +272,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('oldsync', False),
         ('tz', None),
         ('cheat_on_open', False),
+        ('broker_coo', False),
     )
 
     def __init__(self):
