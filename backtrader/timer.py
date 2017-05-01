@@ -22,109 +22,179 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
+import bisect
 import collections
 from datetime import date, datetime, timedelta
-import itertools
 
 from .feed import AbstractDataBase
+from .metabase import MetaParams
 from .utils import date2num, num2date
-from .utils.py3 import integer_types, range
+from .utils.py3 import integer_types, range, with_metaclass
 from .utils import TIME_MAX
 
 
-__all__ = ['SESSION_TIME', 'SESSION_START', 'SESSION_END', 'Schedule']
+__all__ = ['SESSION_TIME', 'SESSION_START', 'SESSION_END', 'Timer']
 
-SESSION_TIME, SESSION_START, SESSION_END = 0, 1, 2
+SESSION_TIME, SESSION_START, SESSION_END = range(3)
 
 
-class Schedule(object):
+class Timer(with_metaclass(MetaParams, object)):
+    params = (
+        ('tid', None),
+        ('owner', None),
+        ('strats', False),
+        ('when', None),
+        ('offset', timedelta()),
+        ('repeat', timedelta()),
+        ('weekdays', []),
+        ('monthdays', []),
+        ('monthcarry', True),
+        ('allow', None),  # callable that allows a timer to take place
+        ('tzdata', None),
+        ('cheat', False),
+    )
 
-    SESSION_TIME, SESSION_START, SESSION_END = (SESSION_TIME, SESSION_START,
-                                                SESSION_END)
+    SESSION_TIME, SESSION_START, SESSION_END = range(3)
 
-    def __init__(self, tid, owner, strats,
-                 when, offset, repeat, weekdays, tzdata,
-                 *args, **kwargs):
-
-        self.tid = tid  # identifier
-
-        self.owner = owner  # for external reference purposes only
-        self.strats = strats  # boolean for external reference
-
-        self.when = when
-        self.offset = offset
-        self.repeat = repeat
-        self.weekdays = weekdays
-        self.tzdata = tzdata
+    def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
 
+    def start(self, data):
         # write down the 'reset when' value
-        if not isinstance(when, integer_types):  # expect time/datetime
-            self._rwhen = self.when
-        elif when == SESSION_START:
-            self._rwhen = self.tzdata.p.sessionstart
-        elif when == SESSION_END:
-            self._rwhen = self.tzdata.p.sessionend
+        if not isinstance(self.p.when, integer_types):  # expect time/datetime
+            self._rstwhen = self.p.when
+            self._tzdata = self.p.tzdata
+        else:
+            self._tzdata = data if self.p.tzdata is None else self.p.tzdata
 
-        self._isdata = isinstance(self.tzdata, AbstractDataBase)
+            if self.p.when == SESSION_START:
+                self._rstwhen = self._tzdata.p.sessionstart
+            elif self.p.when == SESSION_END:
+                self._rstwhen = self._tzdata.p.sessionend
+
+        self._isdata = isinstance(self._tzdata, AbstractDataBase)
         self._reset_when()
 
+        self._curdate = date.min
+
+        self._curmonth = -1  # non-existent month
+        self._monthmask = collections.deque()
+
+        self._curweek = -1  # non-existent week
+        self._weekmask = collections.deque()
+
     def _reset_when(self, ddate=datetime.min):
-        self._when = self._rwhen
+        self._when = self._rstwhen
+        self._dtwhen = self._dwhen = None
 
         self._lastcall = ddate
-        self.dtwhen = self.dwhen = None
 
-    def schedcheck(self, dt):
+    def _check_month(self, ddate):
+        if not self.p.monthdays:
+            return True
+
+        mask = self._monthmask
+        daycarry = False
+        dmonth = ddate.month
+        if dmonth != self._curmonth:
+            self._curmonth = dmonth  # write down new month
+            daycarry = self.p.monthcarry and bool(mask)
+            self._monthmask = mask = collections.deque(self.p.monthdays)
+
+        dday = ddate.day
+        dc = bisect.bisect_left(mask, dday)  # "left" for days before dday
+        daycarry = daycarry or (self.p.monthcarry and dc > 0)
+        curday = bisect.bisect_right(mask, dday, lo=dc) > 0  # check dday
+        dc += curday
+        while dc:
+            mask.popleft()
+            dc -= 1
+
+        return daycarry or curday
+
+    def _check_week(self, ddate):
+        if not self.p.weekdays:
+            return True
+
+        _, dweek, dwkday = ddate.isocalendar()
+
+        mask = self._weekmask
+        daycarry = False
+        if dweek != self._curweek:
+            self._curweek = dweek  # write down new month
+            daycarry = self.p.weekcarry and bool(mask)
+            self._weekmask = mask = collections.deque(self.p.weekdays)
+
+        dc = bisect.bisect_left(mask, dwkay)  # "left" for days before dday
+        daycarry = daycarry or (self.p.weekcarry and dc > 0)
+        curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # check dday
+        dc += curday
+        while dc:
+            mask.popleft()
+            dc -= 1
+
+        return daycarry or curday
+
+    def check(self, dt):
         d = num2date(dt)
         ddate = d.date()
-
         if self._lastcall == ddate:  # not repeating, awaiting date change
             return False
 
-        dwhen = self.dwhen
-        dtwhen = self.dtwhen
+        if ddate > self._curdate:  # day change
+            self._curdate = ddate
+            ret = self._check_month(ddate)
+            if ret:
+                ret = self._check_week(ddate)
+            if ret and self.p.allow is not None:
+                ret = self.p.allow(ddate)
+
+            if not ret:
+                self._reset_when(ddate)  # this day won't make it
+                return False  # timer target not met
+
+        # no day change or passed month, week and allow filters on date change
+        dwhen = self._dwhen
+        dtwhen = self._dtwhen
         if dtwhen is None:
             dwhen = datetime.combine(ddate, self._when)
-            if self.offset:
-                dwhen += self.offset
+            if self.p.offset:
+                dwhen += self.p.offset
 
-            self.dwhen = dwhen
+            self._dwhen = dwhen
 
             if self._isdata:
-                dtwhen = self.tzdata.date2num(dwhen)
-            elif self.tzdata is not None:  # assume pytz compatible
-                dtwhen = date2num(dwhen, tz=self.tzdata)
-
-            self.dtwhen = dtwhen
+                self._dtwhen = dtwhen = self._tzdata.date2num(dwhen)
+            else:
+                self._dtwhen = dtwhen = date2num(dwhen, tz=self._tzdata)
 
         if dt < dtwhen:
             return False  # timer target not met
 
-        self.lastwhen = dwhen
+        self.lastwhen = dwhen  # record when the last timer "when" happened
 
-        if not self.repeat:  # cannot repeat
+        if not self.p.repeat:  # cannot repeat
             self._reset_when(ddate)  # reset and mark as called on ddate
         else:
             if self._isdata:  # eos provided by data
-                nexteos, _ = self.tzdata._getnexteos()
+                nexteos, _ = self._tzdata._getnexteos()
             else:  # generic eos
                 nexteos = datetime.combine(ddate, TIME_MAX)
 
             while True:
-                dwhen += self.repeat
+                dwhen += self.p.repeat
                 if dwhen > nexteos:  # new schedule is beyone session
                     self._reset_when(ddate)  # reset to original point
                     break
 
-                if dwhen > d:  # gone over current date
-                    self.dtwhen = dtwhen = date2num(dwhen)  # float timestamp
+                if dwhen > d:  # gone over current datetime
+                    self._dtwhen = dtwhen = date2num(dwhen)  # float timestamp
                     # Get the localized expected next time
                     if self._isdata:
-                        self.dwhen = self.tzdata.num2date(dtwhen)
+                        self._dwhen = self._tzdata.num2date(dtwhen)
                     else:  # assume pytz compatible or None
-                        self.dwhen = num2date(dtwhen, tz=tzdata)
+                        self._dwhen = num2date(dtwhen, tz=tzdata)
 
                     break
 

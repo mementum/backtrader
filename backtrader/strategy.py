@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import datetime
 import inspect
 import itertools
 import operator
@@ -518,9 +519,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
 
-    def schedule_timer(self, when, offset=None, repeat=None,
-                       weekdays=None, tzdata=None,
-                       *args, **kwargs):
+    def add_timer(self, when,
+                  offset=datetime.timedelta(), repeat=datetime.timedelta(),
+                  weekdays=[], weekcarry=False,
+                  monthdays=[], monthcarry=True,
+                  allow=None,
+                  tzdata=None, cheat=False,
+                  *args, **kwargs):
         '''
         **Note**: can be called during ``__init__`` or ``start``
 
@@ -532,8 +537,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
           - ``when``: can be
 
             - ``datetime.time`` instance (see below ``tzdata``)
-            - ``bt.schedule.SESSION_START`` to reference a session start
-            - ``bt.schedule.SESSION_END`` to reference a session end
+            - ``bt.timer.SESSION_START`` to reference a session start
+            - ``bt.timer.SESSION_END`` to reference a session end
 
          - ``offset`` which must be a ``datetime.timedelta`` instance
 
@@ -550,11 +555,29 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             Once the timer goes over the end of the session it is reset to the
             original value for ``when``
 
-          - ``weekdays`` which can be an iterable with integers indicating on
-            which days (iso codes, Monday is 1, Sunday is 7) the callbacks can
+          - ``weekdays``: a **sorted** iterable with integers indicating on
+            which days (iso codes, Monday is 1, Sunday is 7) the timers can
             be actually invoked
 
-            If not specified, the callback will be active on all days
+            If not specified, the timer will be active on all days
+
+          - ``weekcarry`` (default: ``False``). If ``True`` and the weekday was
+            not seen (ex: trading holiday), the timer will be executed on the
+            next day (even if in a new week)
+
+          - ``monthdays``: a **sorted** iterable with integers indicating on
+            which days of the month a timer has to be executed. For example
+            always on day *15* of the month
+
+            If not specified, the timer will be active on all days
+
+          - ``monthcarry`` (default: ``True``). If the day was not seen
+            (weekend, trading holiday), the timer will be executed on the next
+            available day.
+
+          - ``allow`` (default: ``None``). A callback which receives a
+            `datetime.date`` instance and returns ``True`` if the date is
+            allowed for timers or else returns ``False``
 
           - ``tzdata`` which can be either ``None`` (default), a ``pytz``
             instance or a ``data feed`` instance.
@@ -574,29 +597,36 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
               in the system (aka ``self.data0``) will be used as the reference
               to find out the session times.
 
+          - ``cheat`` (default ``False``) if ``True`` the timer will be called
+            before the broker has a chance to evaluate the orders. This opens
+            the chance to issue orders based on opening price for example right
+            before the session starts
+
           - ``*args``: any extra args will be passed to ``notify_timer``
 
           - ``**kwargs``: any extra kwargs will be passed to ``notify_timer``
 
         Return Value:
 
-          - An integer which is the timer id (``tid``)
+          - The created timer
 
         '''
-        return self.cerebro._schedule_timer(
+        return self.cerebro._add_timer(
             owner=self, when=when, offset=offset, repeat=repeat,
-            weekdays=weekdays, tzdata=tzdata, strats=False,
+            weekdays=weekdays, weekcarry=weekcarry,
+            monthdays=monthdays, monthcarry=monthcarry,
+            allow=allow,
+            tzdata=tzdata, strats=False, cheat=cheat,
             *args, **kwargs)
 
-    def notify_timer(self, tid, when, *args, **kwargs):
-        '''
-        Receives a timer notification where ``tid`` is the timer id returned by
-        ``schedule_call``, ``when`` is the timer time and ``args`` and
-        ``kwargs`` are any additional arguments passed to ``schedule_call``
+    def notify_timer(self, timer, when, *args, **kwargs):
+        '''Receives a timer notification where ``timer`` is the timer which was
+        returned by ``add_timer``, and ``when`` is the calling time. ``args``
+        and ``kwargs`` are any additional arguments passed to ``add_timer``
 
-        The actual time can be later, but the system may have not be able to
-        call the timer before. This value is the timer value and no the system
-        time.
+        The actual ``when`` time can be later, but the system may have not be
+        able to call the timer before. This value is the timer value and no the
+        system time.
         '''
         pass
 

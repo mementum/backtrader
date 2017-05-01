@@ -322,5 +322,5 @@ Reference: Strategy
    .. automethod:: getdatanames
    .. automethod:: getdatabyname
 
-   .. automethod:: schedule_timer
+   .. automethod:: add_timer
    .. automethod:: notify_timer
