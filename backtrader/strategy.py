@@ -28,7 +28,7 @@ import itertools
 import operator
 
 from .utils.py3 import (filter, keys, integer_types, iteritems, itervalues,
-                        map, string_types, with_metaclass)
+                        map, MAXINT, string_types, with_metaclass)
 
 import backtrader as bt
 from .lineiterator import LineIterator, StrategyBase
@@ -245,8 +245,26 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _getminperstatus(self):
         # check the min period status connected to datas
         dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        self._minperstatus = minperstatus = max(dlens)
         return minperstatus
+
+    def prenext_open(self):
+        pass
+
+    def nextstart_open(self):
+        self.next_open()
+
+    def next_open(self):
+        pass
+
+    def _oncepost_open(self):
+        minperstatus = self._minperstatus
+        if minperstatus < 0:
+            self.next_open()
+        elif minperstatus == 0:
+            self.nextstart_open()  # only called for the 1st value
+        else:
+            self.prenext_open()
 
     def _oncepost(self, dt):
         for indicator in self._lineiterators[LineIterator.IndType]:
@@ -264,7 +282,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._notify()
 
         minperstatus = self._getminperstatus()
-
         if minperstatus < 0:
             self.next()
         elif minperstatus == 0:
@@ -293,6 +310,15 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._dlens = newdlens
 
         return len(self)
+
+    def _next_open(self):
+        minperstatus = self._minperstatus
+        if minperstatus < 0:
+            self.next_open()
+        elif minperstatus == 0:
+            self.nextstart_open()  # only called for the 1st value
+        else:
+            self.prenext_open()
 
     def _next(self):
         super(Strategy, self)._next()
@@ -351,6 +377,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._stage2()
 
         self._dlens = [len(data) for data in self.datas]
+
+        self._minperstatus = MAXINT  # start in prenext
 
         self.start()
 

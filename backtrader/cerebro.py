@@ -233,6 +233,25 @@ class Cerebro(with_metaclass(MetaParams, object)):
           - ``integer``. Use, for the strategy, the same timezone as the
             corresponding ``data`` in the ``self.datas`` iterable (``0`` would
             use the timezone from ``data0``)
+
+      - ``cheat_on_open`` (default: ``False``)
+
+        The ``next_open`` method of strategies will be called. This happens
+        before ``next`` and before the broker has had a chance to evaluate
+        orders. The indicators have not yet been recalculated. This allows
+        issuing an orde which takes into account the indicators of the previous
+        day but uses the ``open`` price for stake calculations
+
+        For cheat_on_open order execution, it is also necessary to make the
+        call ``cerebro.broker.set_coo(True)`` or instantite a broker with
+        ``BackBroker(coo=True)`` (where *coo* stands for cheat-on-open) or set
+        the ``broker_coo`` parameter to ``True`` (see below)
+
+      - ``broker_coo`` (default: ``False``)
+
+        This will automatically invoke the ``set_coo`` method of the broker
+        with ``True`` to activate ``cheat_on_open`` execution
+
     '''
 
     params = (
@@ -252,6 +271,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('tradehistory', False),
         ('oldsync', False),
         ('tz', None),
+        ('cheat_on_open', False),
     )
 
     def __init__(self):
@@ -1054,6 +1074,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for store in self.stores:
             store.start()
 
+        if self.p.broker_coo:  # try to activate in broker
+            if hasattr(self._broker, 'set_coo'):
+                self._broker.set_coo(True)
+
         self._broker.start()
 
         for feed in self.feeds:
@@ -1477,6 +1501,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             if d0ret or lastret:  # if any bar, check timers before broker
                 self._check_timers(runstrats, dt0, cheat=True)
+                if self.p.cheat_on_open:
+                    for strat in runstrats:
+                        strat._next_open()
+                        if self._event_stop:  # stop if requested
+                            return
 
             self._brokernotify()
             if self._event_stop:  # stop if requested
@@ -1536,6 +1565,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     pass
 
             self._check_timers(runstrats, dt0, cheat=True)
+
+            if self.p.cheat_on_open:
+                for strat in runstrats:
+                    strat._oncepost_open()
+                    if self._event_stop:  # stop if requested
+                        return
 
             self._brokernotify()
             if self._event_stop:  # stop if requested
