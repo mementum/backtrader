@@ -62,13 +62,15 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj.notifs = collections.deque()  # store notifications for cerebro
 
         _obj._dataname = _obj.p.dataname
+        _obj._name = ''
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaAbstractDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
-        _obj._name = _obj.p.name
+        # Either set by subclass or the parameter or use the dataname (ticker)
+        _obj._name = _obj._name or _obj.p.name or _obj.p.dataname
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
@@ -625,11 +627,12 @@ class FeedBase(with_metaclass(metabase.MetaParams, object)):
 
 class MetaCSVDataBase(DataBase.__class__):
     def dopostinit(cls, _obj, *args, **kwargs):
+        # Before going to the base class to make sure it overrides the default
+        if not _obj.p.name and not _obj._name:
+            _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
+
         _obj, args, kwargs = \
             super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
-
-        if not _obj._name:
-            _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
 
         return _obj, args, kwargs
 
