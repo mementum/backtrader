@@ -70,7 +70,9 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             super(MetaAbstractDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
         # Either set by subclass or the parameter or use the dataname (ticker)
-        _obj._name = _obj._name or _obj.p.name or _obj.p.dataname
+        _obj._name = _obj._name or _obj.p.name
+        if not _obj._name and isinstance(_obj.p.dataname, string_types):
+            _obj._name = _obj.p.dataname
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
