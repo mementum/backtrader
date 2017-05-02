@@ -865,6 +865,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     broker = property(getbroker, setbroker)
 
     def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
+             savefig=False, figfilename='backtrader-plot-%i.png',
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -912,7 +913,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 figs.append(rfig)
 
-            plotter.show()
+            if savefig:
+                plotter.savefig(figfilename % len(figs))
+            else:
+                plotter.show()
         return figs
 
     def __call__(self, iterstrat):

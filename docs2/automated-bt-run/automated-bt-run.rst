@@ -420,7 +420,7 @@ Directly from the script::
 
   $ btrun --help
   usage: btrun-script.py [-h] --data DATA [--cerebro [kwargs]] [--nostdstats]
-                         [--format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}]
+                         [--format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,mt4csv,ibdata,sierracsv,yahoocsv,btcsv,vcdata}]
                          [--fromdate FROMDATE] [--todate TODATE]
                          [--timeframe {microseconds,seconds,weeks,months,minutes,days,years}]
                          [--compression COMPRESSION]
@@ -483,7 +483,7 @@ Directly from the script::
                             - oldbuysell (default False)
                             - tradehistory (default False)
     --nostdstats          Disable the standard statistics observers
-    --format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, --csvformat {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, -c {yahoocsv_unreversed,vchart,vchartcsv,yahoo,ibdata,sierracsv,yahoocsv,btcsv,vcdata}
+    --format {yahoocsv_unreversed,vchart,vchartcsv,yahoo,mt4csv,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, --csvformat {yahoocsv_unreversed,vchart,vchartcsv,yahoo,mt4csv,ibdata,sierracsv,yahoocsv,btcsv,vcdata}, -c {yahoocsv_unreversed,vchart,vchartcsv,yahoo,mt4csv,ibdata,sierracsv,yahoocsv,btcsv,vcdata}
                           CSV Format
     --fromdate FROMDATE, -f FROMDATE
                           Starting date in YYYY-MM-DD[THH:MM:SS] format
