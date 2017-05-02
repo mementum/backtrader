@@ -1,3 +1,14 @@
+1.9.45.116
+  - Fix #302 to plot resampled data with non aligned end of sessions
+  - PR #297 to save figures to files (refactored to save multiple strategies
+    and multiple figures)
+  - Ensure a data feed has always a non-empty _name if possible
+  - Alias getcash/getvalue to get_cash/get_value in broker subclasses if the
+    latter are missing
+  - PR #300 Set tools as executables
+  - PR #301 Metatrader4 csv format
+  - Documentation updates
+
 1.9.44.116
   - Timer calls implementation
   - Broker support for cheat-on-open
