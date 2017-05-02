@@ -29,7 +29,24 @@ from . import fillers as fillers
 from . import fillers as filler
 
 
-class BrokerBase(with_metaclass(MetaParams, object)):
+class MetaBroker(MetaParams):
+    def __init__(cls, name, bases, dct):
+        '''
+        Class has already been created ... fill missing methods if needed be
+        '''
+        # Initialize the class
+        super(MetaBroker, cls).__init__(name, bases, dct)
+        translations = {
+            'get_cash': 'getcash',
+            'get_value': 'getvalue',
+        }
+
+        for attr, trans in translations.items():
+            if not hasattr(cls, attr):
+                setattr(cls, name, getattr(cls, trans))
+
+
+class BrokerBase(with_metaclass(MetaBroker, object)):
     params = (
         ('commission', CommInfoBase(percabs=True)),
     )
