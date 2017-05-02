@@ -757,10 +757,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
     def show(self):
         self.mpyplot.show()
 
-    def savefig(self, filename='backtrader-plot.png'):
-        fig = self.mpyplot.gcf()
-        fig.set_size_inches(16, 9)
-        self.mpyplot.savefig(filename, dpi=300, bbox_inches='tight')
+    def savefig(self, fig, filename, width=16, height=9, dpi=300, tight=True):
+        fig.set_size_inches(width, height)
+        bbox_inches = 'tight' * tight or None
+        fig.savefig(filename, dpi=dpi, bbox_inches=bbox_inches)
 
     def sortdataindicators(self, strategy):
         # These lists/dictionaries hold the subplots that go above each data
