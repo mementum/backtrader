@@ -21,6 +21,7 @@ Contents:
    cerebro/cheat-on-open/cheat-on-open
    strategy
    sizers/sizers
+   timers/timers
    order_target/order_target
    signal_strategy/signal_strategy
    broker
