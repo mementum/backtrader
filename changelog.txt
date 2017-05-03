@@ -1,3 +1,9 @@
+1.9.46.116
+  - Finish timers implementation and documentation
+  - Add timers samples and cheat-on-open sample
+  - Add a List class to check for containment with __contains__ rather than
+    standard list is or __eq__
+
 1.9.45.116
   - Fix #302 to plot resampled data with non aligned end of sessions
   - PR #297 to save figures to files (refactored to save multiple strategies
