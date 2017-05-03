@@ -21,11 +21,39 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
 import functools
 import math
 
 from .linebuffer import LineActions
 from .utils.py3 import cmp, range
+
+
+# Generate a List equivalent which uses "is" for contains
+class List(collections.MutableSequence):
+    def __init__(self, iterable):
+        if not hasattr(iterable, '__len__'):
+            self.it = list(iterable)
+        else:
+            self.it = iterable
+
+    def __getitem__(self, i):
+        return self.it[i]
+
+    def __setitem__(self, i, val):
+        self.it[i] = val
+
+    def __delitem__(self, i):
+        del self.it[i]
+
+    def __len__(self):
+        return self.it
+
+    def insert(i, val):
+        self.it.insert(i, val)
+
+    def __contains__(self, val):
+        return any(val is x for x in self.it)
 
 
 class Logic(LineActions):
