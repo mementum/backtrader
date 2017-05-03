@@ -76,6 +76,7 @@ class Timer(with_metaclass(MetaParams, object)):
         self._isdata = isinstance(self._tzdata, AbstractDataBase)
         self._reset_when()
 
+        self._nexteos = datetime.min
         self._curdate = date.min
 
         self._curmonth = -1  # non-existent month
@@ -113,7 +114,7 @@ class Timer(with_metaclass(MetaParams, object)):
 
         return daycarry or curday
 
-    def _check_week(self, ddate):
+    def _check_week(self, ddate=date.min):
         if not self.p.weekdays:
             return True
 
@@ -141,6 +142,14 @@ class Timer(with_metaclass(MetaParams, object)):
         ddate = d.date()
         if self._lastcall == ddate:  # not repeating, awaiting date change
             return False
+
+        if d > self._nexteos:
+            if self._isdata:  # eos provided by data
+                nexteos, _ = self._tzdata._getnexteos()
+            else:  # generic eos
+                nexteos = datetime.combine(ddate, TIME_MAX)
+            self._nexteos = nexteos
+            self._reset_when()
 
         if ddate > self._curdate:  # day change
             self._curdate = ddate
@@ -177,10 +186,15 @@ class Timer(with_metaclass(MetaParams, object)):
         if not self.p.repeat:  # cannot repeat
             self._reset_when(ddate)  # reset and mark as called on ddate
         else:
-            if self._isdata:  # eos provided by data
-                nexteos, _ = self._tzdata._getnexteos()
-            else:  # generic eos
-                nexteos = datetime.combine(ddate, TIME_MAX)
+            if d > self._nexteos:
+                if self._isdata:  # eos provided by data
+                    nexteos, _ = self._tzdata._getnexteos()
+                else:  # generic eos
+                    nexteos = datetime.combine(ddate, TIME_MAX)
+
+                self._nexteos = nexteos
+            else:
+                nexteos = self._nexteos
 
             while True:
                 dwhen += self.p.repeat
@@ -194,7 +208,7 @@ class Timer(with_metaclass(MetaParams, object)):
                     if self._isdata:
                         self._dwhen = self._tzdata.num2date(dtwhen)
                     else:  # assume pytz compatible or None
-                        self._dwhen = num2date(dtwhen, tz=tzdata)
+                        self._dwhen = num2date(dtwhen, tz=self._tzdata)
 
                     break
 
