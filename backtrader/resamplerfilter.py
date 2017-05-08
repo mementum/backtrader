@@ -620,6 +620,7 @@ class Replayer(_BaseResampler):
         consumed = False
         onedge = False
         takinglate = False
+        docheckover = True
 
         if not fromcheck:
             if self._latedata(data):
