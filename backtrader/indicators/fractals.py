@@ -67,7 +67,7 @@ class Fractal(Indicator):
         if max_idx == shift_to_potential_fractal:
 
             self.log("Found bearish fractal with high (%.2f)!" % max_val)
-            self.lines.fractal_bearish[0] = max_val * (1 + self.p.bardist)
+            self.lines.fractal_bearish[-2] = max_val * (1 + self.p.bardist)
         
         # A bullish turning point occurs when there is a pattern
         # with the lowest low in the middle and two higher lowers on each side. [Ref 1]
@@ -80,4 +80,4 @@ class Fractal(Indicator):
 
         if min_idx == shift_to_potential_fractal:
             self.log("Found bullish fractal with low (%.2f)!" % min_val)
-            self.l.fractal_bullish[0] = min_val * (1 - self.p.bardist)
+            self.l.fractal_bullish[-2] = min_val * (1 - self.p.bardist)
