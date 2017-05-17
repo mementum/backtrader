@@ -80,8 +80,8 @@ class PivotPoint(Indicator):
     def __init__(self):
         o = self.data.open
         h = self.data.high  # current high
-        l = self.data.low  # current high
-        c = self.data.close  # current high
+        l = self.data.low  # current low
+        c = self.data.close  # current close
 
         if self.p.close:
             self.lines.p = p = (h + l + 2.0 * c) / 4.0
