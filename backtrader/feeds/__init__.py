@@ -27,6 +27,7 @@ from .btcsv import *
 from .vchartcsv import *
 from .vchart import *
 from .yahoo import *
+from .quandl import *
 from .sierrachart import *
 from .mt4csv import *
 from .pandafeed import *
