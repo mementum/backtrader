@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015, 2016 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,31 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import testcommon
+
 import backtrader as bt
 
-from .import fractal as fractal
-for name in fractal.__all__:
-    setattr(bt.studies, name, getattr(fractal, name))
+
+chkdatas = 1
+chkvals = [
+    ['nan', 'nan', 'nan'],
+    ['nan', 'nan', '3553.692850']
+]
+
+chkmin = 5
+chkind = bt.studies.Fractal
+
+
+def test_run(main=False):
+    datas = [testcommon.getdata(i) for i in range(chkdatas)]
+    testcommon.runtest(datas,
+                       testcommon.TestStrategy,
+                       main=main,
+                       plot=main,
+                       chkind=chkind,
+                       chkmin=chkmin,
+                       chkvals=chkvals)
+
+
+if __name__ == '__main__':
+    test_run(main=True)
