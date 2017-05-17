@@ -47,6 +47,7 @@ class Timer(with_metaclass(MetaParams, object)):
         ('offset', timedelta()),
         ('repeat', timedelta()),
         ('weekdays', []),
+        ('weekcarry', False),
         ('monthdays', []),
         ('monthcarry', True),
         ('allow', None),  # callable that allows a timer to take place
@@ -127,7 +128,7 @@ class Timer(with_metaclass(MetaParams, object)):
             daycarry = self.p.weekcarry and bool(mask)
             self._weekmask = mask = collections.deque(self.p.weekdays)
 
-        dc = bisect.bisect_left(mask, dwkay)  # "left" for days before dday
+        dc = bisect.bisect_left(mask, dwkday)  # "left" for days before dday
         daycarry = daycarry or (self.p.weekcarry and dc > 0)
         curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # check dday
         dc += curday
