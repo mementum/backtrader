@@ -38,8 +38,8 @@ __all__ = ['QuandlCSV', 'Quandl']
 
 class QuandlCSV(feed.CSVDataBase):
     '''
-    Parses pre-downloaded Yahoo CSV Data Feeds (or locally generated if they
-    comply to the Yahoo format)
+    Parses pre-downloaded Quandl CSV Data Feeds (or locally generated if they
+    comply to the Quandl format)
 
     Specific parameters:
 
@@ -130,7 +130,7 @@ class QuandlCSV(feed.CSVDataBase):
 
 class Quandl(QuandlCSV):
     '''
-    Executes a direct download of data from Yahoo servers for the given time
+    Executes a direct download of data from Quandl servers for the given time
     range.
 
     Specific parameters (or specific meaning):
@@ -141,8 +141,8 @@ class Quandl(QuandlCSV):
 
       - ``baseurl``
 
-        The server url. Someone might decide to open a Yahoo compatible service
-        in the future.
+        The server url. Someone might decide to open a Quandl compatible
+        service in the future.
 
       - ``proxies``
 
