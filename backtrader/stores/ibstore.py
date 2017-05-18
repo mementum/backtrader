@@ -1304,7 +1304,18 @@ class IBStore(with_metaclass(MetaSingleton, object)):
     @ibregister
     def position(self, msg):
         '''Receive event positions'''
-        pass  # Not implemented yet
+        with self._lock_pos:
+            price = msg.avgCost / float(msg.contract.m_multiplier or 1)
+            con_id = msg.contract.m_conId
+
+            if con_id in self.positions:
+                self.positions[con_id].fix(msg.pos, price)
+            else:
+                self.positions[con_id] = Position(msg.pos, price)
+
+    @ibregister
+    def positionEnd(self, msg):
+        self.conn.cancelPositions()
 
     def reqAccountUpdates(self, subscribe=True, account=None):
         '''Proxy to reqAccountUpdates
@@ -1335,22 +1346,19 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # Lock access to the position dicts. This is called in sub-thread and
         # can kick in at any time
         with self._lock_pos:
-            if not self._event_accdownload.is_set():  # 1st event seen
-                position = Position(msg.position, msg.averageCost)
-                self.positions[msg.contract.m_conId] = position
+            if self._event_accdownload.is_set():  # 1st event seen
+                # Flag signal to broker at the end of account download
+                self.broker.push_portupdate()
             else:
-                position = self.positions[msg.contract.m_conId]
-                if not position.fix(msg.position, msg.averageCost):
+                con_id = msg.contract.m_conId
+                if con_id in self.positions and self.positions[con_id].size != msg.position:
+                    self.positions[con_id].update(msg.position, self.positions[con_id].price)
                     err = ('The current calculated position and '
                            'the position reported by the broker do not match. '
                            'Operation can continue, but the trades '
                            'calculated in the strategy may be wrong')
 
                     self.notifs.put((err, (), {}))
-
-                # Flag signal to broker at the end of account download
-                # self.port_update = True
-                self.broker.push_portupdate()
 
     def getposition(self, contract, clone=False):
         # Lock access to the position dicts. This is called from main thread
