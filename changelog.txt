@@ -1,3 +1,7 @@
+1.9.49.116
+  - Add support for new Yahoo v7 api
+  - Quandl: Allow dataset specification, apikey correction and cosmetics
+
 1.9.48.116
   - Quandl Data Feed Online/Offline (at least for WIKI EOD)
     - Online: bt.feeds.Quandl
