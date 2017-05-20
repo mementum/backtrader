@@ -69,6 +69,7 @@ Contents:
    timemgmt
    live/live
    dataautoref
+   datayahoo
    indautoref
    talibindautoref
    strategy-reference
