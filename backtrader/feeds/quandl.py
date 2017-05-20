@@ -169,46 +169,46 @@ class Quandl(QuandlCSV):
 
         apikey identification in case it may be needed
 
+      - ``dataset``
+
+        string identifying the dataset to query. Defaults to ``WIKI``
+
       '''
 
     _online = True  # flag to avoid double reversal
 
     params = (
-        ('baseurl', 'https://www.quandl.com/api/v3/datasets/WIKI/'),
+        ('baseurl', 'https://www.quandl.com/api/v3/datasets'),
         ('proxies', {}),
         ('buffered', True),
         ('reverse', True),
-        ('apikey', None)
+        ('apikey', None),
+        ('dataset', 'WIKI'),
     )
 
     def start(self):
         self.error = None
 
-        url = self.params.baseurl
-        url += '%s.csv' % urlquote(self.params.dataname)
+        url = '{}/{}/{}.csv'.format(
+            self.p.baseurl, self.p.dataset, urlquote(self.p.dataname))
 
         urlargs = []
         if self.p.reverse:
             urlargs.append('order=asc')
 
         if self.p.apikey is not None:
-            urlargs.append('api_key=self.p.apikey')
+            urlargs.append('api_key={}'.format(self.p.apikey))
 
         if self.p.fromdate:
             dtxt = self.p.fromdate.strftime('%Y-%m-%d')
-            urlargs.append('start_date=%s' % dtxt)
+            urlargs.append('start_date={}'.format(dtxt))
 
         if self.p.todate:
             dtxt = self.p.todate.strftime('%Y-%m-%d')
-            urlargs.append('end_date=%s' % dtxt)
+            urlargs.append('end_date={}'.format(dtxt))
 
         if urlargs:
             url += '?' + '&'.join(urlargs)
-
-        print('-' * 50)
-        print('FINAL URL')
-        print('url', url)
-        print('-' * 50)
 
         if self.p.proxies:
             proxy = ProxyHandler(self.p.proxies)
