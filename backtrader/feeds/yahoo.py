@@ -69,6 +69,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         is the default version.
 
         Set it to the empty string to get the original behavior
+
     '''
     params = (
         ('reverse', False),
@@ -149,6 +150,7 @@ class YahooLegacyCSV(YahooFinanceCSVData):
     '''
     This is intended to load files which were downloaded before Yahoo
     discontinued the original service in May-2017
+
     '''
     params = (
         ('version', ''),
@@ -204,7 +206,7 @@ class YahooFinanceData(YahooFinanceCSVData):
       - ``urlhist``
 
         The url of the historical quotes in Yahoo Finance used to gather a
-      ``crumb`` authorization cookie for the download
+        ``crumb`` authorization cookie for the download
 
       - ``urldown``
 
@@ -214,6 +216,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         Number of times (each) to try to get a ``crumb`` cookie and download
         the data
+
       '''
 
     params = (
