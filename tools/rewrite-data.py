@@ -29,6 +29,7 @@ import sys
 
 
 import backtrader as bt
+from backtrader.utils.py3 import bytes
 
 
 DATAFORMATS = dict(
@@ -64,7 +65,7 @@ class RewriteStrategy(bt.Strategy):
             headers = 'Date,Open,High,Low,Close,Volume,OpenInterest'
 
         headers += '\n'
-        self.f.write(headers)
+        self.f.write(bytes(headers))
 
     def next(self):
         fields = list()
@@ -89,7 +90,7 @@ class RewriteStrategy(bt.Strategy):
 
         txt = self.p.separator.join(fields)
         txt += '\n'
-        self.f.write(txt)
+        self.f.write(bytes(txt))
 
 
 def runstrat(pargs=None):
