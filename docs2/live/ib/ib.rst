@@ -116,7 +116,7 @@ A *Store* is a concept which covers the following functions:
 
   - Providing access to getter *data* feed instances
 
-    - ``IBStore.getedata(*args, **kwargs)``
+    - ``IBStore.getdata(*args, **kwargs)``
 
       In this case many of the ``**kwargs`` are common to data feeds like
       ``dataname``, ``fromdate``, ``todate``, ``sessionstart``, ``sessionend``,
