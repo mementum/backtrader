@@ -137,7 +137,7 @@ class Quandl(QuandlCSV):
 
       - ``dataname``
 
-        The ticker to download ('YHOO' for excample)
+        The ticker to download ('YHOO' for example)
 
       - ``baseurl``
 
