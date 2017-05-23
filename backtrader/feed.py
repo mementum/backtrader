@@ -703,6 +703,20 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         linetokens = line.split(self.separator)
         return self._loadline(linetokens)
 
+    def _getnextline(self):
+        if self.f is None:
+            return None
+
+        # Let an exception propagate to let the caller know
+        line = self.f.readline()
+
+        if not line:
+            return None
+
+        line = line.rstrip('\n')
+        linetokens = line.split(self.separator)
+        return linetokens
+
 
 class CSVFeedBase(FeedBase):
     params = (('basepath', ''),) + CSVDataBase.params._gettuple()
