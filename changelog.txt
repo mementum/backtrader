@@ -1,3 +1,8 @@
+1.9.50.117
+  - Add TrueStrengthIndicator
+  - Port YahooDownload tool to v7 API
+  - rewrite tool py3 bytes/str compatibility during write
+
 1.9.49.116
   - Add support for new Yahoo v7 api
   - Quandl: Allow dataset specification, apikey correction and cosmetics
