@@ -2,6 +2,12 @@
   - Add TrueStrengthIndicator
   - Port YahooDownload tool to v7 API
   - rewrite tool py3 bytes/str compatibility during write
+  - Support internal re-fetching of linetokens in csv based datas
+  - Support Yahoo skipping of lines with null values
+  - New adaptations to Yahoo new format for adjusted prices
+  - Update of data samples in Yahoo format
+  - Update of documents and samples to make use of YahooFinanceCSVData
+    consistent with chosen data sample
 
 1.9.49.116
   - Add support for new Yahoo v7 api
@@ -20,7 +26,8 @@
 1.9.47.116
   - Add PR #303 with hook support for btrun
   - Fix regression introduced with trading calendars for replaying
-  - Avoid a DivisionByZeroError in SharpeRatio if not enough returns for the calculation
+  - Avoid a DivisionByZeroError in SharpeRatio if not enough returns for the
+    calculation
 
 1.9.46.116
   - Finish timers implementation and documentation
