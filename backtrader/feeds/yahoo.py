@@ -126,31 +126,44 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         h = float(linetokens[next(i)])
         l = float(linetokens[next(i)])
         c = float(linetokens[next(i)])
-        v = float(linetokens[next(i)])
         self.lines.openinterest[0] = 0.0
 
         if self.p.version == 'v7':  # in v7 ohlc,adc,v, get real volume
-            adjustedclose = v
+            # In v7, the final seq is "adj close", close, volume
+            adjustedclose = c  # c was read above
+            c = float(linetokens[next(i)])
             v = float(linetokens[next(i)])
+
+            adjfactor = adjustedclose / c  # reversed for v7
+            # in v7 "adjusted prices" seem to be given, scale back for non adj
+            if not self.params.adjclose:
+                o *= adjfactor
+                h *= adjfactor
+                l *= adjfactor
+                c = adjustedclose
+                # v *= adjfactor  # except volume which is the same as in v1
+            else:
+                v /= adjfactor  # rescale vol down
         else:
+            v = float(linetokens[next(i)])
             adjustedclose = float(linetokens[next(i)])
 
-        if self.params.adjclose:
-            adjfactor = c / adjustedclose
+            if self.params.adjclose:
+                adjfactor = c / adjustedclose
 
-            o /= adjfactor
-            h /= adjfactor
-            l /= adjfactor
-            c = adjustedclose
-            v /= adjfactor
+                o /= adjfactor
+                h /= adjfactor
+                l /= adjfactor
+                c = adjustedclose
+                v /= adjfactor
 
-            if self.p.round:
-                decimals = self.p.decimals
-                o = round(o, decimals)
-                h = round(h, decimals)
-                l = round(l, decimals)
-                c = round(c, decimals)
-                v = round(v, decimals)
+        if self.p.round:
+            decimals = self.p.decimals
+            o = round(o, decimals)
+            h = round(h, decimals)
+            l = round(l, decimals)
+            c = round(c, decimals)
+            v = round(v, decimals)
 
         self.lines.open[0] = o
         self.lines.high[0] = h
