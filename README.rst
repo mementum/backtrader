@@ -25,6 +25,12 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
+**Yahoo API Note**:
+
+  The changes in the Yahoo API have rendered the Quickstart Guide examples
+  non-functional. They will be updated soon. The new Yahoo API has additionally
+  added new things (like nulls) which still have to be addressed.
+
 Note:
 
   Unless it is really an issue, please post feedback/questions and other
