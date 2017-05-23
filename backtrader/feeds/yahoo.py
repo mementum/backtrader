@@ -100,6 +100,21 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         self.f = f
 
     def _loadline(self, linetokens):
+        while True:
+            nullseen = False
+            for tok in linetokens[1:]:
+                if tok == 'null':
+                    nullseen = True
+                    linetokens = self._getnextline()  # refetch tokens
+                    if not linetokens:
+                        return False  # cannot fetch, go away
+
+                    # out of for to carry on wiwth while True logic
+                    break
+
+            if not nullseen:
+                break  # can proceed
+
         i = itertools.count(0)
 
         dttxt = linetokens[next(i)]
