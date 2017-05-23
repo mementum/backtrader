@@ -31,10 +31,7 @@ backtrader
   non-functional. They will be updated soon. The new Yahoo API has additionally
   added new things (like nulls) which still have to be addressed.
 
-Note:
-
-  Unless it is really an issue, please post feedback/questions and other
-  things to https://community.backtrader.com
+For **feedback/questions/issues** use the `Community <https://community.backtrader.com>`_
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
