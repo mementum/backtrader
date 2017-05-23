@@ -189,7 +189,6 @@ def parse_args(pargs=None):
         description='Sample for pivot point and cross plotting')
 
     parser.add_argument('--data0', required=True,
-                        # default='../../datas/yhoo-1996-2015.txt',
                         help='Data to be read in')
 
     parser.add_argument('--timeframe', required=False,
@@ -199,11 +198,6 @@ def parse_args(pargs=None):
     parser.add_argument('--compression', required=False,
                         default=1, type=int,
                         help='Starting date in YYYY-MM-DD format')
-
-    if False:
-        parser.add_argument('--data1', required=False,
-                            default='../../datas/orcl-1995-2014.txt',
-                            help='Data to be read in')
 
     parser.add_argument('--fromdate', required=False,
                         default='2013-01-01',
