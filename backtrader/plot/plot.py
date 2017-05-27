@@ -114,13 +114,16 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       **kwargs)
 
     def plot(self, strategy, figid=0, numfigs=1, iplot=True,
-             start=None, end=None, **kwargs):
+             start=None, end=None, savefig=False, **kwargs):
         # pfillers={}):
         if not strategy.datas:
             return
 
         if not len(strategy):
             return
+
+        if savefig:
+            matplotlib.use('agg')
 
         if iplot:
             if 'ipykernel' in sys.modules:
