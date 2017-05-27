@@ -27,7 +27,8 @@ import itertools
 import multiprocessing
 
 import backtrader as bt
-from .utils.py3 import map, range, zip, with_metaclass, string_types
+from .utils.py3 import (map, range, zip, with_metaclass, string_types,
+                        integer_types)
 
 from . import linebuffer
 from . import indicator
@@ -35,11 +36,14 @@ from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .utils import OrderedDict
+from .utils import OrderedDict, tzparse
 from .strategy import Strategy, SignalStrategy
-
+from .tradingcal import (TradingCalendarBase, TradingCalendar,
+                         PandasMarketCalendar)
+from .timer import Timer
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
+
 
 class OptReturn(object):
     def __init__(self, params, **kwargs):
@@ -213,6 +217,53 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         If the old behavior with data0 as the master of the system is wished,
         set this parameter to true
+
+      - ``tz`` (default: ``None``)
+
+        Adds a global timezone for strategies. The argument ``tz`` can be
+
+          - ``None``: in this case the datetime displayed by strategies will be
+            in UTC, which has been always the standard behavior
+
+          - ``pytz`` instance. It will be used as such to convert UTC times to
+            the chosen timezone
+
+          - ``string``. Instantiating a ``pytz`` instance will be attempted.
+
+          - ``integer``. Use, for the strategy, the same timezone as the
+            corresponding ``data`` in the ``self.datas`` iterable (``0`` would
+            use the timezone from ``data0``)
+
+      - ``cheat_on_open`` (default: ``False``)
+
+        The ``next_open`` method of strategies will be called. This happens
+        before ``next`` and before the broker has had a chance to evaluate
+        orders. The indicators have not yet been recalculated. This allows
+        issuing an orde which takes into account the indicators of the previous
+        day but uses the ``open`` price for stake calculations
+
+        For cheat_on_open order execution, it is also necessary to make the
+        call ``cerebro.broker.set_coo(True)`` or instantite a broker with
+        ``BackBroker(coo=True)`` (where *coo* stands for cheat-on-open) or set
+        the ``broker_coo`` parameter to ``True``. Cerebro will do it
+        automatically unless disabled below.
+
+      - ``broker_coo`` (default: ``True``)
+
+        This will automatically invoke the ``set_coo`` method of the broker
+        with ``True`` to activate ``cheat_on_open`` execution. Will only do it
+        if ``cheat_on_open`` is also ``True``
+
+      - ``quicknotify`` (default: ``False``)
+
+        Broker notifications are delivered right before the delivery of the
+        *next* prices. For backtesting this has no implications, but with live
+        brokers a notification can take place long before the bar is
+        delivered. When set to ``True`` notifications will be delivered as soon
+        as possible (see ``qcheck`` in live feeds)
+
+        Set to ``False`` for compatibility. May be changed to ``True``
+
     '''
 
     params = (
@@ -231,6 +282,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('writer', False),
         ('tradehistory', False),
         ('oldsync', False),
+        ('tz', None),
+        ('cheat_on_open', False),
+        ('broker_coo', True),
+        ('quicknotify', False),
     )
 
     def __init__(self):
@@ -259,6 +314,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._broker = BackBroker()
 
+        self._tradingcal = None  # TradingCalendar()
+
+        self._pretimers = list()
+
     @staticmethod
     def iterize(iterable):
         '''Handy function which turns things into things that can be iterated upon
@@ -274,6 +333,188 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def notify_timer(self, timer, when, *args, **kwargs):
+        '''Receives a timer notification where ``timer`` is the timer which was
+        returned by ``add_timer``, and ``when`` is the calling time. ``args``
+        and ``kwargs`` are any additional arguments passed to ``add_timer``
+
+        The actual ``when`` time can be later, but the system may have not be
+        able to call the timer before. This value is the timer value and no the
+        system time.
+        '''
+        pass
+
+    def _add_timer(self, owner, when,
+                   offset=datetime.timedelta(), repeat=datetime.timedelta(),
+                   weekdays=[], weekcarry=False,
+                   monthdays=[], monthcarry=True,
+                   allow=None,
+                   tzdata=None, strats=False, cheat=False,
+                   *args, **kwargs):
+        '''Internal method to really create the timer (not started yet) which
+        can be called by cerebro instances or other objects which can access
+        cerebro'''
+
+        timer = Timer(
+            tid=len(self._pretimers),
+            owner=owner, strats=strats,
+            when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, weekcarry=weekcarry,
+            monthdays=monthdays, monthcarry=monthcarry,
+            allow=allow,
+            tzdata=tzdata, cheat=cheat,
+            *args, **kwargs
+        )
+
+        self._pretimers.append(timer)
+        return timer
+
+    def add_timer(self, when,
+                  offset=datetime.timedelta(), repeat=datetime.timedelta(),
+                  weekdays=[], weekcarry=False,
+                  monthdays=[], monthcarry=True,
+                  allow=None,
+                  tzdata=None, cheat=False,
+                  *args, **kwargs):
+        '''
+        Schedules a timer to invoke ``notify_timer``
+
+        Arguments:
+
+          - ``when``: can be
+
+            - ``datetime.time`` instance (see below ``tzdata``)
+            - ``bt.timer.SESSION_START`` to reference a session start
+            - ``bt.timer.SESSION_END`` to reference a session end
+
+         - ``offset`` which must be a ``datetime.timedelta`` instance
+
+           Used to offset the value ``when``. It has a meaningful use in
+           combination with ``SESSION_START`` and ``SESSION_END``, to indicated
+           things like a timer being called ``15 minutes`` after the session
+           start.
+
+          - ``repeat`` which must be a ``datetime.timedelta`` instance
+
+            Indicates if after a 1st call, further calls will be scheduled
+            within the same session at the scheduled ``repeat`` delta
+
+            Once the timer goes over the end of the session it is reset to the
+            original value for ``when``
+
+          - ``weekdays``: a **sorted** iterable with integers indicating on
+            which days (iso codes, Monday is 1, Sunday is 7) the timers can
+            be actually invoked
+
+            If not specified, the timer will be active on all days
+
+          - ``weekcarry`` (default: ``False``). If ``True`` and the weekday was
+            not seen (ex: trading holiday), the timer will be executed on the
+            next day (even if in a new week)
+
+          - ``monthdays``: a **sorted** iterable with integers indicating on
+            which days of the month a timer has to be executed. For example
+            always on day *15* of the month
+
+            If not specified, the timer will be active on all days
+
+          - ``monthcarry`` (default: ``True``). If the day was not seen
+            (weekend, trading holiday), the timer will be executed on the next
+            available day.
+
+          - ``allow`` (default: ``None``). A callback which receives a
+            `datetime.date`` instance and returns ``True`` if the date is
+            allowed for timers or else returns ``False``
+
+          - ``tzdata`` which can be either ``None`` (default), a ``pytz``
+            instance or a ``data feed`` instance.
+
+            ``None``: ``when`` is interpreted at face value (which translates
+            to handling it as if it where UTC even if it's not)
+
+            ``pytz`` instance: ``when`` will be interpreted as being specified
+            in the local time specified by the timezone instance.
+
+            ``data feed`` instance: ``when`` will be interpreted as being
+            specified in the local time specified by the ``tz`` parameter of
+            the data feed instance.
+
+            **Note**: If ``when`` is either ``SESSION_START`` or
+              ``SESSION_END`` and ``tzdata`` is ``None``, the 1st *data feed*
+              in the system (aka ``self.data0``) will be used as the reference
+              to find out the session times.
+
+          - ``strats`` (default: ``False``) call also the ``notify_timer`` of
+            strategies
+
+          - ``cheat`` (default ``False``) if ``True`` the timer will be called
+            before the broker has a chance to evaluate the orders. This opens
+            the chance to issue orders based on opening price for example right
+            before the session starts
+          - ``*args``: any extra args will be passed to ``notify_timer``
+
+          - ``**kwargs``: any extra kwargs will be passed to ``notify_timer``
+
+        Return Value:
+
+          - The created timer
+
+        '''
+        return self._add_timer(
+            owner=self, when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, weekcarry=weekcarry,
+            monthdays=monthdays, monthcarry=monthcarry,
+            allow=allow,
+            tzdata=tzdata, strats=strats, cheat=cheat,
+            *args, **kwargs)
+
+    def addtz(self, tz):
+        '''
+        This can also be done with the parameter ``tz``
+
+        Adds a global timezone for strategies. The argument ``tz`` can be
+
+          - ``None``: in this case the datetime displayed by strategies will be
+            in UTC, which has been always the standard behavior
+
+          - ``pytz`` instance. It will be used as such to convert UTC times to
+            the chosen timezone
+
+          - ``string``. Instantiating a ``pytz`` instance will be attempted.
+
+          - ``integer``. Use, for the strategy, the same timezone as the
+            corresponding ``data`` in the ``self.datas`` iterable (``0`` would
+            use the timezone from ``data0``)
+
+        '''
+        self.p.tz = tz
+
+    def addcalendar(self, cal):
+        '''Adds a global trading calendar to the system. Individual data feeds
+        may have separate calendars which override the global one
+
+        ``cal`` can be an instance of ``TradingCalendar`` a string or an
+        instance of ``pandas_market_calendars``. A string will be will be
+        instantiated as a ``PandasMarketCalendar`` (which needs the module
+        ``pandas_market_calendar`` installed in the system.
+
+        If a subclass of `TradingCalendarBase` is passed (not an instance) it
+        will be instantiated
+        '''
+        if isinstance(cal, string_types):
+            cal = PandasMarketCalendar(calendar=cal)
+        elif hasattr(cal, 'valid_days'):
+            cal = PandasMarketCalendar(calendar=cal)
+
+        else:
+            try:
+                if issubclass(cal, TradingCalendarBase):
+                    cal = cal()
+            except TypeError:  # already an instance
+                pass
+
+        self._tradingcal = cal
 
     def add_signal(self, sigtype, sigcls, *sigargs, **sigkwargs):
         '''Adds a signal to the system which will be later added to a
@@ -457,6 +698,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if data.islive():
             self._dolive = True
 
+        return data
+
     def chaindata(self, *args, **kwargs):
         '''
         Chains several data feeds into one
@@ -471,6 +714,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             dname = args[0]._dataname
         d = bt.feeds.Chainer(dataname=dname, *args)
         self.adddata(d, name=dname)
+
+        return d
 
     def rolloverdata(self, *args, **kwargs):
         '''Chains several data feeds into one
@@ -489,6 +734,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         d = bt.feeds.RollOver(dataname=dname, *args, **kwargs)
         self.adddata(d, name=dname)
 
+        return d
+
     def replaydata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be replayed by the system
@@ -506,6 +753,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self.adddata(dataname, name=name)
         self._doreplay = True
 
+        return dataname
+
     def resampledata(self, dataname, name=None, **kwargs):
         '''
         Adds a ``Data Feed`` to be resample by the system
@@ -522,6 +771,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         dataname.resample(**kwargs)
         self.adddata(dataname, name=name)
         self._doreplay = True
+
+        return dataname
 
     def optcallback(self, cb):
         '''
@@ -613,7 +864,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, iplot=True, start=0, end=-1,
+    def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
+             savefig=False, figfilename='backtrader-plot-{j}-{i}.png',
+             width=16, height=9, dpi=300, tight=True,
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -634,6 +887,21 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``end``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the end
         of the plot
+
+        ``savefig``: set to ``True`` to save to a file rather than plot
+
+        ``figfilename``: name of the file. Use ``{j}`` in the name for the
+        strategy index to which the figure corresponds and use ``{i}`` to
+        insert figure number if multiple figures are being used per strategy
+        plot
+
+        ``width``: in inches of the saved figure
+
+        ``height``: in inches of the saved figure
+
+        ``dpi``: quality in dots per inches of the saved figure
+
+        ``tight``: only save actual content and not the frame of the figure
         '''
         if self._exactbars > 0:
             return
@@ -661,7 +929,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 figs.append(rfig)
 
-            plotter.show()
+            if savefig:
+                for j, stratfigs in enumerate(figs):
+                    for i, fig in enumerate(stratfigs):
+                        plotter.savefig(fig,
+                                        filename=figfilename.format(j=j, i=i),
+                                        width=width, height=height, dpi=dpi,
+                                        tight=tight)
+            else:
+                plotter.show()
         return figs
 
     def __call__(self, iterstrat):
@@ -821,13 +1097,26 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return self.runstrats
 
+    def _init_stcount(self):
+        self.stcount = itertools.count(0)
+
+    def _next_stid(self):
+        return next(self.stcount)
+
     def runstrategies(self, iterstrat, predata=False):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
+        self._init_stcount()
+
         self.runningstrats = runstrats = list()
         for store in self.stores:
             store.start()
+
+        if self.p.cheat_on_open and self.p.broker_coo:
+            # try to activate in broker
+            if hasattr(self._broker, 'set_coo'):
+                self._broker.set_coo(True)
 
         self._broker.start()
 
@@ -869,6 +1158,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 strat.set_tradehistory()
             runstrats.append(strat)
 
+        tz = self.p.tz
+        if isinstance(tz, integer_types):
+            tz = self.datas[tz]._tz
+        else:
+            tz = tzparse(tz)
+
         if runstrats:
             # loop separated for clarity
             defaultsizer = self.sizers.get(None, (None, None, None))
@@ -899,6 +1194,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 if sizer is not None:
                     strat._addsizer(sizer, *sargs, **skwargs)
 
+                strat._settz(tz)
                 strat._start()
 
                 for writer in self.runwriters:
@@ -911,6 +1207,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             for writer in self.runwriters:
                 writer.start()
+
+            # Prepare timers
+            self._timers = []
+            self._timerscheat = []
+            for timer in self._pretimers:
+                # preprocess tzdata if needed
+                timer.start(self.datas[0])
+
+                if timer.params.cheat:
+                    self._timerscheat.append(timer)
+                else:
+                    self._timers.append(timer)
 
             if self._dopreload and self._dorunonce:
                 if self.p.oldsync:
@@ -993,7 +1301,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if owner is None:
                 owner = self.runningstrats[0]  # default
 
-            owner._addnotification(order)
+            owner._addnotification(order, quicknotify=self.p.quicknotify)
 
     def _runnext_old(self, runstrats):
         '''
@@ -1231,11 +1539,20 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
+            if d0ret or lastret:  # if any bar, check timers before broker
+                self._check_timers(runstrats, dt0, cheat=True)
+                if self.p.cheat_on_open:
+                    for strat in runstrats:
+                        strat._next_open()
+                        if self._event_stop:  # stop if requested
+                            return
+
             self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
 
             if d0ret or lastret:  # bars produced by data or filters
+                self._check_timers(runstrats, dt0, cheat=False)
                 for strat in runstrats:
                     strat._next()
                     if self._event_stop:  # stop if requested
@@ -1268,6 +1585,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # here again, because pointers are at 0
         datas = sorted(self.datas,
                        key=lambda x: (x._timeframe, x._compression))
+
         while True:
             # Check next incoming date in the datas
             dts = [d.advance_peek() for d in datas]
@@ -1286,9 +1604,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # self._plotfillers[i].append(slen)
                     pass
 
+            self._check_timers(runstrats, dt0, cheat=True)
+
+            if self.p.cheat_on_open:
+                for strat in runstrats:
+                    strat._oncepost_open()
+                    if self._event_stop:  # stop if requested
+                        return
+
             self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
+
+            self._check_timers(runstrats, dt0, cheat=False)
 
             for strat in runstrats:
                 strat._oncepost(dt0)
@@ -1296,3 +1624,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     return
 
                 self._next_writers(runstrats)
+
+    def _check_timers(self, runstrats, dt0, cheat=False):
+        timers = self._timers if not cheat else self._timerscheat
+        for t in timers:
+            if not t.check(dt0):
+                continue
+
+            t.params.owner.notify_timer(t, t.lastwhen, *t.args, **t.kwargs)
+
+            if t.params.strats:
+                for strat in runstrats:
+                    strat.notify_timer(t, t.lastwhen, *t.args, **t.kwargs)

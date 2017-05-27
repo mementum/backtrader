@@ -18,8 +18,10 @@ Contents:
    operating
    exceptions
    cerebro
+   cerebro/cheat-on-open/cheat-on-open
    strategy
    sizers/sizers
+   timers/timers
    order_target/order_target
    signal_strategy/signal_strategy
    broker
@@ -27,11 +29,16 @@ Contents:
    filler
    order
    order-creation-execution/order-creation-execution
+   order-creation-execution/oco/oco
+   order-creation-execution/trail/stoptrail
+   order-creation-execution/bracket/bracket
+   order-creation-execution/futurespot/future-vs-spot
    datafeed
    datafeed-develop-csv
    datafeed-develop-general/datafeed-develop-general
    extending-a-datafeed
    pandas-datafeed/pandas-datafeed
+   tradingcalendar/tradingcalendar
    data-resampling/data-resampling
    data-multitimeframe/data-multitimeframe
    data-replay/data-replay
@@ -54,12 +61,15 @@ Contents:
    position
    trade
    plotting/plotting
+   plotting/ranges/plotting-date-ranges
+   plotting/sameaxis/plot-sameaxis
    optimization-improvements
    automated-bt-run/automated-bt-run
    memory-savings/memory-savings
    timemgmt
    live/live
    dataautoref
+   datayahoo
    indautoref
    talibindautoref
    strategy-reference

@@ -52,6 +52,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - TICKER-STK-EXCHANGE  # Stock
           - TICKER-STK-EXCHANGE-CURRENCY  # Stock
 
+          - TICKER-CFD  # CFD and SMART exchange
+          - TICKER-CFD-EXCHANGE  # CFD
+          - TICKER-CDF-EXCHANGE-CURRENCY  # Stock
+
           - TICKER-IND-EXCHANGE  # Index
           - TICKER-IND-EXCHANGE-CURRENCY  # Index
 
@@ -163,6 +167,16 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         the ``IBStore`` instance and the TWS server time is not in sync with
         that of the local computer
 
+      - ``tradename`` (default: ``None``)
+        Useful for some specific cases like ``CFD`` in which prices are offered
+        by one asset and trading happens in a different onel
+
+        - SPY-STK-SMART-USD -> SP500 ETF (will be specified as ``dataname``)
+
+        - SPY-CFD-SMART-USD -> which is the corresponding CFD which offers not
+          price tracking but in this case will be the trading asset (specified
+          as ``tradename``)
+
     The default values in the params are the to allow things like ```TICKER``,
     to which the parameter ``sectype`` (default: ``STK``) and ``exchange``
     (default: ``SMART``) are applied.
@@ -189,6 +203,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         ('backfill', True),  # do backfilling when reconnecting
         ('backfill_from', None),  # additional data source to do backfill from
         ('latethrough', False),  # let late samples through
+        ('tradename', None),  # use a different asset as order target
     )
 
     _store = ibstore.IBStore
@@ -242,7 +257,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
     def __init__(self, **kwargs):
         self.ib = self._store(**kwargs)
-        self.parsecontract()
+        self.precontract = self.parsecontract(self.p.dataname)
+        self.pretradecontract = self.parsecontract(self.p.tradename)
 
     def setenvironment(self, env):
         '''Receives an environment (cerebro) and passes it over to the store it
@@ -250,9 +266,12 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         super(IBData, self).setenvironment(env)
         env.addstore(self.ib)
 
-    def parsecontract(self):
+    def parsecontract(self, dataname):
         '''Parses dataname generates a default contract'''
         # Set defaults for optional tokens in the ticker string
+        if dataname is None:
+            return None
+
         exch = self.p.exchange
         curr = self.p.currency
         expiry = ''
@@ -261,7 +280,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         mult = ''
 
         # split the ticker string
-        tokens = iter(self.p.dataname.split('-'))
+        tokens = iter(dataname.split('-'))
 
         # Symbol and security type are compulsory
         symbol = next(tokens)
@@ -312,12 +331,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             pass
 
         # Make the initial contract
-        self.contractdetails = None
-        self.precontract = self.ib.makecontract(
+        precon = self.ib.makecontract(
             symbol=symbol, sectype=sectype, exch=exch, curr=curr,
             expiry=expiry, strike=strike, right=right, mult=mult)
 
-        self.cashtype = sectype == 'CASH'
+        return precon
 
     def start(self):
         '''Starts the IB connecction and gets the real contract and
@@ -327,7 +345,6 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.qlive = self.ib.start(data=self)
         self.qhist = None
 
-        # self._usertvol = not self.p.rtbar or self.cashtype
         self._usertvol = not self.p.rtbar
         tfcomp = (self._timeframe, self._compression)
         if tfcomp < self.RTBAR_MINSIZE:
@@ -336,6 +353,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
         self.contract = None
         self.contractdetails = None
+        self.tradecontract = None
+        self.tradecontractdetails = None
 
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
@@ -359,6 +378,23 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             # no contract can be found (or many)
             self.put_notification(self.DISCONNECTED)
             return
+
+        if self.pretradecontract is None:
+            # no different trading asset - default to standard asset
+            self.tradecontract = self.contract
+            self.tradecontractdetails = self.contractdetails
+        else:
+            # different target asset (typical of some CDS products)
+            # use other set of details
+            cds = self.ib.getContractDetails(self.pretradecontract, maxcount=1)
+            if cds is not None:
+                cdetails = cds[0]
+                self.tradecontract = cdetails.contractDetails.m_summary
+                self.tradecontractdetails = cdetails.contractDetails
+            else:
+                # no contract can be found (or many)
+                self.put_notification(self.DISCONNECTED)
+                return
 
         if self._state == self._ST_START:
             self._start_finish()  # to finish initialization

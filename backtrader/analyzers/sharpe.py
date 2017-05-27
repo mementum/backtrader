@@ -168,20 +168,26 @@ class SharpeRatio(Analyzer):
                     # Else upgrade returns to yearly returns
                     returns = [pow(1.0 + x, factor) - 1.0 for x in returns]
 
-            # Get the excess returns - arithmetic mean - original sharpe
-            ret_free = [r - rate for r in returns]
-            ret_free_avg = average(ret_free)
-            retdev = standarddev(ret_free, avgx=ret_free_avg,
-                                 bessel=self.p.stddev_sample)
+            lrets = len(returns) - self.p.stddev_sample
+            # Check if the ratio can be calculated
+            if lrets:
+                # Get the excess returns - arithmetic mean - original sharpe
+                ret_free = [r - rate for r in returns]
+                ret_free_avg = average(ret_free)
+                retdev = standarddev(ret_free, avgx=ret_free_avg,
+                                     bessel=self.p.stddev_sample)
 
-            try:
-                ratio = ret_free_avg / retdev
+                try:
+                    ratio = ret_free_avg / retdev
 
-                if factor is not None and \
-                   self.p.convertrate and self.p.annualize:
+                    if factor is not None and \
+                       self.p.convertrate and self.p.annualize:
 
-                    ratio = math.sqrt(factor) * ratio
-            except (ValueError, TypeError, ZeroDivisionError):
+                        ratio = math.sqrt(factor) * ratio
+                except (ValueError, TypeError, ZeroDivisionError):
+                    ratio = None
+            else:
+                # no returns or stddev_sample was active and 1 return
                 ratio = None
 
             self.ratio = ratio

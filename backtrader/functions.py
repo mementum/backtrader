@@ -28,6 +28,12 @@ from .linebuffer import LineActions
 from .utils.py3 import cmp, range
 
 
+# Generate a List equivalent which uses "is" for contains
+class List(list):
+    def __contains__(self, other):
+        return any(x.__hash__() == other.__hash__() for x in self)
+
+
 class Logic(LineActions):
     def __init__(self, *args):
         super(Logic, self).__init__()

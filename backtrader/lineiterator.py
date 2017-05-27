@@ -150,6 +150,8 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                     plotskip=False,
                     plotabove=False,
                     plotlinelabels=False,
+                    plotlinevalues=True,
+                    plotvaluetags=True,
                     plotymargin=0.0,
                     plotyhlines=[],
                     plotyticks=[],
@@ -246,8 +248,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
         if self._ltype == LineIterator.StratType:
             # supporting datas with different lengths
-            dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-            minperstatus = max(dlens)
+            minperstatus = self._getminperstatus()
             if minperstatus < 0:
                 self.next()
             elif minperstatus == 0:

@@ -107,7 +107,7 @@ def runstrat(args=None):
         todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dkwargs['todate'] = todate
 
-    data0 = bt.feeds.BacktraderCSVData(dataname=args.data0, **dkwargs)
+    data0 = bt.feeds.YahooFinanceCSVData(dataname=args.data0, **dkwargs)
     cerebro.adddata(data0, name='Data0')
 
     cerebro.addstrategy(St,
@@ -121,7 +121,7 @@ def runstrat(args=None):
     else:
         benchdata = data0
         if args.benchdata1:
-            data1 = bt.feeds.BacktraderCSVData(dataname=args.data1, **dkwargs)
+            data1 = bt.feeds.YahooFinanceCSVData(dataname=args.data1, **dkwargs)
             cerebro.adddata(data1, name='Data1')
             benchdata = data1
 

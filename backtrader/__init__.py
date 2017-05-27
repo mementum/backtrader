@@ -60,12 +60,14 @@ from .writer import *
 from .signal import *
 
 from .cerebro import *
+from .timer import *
 
 from . import utils as utils
 
 from . import feeds as feeds
 from . import indicators as indicators
 from . import indicators as ind
+from . import studies as studies
 from . import strategies as strategies
 from . import strategies as strats
 from . import observers as observers
@@ -78,8 +80,10 @@ from . import signals as signals
 from . import sizers as sizers
 from . import stores as stores
 from . import brokers as brokers
+from . import timer as timer
 
 from . import talib as talib
 
-# Load contributed indicators
+# Load contributed indicators and studies
 import backtrader.indicators.contrib
+import backtrader.studies.contrib

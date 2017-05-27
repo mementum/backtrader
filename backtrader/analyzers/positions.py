@@ -66,21 +66,20 @@ class PositionsValue(bt.Analyzer):
     )
 
     def start(self):
-        super(PositionsValue, self).start()
         if self.p.headers:
-            headers = self.strategy.getdatanames() + ['cash'] * self.p.cash
-            self.rets['Datetime'] = headers
+            headers = [d._name or 'Data%d' % i
+                       for i, d in enumerate(self.datas)]
+            self.rets['Datetime'] = headers + ['cash'] * self.p.cash
 
-        self._usedate = self.data0._timeframe >= bt.TimeFrame.Days
+        tf = min(d._timeframe for d in self.datas)
+        self._usedate = tf >= bt.TimeFrame.Days
 
     def next(self):
-        # super(PositionsValue, self).next()  # let dtkey update
-        # Updates the positions for "dtkey" (see base class) for each cycle
         pvals = [self.strategy.broker.get_value([d]) for d in self.datas]
         if self.p.cash:
             pvals.append(self.strategy.broker.get_cash())
 
         if self._usedate:
-            self.rets[self.data0.datetime.date()] = pvals
+            self.rets[self.strategy.datetime.date()] = pvals
         else:
-            self.rets[self.data0.datetime.datetime()] = pvals
+            self.rets[self.strategy.datetime.datetime()] = pvals

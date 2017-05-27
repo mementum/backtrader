@@ -63,6 +63,8 @@ class Calmar(bt.TimeFrameAnalyzerBase):
       - ``calmar`` the latest calculated calmar ratio
     '''
 
+    packages = ('collections', 'math',)
+
     params = (
         ('timeframe', bt.TimeFrame.Months),  # default in calmar
         ('period', 36),
@@ -82,7 +84,8 @@ class Calmar(bt.TimeFrameAnalyzerBase):
         self._mdd = max(self._mdd, self._maxdd.maxdd)
         self._values.append(self.strategy.broker.getvalue())
         rann = math.log(self._values[-1] / self._values[0]) / len(self._values)
-        self.calmar = calmar = rann / self._mdd
+        self.calmar = calmar = rann / (self._mdd or float('Inf'))
+
         self.rets[self.dtkey] = calmar
 
     def stop(self):

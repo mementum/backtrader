@@ -158,7 +158,7 @@ def runstrat(args=None):
 
     # if dataset is None, args.data has been given
     dataname = DATASETS.get(args.dataset, args.data)
-    data0 = bt.feeds.BacktraderCSVData(dataname=dataname, **dkwargs)
+    data0 = bt.feeds.YahooFinanceCSVData(dataname=dataname, **dkwargs)
     cerebro.adddata(data0)
 
     cerebro.addstrategy(TheStrategy,

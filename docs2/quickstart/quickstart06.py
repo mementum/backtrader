@@ -44,20 +44,23 @@ class TestStrategy(bt.Strategy):
         # To keep track of pending orders
         self.order = None
 
-    def notify(self, order):
+    def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
         # Check if an order has been completed
         # Attention: broker could reject order if not enougth cash
-        if order.status in [order.Completed, order.Canceled, order.Margin]:
+        if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, %.2f' % order.executed.price)
             elif order.issell():
                 self.log('SELL EXECUTED, %.2f' % order.executed.price)
 
             self.bar_executed = len(self)
+
+        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
+            self.log('Order Canceled/Margin/Rejected')
 
         # Write down: no pending order
         self.order = None

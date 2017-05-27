@@ -85,7 +85,7 @@ The code would look like this::
   ...
   ...
   # pyfolio showtime
-  import pyfolio
+  import pyfolio as pf
   pf.create_full_tear_sheet(
       returns,
       positions=positions,

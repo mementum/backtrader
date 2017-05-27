@@ -37,6 +37,7 @@ DATAFORMATS = dict(
     vchartcsv=bt.feeds.VChartCSVData,
     vcfile=bt.feeds.VChartFile,
     sierracsv=bt.feeds.SierraChartCSVData,
+    mt4csv=bt.feeds.MT4CSVData,
     yahoocsv=bt.feeds.YahooFinanceCSVData,
     yahoocsv_unreversed=bt.feeds.YahooFinanceCSVData,
     yahoo=bt.feeds.YahooFinanceData,
@@ -84,21 +85,20 @@ def btrun(pargs=''):
 
     cerebro = bt.Cerebro(**cer_kwargs)
 
-    tf, cp = None, None
-    if args.resample is not None:
-        tfcp = args.resample.split(':')
-    elif args.replay is not None:
-        tfcp = args.replay.split(':')
+    if args.resample is not None or args.replay is not None:
+        if args.resample is not None:
+            tfcp = args.resample.split(':')
+        elif args.replay is not None:
+            tfcp = args.replay.split(':')
 
-    # compression may be skipped and it will default to 1
-    if len(tfcp) == 1 or tfcp[1] == '':
-        tf, cp = tfcp[0], 1
-    else:
-        tf, cp = tfcp
+        # compression may be skipped and it will default to 1
+        if len(tfcp) == 1 or tfcp[1] == '':
+            tf, cp = tfcp[0], 1
+        else:
+            tf, cp = tfcp
 
-    cp = int(cp)  # convert any value to int
-
-    tf = TIMEFRAMES.get(tf, None)
+        cp = int(cp)  # convert any value to int
+        tf = TIMEFRAMES.get(tf, None)
 
     for data in getdatas(args):
         if args.resample is not None:
@@ -137,6 +137,9 @@ def btrun(pargs=''):
         wrkwargs = eval('dict(' + wrkwargs_str + ')')
         cerebro.addwriter(bt.WriterFile, **wrkwargs)
 
+    ans = getfunctions(args.hooks, bt.Cerebro)
+    for hook, kwargs in ans:
+        hook(cerebro, **kwargs)
     runsts = cerebro.run()
     runst = runsts[0]  # single strategy and no optimization
 
@@ -257,6 +260,22 @@ def getmodclasses(mod, clstype, clsname=None):
     return clslist
 
 
+def getmodfunctions(mod, funcname=None):
+    members = inspect.getmembers(mod, inspect.isfunction) + \
+        inspect.getmembers(mod, inspect.ismethod)
+
+    funclist = list()
+    for name, member in members:
+        if funcname:
+            if name == funcname:
+                funclist.append(member)
+                break
+        else:
+            funclist.append(member)
+
+    return funclist
+
+
 def loadmodule(modpath, modname=''):
     # generate a random name for the module
 
@@ -351,6 +370,47 @@ def getobjects(iterable, clsbase, modbase, issignal=False):
 
     return retobjects
 
+def getfunctions(iterable, modbase):
+    retfunctions = list()
+
+    for item in iterable or []:
+        tokens = item.split(':', 1)
+
+        if len(tokens) == 1:
+            modpath = tokens[0]
+            name = ''
+            kwargs = dict()
+        else:
+            modpath, name = tokens
+            kwtokens = name.split(':', 1)
+            if len(kwtokens) == 1:
+                # no '(' found
+                kwargs = dict()
+            else:
+                name = kwtokens[0]
+                kwtext = 'dict(' + kwtokens[1] + ')'
+                kwargs = eval(kwtext)
+
+        if modpath:
+            mod, e = loadmodule(modpath)
+
+            if not mod:
+                print('')
+                print('Failed to load module %s:' % modpath, e)
+                sys.exit(1)
+        else:
+            mod = modbase
+
+        loaded = getmodfunctions(mod=mod, funcname=name)
+
+        if not loaded:
+            print('No function %s / module %s' % (str(name), modpath))
+            sys.exit(1)
+
+        retfunctions.append((loaded[0], kwargs))
+
+    return retfunctions
+
 
 def parse_args(pargs=''):
     parser = argparse.ArgumentParser(
@@ -419,6 +479,36 @@ def parse_args(pargs=''):
 
     group.add_argument('--replay', '-rp', required=False, default=None,
                        help='replay with timeframe:compression values')
+
+    group.add_argument(
+        '--hook', dest='hooks',
+        action='append', required=False,
+        metavar='module:hookfunction:kwargs',
+        help=('This option can be specified multiple times.\n'
+              '\n'
+              'The argument can be specified with the following form:\n'
+              '\n'
+              '  - module:hookfunction:kwargs\n'
+              '\n'
+              '    Example: mymod:myhook:a=1,b=2\n'
+              '\n'
+              'kwargs is optional\n'
+              '\n'
+              'If module is omitted then hookfunction will be sought\n'
+              'as the built-in cerebro method. Example:\n'
+              '\n'
+              '  - :addtz:tz=America/St_Johns\n'
+              '\n'
+              'If name is omitted, then the 1st function found in the\n'
+              'mod will be used. Such as in:\n'
+              '\n'
+              '  - module or module::kwargs\n'
+              '\n'
+              'The function specified will be called, with cerebro\n'
+              'instance passed as the first argument together with\n'
+              'kwargs, if any were specified. This allows to customize\n'
+              'cerebro, beyond options provided by this script\n\n')
+    )
 
     # Module where to read the strategy from
     group = parser.add_argument_group(title='Strategy options')

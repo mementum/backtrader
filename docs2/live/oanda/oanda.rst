@@ -149,6 +149,10 @@ As such the order execution types are limited to:
   - ``Order.Limit``
   - ``Order.Stop``
   - ``Order.StopLimit`` (using *Stop* and *upperBound* / *lowerBound* prices)
+  - ``Order.StopTrail``
+
+  - *Bracket* orders are supported by using the ``takeprofit`` and ``stoploss``
+    order members and creating internally simulated orders.
 
 Order Validity
 ==============

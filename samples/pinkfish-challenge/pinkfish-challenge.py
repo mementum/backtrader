@@ -258,17 +258,17 @@ def runstrat():
         dkwargs['todate'] = todate
 
     if args.no_replay:
-        data = bt.feeds.BacktraderCSVData(dataname=args.data,
-                                          timeframe=bt.TimeFrame.Days,
-                                          compression=1,
-                                          **dkwargs)
+        data = bt.feeds.YahooFinanceCSVData(dataname=args.data,
+                                            timeframe=bt.TimeFrame.Days,
+                                            compression=1,
+                                            **dkwargs)
         data.addfilter(DayStepsCloseFilter)
         cerebro.adddata(data)
     else:
-        data = bt.feeds.BacktraderCSVData(dataname=args.data,
-                                          timeframe=bt.TimeFrame.Minutes,
-                                          compression=1,
-                                          **dkwargs)
+        data = bt.feeds.YahooFinanceCSVData(dataname=args.data,
+                                            timeframe=bt.TimeFrame.Minutes,
+                                            compression=1,
+                                            **dkwargs)
         data.addfilter(DayStepsReplayFilter)
         cerebro.replaydata(data, timeframe=bt.TimeFrame.Days, compression=1)
 

@@ -63,8 +63,8 @@ Parameters:
 
   - ``timeframe`` (default: TimeFrame.Days)
 
-    Informative unless Data Resampling/Replaying is used. It may be changed by
-    classes upon timeframe detection
+    Potential values: ``Ticks``, ``Seconds``, ``Minutes``, ``Days``, ``Weeks``,
+    ``Months`` and ``Years``
 
   - ``compression`` (default: 1)
 
@@ -84,8 +84,6 @@ Parameters:
 
 CSV Data Feeds Common parameters
 ********************************
-
-This data feed can download data directly from Yahoo and feed into the system.
 
 Parameters (additional to the common ones):
 

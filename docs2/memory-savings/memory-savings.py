@@ -124,7 +124,7 @@ def runstrat():
     args = parse_args()
 
     cerebro = bt.Cerebro()
-    data = btfeeds.BacktraderCSVData(dataname=args.data)
+    data = btfeeds.YahooFinanceCSVData(dataname=args.data)
     cerebro.adddata(data)
     cerebro.addstrategy(
         St, datalines=args.datalines, lendetails=args.lendetails)

@@ -22,12 +22,13 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import datetime
 import inspect
 import itertools
 import operator
 
 from .utils.py3 import (filter, keys, integer_types, iteritems, itervalues,
-                        map, string_types, with_metaclass)
+                        map, MAXINT, string_types, with_metaclass)
 
 import backtrader as bt
 from .lineiterator import LineIterator, StrategyBase
@@ -66,7 +67,8 @@ class MetaStrategy(StrategyBase.__class__):
         _obj, args, kwargs = super(MetaStrategy, cls).donew(*args, **kwargs)
 
         # Find the owner and store it
-        _obj.env = findowner(_obj, bt.Cerebro)
+        _obj.env = _obj.cerebro = cerebro = findowner(_obj, bt.Cerebro)
+        _obj._id = cerebro._next_stid()
 
         return _obj, args, kwargs
 
@@ -243,8 +245,26 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
     def _getminperstatus(self):
         # check the min period status connected to datas
         dlens = map(operator.sub, self._minperiods, map(len, self.datas))
-        minperstatus = max(dlens)
+        self._minperstatus = minperstatus = max(dlens)
         return minperstatus
+
+    def prenext_open(self):
+        pass
+
+    def nextstart_open(self):
+        self.next_open()
+
+    def next_open(self):
+        pass
+
+    def _oncepost_open(self):
+        minperstatus = self._minperstatus
+        if minperstatus < 0:
+            self.next_open()
+        elif minperstatus == 0:
+            self.nextstart_open()  # only called for the 1st value
+        else:
+            self.prenext_open()
 
     def _oncepost(self, dt):
         for indicator in self._lineiterators[LineIterator.IndType]:
@@ -262,7 +282,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._notify()
 
         minperstatus = self._getminperstatus()
-
         if minperstatus < 0:
             self.next()
         elif minperstatus == 0:
@@ -291,6 +310,15 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._dlens = newdlens
 
         return len(self)
+
+    def _next_open(self):
+        minperstatus = self._minperstatus
+        if minperstatus < 0:
+            self.next_open()
+        elif minperstatus == 0:
+            self.nextstart_open()  # only called for the 1st value
+        else:
+            self.prenext_open()
 
     def _next(self):
         super(Strategy, self)._next()
@@ -336,6 +364,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             else:
                 analyzer._prenext()
 
+    def _settz(self, tz):
+        self.lines.datetime._settz(tz)
+
     def _start(self):
         self._periodset()
 
@@ -346,6 +377,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._stage2()
 
         self._dlens = [len(data) for data in self.datas]
+
+        self._minperstatus = MAXINT  # start in prenext
 
         self.start()
 
@@ -435,14 +468,23 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._orderspending = list()
         self._tradespending = list()
 
-    def _addnotification(self, order):
+    def _addnotification(self, order, quicknotify=False):
         if not order.p.simulated:
             self._orderspending.append(order)
 
+        if quicknotify:
+            qorders = [order]
+            qtrades = []
+
         if not order.executed.size:
+            if quicknotify:
+                self._notify(qorders=qorders, qtrades=qtrades)
             return
 
-        tradedata = order.data
+        tradedata = order.data._compensate
+        if tradedata is None:
+            tradedata = order.data
+
         datatrades = self._trades[tradedata][order.tradeid]
         if not datatrades:
             trade = Trade(data=tradedata, tradeid=order.tradeid,
@@ -466,6 +508,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
                 if trade.isclosed:
                     self._tradespending.append(trade)
+                    if quicknotify:
+                        qtrades.append(trade)
 
             # Update it if needed
             if exbit.opened:
@@ -487,22 +531,42 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 # "opens" a position but "closes" the trade
                 if trade.isclosed:
                     self._tradespending.append(trade)
+                    if quicknotify:
+                        qtrades.append(trade)
 
             if trade.justopened:
                 self._tradespending.append(trade)
+                if quicknotify:
+                    qtrades.append(trade)
 
-    def _notify(self):
-        for order in self._orderspending:
+        if quicknotify:
+            self._notify(qorders=qorders, qtrades=qtrades)
+
+    def _notify(self, qorders=[], qtrades=[]):
+        if self.cerebro.p.quicknotify:
+            # need to know if quicknotify is on, to not reprocess pendingorders
+            # and pendingtrades, which have to exist for things like observers
+            # which look into it
+            procorders = qorders
+            proctrades = qtrades
+        else:
+            procorders = self._orderspending
+            proctrades = self._tradespending
+
+        for order in procorders:
             self.notify_order(order)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_order(order)
 
-        for trade in self._tradespending:
+        for trade in proctrades:
             self.notify_trade(trade)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_trade(trade)
+
+        if qorders:
+            return  # cash is notified on a regular basis
 
         cash = self.broker.getcash()
         value = self.broker.getvalue()
@@ -510,6 +574,117 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self.notify_cashvalue(cash, value)
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
+
+    def add_timer(self, when,
+                  offset=datetime.timedelta(), repeat=datetime.timedelta(),
+                  weekdays=[], weekcarry=False,
+                  monthdays=[], monthcarry=True,
+                  allow=None,
+                  tzdata=None, cheat=False,
+                  *args, **kwargs):
+        '''
+        **Note**: can be called during ``__init__`` or ``start``
+
+        Schedules a timer to invoke either a specified callback or the
+        ``notify_timer`` of one or more strategies.
+
+        Arguments:
+
+          - ``when``: can be
+
+            - ``datetime.time`` instance (see below ``tzdata``)
+            - ``bt.timer.SESSION_START`` to reference a session start
+            - ``bt.timer.SESSION_END`` to reference a session end
+
+         - ``offset`` which must be a ``datetime.timedelta`` instance
+
+           Used to offset the value ``when``. It has a meaningful use in
+           combination with ``SESSION_START`` and ``SESSION_END``, to indicated
+           things like a timer being called ``15 minutes`` after the session
+           start.
+
+          - ``repeat`` which must be a ``datetime.timedelta`` instance
+
+            Indicates if after a 1st call, further calls will be scheduled
+            within the same session at the scheduled ``repeat`` delta
+
+            Once the timer goes over the end of the session it is reset to the
+            original value for ``when``
+
+          - ``weekdays``: a **sorted** iterable with integers indicating on
+            which days (iso codes, Monday is 1, Sunday is 7) the timers can
+            be actually invoked
+
+            If not specified, the timer will be active on all days
+
+          - ``weekcarry`` (default: ``False``). If ``True`` and the weekday was
+            not seen (ex: trading holiday), the timer will be executed on the
+            next day (even if in a new week)
+
+          - ``monthdays``: a **sorted** iterable with integers indicating on
+            which days of the month a timer has to be executed. For example
+            always on day *15* of the month
+
+            If not specified, the timer will be active on all days
+
+          - ``monthcarry`` (default: ``True``). If the day was not seen
+            (weekend, trading holiday), the timer will be executed on the next
+            available day.
+
+          - ``allow`` (default: ``None``). A callback which receives a
+            `datetime.date`` instance and returns ``True`` if the date is
+            allowed for timers or else returns ``False``
+
+          - ``tzdata`` which can be either ``None`` (default), a ``pytz``
+            instance or a ``data feed`` instance.
+
+            ``None``: ``when`` is interpreted at face value (which translates
+            to handling it as if it where UTC even if it's not)
+
+            ``pytz`` instance: ``when`` will be interpreted as being specified
+            in the local time specified by the timezone instance.
+
+            ``data feed`` instance: ``when`` will be interpreted as being
+            specified in the local time specified by the ``tz`` parameter of
+            the data feed instance.
+
+            **Note**: If ``when`` is either ``SESSION_START`` or
+              ``SESSION_END`` and ``tzdata`` is ``None``, the 1st *data feed*
+              in the system (aka ``self.data0``) will be used as the reference
+              to find out the session times.
+
+          - ``cheat`` (default ``False``) if ``True`` the timer will be called
+            before the broker has a chance to evaluate the orders. This opens
+            the chance to issue orders based on opening price for example right
+            before the session starts
+
+          - ``*args``: any extra args will be passed to ``notify_timer``
+
+          - ``**kwargs``: any extra kwargs will be passed to ``notify_timer``
+
+        Return Value:
+
+          - The created timer
+
+        '''
+        return self.cerebro._add_timer(
+            owner=self, when=when, offset=offset, repeat=repeat,
+            weekdays=weekdays, weekcarry=weekcarry,
+            monthdays=monthdays, monthcarry=monthcarry,
+            allow=allow,
+            tzdata=tzdata, strats=False, cheat=cheat,
+            *args, **kwargs)
+
+    def notify_timer(self, timer, when, *args, **kwargs):
+        '''Receives a timer notification where ``timer`` is the timer which was
+        returned by ``add_timer``, and ``when`` is the calling time. ``args``
+        and ``kwargs`` are any additional arguments passed to ``add_timer``
+
+        The actual ``when`` time can be later, but the system may have not be
+        able to call the timer before. This value is the timer value and no the
+        system time.
+        '''
+        pass
 
     def notify_cashvalue(self, cash, value):
         '''
@@ -555,7 +730,10 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def buy(self, data=None,
             size=None, price=None, plimit=None,
-            exectype=None, valid=None, tradeid=0, **kwargs):
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
+            **kwargs):
         '''Create a buy (long) order and send it to the broker
 
           - ``data`` (default: ``None``)
@@ -589,6 +767,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             to set the implicit *Limit* order, once the *Stop* has been
             triggered (for which ``price`` has been used)
 
+          - ``trailamount`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is an
+            absolute amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop
+
+          - ``trailpercent`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is a
+            percentage amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop (if ``trailamount`` is also specified it will be used)
+
           - ``exectype`` (default: ``None``)
 
             Possible values:
@@ -606,6 +798,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             - ``Order.StopLimit``. An order which is triggered at ``price`` and
               executed as an implicit *Limit* order with price given by
               ``pricelimit``
+
+            - ``Order.Close``. An order which can only be executed with the
+              closing price of the session (usually during a closing auction)
+
+            - ``Order.StopTrail``. An order which is triggered at ``price``
+              minus ``trailamount`` (or ``trailpercent``) and which is updated
+              if the price moves away from the stop
+
+            - ``Order.StopTrailLimit``. An order which is triggered at
+              ``price`` minus ``trailamount`` (or ``trailpercent``) and which
+              is updated if the price moves away from the stop
 
           - ``valid`` (default: ``None``)
 
@@ -636,6 +839,29 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             back to the *strategy* when notifying changes to the status of the
             orders.
 
+          - ``oco`` (default: ``None``)
+
+            Another ``order`` instance. This order will become part of an OCO
+            (Order Cancel Others) group. The execution of one of the orders,
+            immediately cancels all others in the same group
+
+          - ``parent`` (default: ``None``)
+
+            Controls the relationship of a group of orders, for example a buy
+            which is bracketed by a high-side limit sell and a low side stop
+            sell. The high/low side orders remain inactive until the parent
+            order has been either executed (they become active) or is
+            canceled/expires (the children are also canceled) bracket orders
+            have the same size
+
+          - ``transmit`` (default: ``True``)
+
+            Indicates if the order has to be **transmitted**, ie: not only
+            placed in the broker but also issued. This is meant for example to
+            control bracket orders, in which one disables the transmission for
+            the parent and 1st set of children and activates it for the last
+            children, which triggers the full placement of all bracket orders.
+
           - ``**kwargs``: additional broker implementations may support extra
             parameters. ``backtrader`` will pass the *kwargs* down to the
             created order objects
@@ -658,16 +884,25 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data, isbuy=True)
+        size = size if size is not None else self.getsizing(data, isbuy=True)
 
-        return self.broker.buy(
-            self, data,
-            size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
+        if size:
+            return self.broker.buy(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+                trailamount=trailamount, trailpercent=trailpercent,
+                parent=parent, transmit=transmit,
+                **kwargs)
+
+        return None
 
     def sell(self, data=None,
              size=None, price=None, plimit=None,
-             exectype=None, valid=None, tradeid=0, **kwargs):
+             exectype=None, valid=None, tradeid=0, oco=None,
+             trailamount=None, trailpercent=None,
+             parent=None, transmit=True,
+             **kwargs):
         '''
         To create a selll (short) order and send it to the broker
 
@@ -679,16 +914,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.getdatabyname(data)
 
         data = data or self.datas[0]
-        size = size or self.getsizing(data, isbuy=False)
+        size = size if size is not None else self.getsizing(data, isbuy=False)
 
-        return self.broker.sell(
-            self, data,
-            size=abs(size), price=price, plimit=plimit,
-            exectype=exectype, valid=valid, tradeid=tradeid, **kwargs)
+        if size:
+            return self.broker.sell(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid, tradeid=tradeid, oco=oco,
+                trailamount=trailamount, trailpercent=trailpercent,
+                parent=parent, transmit=transmit,
+                **kwargs)
 
-    def close(self,
-              data=None, size=None, price=None, plimit=None,
-              exectype=None, valid=None, tradeid=0, **kwargs):
+        return None
+
+    def close(self, data=None, size=None, **kwargs):
         '''
         Counters a long/short position closing it
 
@@ -707,24 +946,232 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        size = abs(size or possize)
+        size = abs(size if size is not None else possize)
 
         if possize > 0:
-            return self.sell(data=data, size=size, price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+            return self.sell(data=data, size=size, **kwargs)
         elif possize < 0:
-            return self.buy(data=data, size=size, price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
+            return self.buy(data=data, size=size, **kwargs)
 
         return None
 
-    def order_target_size(self, data=None, target=0,
-                          price=None, plimit=None,
-                          exectype=None, valid=None,
-                          tradeid=0, **kwargs):
+    def buy_bracket(self, data=None, size=None, price=None, plimit=None,
+                    exectype=bt.Order.Limit, valid=None, tradeid=0,
+                    trailamount=None, trailpercent=None, oargs={},
+                    stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+                    limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+                    **kwargs):
+        '''
+        Create a bracket order group (low side - buy order - high side). The
+        default behavior is as follows:
 
+          - Issue a **buy** order with execution ``Limit``
+
+          - Issue a *low side* bracket **sell** order with execution ``Stop``
+
+          - Issue a *high side* bracket **sell** order with execution
+            ``Limit``.
+
+        See below for the different parameters
+
+          - ``data`` (default: ``None``)
+
+            For which data the order has to be created. If ``None`` then the
+            first data in the system, ``self.datas[0] or self.data0`` (aka
+            ``self.data``) will be used
+
+          - ``size`` (default: ``None``)
+
+            Size to use (positive) of units of data to use for the order.
+
+            If ``None`` the ``sizer`` instance retrieved via ``getsizer`` will
+            be used to determine the size.
+
+            **Note**: The same size is applied to all 3 orders of the bracket
+
+          - ``price`` (default: ``None``)
+
+            Price to use (live brokers may place restrictions on the actual
+            format if it does not comply to minimum tick size requirements)
+
+            ``None`` is valid for ``Market`` and ``Close`` orders (the market
+            determines the price)
+
+            For ``Limit``, ``Stop`` and ``StopLimit`` orders this value
+            determines the trigger point (in the case of ``Limit`` the trigger
+            is obviously at which price the order should be matched)
+
+          - ``plimit`` (default: ``None``)
+
+            Only applicable to ``StopLimit`` orders. This is the price at which
+            to set the implicit *Limit* order, once the *Stop* has been
+            triggered (for which ``price`` has been used)
+
+          - ``trailamount`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is an
+            absolute amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop
+
+          - ``trailpercent`` (default: ``None``)
+
+            If the order type is StopTrail or StopTrailLimit, this is a
+            percentage amount which determines the distance to the price (below
+            for a Sell order and above for a buy order) to keep the trailing
+            stop (if ``trailamount`` is also specified it will be used)
+
+          - ``exectype`` (default: ``bt.Order.Limit``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``valid`` (default: ``None``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``tradeid`` (default: ``0``)
+
+            Possible values: (see the documentation for the method ``buy``
+
+          - ``oargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the main side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+          - ``**kwargs``: additional broker implementations may support extra
+            parameters. ``backtrader`` will pass the *kwargs* down to the
+            created order objects
+
+            Possible values: (see the documentation for the method ``buy``
+
+            **Note**: this ``kwargs`` will be applied to the 3 orders of a
+            bracket. See below for specific keyword arguments for the low and
+            high side orders
+
+          - ``stopprice`` (default: ``None``)
+
+            Specific price for the *low side* stop order
+
+          - ``stopexec`` (default: ``bt.Order.Stop``)
+
+            Specific execution type for the *low side* order
+
+          - ``stopargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the low side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+          - ``limitprice`` (default: ``None``)
+
+            Specific price for the *high side* stop order
+
+          - ``stopexec`` (default: ``bt.Order.Limit``)
+
+            Specific execution type for the *high side* order
+
+          - ``limitargs`` (default: ``{}``)
+
+            Specific keyword arguments (in a ``dict``) to pass to the high side
+            order. Arguments from the default ``**kwargs`` will be applied on
+            top of this.
+
+        Returns:
+
+          - A list containing the 3 orders [order, stop side, limit side]
+
+        '''
+
+        kargs = dict(size=size,
+                     data=data, price=price, plimit=plimit, exectype=exectype,
+                     valid=valid, tradeid=tradeid,
+                     trailamount=trailamount, trailpercent=trailpercent)
+        kargs.update(oargs)
+        kargs.update(kwargs)
+        kargs['transmit'] = False
+        o = self.buy(**kargs)
+
+        # low side / stop
+        kargs = dict(data=data, price=stopprice, exectype=stopexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(stopargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = False
+        kargs['size'] = o.size
+        ostop = self.sell(**kargs)
+
+        # high side / limit
+        kargs = dict(data=data, price=limitprice, exectype=limitexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(limitargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = True
+        kargs['size'] = o.size
+        olimit = self.sell(**kargs)
+
+        return [o, ostop, olimit]
+
+    def sell_bracket(self, data=None,
+                     size=None, price=None, plimit=None,
+                     exectype=bt.Order.Limit, valid=None, tradeid=0,
+                     trailamount=None, trailpercent=None,
+                     oargs={},
+                     stopprice=None, stopexec=bt.Order.Stop, stopargs={},
+                     limitprice=None, limitexec=bt.Order.Limit, limitargs={},
+                     **kwargs):
+        '''
+        Create a bracket order group (low side - buy order - high side). The
+        default behavior is as follows:
+
+          - Issue a **sell** order with execution ``Limit``
+
+          - Issue a *high side* bracket **buy** order with execution ``Stop``
+
+          - Issue a *low side* bracket **buy** order with execution ``Limit``.
+
+        See ``bracket_buy`` for the meaning of the parameters
+
+        Returns:
+
+          - A list containing the 3 orders [order, stop side, limit side]
+
+        '''
+
+        kargs = dict(size=size,
+                     data=data, price=price, plimit=plimit, exectype=exectype,
+                     valid=valid, tradeid=tradeid,
+                     trailamount=trailamount, trailpercent=trailpercent)
+        kargs.update(oargs)
+        kargs.update(kwargs)
+        kargs['transmit'] = False
+        o = self.sell(**kargs)
+
+        # high side / limit
+        kargs = dict(data=data, price=stopprice, exectype=stopexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(stopargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = False
+        kargs['size'] = o.size
+        ostop = self.buy(**kargs)
+
+        # low side / stop
+        kargs = dict(data=data, price=limitprice, exectype=limitexec,
+                     valid=valid, tradeid=tradeid)
+        kargs.update(limitargs)
+        kargs.update(kwargs)
+        kargs['parent'] = o
+        kargs['transmit'] = True
+        kargs['size'] = o.size
+        olimit = self.buy(**kargs)
+
+        return [o, ostop, olimit]
+
+    def order_target_size(self, data=None, target=0, **kwargs):
         '''
         Place an order to rebalance a position to have final size of ``target``
 
@@ -750,29 +1197,17 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         possize = self.getposition(data, self.broker).size
         if not target and possize:
-            return self.close(data=data, size=possize,
-                              price=price, plimit=plimit,
-                              exectype=exectype, valid=valid,
-                              tradeid=tradeid, **kwargs)
+            return self.close(data=data, size=possize, **kwargs)
 
         elif target > possize:
-            return self.buy(data=data, size=target - possize,
-                            price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
+            return self.buy(data=data, size=target - possize, **kwargs)
 
         elif target < possize:
-            return self.sell(data=data, size=possize - target,
-                             price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+            return self.sell(data=data, size=possize - target, **kwargs)
 
         return None  # no execution target == possize
 
-    def order_target_value(self, data=None, target=0.0,
-                           price=None, plimit=None,
-                           exectype=None, valid=None,
-                           tradeid=0, **kwargs):
+    def order_target_value(self, data=None, target=0.0, price=None, **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target``
@@ -799,38 +1234,27 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        value = self.broker.getvalue(datas=[data])
-        comminfo = self.broker.getcommissioninfo(data)
-
-        # Make sure a price is there
-        price = price if price is not None else data.close[0]
-
         if not target and possize:  # closing a position
-            return self.close(data=data, size=possize,
-                              price=price, plimit=plimit,
-                              exectype=exectype, valid=valid,
-                              tradeid=tradeid, **kwargs)
+            return self.close(data=data, size=possize, price=price, **kwargs)
 
-        elif target > value:
-            size = comminfo.getsize(price, target - value)
-            return self.buy(data=data, size=size,
-                            price=price, plimit=plimit,
-                            exectype=exectype, valid=valid,
-                            tradeid=tradeid, **kwargs)
-        elif target < value:
-            size = comminfo.getsize(price, value - target)
-            return self.sell(data=data, size=size,
-                             price=price, plimit=plimit,
-                             exectype=exectype, valid=valid,
-                             tradeid=tradeid, **kwargs)
+        else:
+            value = self.broker.getvalue(datas=[data])
+            comminfo = self.broker.getcommissioninfo(data)
+
+            # Make sure a price is there
+            price = price if price is not None else data.close[0]
+
+            if target > value:
+                size = comminfo.getsize(price, target - value)
+                return self.buy(data=data, size=size, price=price, **kwargs)
+
+            elif target < value:
+                size = comminfo.getsize(price, value - target)
+                return self.sell(data=data, size=size, price=price, **kwargs)
 
         return None  # no execution size == possize
 
-    def order_target_percent(self, data=None, target=0.0,
-                             price=None, plimit=None,
-                             exectype=None, valid=None,
-                             tradeid=0, **kwargs):
-
+    def order_target_percent(self, data=None, target=0.0, **kwargs):
         '''
         Place an order to rebalance a position to have final value of
         ``target`` percentage of current portfolio ``value``
@@ -874,13 +1298,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             data = self.data
 
         possize = self.getposition(data, self.broker).size
-        value = self.broker.getvalue()
-        target_value = value * target
+        target *= self.broker.getvalue()
 
-        return self.order_target_value(data=data, target=target_value,
-                                       price=price, plimit=plimit,
-                                       exectype=exectype, valid=valid,
-                                       tradeid=tradeid, **kwargs)
+        return self.order_target_value(data=data, target=target, **kwargs)
 
     def getposition(self, data=None, broker=None):
         '''
@@ -1123,15 +1543,16 @@ class SignalStrategy(with_metaclass(MetaSigStrategy, Strategy)):
     def signal_add(self, sigtype, signal):
         self._signals[sigtype].append(signal)
 
-    def _notify(self):
+    def _notify(self, qorders=[], qtrades=[]):
         # Nullify the sentinel if done
+        procorders = qorders or self._orderspending
         if self._sentinel is not None:
-            for order in self._orderspending:
+            for order in procorders:
                 if order == self._sentinel and not order.alive():
                     self._sentinel = None
                     break
 
-        super(SignalStrategy, self)._notify()
+        super(SignalStrategy, self)._notify(qorders=qorders, qtrades=qtrades)
 
     def _next_catch(self):
         self._next_signal()

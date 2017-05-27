@@ -39,6 +39,13 @@ class TestStrategy(bt.Strategy):
         valid=None,
         cancel=0,
         donotsell=False,
+        stoptrail=False,
+        stoptraillimit=False,
+        trailamount=None,
+        trailpercent=None,
+        limitoffset=None,
+        oca=False,
+        bracket=False,
     )
 
     def __init__(self):
@@ -123,12 +130,59 @@ class TestStrategy(bt.Strategy):
             return
 
         if self.datastatus and not self.position and len(self.orderid) < 1:
+            exectype = self.p.exectype if not self.p.oca else bt.Order.Limit
+            close = self.data0.close[0]
+            price = round(close * 0.90, 2)
             self.order = self.buy(size=self.p.stake,
-                                  exectype=self.p.exectype,
-                                  price=round(self.data0.close[0] * 0.90, 2),
-                                  valid=self.p.valid)
+                                  exectype=exectype,
+                                  price=price,
+                                  valid=self.p.valid,
+                                  transmit=not self.p.bracket)
 
             self.orderid.append(self.order)
+
+            if self.p.bracket:
+                # low side
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.Stop,
+                          price=round(price * 0.90, 2),
+                          valid=self.p.valid,
+                          transmit=False,
+                          parent=self.order)
+
+                # high side
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.Limit,
+                          price=round(close * 1.10, 2),
+                          valid=self.p.valid,
+                          transmit=True,
+                          parent=self.order)
+
+            elif self.p.oca:
+                self.buy(size=self.p.stake,
+                         exectype=bt.Order.Limit,
+                         price=round(self.data0.close[0] * 0.80, 2),
+                         oco=self.order)
+
+            elif self.p.stoptrail:
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.StopTrail,
+                          # price=round(self.data0.close[0] * 0.90, 2),
+                          valid=self.p.valid,
+                          trailamount=self.p.trailamount,
+                          trailpercent=self.p.trailpercent)
+
+            elif self.p.stoptraillimit:
+                p = round(self.data0.close[0] - self.p.trailamount, 2)
+                # p = self.data0.close[0]
+                self.sell(size=self.p.stake,
+                          exectype=bt.Order.StopTrailLimit,
+                          price=p,
+                          plimit=p + self.p.limitoffset,
+                          valid=self.p.valid,
+                          trailamount=self.p.trailamount,
+                          trailpercent=self.p.trailpercent)
+
         elif self.position.size > 0 and not self.p.donotsell:
             if self.order is None:
                 self.order = self.sell(size=self.p.stake // 2,
@@ -269,7 +323,14 @@ def runstrategy():
                         stopafter=args.stopafter,
                         valid=valid,
                         cancel=args.cancel,
-                        donotsell=args.donotsell)
+                        donotsell=args.donotsell,
+                        stoptrail=args.stoptrail,
+                        stoptraillimit=args.traillimit,
+                        trailamount=args.trailamount,
+                        trailpercent=args.trailpercent,
+                        limitoffset=args.limitoffset,
+                        oca=args.oca,
+                        bracket=args.bracket)
 
     # Live data ... avoid long data accumulation by switching to "exactbars"
     cerebro.run(exactbars=args.exactbars)
@@ -454,6 +515,36 @@ def parse_args():
     parser.add_argument('--valid', default=None, type=int,
                         required=False, action='store',
                         help='Seconds to keep the order alive (0 means DAY)')
+
+    pgroup = parser.add_mutually_exclusive_group(required=False)
+    pgroup.add_argument('--stoptrail',
+                        required=False, action='store_true',
+                        help='Issue a stoptraillimit after buy( do not sell')
+
+    pgroup.add_argument('--traillimit',
+                        required=False, action='store_true',
+                        help='Issue a stoptrail after buying (do not sell')
+
+    pgroup.add_argument('--oca',
+                        required=False, action='store_true',
+                        help='Test oca by putting 2 orders in a group')
+
+    pgroup.add_argument('--bracket',
+                        required=False, action='store_true',
+                        help='Test bracket orders by issuing high/low sides')
+
+    pgroup = parser.add_mutually_exclusive_group(required=False)
+    pgroup.add_argument('--trailamount', default=None, type=float,
+                        required=False, action='store',
+                        help='trailamount for StopTrail order')
+
+    pgroup.add_argument('--trailpercent', default=None, type=float,
+                        required=False, action='store',
+                        help='trailpercent for StopTrail order')
+
+    parser.add_argument('--limitoffset', default=None, type=float,
+                        required=False, action='store',
+                        help='limitoffset for StopTrailLimit orders')
 
     parser.add_argument('--cancel', default=0, type=int,
                         required=False, action='store',

@@ -44,7 +44,7 @@ logging.basicConfig(
     level=logging.INFO)
 
 
-class YahooDownload(object):
+class YahooDownloadLegacy(object):
     baseurl = 'http://ichart.yahoo.com/table.csv?'
 
     def __init__(self, ticker, fromdate, todate, period='d', reverse=True):
@@ -98,6 +98,122 @@ class YahooDownload(object):
             f = filename
 
         f.write(self.headers)
+
+        self.datafile.seek(0)
+        for line in self.datafile:
+            f.write(line)
+
+        f.close()
+
+
+class YahooDownload(object):
+    urlhist = 'https://finance.yahoo.com/quote/{}/history'
+    urldown = 'https://query1.finance.yahoo.com/v7/finance/download'
+    retries = 3
+
+    def __init__(self, ticker, fromdate, todate, period='d', reverse=True):
+        try:
+            import requests
+        except ImportError:
+            msg = ('The new Yahoo data feed requires to have the requests '
+                   'module installed. Please use pip install requests or '
+                   'the method of your choice')
+            raise Exception(msg)
+
+        url = self.urlhist.format(ticker)
+
+        sesskwargs = dict()
+        if False and self.p.proxies:
+            sesskwargs['proxies'] = self.p.proxies
+
+        crumb = None
+        sess = requests.Session()
+        for i in range(self.retries + 1):  # at least once
+            resp = sess.get(url, **sesskwargs)
+            if resp.status_code != requests.codes.ok:
+                continue
+
+            txt = resp.text
+            i = txt.find('CrumbStore')
+            if i == -1:
+                continue
+            i = txt.find('crumb', i)
+            if i == -1:
+                continue
+            istart = txt.find('"', i + len('crumb') + 1)
+            if istart == -1:
+                continue
+            istart += 1
+            iend = txt.find('"', istart)
+            if iend == -1:
+                continue
+
+            crumb = txt[istart:iend]
+            crumb = crumb.encode('ascii').decode('unicode-escape')
+            break
+
+        if crumb is None:
+            self.error = 'Crumb not found'
+            self.f = None
+            return
+
+        # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history&crumb=crumb
+
+        # Try to download
+        urld = '{}/{}'.format(self.urldown, ticker)
+
+        urlargs = []
+        posix = datetime.date(1970, 1, 1)
+        if todate is not None:
+            period2 = (todate.date() - posix).total_seconds()
+            urlargs.append('period2={}'.format(int(period2)))
+
+        if todate is not None:
+            period1 = (fromdate.date() - posix).total_seconds()
+            urlargs.append('period1={}'.format(int(period1)))
+
+        intervals = {
+            'd': '1d',
+            'w': '1wk',
+            'm': '1mo',
+        }
+
+        urlargs.append('interval={}'.format(intervals[period]))
+        urlargs.append('events=history')
+        urlargs.append('crumb={}'.format(crumb))
+
+        urld = '{}?{}'.format(urld, '&'.join(urlargs))
+        f = None
+        for i in range(self.retries + 1):  # at least once
+            resp = sess.get(urld, **sesskwargs)
+            if resp.status_code != requests.codes.ok:
+                continue
+
+            ctype = resp.headers['Content-Type']
+            if 'text/csv' not in ctype:
+                self.error = 'Wrong content type: %s' % ctype
+                continue  # HTML returned? wrong url?
+
+            # buffer everything from the socket into a local buffer
+            try:
+                # r.encoding = 'UTF-8'
+                f = io.StringIO(resp.text, newline=None)
+            except Exception:
+                continue  # try again if possible
+
+            break
+
+        self.datafile = f
+
+    def writetofile(self, filename):
+        if not self.datafile:
+            return
+
+        if not hasattr(filename, 'read'):
+            # It's not a file - open it
+            f = io.open(filename, 'w')
+        else:
+            f = filename
 
         self.datafile.seek(0)
         for line in self.datafile:

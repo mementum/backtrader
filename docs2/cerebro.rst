@@ -82,7 +82,7 @@ Gathering input
 
        - ``addanalyzer``
 
-       - ``addobserver``
+       - ``addobserver`` (or ``addobservermulti``)
 
   4. Changing the broker
 
@@ -286,6 +286,8 @@ Reference
 
    .. automethod:: addobserver
 
+   .. automethod:: addobservermulti
+
    .. automethod:: addanalyzer
 
    .. automethod:: addwriter
@@ -311,3 +313,11 @@ Reference
    .. automethod:: signal_accumulate
 
    .. automethod:: signal_strategy
+
+   .. automethod:: addcalendar
+
+   .. automethod:: addtz
+
+   .. automethod:: add_timer
+
+   .. automethod:: notify_timer

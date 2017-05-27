@@ -102,6 +102,8 @@ class OrderData(object):
         Note: if no price is given and no pricelimite is given, the closing
         price at the time or order creation will be used as reference
       - pricelimit: holds pricelimit for StopLimit (which has trigger first)
+      - trailamount: absolute price distance in trailing stops
+      - trailpercent: percentage price distance in trailing stops
 
       - value: market value for the entire bit size
       - comm: commission for the entire bit execution
@@ -126,7 +128,7 @@ class OrderData(object):
     # thread making an append and with no need for a lock
 
     def __init__(self, dt=None, size=0, price=0.0, pricelimit=0.0, remsize=0,
-                 pclose=0.0):
+                 pclose=0.0, trailamount=0.0, trailpercent=0.0):
 
         self.pclose = pclose
         self.exbits = collections.deque()  # for historical purposes
@@ -137,6 +139,8 @@ class OrderData(object):
         self.remsize = remsize
         self.price = price
         self.pricelimit = pricelimit
+        self.trailamount = trailamount
+        self.trailpercent = trailpercent
 
         if not pricelimit:
             # if no pricelimit is given, use the given price
@@ -146,6 +150,8 @@ class OrderData(object):
             # price must always be set if pricelimit is set ...
             self.price = pricelimit
 
+        self.plimit = pricelimit
+
         self.value = 0.0
         self.comm = 0.0
         self.margin = None
@@ -153,6 +159,14 @@ class OrderData(object):
 
         self.psize = 0
         self.pprice = 0
+
+    def _getplimit(self):
+        return self._plimit
+
+    def _setplimit(self, val):
+        self._plimit = val
+
+    plimit = property(_getplimit, _setplimit)
 
     def __len__(self):
         return len(self.exbits)
@@ -207,9 +221,11 @@ class OrderData(object):
 
 class OrderBase(with_metaclass(MetaParams, object)):
     params = (
-        ('owner', None), ('data', None), ('size', None), ('price', None),
-        ('pricelimit', None), ('exectype', None), ('valid', None),
-        ('tradeid', 0),
+        ('owner', None), ('data', None),
+        ('size', None), ('price', None), ('pricelimit', None),
+        ('exectype', None), ('valid', None), ('tradeid', 0), ('oco', None),
+        ('trailamount', None), ('trailpercent', None),
+        ('parent', None), ('transmit', True),
         ('simulated', False),
     )
 
@@ -221,8 +237,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
     # Volume Restrictions for orders
     V_None = range(1)
 
-    Market, Close, Limit, Stop, StopLimit = range(5)
-    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit']
+    Market, Close, Limit, Stop, StopLimit, StopTrail, StopTrailLimit = range(7)
+    ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit', 'StopTrail',
+                 'StopTrailLimit']
 
     OrdTypes = ['Buy', 'Sell']
     Buy, Sell = range(2)
@@ -238,6 +255,14 @@ class OrderBase(with_metaclass(MetaParams, object)):
     ]
 
     refbasis = itertools.count(1)  # for a unique identifier per order
+
+    def _getplimit(self):
+        return self._plimit
+
+    def _setplimit(self, val):
+        self._plimit = val
+
+    plimit = property(_getplimit, _setplimit)
 
     def __getattr__(self, name):
         # Return attr from params if not found in order
@@ -259,6 +284,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         tojoin.append('Size: {}'.format(self.size))
         tojoin.append('Price: {}'.format(self.price))
         tojoin.append('Price Limit: {}'.format(self.pricelimit))
+        tojoin.append('TrailAmount: {}'.format(self.trailamount))
+        tojoin.append('TrailPercent: {}'.format(self.trailpercent))
         tojoin.append('ExecType: {}'.format(self.exectype))
         tojoin.append('ExecType: {}'.format(self.getordername()))
         tojoin.append('CommInfo: {}'.format(self.comminfo))
@@ -276,7 +303,10 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.comminfo = None
         self.triggered = False
 
+        self._active = self.parent is None
         self.status = Order.Created
+
+        self.plimit = self.p.pricelimit  # alias via property
 
         if self.exectype is None:
             self.exectype = Order.Market
@@ -286,8 +316,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # Set a reference price if price is not set using
         # the close price
+        pclose = self.data.close[0] if not self.simulated else self.price
         if not self.price and not self.pricelimit:
-            price = self.data.close[0]
+            price = pclose
         else:
             price = self.price
 
@@ -296,7 +327,18 @@ class OrderBase(with_metaclass(MetaParams, object)):
                                  size=self.size,
                                  price=price,
                                  pricelimit=self.pricelimit,
-                                 pclose=self.data.close[0])
+                                 pclose=pclose,
+                                 trailamount=self.trailamount,
+                                 trailpercent=self.trailpercent)
+
+        # Adjust price in case a trailing limit is wished
+        if self.exectype in [Order.StopTrail, Order.StopTrailLimit]:
+            self._limitoffset = self.created.price - self.created.pricelimit
+            price = self.created.price
+            self.created.price = float('inf' * self.isbuy() or '-inf')
+            self.trailadjust(price)
+        else:
+            self._limitoffset = 0.0
 
         self.executed = OrderData(remsize=self.size)
         self.position = 0
@@ -363,6 +405,12 @@ class OrderBase(with_metaclass(MetaParams, object)):
         '''Returns the name for a given ordtype or the one of the order'''
         return self.OrdTypes[self.ordtype if ordtype is None else ordtype]
 
+    def active(self):
+        return self._active
+
+    def activate(self):
+        self._active = True
+
     def alive(self):
         '''Returns True if the order is in a status in which it can still be
         executed
@@ -382,7 +430,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
             self.info[key] = val
 
     def __eq__(self, other):
-        return self.ref == other.ref
+        return other is not None and self.ref == other.ref
 
     def __ne__(self, other):
         return self.ref != other.ref
@@ -470,6 +518,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
         self.status = self.Expired
         return True
 
+    def trailadjust(self, price):
+        pass  # generic interface
+
 
 class Order(OrderBase):
     '''
@@ -537,6 +588,30 @@ class Order(OrderBase):
             return True
 
         return False
+
+    def trailadjust(self, price):
+        if self.trailamount:
+            pamount = self.trailamount
+        elif self.trailpercent:
+            pamount = price * self.trailpercent
+        else:
+            pamount = 0.0
+
+        # Stop sell is below (-), stop buy is above, move only if needed
+        if self.isbuy():
+            price += pamount
+            if price < self.created.price:
+                self.created.price = price
+                if self.exectype == Order.StopTrailLimit:
+                    self.created.pricelimit = price - self._limitoffset
+        else:
+            price -= pamount
+            if price > self.created.price:
+                self.created.price = price
+                if self.exectype == Order.StopTrailLimit:
+                    # limitoffset is negative when pricelimit was greater
+                    # the - allows increasing the price limit if stop increases
+                    self.created.pricelimit = price - self._limitoffset
 
 
 class BuyOrder(Order):

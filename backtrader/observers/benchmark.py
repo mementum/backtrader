@@ -87,6 +87,9 @@ class Benchmark(TimeReturn):
         return labels
 
     def __init__(self):
+        if self.p.data is None:  # use the 1st data in the system if none given
+            self.p.data = self.data0
+
         super(Benchmark, self).__init__()  # treturn including data parameter
         # Create a time return object without the data
         kwargs = self.p._getkwargs()

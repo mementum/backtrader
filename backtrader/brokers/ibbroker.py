@@ -25,6 +25,7 @@ import collections
 from copy import copy
 from datetime import date, datetime, timedelta
 import threading
+import uuid
 
 import ib.ext.Order
 import ib.opt as ibopt
@@ -113,6 +114,8 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         Order.Close: bytes('MOC'),
         Order.Stop: bytes('STP'),
         Order.StopLimit: bytes('STPLMT'),
+        Order.StopTrail: bytes('TRAIL'),
+        Order.StopTrailLimit: bytes('TRAIL LIMIT'),
     }
 
     def __init__(self, action, **kwargs):
@@ -149,10 +152,27 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         elif self.exectype == self.StopLimit:
             self.m_lmtPrice = self.pricelimit  # req limit execution
             self.m_auxPrice = self.price  # trigger price
+        elif self.exectype == self.StopTrail:
+            if self.trailamount is not None:
+                self.m_auxPrice = self.trailamount
+            elif self.trailpercent is not None:
+                # value expected in % format ... multiply 100.0
+                self.m_trailingPercent = self.trailpercent * 100.0
+        elif self.exectype == self.StopTrailLimit:
+            self.m_trailStopPrice = self.m_lmtPrice = self.price
+            # The limit offset is set relative to the price difference in TWS
+            self.m_lmtPrice = self.pricelimit
+            if self.trailamount is not None:
+                self.m_auxPrice = self.trailamount
+            elif self.trailpercent is not None:
+                # value expected in % format ... multiply 100.0
+                self.m_trailingPercent = self.trailpercent * 100.0
 
         self.m_totalQuantity = abs(self.size)  # ib takes only positives
 
-        self.m_transmit = True
+        self.m_transmit = self.transmit
+        if self.parent is not None:
+            self.m_parentId = self.parent.m_orderId
 
         # Time In Force: DAY, GTC, IOC, GTD
         if self.valid is None:
@@ -176,6 +196,9 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
             self.m_goodTillDate = bytes(valid.strftime('%Y%m%d %H:%M:%S'))
 
         self.m_tif = bytes(tif)
+
+        # OCA
+        self.m_ocaType = 1  # Cancel all remaining orders with block
 
         # pass any custom arguments to the order
         for k in kwargs:
@@ -206,7 +229,7 @@ class IBCommInfo(CommInfoBase):
         return abs(size) * price
 
 
-class MetaIBBroker(MetaParams):
+class MetaIBBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
         '''Class has already been created ... register'''
         # Initialize the class
@@ -280,7 +303,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         return self.value
 
     def getposition(self, data, clone=True):
-        return self.ib.getposition(data.contract, clone=clone)
+        return self.ib.getposition(data.tradecontract, clone=clone)
 
     def cancel(self, order):
         try:
@@ -304,14 +327,20 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     def submit(self, order):
         order.submit(self)
 
+        # ocoize if needed
+        if order.oco is None:  # Generate a UniqueId
+            order.m_ocaGroup = bytes(uuid.uuid4())
+        else:
+            order.m_ocaGroup = self.orderbyid[order.oco.m_orderId].m_ocaGroup
+
         self.orderbyid[order.m_orderId] = order
-        self.ib.placeOrder(order.m_orderId, order.data.contract, order)
+        self.ib.placeOrder(order.m_orderId, order.data.tradecontract, order)
         self.notify(order)
 
         return order
 
     def getcommissioninfo(self, data):
-        contract = data.contract
+        contract = data.tradecontract
         try:
             mult = float(contract.m_multiplier)
         except (ValueError, TypeError):
@@ -327,7 +356,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
                    tradeid=0, **kwargs):
 
         order = IBOrder(action, owner=owner, data=data,
-                        size=size, price=price, plimit=plimit,
+                        size=size, price=price, pricelimit=plimit,
                         exectype=exectype, valid=valid,
                         tradeid=tradeid,
                         m_clientId=self.ib.clientId,

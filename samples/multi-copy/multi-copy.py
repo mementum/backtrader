@@ -152,7 +152,7 @@ def runstrat(args=None):
         dkwargs['todate'] = todate
 
     # if dataset is None, args.data has been given
-    data0 = bt.feeds.BacktraderCSVData(dataname=args.data0, **dkwargs)
+    data0 = bt.feeds.YahooFinanceCSVData(dataname=args.data0, **dkwargs)
     cerebro.adddata(data0, name='MyData0')
 
     st0kwargs = dict()

@@ -25,6 +25,9 @@ import datetime
 import math
 import time as _time
 
+from .py3 import string_types
+
+
 ZERO = datetime.timedelta(0)
 
 STDOFFSET = datetime.timedelta(seconds=-_time.timezone)
@@ -34,6 +37,37 @@ else:
     DSTOFFSET = STDOFFSET
 
 DSTDIFF = DSTOFFSET - STDOFFSET
+
+# To avoid rounding errors taking dates to next day
+TIME_MAX = datetime.time(23, 59, 59, 999990)
+
+# To avoid rounding errors taking dates to next day
+TIME_MIN = datetime.time.min
+
+
+def tzparse(tz):
+    # If no object has been provided by the user and a timezone can be
+    # found via contractdtails, then try to get it from pytz, which may or
+    # may not be available.
+    tzstr = isinstance(tz, string_types)
+    if tz is None or not tzstr:
+        return Localizer(tz)
+
+    try:
+        import pytz  # keep the import very local
+    except ImportError:
+        return Localizer(tz)    # nothing can be done
+
+    tzs = tz
+    if tzs == 'CST':  # usual alias
+        tzs = 'CST6CDT'
+
+    try:
+        tz = pytz.timezone(tzs)
+    except pytz.UnknownTimeZoneError:
+        return Localizer(tz)    # nothing can be done
+
+    return tz
 
 
 def Localizer(tz):
@@ -165,12 +199,15 @@ def num2time(num, tz=None, naive=True):
     return num2date(num, tz=tz, naive=naive).time()
 
 
-def date2num(dt):
+def date2num(dt, tz=None):
     """
     Convert :mod:`datetime` to the Gregorian date as UTC float days,
     preserving hours, minutes, seconds and microseconds.  Return value
     is a :func:`float`.
     """
+    if tz is not None:
+        dt = tz.localize(dwhen)
+
     if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
         delta = dt.tzinfo.utcoffset(dt)
         if delta is not None:

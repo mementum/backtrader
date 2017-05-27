@@ -102,6 +102,8 @@ These are controlled by this data set in *Indicators* and *Observers*::
                     plotskip=False,
                     plotabove=False,
                     plotlinelabels=False,
+                    plotlinevalues=True,
+                    plotvaluetags=True,
                     plotymargin=0.0,
                     plotyhlines=[],
                     plotyticks=[],
@@ -168,6 +170,14 @@ The meaning of the options
     display the name of the 2 lines and its markers: ``Buy`` and ``Sell`` to
     make it clear for the end user what is what.
 
+  - ``plotlinevalues``: controls whether the legend for the lines in indicators
+    and observers has the last plotted value. Can be controlled on a per-line
+    basis with ``_plotvalue`` for each line
+
+  - ``plotvaluetags``: controls whether a value tag with the last value is
+    plotted on the right hand side of the line. Can be controlled on a per-line
+    basis with ``_plotvaluetag`` for each line
+
   - ``plotymargin``: margin to add to the top and bottom of individual
     subcharts on the graph
 
@@ -231,6 +241,12 @@ with an underscore (``_``):
   - ``_plotskip`` (*boolean*) which indicates that plotting of a specific line
     has to be skipped if set to ``True``
 
+  - ``_plotvalue`` (*boolean*) to control if the legend of this line will
+    contain the last plotted value (default is ``True``)
+
+  - ``_plotvaluetag`` (*boolean*) to control if a righ hand side tag with the
+    last value is plotted (default is ``True``)
+
   - ``_name`` (*string*) which changes the plot name of a specific line
 
   - ``_samecolor`` (*boolean*) this forces the next line to have the same color
@@ -249,6 +265,54 @@ with an underscore (``_``):
       plotlines = dict(histo=dict(_method='bar', alpha=0.50, width=1.0))
 
     ``alpha`` and ``width`` are options for *matplotlib*
+
+  - ``_fill_gt`` / ``_fill_lt``
+
+    Allow filling between the given line and:
+
+      - Another line
+
+      - A numeric value
+
+    The arguments is an iterable of 2 elements in which:
+
+      - The 1st argument is a *string* (name of reference line) or a numeric
+	value
+
+	The filling will be done in between the own values and the values of
+	the line or the numeric value
+
+      - The 2nd argument is either:
+
+	- A string with a colour name (*matplotlib* compatible) or hex
+	  specification (see *matloplit* examples)
+
+	or
+
+	- An iterable where the 1st element is the string/hex value for the
+	  colour and the second element is a numeric value specifying the alpha
+	  transparency (default: ``0.20`` controlled with ``fillalpha`` in a
+	  plotting scheme)
+
+      Examples::
+
+	# Fill for myline when above other_line with colour red
+	plotlines = dict(
+	    myline=dict(_fill_gt('other_line', 'red'))
+	)
+
+	# Fill for myline when above 50 with colour red
+	plotlines = dict(
+	    myline=dict(_fill_gt(50, 'red))
+	)
+
+	# Fill for myline when above other_line with colour red and 50%
+	# transparency (1.0 means "no transparency")
+
+	plotlines = dict(
+	    myline=dict(_fill_gt('other_line', ('red', 0.50)))
+	)
+
 
 Passing options to a not yet known line
 ---------------------------------------
@@ -336,6 +400,50 @@ The slower line ``percD`` is plotted with a *dashed* style. And the names of
 the lines are changed to include fancy ``%`` signs (``%K`` and ``%D``) which
 cannot be used in name definitions in *Python*
 
+Methods controlling plotting
+============================
+
+When dealing with *Indicators* and *Observers* the following methods are
+supported to further control plotting:
+
+  - ``_plotlabel(self)``
+
+    Which should return a list of things to conform the labels which will be
+    placed in between parentheses after the name of the *Indicators* or
+    *Observer*
+
+    An example from the ``RSI`` indicator::
+
+      def _plotlabel(self):
+          plabels = [self.p.period]
+          plabels += [self.p.movav] * self.p.notdefault('movav')
+          return plabels
+
+    As can be seen this method returns:
+
+      - An ``int`` which indicates the period configured for the ``RSI`` and if
+	the default moving average has been changed, the specific class
+
+	In the background both will be converted to a string. In the case of
+	the *class* an effort will be made to just print the name of the class
+	rather than the complete ``module.name`` combination.
+
+  - ``_plotinit(self)``
+
+    Which is called at the beginning of plotting to do whatever specific
+    initialization the indicator may need. Again, an example from ``RSI``::
+
+      def _plotinit(self):
+          self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
+
+    Here the code assigns a value to ``plotyhlines`` to have horizontal lines
+    (the ``hlines`` part) plotted at specific ``y`` values.
+
+    The values of the parameters ``upperband`` and ``lowerband`` are used for
+    this, which cannot be known in advance, because the parameters can be
+    changed by the end user
+
+
 System-wide plotting options
 ============================
 
@@ -417,6 +525,9 @@ options are documented in the code::
           self.barupfill = True
           self.bardownfill = True
 
+          # Wether the candlesticks have to be filled or be transparent
+          self.fillalpha = 0.20
+
           # Wether to plot volume or not. Note: if the data in question has no
           # volume values, volume plotting will be skipped even if this is True
           self.volume = True
@@ -447,6 +558,12 @@ options are documented in the code::
           self.legendind = True
           # Location of the legend for indicators (see matplotlib)
           self.legendindloc = 'upper left'
+
+	  # Plot the last value of a line after the Object name
+	  self.linevalues = True
+
+          # Plot a tag at the end of each line with the last value
+          self.valuetags = True
 
           # Default color for horizontal lines (see plotinfo.plothlines)
           self.hlinescolor = '0.66'  # shade of gray

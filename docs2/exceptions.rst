@@ -21,7 +21,7 @@ Location
 
        import backtrader as bt
 
-       class Stratetgy(bt.Strategy):
+       class Strategy(bt.Strategy):
 
            def __init__(self):
 	       if something_goes_wrong():
@@ -31,11 +31,11 @@ Location
 
        import backtrader as bt
 
-       class Stratetgy(bt.Strategy):
+       class Strategy(bt.Strategy):
 
            def __init__(self):
 	       if something_goes_wrong():
-	           raise StrategySkipError
+	           raise bt.StrategySkipError
 
 Exceptions
 **********

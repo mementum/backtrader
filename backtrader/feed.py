@@ -32,8 +32,10 @@ from backtrader import (date2num, num2date, time2num, TimeFrame, dataseries,
                         metabase)
 
 from backtrader.utils.py3 import with_metaclass, zip, range, string_types
+from backtrader.utils import tzparse
 from .dataseries import SimpleFilterWrapper
 from .resamplerfilter import Resampler, Replayer
+from .tradingcal import PandasMarketCalendar
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
@@ -60,13 +62,17 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj.notifs = collections.deque()  # store notifications for cerebro
 
         _obj._dataname = _obj.p.dataname
+        _obj._name = ''
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaAbstractDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
-        _obj._name = _obj.p.name
+        # Either set by subclass or the parameter or use the dataname (ticker)
+        _obj._name = _obj._name or _obj.p.name
+        if not _obj._name and isinstance(_obj.p.dataname, string_types):
+            _obj._name = _obj.p.dataname
         _obj._compression = _obj.p.compression
         _obj._timeframe = _obj.p.timeframe
 
@@ -129,6 +135,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ('tz', None),
         ('tzinput', None),
         ('qcheck', 0.0),  # timeout in seconds (float) to check for events
+        ('calendar', None),
     )
 
     (CONNECTED, DISCONNECTED, CONNBROKEN, DELAYED,
@@ -184,6 +191,12 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
 
+        self._calendar = cal = self.p.calendar
+        if cal is None:
+            self._calendar = self._env._tradingcal
+        elif isinstance(cal, string_types):
+            self._calendar = PandasMarketCalendar(calendar=cal)
+
         self._started = True
 
     def _start(self):
@@ -195,35 +208,37 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def _timeoffset(self):
         return self._tmoffset
 
+    def _getnexteos(self):
+        '''Returns the next eos using a trading calendar if available'''
+        if not len(self):
+            return datetime.datetime.min, 0.0
+
+        dt = self.lines.datetime[0]
+        dtime = num2date(dt)
+        if self._calendar is None:
+            nexteos = datetime.datetime.combine(dtime, self.p.sessionend)
+            nextdteos = self.date2num(nexteos)  # locl'ed -> utc-like
+            nexteos = num2date(nextdteos)  # utc
+            while dtime > nexteos:
+                nexteos += datetime.timedelta(days=1)  # already utc-like
+
+            nextdteos = date2num(nexteos)  # -> utc-like
+
+        else:
+            # returns times in utc
+            _, nexteos = self._calendar.schedule(dtime, self._tz)
+            nextdteos = date2num(nexteos)  # nextos is already utc
+
+        return nexteos, nextdteos
+
     def _gettzinput(self):
         '''Can be overriden by classes to return a timezone for input'''
-        return self.p.tzinput
+        return tzparse(self.p.tzinput)
 
     def _gettz(self):
         '''To be overriden by subclasses which may auto-calculate the
         timezone'''
-        # If no object has been provided by the user and a timezone can be
-        # found via contractdtails, then try to get it from pytz, which may or
-        # may not be available.
-        tzstr = isinstance(self.p.tz, string_types)
-        if self.p.tz is None or not tzstr:
-            return bt.utils.date.Localizer(self.p.tz)
-
-        try:
-            import pytz  # keep the import very local
-        except ImportError:
-            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
-
-        tzs = self.p.tz
-        if tzs == 'CST':  # usual alias
-            tzs = 'CST6CDT'
-
-        try:
-            tz = pytz.timezone(tzs)
-        except pytz.UnknownTimeZoneError:
-            return bt.utils.date.Localizer(self.p.tz)    # nothing can be done
-
-        return tz
+        return tzparse(self.p.tz)
 
     def date2num(self, dt):
         if self._tz is not None:
@@ -300,7 +315,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def setenvironment(self, env):
         '''Keep a reference to the environment'''
-        self._env = self
+        self._env = env
 
     def getenvironment(self):
         return self._env
@@ -614,11 +629,12 @@ class FeedBase(with_metaclass(metabase.MetaParams, object)):
 
 class MetaCSVDataBase(DataBase.__class__):
     def dopostinit(cls, _obj, *args, **kwargs):
+        # Before going to the base class to make sure it overrides the default
+        if not _obj.p.name and not _obj._name:
+            _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
+
         _obj, args, kwargs = \
             super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
-
-        if not _obj._name:
-            _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
 
         return _obj, args, kwargs
 
@@ -687,6 +703,20 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         linetokens = line.split(self.separator)
         return self._loadline(linetokens)
 
+    def _getnextline(self):
+        if self.f is None:
+            return None
+
+        # Let an exception propagate to let the caller know
+        line = self.f.readline()
+
+        if not line:
+            return None
+
+        line = line.rstrip('\n')
+        linetokens = line.split(self.separator)
+        return linetokens
+
 
 class CSVFeedBase(FeedBase):
     params = (('basepath', ''),) + CSVDataBase.params._gettuple()
@@ -716,6 +746,8 @@ class DataClone(AbstractDataBase):
         # Copy tz infos
         self._tz = self.data._tz
         self.lines.datetime._settz(self._tz)
+
+        self._calendar = self.data._calendar
 
         # input has already been converted by guest data
         self._tzinput = None  # no need to further converr

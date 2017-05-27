@@ -304,6 +304,9 @@ Reference: Strategy
    .. automethod:: close
    .. automethod:: cancel
 
+   .. automethod:: buy_bracket
+   .. automethod:: sell_bracket
+
    .. automethod:: order_target_size
    .. automethod:: order_target_value
    .. automethod:: order_target_percent
@@ -318,3 +321,6 @@ Reference: Strategy
 
    .. automethod:: getdatanames
    .. automethod:: getdatabyname
+
+   .. automethod:: add_timer
+   .. automethod:: notify_timer

@@ -125,7 +125,7 @@ def runstrat(args=None):
         dkwargs['todate'] = datetime.strptime(args.todate, '%Y-%m-%d')
 
     # data
-    data = bt.feeds.BacktraderCSVData(dataname=args.data, **dkwargs)
+    data = bt.feeds.YahooFinanceCSVData(dataname=args.data, **dkwargs)
     cerebro.adddata(data)
 
     # strategy
