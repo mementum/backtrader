@@ -253,7 +253,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
     def islive(self):
         '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
         should be deactivated'''
-        return True
+        return True if not self.p.historical else False
 
     def __init__(self, **kwargs):
         self.ib = self._store(**kwargs)
