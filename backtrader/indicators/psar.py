@@ -27,6 +27,13 @@ from . import PeriodN
 __all__ = ['ParabolicSAR', 'PSAR']
 
 
+class _SarStatus(object):
+    sar = None
+    tr = None
+    af = 0.0
+    ep = 0.0
+
+
 class ParabolicSAR(PeriodN):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -59,7 +66,7 @@ class ParabolicSAR(PeriodN):
 
     def prenext(self):
         if len(self) == 1:
-            self.sar = None
+            self._status = []  # empty status
             return  # not enough data to do anything
 
         elif len(self) == 2:
@@ -70,47 +77,58 @@ class ParabolicSAR(PeriodN):
         self.lines.psar[0] = float('NaN')  # no return yet still prenext
 
     def nextstart(self):
-        if self.sar is not None:  # called through prenext
+        if self._status:  # some states have been calculated
             self.next()  # delegate
             return
+
+        # Prepare a status holding array, for current and previous lengths
+        self._status = [_SarStatus(), _SarStatus()]
 
         # Start by looking if price has gone up/down (close) in the 2nd day to
         # get an *entry* signal and configure the values as they would have
         # been in the previous trend, including a sar value which is
         # immediately invalidated in next, which reverses and sets the trend to
         # the actual up/down value calculated with the close
-        self.sar = (self.data.high[0] + self.data.low[0]) / 2.0
+        # Put the 4 status variables in a Status holder
+        plenidx = (len(self) - 1) % 2  # previous length index (0 or 1)
+        status = self._status[plenidx]
 
-        self.af = self.p.af
+        # Calculate the status for previous length
+        status.sar = (self.data.high[0] + self.data.low[0]) / 2.0
+
+        status.af = self.p.af
         if self.data.close[0] >= self.data.close[-1]:  # uptrend
-            self.tr = not True  # uptrend when reversed
-            self.ep = self.data.low[-1]  # ep from prev trend
+            status.tr = not True  # uptrend when reversed
+            ep = self.data.low[-1]  # ep from prev trend
         else:
-            self.tr = not False  # downtrend when reversed
-            self.ep = self.data.high[-1]  # ep from prev trend
+            status.tr = not False  # downtrend when reversed
+            status.ep = self.data.high[-1]  # ep from prev trend
 
         # With the fake prev trend in place and a sar which will be invalidated
         # go to next to get the calculation done
         self.next()
 
     def next(self):
-        sar = self.sar
         hi = self.data.high[0]
         lo = self.data.low[0]
-        tr = self.tr
+
+        plenidx = (len(self) - 1) % 2  # previous length index (0 or 1)
+        status = self._status[plenidx]  # use prev status for calculations
+
+        tr = status.tr
+        sar = status.sar
 
         # Check if the sar penetrated the price to switch the trend
         if (tr and sar >= lo) or (not tr and sar <= hi):
             # print(self.data.datetime.datetime(), 'Entry to:', not tr)
-            self.tr = tr = not tr  # reverse the trend
-            sar = self.ep  # new sar is prev SIP (Significant price)
+            tr = not tr  # reverse the trend
+            sar = status.ep  # new sar is prev SIP (Significant price)
             ep = hi if tr else lo  # select new SIP / Extreme Price
             af = self.p.af  # reset acceleration factor
 
         else:  # use the precalculated values
-            sar = self.sar  # else use the precalculated value
-            ep = self.ep
-            af = self.af
+            ep = status.ep
+            af = status.af
 
         # Update sar value for today
         self.lines.psar[0] = sar
@@ -138,7 +156,10 @@ class ParabolicSAR(PeriodN):
             if sar < hi or sar < hi1:
                 sar = max(hi, hi1)  # sar not below last 2 highs -> highest
 
-        # Keep current values for next calculation
-        self.sar = sar
-        self.ep = ep
-        self.af = af
+        # new status has been calculated, keep it in current length
+        # will be used when length moves forward
+        newstatus = self._status[not plenidx]
+        newstatus.tr = tr
+        newstatus.sar = sar
+        newstatus.ep = ep
+        newstatus.af = af
