@@ -107,7 +107,7 @@ class ParabolicSAR(PeriodN):
         status.af = self.p.af
         if self.data.close[0] >= self.data.close[-1]:  # uptrend
             status.tr = not True  # uptrend when reversed
-            ep = self.data.low[-1]  # ep from prev trend
+            status.ep = self.data.low[-1]  # ep from prev trend
         else:
             status.tr = not False  # downtrend when reversed
             status.ep = self.data.high[-1]  # ep from prev trend
