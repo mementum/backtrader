@@ -109,7 +109,9 @@ These are controlled by this data set in *Indicators* and *Observers*::
                     plotyticks=[],
                     plothlines=[],
                     plotforce=False,
-                    plotmaster=None,)
+                    plotmaster=None,
+		    plotylimited=True,
+               )
 
 Although ``plotinfo`` is shown as a ``dict`` during class definition, the
 metaclass machinery of *backtrader* turns that into an object which is
@@ -218,6 +220,17 @@ The meaning of the options
   - ``plotmaster``: an *Indicator*/*Observer* has a master which is the *data*
     on which is working. In some cases plotting it with a different master may
     be wished needed.
+
+    A use case is the ``PivotPoint`` indicator which is calculated on
+    **Monthly** data but is meant for **Daily** data. It only makes sense to
+    plot it on the *daily* data which is where the indicator makes sense.
+
+  - ``plotylimited``: currently only applies to data feeds. If ``True``
+    (default), other lines on the data plot don't change the scale. Example:
+    Bollinger Bands (top and bottom) may be far away from the actual absolute
+    minimum/maximum of the data feed. With ```plotlimited=True``, those bands
+    remain out of the chart, because the data controls the scaling. If set to
+    ``False``, the bands affects the y-scale and become visible on the chart
 
     A use case is the ``PivotPoint`` indicator which is calculated on
     **Monthly** data but is meant for **Daily** data. It only makes sense to

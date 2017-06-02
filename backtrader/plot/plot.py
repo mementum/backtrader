@@ -684,7 +684,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
         # make sure "over" indicators do not change our scale
-        ax.set_ylim(ax.get_ylim())
+        if data.plotinfo._get('plotylimited', True):
+            if axdatamaster is None:
+                ax.set_ylim(ax.get_ylim())
 
         if self.pinf.sch.volume:
             # if not self.pinf.sch.voloverlay:
