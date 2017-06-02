@@ -323,15 +323,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.dplotsdown.pop(data, None)
                 self.dplotsover.pop(data, None)
 
-            elif data.plotinfo.plotmaster is not None:
-                # data doesn't add a row, but volume may
-                if self.pinf.sch.volume:
-                    nrows += rowsminor
             else:
-                # data adds rows, volume may
-                nrows += rowsmajor
-                if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
-                    nrows += rowsminor
+                pmaster = data.plotinfo.plotmaster
+                if pmaster is data:
+                    pmaster = None
+                if pmaster is not None:
+                    # data doesn't add a row, but volume may
+                    if self.pinf.sch.volume:
+                        nrows += rowsminor
+                else:
+                    # data adds rows, volume may
+                    nrows += rowsmajor
+                    if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
+                        nrows += rowsminor
 
         if False:
             # Datas and volumes
@@ -532,8 +536,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(iref, downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
-        voloverlay = (self.pinf.sch.voloverlay and
-                      data.plotinfo.plotmaster is None)
+        pmaster = data.plotinfo.plotmaster
+        if pmaster is data:
+            pmaster = None
+        voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         # if sefl.pinf.sch.voloverlay:
         if voloverlay:
@@ -605,8 +611,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         volumes = data.volume.plotrange(self.pinf.xstart, self.pinf.xend)
 
         vollabel = 'Volume'
-        voloverlay = (self.pinf.sch.voloverlay and
-                      data.plotinfo.plotmaster is None)
+        pmaster = data.plotinfo.plotmaster
+        if pmaster is data:
+            pmaster = None
+
+        voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         if not voloverlay:
             vollabel += ' ({})'.format(data._dataname)
@@ -621,13 +630,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.pinf.daxis[data] = ax
             self.pinf.vaxis.append(ax)
         else:
-            if data.plotinfo.plotmaster is None:
+            if pmaster is None:
                 ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
             elif getattr(data.plotinfo, 'sameaxis', False):
-                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster
             else:
-                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster.twinx()
                 self.pinf.vaxis.append(ax)
 
@@ -811,10 +820,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                         else:
                             break
 
-            if x.plotinfo.plotmaster is not None:
-                key = x.plotinfo.plotmaster
+            xpmaster = x.plotinfo.plotmaster
+            if xpmaster is x:
+                xpmaster = None
+            if xpmaster is not None:
+                key = pmaster
 
-            if x.plotinfo.subplot and x.plotinfo.plotmaster is None:
+            if x.plotinfo.subplot and xpmaster is None:
                 if x.plotinfo.plotabove:
                     self.dplotsup[key].append(x)
                 else:
