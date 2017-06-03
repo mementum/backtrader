@@ -358,6 +358,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
         if self.p.backfill_from is not None:
             self._state = self._ST_FROM
+            self.p.backfill_from.setenvironment(self._env)
             self.p.backfill_from._start()
         else:
             self._state = self._ST_START  # initial state for _load
