@@ -824,7 +824,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             if xpmaster is x:
                 xpmaster = None
             if xpmaster is not None:
-                key = pmaster
+                key = xpmaster
 
             if x.plotinfo.subplot and xpmaster is None:
                 if x.plotinfo.plotabove:
