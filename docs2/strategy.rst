@@ -242,6 +242,24 @@ Member Attributes:
     *data feeds* can also be accessed by name (see the reference) if one has been
     assigned to it
 
+  - ``dnames``: an alternative to reach the data feeds by name (either with
+    ``[name]`` or with ``.name`` notation)
+
+    For example if resampling a data like this::
+
+      ...
+      data0 = bt.feeds.YahooFinanceData(datname='YHOO', fromdate=..., name='days')
+      cerebro.adddata(data0)
+      cerebro.resampledata(data0, timeframe=bt.TimeFrame.Weeks, name='weeks')
+      ...
+
+    Later in the strategy one can create indicators on each like this::
+
+      ...
+      smadays = bt.ind.SMA(self.dnames.days, period=30)  # or self.dnames['days']
+      smaweeks = bt.ind.SMA(self.dnames.weeks, period=10)  # or self.dnames['weeks']
+      ...
+
   - ``broker``: reference to the broker associated to this strategy
     (received from cerebro)
 
@@ -255,6 +273,8 @@ Member Attributes:
     ``data0``.
 
     Methods to retrieve all possitions are available (see the reference)
+
+
 
 
 Member Attributes (meant for statistics/observers/analyzers):
