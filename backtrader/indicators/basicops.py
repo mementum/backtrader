@@ -360,7 +360,10 @@ class Average(PeriodN):
         dst = self.line.array
         period = self.p.period
 
-        for i in range(start, end):
+        # array limit safety check
+        realend = min(end, len(dst))
+
+        for i in range(start, realend):
             dst[i] = math.fsum(src[i - period + 1:i + 1]) / period
 
 
@@ -407,7 +410,7 @@ class ExponentialSmoothing(Average):
         alpha1 = self.alpha1
 
         # Seed value from SMA calculated with the call to oncestart
-        prev = larray[start - 1]
+        prev = larray[start - 1] if start <= len(larray) else float('NaN')
         for i in range(start, end):
             larray[i] = prev = prev * alpha1 + darray[i] * alpha
 
