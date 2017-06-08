@@ -124,7 +124,7 @@ has a unique ``ref`` identifier that can be used for comparison
 .. note:: Subclasses of ``Order`` for speficic broker implementations may carry
 	  additional *unique identifiers* provided by the broker.
 
-To create the order use the folloing parameters:
+To create the order use the following parameters:
 
   - ``data`` (default: ``None``)
 
