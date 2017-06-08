@@ -1,3 +1,17 @@
+1.9.51.118
+  - Fix PSAR calculations for resampled/replayed streams
+  - Sample for psar with intraday resampling 5 -> 15 minutes
+  - Set the environment of a backfill_from data in master ibdata
+  - Add dnames to the strategy documentation
+  - Allow plotmaster to point to itself
+  - Add plotylimited option to control vertical scaling locking on data plots
+  - Add (semi)logarithmic plotlog control to plotinfo
+  - Simplify live status detection for IB to allow optimization
+  - Keep the observer cycles always synchronized with the strategy cycles
+    regardless of running mode
+  - Correct arguments for top level cerebro callback for data notifications
+  - Add HeikinAshi candles indicator (plotted as lines)
+
 1.9.50.117
   - Add TrueStrengthIndicator
   - Port YahooDownload tool to v7 API
