@@ -56,6 +56,7 @@ from .crossover import *
 from .dpo import *
 from .directionalmove import *
 from .envelope import *
+from .heikinashi import *
 from .lrsi import *
 from .macd import *
 from .momentum import *
