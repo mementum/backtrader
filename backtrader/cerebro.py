@@ -641,7 +641,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         The signature of the callback must support the following:
 
-          - callback(msg, data, status, \*args, \*\*kwargs)
+          - callback(data, status, \*args, \*\*kwargs)
 
         The actual ``*args`` and ``**kwargs`` received are implementation
         defined (depend entirely on the *data/broker/store*) but in general one
@@ -660,7 +660,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     def _notify_data(self, data, status, *args, **kwargs):
         for callback in self.datacbs:
-            callback(msg, *args, **kwargs)
+            callback(data, status, *args, **kwargs)
 
         self.notify_data(data, status, *args, **kwargs)
 
