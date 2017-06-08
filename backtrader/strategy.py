@@ -353,7 +353,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 elif len(observer):
                     observer.prenext()
             else:
-                observer._next()
+                observer._next(minperstatus=minperstatus)
 
     def _next_analyzers(self, minperstatus, once=False):
         for analyzer in self.analyzers:

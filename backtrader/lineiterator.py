@@ -238,7 +238,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     bind2lines = bindlines
     bind2line = bind2lines
 
-    def _next(self):
+    def _next(self, minperstatus=None):
         clock_len = self._clk_update()
 
         for indicator in self._lineiterators[LineIterator.IndType]:
@@ -249,6 +249,8 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         if self._ltype == LineIterator.StratType:
             # supporting datas with different lengths
             minperstatus = self._getminperstatus()
+
+        if minperstatus is not None:
             if minperstatus < 0:
                 self.next()
             elif minperstatus == 0:
