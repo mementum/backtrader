@@ -651,11 +651,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             datalabel += ' (%d %s)' % (data._compression, tfname)
 
         plinevalues = getattr(data.plotinfo, 'plotlinevalues', True)
-        if self.pinf.sch.linevalues and plinevalues:
-            datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
-                         (opens[-1], highs[-1], lows[-1], closes[-1])
-
         if self.pinf.sch.style.startswith('line'):
+            if self.pinf.sch.linevalues and plinevalues:
+                datalabel += ' C:%.2f' % closes[-1]
+
             if axdatamaster is None:
                 color = self.pinf.sch.loc
             else:
@@ -666,6 +665,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 ax, self.pinf.xdata, closes,
                 color=color, label=datalabel)
         else:
+            if self.pinf.sch.linevalues and plinevalues:
+                datalabel += ' O:%.2f H:%.2f L:%.2f C:%.2f' % \
+                             (opens[-1], highs[-1], lows[-1], closes[-1])
             if self.pinf.sch.style.startswith('candle'):
                 plotted = plot_candlestick(
                     ax, self.pinf.xdata, opens, highs, lows, closes,
