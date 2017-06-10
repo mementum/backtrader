@@ -101,7 +101,8 @@ class Benchmark(TimeReturn):
 
     def next(self):
         super(Benchmark, self).next()
-        self.lines.benchmark[0] = self.tbench.rets[self.treturn.dtkey]
+        self.lines.benchmark[0] = self.tbench.rets.get(self.treturn.dtkey,
+                                                       float('NaN'))
 
     def prenext(self):
         if self.p._doprenext:

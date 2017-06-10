@@ -75,4 +75,5 @@ class TimeReturn(Observer):
                                                       **self.p._getkwargs())
 
     def next(self):
-        self.lines.timereturn[0] = self.treturn.rets[self.treturn.dtkey]
+        self.lines.timereturn[0] = self.treturn.rets.get(self.treturn.dtkey,
+                                                         float('NaN'))
