@@ -1,4 +1,4 @@
-1.9.51.118
+1.9.51.121
   - Fix PSAR calculations for resampled/replayed streams
   - Sample for psar with intraday resampling 5 -> 15 minutes
   - Set the environment of a backfill_from data in master ibdata
@@ -11,8 +11,13 @@
     regardless of running mode
   - Correct arguments for top level cerebro callback for data notifications
   - Add HeikinAshi candles indicator (plotted as lines)
+  - Add HeikinAshi as filter to directly modify the data
   - Plot only last close value if lineonclose is plotted and correct high
     printout
+  - Add PR #320 with indicators AwesomeOscillator,
+    AccelerationDecelerationOscillator, RelativeMomentumIndex
+  - Doc corrections and additions, including PR #319
+  - PR #315 with rewrite to generalize setting the backend
 
 1.9.50.117
   - Add TrueStrengthIndicator
