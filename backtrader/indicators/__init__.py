@@ -78,7 +78,7 @@ from .awesomeoscillator import *
 from .accdecoscillator import *
 
 
-from .dv2 import * # depends on percentrank
+from .dv2 import *  # depends on percentrank
 
 # Depends on Momentum
 from .kst import *
