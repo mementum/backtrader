@@ -97,7 +97,8 @@ class Lines(object):
     _getlinesextrabase = classmethod(lambda cls: 0)
 
     @classmethod
-    def _derive(cls, name, lines, extralines, otherbases, linesoverride=False):
+    def _derive(cls, name, lines, extralines, otherbases, linesoverride=False,
+                lalias=None):
         '''
         Creates a subclass of this class with the lines of this class as
         initial input for the subclass. It will include num "extralines" and
@@ -148,12 +149,32 @@ class Lines(object):
 
         l2start = len(cls._getlines()) if not linesoverride else 0
         l2add = enumerate(lines2add, start=l2start)
+        l2alias = {} if lalias is None else lalias._getkwargsdefault()
         for line, linealias in l2add:
             if not isinstance(linealias, string_types):
                 # a tuple or list was passed, 1st is name
                 linealias = linealias[0]
 
-            setattr(newcls, linealias, LineAlias(line))
+            desc = LineAlias(line)  # keep a reference below
+            setattr(newcls, linealias, desc)
+
+        # Create extra aliases for the given name, checking if the names is in
+        # l2alias (which is from the argument lalias and comes from the
+        # directive 'linealias', hence the confusion here (the LineAlias come
+        # from the directive 'lines')
+        for line, linealias in enumerate(newcls._getlines()):
+            if not isinstance(linealias, string_types):
+                # a tuple or list was passed, 1st is name
+                linealias = linealias[0]
+
+            desc = LineAlias(line)  # keep a reference below
+            if linealias in l2alias:
+                extranames = l2alias[linealias]
+                if isinstance(linealias, string_types):
+                    extranames = [extranames]
+
+                for ename in extranames:
+                    setattr(newcls, ename, desc)
 
         return newcls
 
@@ -319,18 +340,28 @@ class MetaLineSeries(LineMultiple.__class__):
         extralines = dct.pop('extralines', 0)
 
         # remove the new plotinfo/plotlines definition if any
+        newlalias = dict(dct.pop('linealias', {}))
+
+        # remove the new plotinfo/plotlines definition if any
         newplotinfo = dict(dct.pop('plotinfo', {}))
         newplotlines = dict(dct.pop('plotlines', {}))
 
         # Create the class - pulling in any existing "lines"
         cls = super(MetaLineSeries, meta).__new__(meta, name, bases, dct)
+
+        # Check the line aliases before creating the lines
+        lalias = getattr(cls, 'linealias', AutoInfoClass)
+        oblalias = [x.linealias for x in bases[1:] if hasattr(x, 'linealias')]
+        cls.linealias = la = lalias._derive('la_' + name, newlalias, oblalias)
+
+        # Get the actual lines or a default
         lines = getattr(cls, 'lines', Lines)
 
         # Create a subclass of the lines class with our name and newlines
         # and put it in the class
         morebaseslines = [x.lines for x in bases[1:] if hasattr(x, 'lines')]
         cls.lines = lines._derive(name, newlines, extralines, morebaseslines,
-                                  linesoverride)
+                                  linesoverride, lalias=la)
 
         # Get a copy from base class plotinfo/plotlines (created with the
         # class or set a default)
