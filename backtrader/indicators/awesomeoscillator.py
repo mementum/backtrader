@@ -22,7 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import backtrader as bt
-from . import SMA
+from . import MovAv
+
+
+__all__ = ['AwesomeOscillator', 'AwesomeOsc', 'AO']
+
 
 class AwesomeOscillator(bt.Indicator):
     '''
@@ -32,21 +36,29 @@ class AwesomeOscillator(bt.Indicator):
 
 
     Formula:
-     - MEDIAN PRICE = (HIGH+LOW)/2
-     - AO = SMA(MEDIAN PRICE, 5)-SMA(MEDIAN PRICE, 34)
+     - median price = (high + low) / 2
+     - AO = SMA(median price, 5)- SMA(median price, 34)
 
     See:
       - https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/awesome
       - https://www.ifcmarkets.com/en/ntx-indicators/awesome-oscillator
 
     '''
-    alias = ('AO',)
+    alias = ('AwesomeOsc', 'AO')
     lines = ('ao',)
 
-    plotlines = dict(ao=dict(_method='bar'))
+    params = (
+        ('fast', 5),
+        ('slow', 34),
+        ('movav', MovAv.SMA),
+    )
+
+    plotlines = dict(ao=dict(_method='bar', alpha=0.50, width=1.0))
 
     def __init__(self):
-        median_price = (self.data.high + self.data.low) / 2
-        sma1 = SMA(median_price, period=5)
-        sma2 = SMA(median_price, period=34)
+        median_price = (self.data.high + self.data.low) / 2.0
+        sma1 = self.p.movav(median_price, period=self.p.fast)
+        sma2 = self.p.movav(median_price, period=self.p.slow)
         self.l.ao = sma1 - sma2
+
+        super(AwesomeOscillator, self).__init__()
