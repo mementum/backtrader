@@ -33,3 +33,8 @@ DaySplitter_Close
 *****************
 
 .. autoclass:: DaySplitter_Close
+
+HeikinAshi
+**********
+
+.. autoclass:: HeikinAshi
