@@ -11,6 +11,8 @@
     regardless of running mode
   - Correct arguments for top level cerebro callback for data notifications
   - Add HeikinAshi candles indicator (plotted as lines)
+  - Plot only last close value if lineonclose is plotted and correct high
+    printout
 
 1.9.50.117
   - Add TrueStrengthIndicator
