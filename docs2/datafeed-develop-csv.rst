@@ -80,7 +80,7 @@ In this example only a daily format is supported::
 
   import itertools
   ...
-  import backtrader import bt
+  import backtrader as bt
 
   class MyCSVData(bt.CSVDataBase):
 
