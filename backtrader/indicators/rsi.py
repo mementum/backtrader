@@ -40,9 +40,10 @@ class UpDay(Indicator):
       - http://en.wikipedia.org/wiki/Relative_strength_index
     '''
     lines = ('upday',)
+    params = (('period', 1),)
 
     def __init__(self):
-        self.lines.upday = Max(self.data - self.data(-1), 0.0)
+        self.lines.upday = Max(self.data - self.data(-self.p.period), 0.0)
         super(UpDay, self).__init__()
 
 
@@ -61,9 +62,10 @@ class DownDay(Indicator):
       - http://en.wikipedia.org/wiki/Relative_strength_index
     '''
     lines = ('downday',)
+    params = (('period', 1),)
 
     def __init__(self):
-        self.lines.downday = Max(self.data(-1) - self.data, 0.0)
+        self.lines.downday = Max(self.data(-self.p.period) - self.data, 0.0)
         super(DownDay, self).__init__()
 
 
@@ -85,9 +87,10 @@ class UpDayBool(Indicator):
       - http://en.wikipedia.org/wiki/Relative_strength_index
     '''
     lines = ('upday',)
+    params = (('period', 1),)
 
     def __init__(self):
-        self.lines.upday = self.data > self.data(-1)
+        self.lines.upday = self.data > self.data(-self.p.period)
         super(UpDayBool, self).__init__()
 
 
@@ -109,9 +112,10 @@ class DownDayBool(Indicator):
       - http://en.wikipedia.org/wiki/Relative_strength_index
     '''
     lines = ('downday',)
+    params = (('period', 1),)
 
     def __init__(self):
-        self.lines.downday = self.data(-1) > self.data
+        self.lines.downday = self.data(-self.p.period) > self.data
         super(DownDayBool, self).__init__()
 
 
@@ -151,25 +155,29 @@ class RelativeStrengthIndex(Indicator):
     alias = ('RSI', 'RSI_SMMA', 'RSI_Wilder',)
 
     lines = ('rsi',)
-    params = (('period', 14),
-              ('movav', MovAv.Smoothed),
-              ('upperband', 70.0),
-              ('lowerband', 30.0),
-              ('safediv', False),
-              ('safehigh', 100.0),
-              ('safelow', 50.0),)
+    params = (
+        ('period', 14),
+        ('movav', MovAv.Smoothed),
+        ('upperband', 70.0),
+        ('lowerband', 30.0),
+        ('safediv', False),
+        ('safehigh', 100.0),
+        ('safelow', 50.0),
+        ('lookback', 1),
+    )
 
     def _plotlabel(self):
         plabels = [self.p.period]
         plabels += [self.p.movav] * self.p.notdefault('movav')
+        plabels += [self.p.lookback] * self.p.notdefault('lookback')
         return plabels
 
     def _plotinit(self):
         self.plotinfo.plotyhlines = [self.p.upperband, self.p.lowerband]
 
     def __init__(self):
-        upday = UpDay(self.data)
-        downday = DownDay(self.data)
+        upday = UpDay(self.data, period=self.p.lookback)
+        downday = DownDay(self.data, period=self.p.lookback)
         maup = self.p.movav(upday, period=self.p.period)
         madown = self.p.movav(downday, period=self.p.period)
         if not self.p.safediv:
