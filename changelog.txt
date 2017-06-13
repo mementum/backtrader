@@ -1,3 +1,9 @@
+1.9.52.121
+  - Redownload the YahooFinance sample data yhoo-1996-2015
+  - Add unstable exception for TALIB SAR
+  - Add notes about usage of Hurst exponent and lag_start/lag_end parameters
+    to override default lag values
+
 1.9.51.121
   - Fix PSAR calculations for resampled/replayed streams
   - Sample for psar with intraday resampling 5 -> 15 minutes
