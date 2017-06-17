@@ -218,7 +218,7 @@ class PandasData(feed.DataBase):
             line = getattr(self.lines, datafield)
 
             # indexing for pandas: 1st is colum, then row
-            line[0] = self.p.dataname.ix[self._idx, colindex]
+            line[0] = self.p.dataname.iloc[self._idx, self.p.dataname.columns.get_loc(colindex)]
 
         # datetime conversion
         coldtime = self._colmapping[self.datafields[0]]
