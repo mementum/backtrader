@@ -48,3 +48,13 @@ LogReturns2
 ***********
 
 .. autoclass:: LogReturns2
+
+FundValue
+*********
+
+.. autoclass:: FundValue
+
+FundShares
+**********
+
+.. autoclass:: FundShares
