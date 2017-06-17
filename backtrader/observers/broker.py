@@ -71,3 +71,34 @@ class Broker(Observer):
     def next(self):
         self.lines.cash[0] = self._owner.broker.getcash()
         self.lines.value[0] = value = self._owner.broker.getvalue()
+
+
+class FundValue(Observer):
+    '''This observer keeps track of the current fund-like value
+
+    Params: None
+    '''
+    _stclock = True
+
+    alias = ('FundShareValue', 'FundVal')
+    lines = ('fundval',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
+    def next(self):
+        self.lines.fundval[0] = self._owner.broker.fundvalue
+
+
+class FundShares(Observer):
+    '''This observer keeps track of the current fund-like shares
+
+    Params: None
+    '''
+    _stclock = True
+
+    lines = ('fundshares',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
+    def next(self):
+        self.lines.fundshares[0] = self._owner.broker.fundshares
