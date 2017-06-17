@@ -570,8 +570,11 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         cash = self.broker.getcash()
         value = self.broker.getvalue()
+        fundvalue = self.broker.fundvalue
+        fundshares = self.broker.fundshares
 
         self.notify_cashvalue(cash, value)
+        self.notify_fund(cash, value, fundvalue, fundshares)
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
 
@@ -688,7 +691,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def notify_cashvalue(self, cash, value):
         '''
-        Receives the current cash, value status of the strategy's broker
+        Receives the current fund value, value status of the strategy's broker
+        '''
+        pass
+
+    def notify_fund(self, cash, value, fundvalue, shares):
+        '''
+        Receives the current cash, value, fundvalue and fund shares
         '''
         pass
 
