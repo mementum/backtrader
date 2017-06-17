@@ -28,7 +28,16 @@ class GrossLeverage(bt.Analyzer):
     '''This analyzer calculates the Gross Leverage of the current strategy
     on a timeframe basis
 
-    Params: None
+    Params:
+
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
 
     Methods:
 
@@ -37,9 +46,23 @@ class GrossLeverage(bt.Analyzer):
         Returns a dictionary with returns as values and the datetime points for
         each return as keys
     '''
-    def notify_cashvalue(self, cash, value):
+
+    params = (
+        ('fund', None),
+    )
+
+    def start(self):
+        if self.p.fund is None:
+            self._fundmode = self.strategy.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
+    def notify_fund(self, cash, value, fundvalue, shares):
         self._cash = cash
-        self._value = value
+        if not self._fundmode:
+            self._value = value
+        else:
+            self._value = fundvalue
 
     def next(self):
         # Updates the leverage for "dtkey" (see base class) for each cycle
