@@ -132,6 +132,9 @@ pattern.
   #. Cash and value will also be notified like it is done with the strategy
      over the ``notify_cashvalue`` method
 
+  #. Cash, value and fundvalue and fund shares will also be notified like it is
+     done with the strategy over the ``notify_fund`` method
+
   #. ``stop`` will be invoked to signal the end of operations
 
 Once the regular operations cycle has been completed, the *analyzers* featuring
@@ -297,6 +300,8 @@ Reference
    .. automethod:: next
 
    .. automethod:: notify_cashvalue
+
+   .. automethod:: notify_fund
 
    .. automethod:: notify_order
 
