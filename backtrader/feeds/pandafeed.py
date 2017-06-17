@@ -200,6 +200,12 @@ class PandasData(feed.DataBase):
         # reset the length with each start
         self._idx = -1
 
+        # Transform names (valid for .ix) into indices (good for .iloc)
+        for k, v in self._colmapping.items():
+            if v is None:
+                continue  # special marker for datetime
+            self._colmapping[k] = self.p.dataname.columns.get_loc(v)
+
     def _load(self):
         self._idx += 1
 
@@ -218,7 +224,7 @@ class PandasData(feed.DataBase):
             line = getattr(self.lines, datafield)
 
             # indexing for pandas: 1st is colum, then row
-            line[0] = self.p.dataname.iloc[self._idx, self.p.dataname.columns.get_loc(colindex)]
+            line[0] = self.p.dataname.iloc[self._idx, colindex]
 
         # datetime conversion
         coldtime = self._colmapping[self.datafields[0]]
