@@ -577,6 +577,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self.notify_fund(cash, value, fundvalue, fundshares)
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
+            analyzer._notify_fund(cash, value, fundvalue, fundshares)
 
     def add_timer(self, when,
                   offset=datetime.timedelta(), repeat=datetime.timedelta(),
