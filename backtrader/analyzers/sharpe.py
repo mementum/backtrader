@@ -93,6 +93,15 @@ class SharpeRatio(Analyzer):
         Use the ``AnnualReturn`` return analyzer, which as the name implies
         only works on years
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Methods:
 
       - get_analysis
@@ -112,6 +121,7 @@ class SharpeRatio(Analyzer):
         # old behavior
         ('daysfactor', None),
         ('legacyannual', False),
+        ('fund', None),
     )
 
     RATEFACTORS = {
@@ -127,7 +137,8 @@ class SharpeRatio(Analyzer):
         else:
             self.timereturn = TimeReturn(
                 timeframe=self.p.timeframe,
-                compression=self.p.compression)
+                compression=self.p.compression,
+                fund=self.p.fund)
 
     def stop(self):
         super(SharpeRatio, self).stop()
