@@ -76,6 +76,15 @@ class VWR(TimeFrameAnalyzerBase):
 
         max standard deviation (see the literature)
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Methods:
 
       - get_analysis
@@ -92,6 +101,7 @@ class VWR(TimeFrameAnalyzerBase):
         ('tann', None),
         ('tau', 0.20),
         ('sdev_max', 2.0),
+        ('fund', None),
     )
 
     _TANN = {
@@ -110,12 +120,20 @@ class VWR(TimeFrameAnalyzerBase):
     def start(self):
         super(VWR, self).start()
         # Add an initial placeholder for [-1] operation
-        self._pis = [self.strategy.broker.getvalue()]  # keep initial value
+        if self.p.fund is None:
+            self._fundmode = self.strategy.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
+        if not self._fundmode:
+            self._pis = [self.strategy.broker.getvalue()]  # keep initial value
+        else:
+            self._pis = [self.strategy.broker.fundvalue]  # keep initial value
+
         self._pns = [None]  # keep final prices (value)
 
     def stop(self):
         super(VWR, self).stop()
-
         # Check if no value has been seen after the last 'dt_over'
         # If so, there is one 'pi' out of place and a None 'pn'. Purge
         if self._pns[-1] is None:
@@ -141,8 +159,11 @@ class VWR(TimeFrameAnalyzerBase):
         vwr = rnorm100 * (1.0 - pow(sdev_p / self.p.sdev_max, self.p.tau))
         self.rets['vwr'] = vwr
 
-    def notify_cashvalue(self, cash, value):
-        self._pns[-1] = value  # annotate last seen pn for current period
+    def notify_fund(self, cash, value, fundvalue, shares):
+        if not self._fundmode:
+            self._pns[-1] = value  # annotate last seen pn for current period
+        else:
+            self._pns[-1] = fundvalue  # annotate last pn for current period
 
     def _on_dt_over(self):
         self._pis.append(self._pns[-1])  # last pn is pi in next period
