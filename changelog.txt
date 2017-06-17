@@ -3,6 +3,15 @@
   - Add unstable exception for TALIB SAR
   - Add notes about usage of Hurst exponent and lag_start/lag_end parameters
     to override default lag values
+  - Fix #321 by correcting typo in Writer.writelines
+  - Add _start/start methods to Observers
+  - Add fund tracking mode to the observers
+  - Add new observers FundValue/FundShares
+  - Adapt observers to fundmode: Value, TimeReturn, LogReturns, DrawDown,
+    Benchmark
+  - Adapt analyzers to fundmode: DrawDown, Leverage, LogReturnsRolling,
+    PeriodStats, LogReturns, Sharpe, TimeReturn, VWR
+  - PR #319 for Pandas .ix deprecation (rewritten)
 
 1.9.51.121
   - Fix PSAR calculations for resampled/replayed streams
