@@ -76,6 +76,15 @@ class LogReturnsRolling(bt.TimeFrameAnalyzerBase):
 
         Else the initial close will be used.
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Methods:
 
       - get_analysis
@@ -87,20 +96,31 @@ class LogReturnsRolling(bt.TimeFrameAnalyzerBase):
     params = (
         ('data', None),
         ('firstopen', True),
+        ('fund', None),
     )
 
     def start(self):
         super(LogReturnsRolling, self).start()
+        if self.p.fund is None:
+            self._fundmode = self.strategy.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
         self._values = collections.deque([float('Nan')] * self.p.compression,
                                          maxlen=self.p.compression)
 
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
-            self._lastvalue = self.strategy.broker.getvalue()
+            if not self._fundmode:
+                self._lastvalue = self.strategy.broker.getvalue()
+            else:
+                self._lastvalue = self.strategy.broker.fundvalue
 
-    def notify_cashvalue(self, cash, value):
-        # Record current value (either nav or data value if tracking)
-        self._value = value if self.p.data is None else self.p.data[0]
+    def notify_fund(self, cash, value, fundvalue, shares):
+        if not self._fundmode:
+            self._value = value if self.p.data is None else self.p.data[0]
+        else:
+            self._value = fundvalue if self.p.data is None else self.p.data[0]
 
     def _on_dt_over(self):
         # next is called in a new timeframe period
