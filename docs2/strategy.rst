@@ -98,6 +98,10 @@ strategy will:
   - be notified through ``notify_cashvalue(cash, value)`` of the current cash
     and portfolio in the broker
 
+  - be notified through ``notify_fund(cash, value, fundvalue, shares)`` of the
+    current cash and portfolio in the broker and tradking of fundvalue and
+    shares
+
   - Events (implementation specific) via ``notify_store(msg, *args, **kwargs)``
 
     See :doc:`cerebro` for an explanation on the *store* notifications. These
@@ -317,6 +321,7 @@ Reference: Strategy
    .. automethod:: notify_order
    .. automethod:: notify_trade
    .. automethod:: notify_cashvalue
+   .. automethod:: notify_fund
    .. automethod:: notify_store
 
    .. automethod:: buy
