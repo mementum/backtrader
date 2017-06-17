@@ -211,6 +211,20 @@ class BackBroker(bt.BrokerBase):
 
           If ``False`` then the cash will be deducted as operation cost and the
           calculated value will be positive to end up with the same amount
+
+        - ``fundstartval`` (default: ``100.0``)
+
+          This parameter controls the start value for measuring the performance
+          in a fund-like way, i.e.: cash can be added and deducted increasing
+          the amount of shares. Performance is not measured using the net
+          asset value of the porftoflio but using the value of the fund
+
+        - ``fundmode`` (default: ``False``)
+
+          If this is set to ``True`` analyzers like ``TimeReturn`` can
+          automatically calculate returns based on the fund value and not on
+          the total net asset value
+
     '''
     params = (
         ('cash', 10000.0),
@@ -228,6 +242,8 @@ class BackBroker(bt.BrokerBase):
         ('coo', False),
         ('int2pnl', True),
         ('shortcash', True),
+        ('fundstartval', 100.0),
+        ('fundmode', False),
     )
 
     def init(self):
@@ -258,6 +274,10 @@ class BackBroker(bt.BrokerBase):
         self._ocos = dict()
         self._ocol = collections.defaultdict(list)
 
+        self._fundval = self.p.fundstartval
+        self._fundshares = self.p.cash / self._fundval
+        self._cash_addition = collections.deque()
+
     def get_notification(self):
         try:
             return self.notifs.popleft()
@@ -265,6 +285,25 @@ class BackBroker(bt.BrokerBase):
             pass
 
         return None
+
+    def set_fundmode(self, fundmode, fundstartval=None):
+        '''Set the actual fundmode (True or False)
+
+        If the argument fundstartval is not ``None``, it will used
+        '''
+        self.p.fundmode = fundmode
+        if self.fundstartval is not None:
+            self.set_fundstartval(fundstartval)
+
+    def get_fundmode(self):
+        '''Returns the actual fundmode (True or False)'''
+        return self.p.fundmode
+
+    fundmode = property(get_fundmode, set_fundmode)
+
+    def set_fundstartval(self, fundstartval):
+        '''Set the starting value of the fund-like performance tracker'''
+        self.p.fundstartval = fundstartval
 
     def set_int2pnl(self, int2pnl):
         '''Configure assignment of interest to profit and loss'''
@@ -331,6 +370,22 @@ class BackBroker(bt.BrokerBase):
 
     setcash = set_cash
 
+    def add_cash(self, cash):
+        '''Add/Remove cash to the system (use a negative value to remove)'''
+        self._cash_addition.append(cash)
+
+    def get_fundshares(self):
+        '''Returns the current number of shares in the fund-like mode'''
+        return self._fundshares
+
+    fundshares = property(get_fundshares)
+
+    def get_fundvalue(self):
+        '''Returns the Fund-like share value'''
+        return self._fundval
+
+    fundvalue = property(get_fundvalue)
+
     def cancel(self, order, bracket=False):
         try:
             self.pending.remove(order)
@@ -366,6 +421,11 @@ class BackBroker(bt.BrokerBase):
         pos_value = 0.0
         pos_value_unlever = 0.0
         unrealized = 0.0
+
+        while self._cash_addition:
+            c = self._cash_addition.popleft()
+            self._fundshares += c / self._fundval
+            self.cash += c
 
         for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
@@ -405,6 +465,8 @@ class BackBroker(bt.BrokerBase):
 
         self._leverage = pos_value / (pos_value_unlever or 1.0)
         self._unrealized = unrealized
+
+        self._fundval = self._value / self.fundshares  # update fundvalue
 
         return self._value if not lever else self._valuelever
 
