@@ -32,6 +32,33 @@ __all__ = ['PeriodStats']
 class PeriodStats(bt.Analyzer):
     '''Calculates basic statistics for given timeframe
 
+    Params:
+
+      - ``timeframe`` (default: ``Years``)
+        If ``None`` the ``timeframe`` of the 1st data in the system will be
+        used
+
+        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
+        time constraints
+
+      - ``compression`` (default: ``1``)
+
+        Only used for sub-day timeframes to for example work on an hourly
+        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+
+        If ``None`` then the compression of the 1st data of the system will be
+        used
+
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
+
     ``get_analysis`` returns a dictionary containing the keys:
 
       - ``average``
@@ -50,11 +77,12 @@ class PeriodStats(bt.Analyzer):
         ('timeframe', bt.TimeFrame.Years),
         ('compression', 1),
         ('zeroispos', False),
+        ('fund', None),
     )
 
     def __init__(self):
         self._tr = TimeReturn(timeframe=self.p.timeframe,
-                              compression=self.p.compression)
+                              compression=self.p.compression, fund=self.p.fund)
 
     def stop(self):
         trets = self._tr.get_analysis()  # dict key = date, value = ret
