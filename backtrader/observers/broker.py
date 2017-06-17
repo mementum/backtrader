@@ -43,16 +43,39 @@ class Value(Observer):
     '''This observer keeps track of the current portfolio value in the broker
     including the cash
 
-    Params: None
+    Params:
+
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     '''
     _stclock = True
+
+    params = (
+        ('fund', None),
+    )
 
     lines = ('value',)
 
     plotinfo = dict(plot=True, subplot=True)
 
+    def start(self):
+        if self.p.fund is None:
+            self._fundmode = self._owner.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
     def next(self):
-        self.lines[0][0] = self._owner.broker.getvalue()
+        if not self._fundmode:
+            self.lines[0][0] = self._owner.broker.getvalue()
+        else:
+            self.lines[0][0] = self._owner.broker.fundvalue
 
 
 class Broker(Observer):
