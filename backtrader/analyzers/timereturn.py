@@ -70,6 +70,15 @@ class TimeReturn(TimeFrameAnalyzerBase):
 
         Else the initial close will be used.
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Methods:
 
       - get_analysis
@@ -81,21 +90,37 @@ class TimeReturn(TimeFrameAnalyzerBase):
     params = (
         ('data', None),
         ('firstopen', True),
+        ('fund', None),
     )
 
     def start(self):
+        super(TimeReturn, self).start()
+        if self.p.fund is None:
+            self._fundmode = self.strategy.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
         self._value_start = 0.0
         self._lastvalue = None
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
-            self._lastvalue = self.strategy.broker.getvalue()
+            if not self._fundmode:
+                self._lastvalue = self.strategy.broker.getvalue()
+            else:
+                self._lastvalue = self.strategy.broker.fundvalue
 
-    def notify_cashvalue(self, cash, value):
-        # Record current value
-        if self.p.data is None:
-            self._value = value  # the portofolio value if tracking no data
+    def notify_fund(self, cash, value, fundvalue, shares):
+        if not self._fundmode:
+            # Record current value
+            if self.p.data is None:
+                self._value = value  # the portofolio value if tracking no data
+            else:
+                self._value = self.p.data[0]  # the data value if tracking data
         else:
-            self._value = self.p.data[0]  # the data value if tracking data
+            if self.p.data is None:
+                self._value = fundvalue  # the fund value if tracking no data
+            else:
+                self._value = self.p.data[0]  # the data value if tracking data
 
     def on_dt_over(self):
         # next is called in a new timeframe period
