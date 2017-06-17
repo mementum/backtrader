@@ -436,6 +436,58 @@ vs ``-1`` thing. In a strategy, for example::
 Of course and logically, prices *set* before ``-1`` will be accessed with ``-2,
 -3, ...``.
 
+Slicing
+*******
+
+*backtrader* doesn't support slicing for *lines* objects and this is a design
+decision following the ``[0]`` and ``[-1]`` indexing scheme. With regular
+indexable Python objects you would do things like::
+
+  myslice = self.my_sma[0:]  # slice from the beginning til the end
+
+But remember that with the choice for ``0`` ... it is actually the currently
+delivered value, there is nothing after it. Also::
+
+  myslice = self.my_sma[0:-1]  # slice from the beginning til the end
+
+Again ... ``0`` is the current value and ``-1`` is the latest (previous)
+delivered value. That's why a slice from ``0`` -> ``-1`` makes no sense in the
+*backtrader* ecosystem.
+
+If slicing were ever to be supported, it would look like::
+
+  myslice = self.my_sma[:0]  # slice from current point backwards to the beginning
+
+or::
+
+  myslice = self.my_sma[-1:0]  # last value and current value
+
+or::
+
+  myslice = self.my_sma[-3:-1]  # from last value backwards to the 3rd last value
+
+Getting a slice
+===============
+
+An array with the latest values can still be gotten. The syntax::
+
+  myslice = self.my_sma.get(ago=0, size=1)  # default values shown
+
+That would have returned an arry with ``1`` value (``size=1``) with the current
+moment ``0`` as the staring point to look backwards.
+
+To get 10 values from the current point in time (i.e.: the last 10 values)::
+
+  myslice = self.my_sma.get(size=10)  # ago defaults to 0
+
+Of course the array has the ordering you would expect. The leftmost value is
+the oldest one and the rightmost value is the most current (it is a regular
+python array and not a *lines* object)
+
+To get the last 10 values skipping only the current point::
+
+  myslice = self.my_sma.get(ago=-1, size=10)
+
 
 Lines: DELAYED indexing
 ***********************
