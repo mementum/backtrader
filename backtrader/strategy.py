@@ -373,6 +373,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._start()
 
+        for obs in self.observers:
+            if not isinstance(obs, list):
+                obs = [obs]  # support of multi-data observers
+
+            for o in obs:
+                o._start()
+
         # change operators to stage 2
         self._stage2()
 
