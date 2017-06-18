@@ -107,6 +107,17 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     def getvalue(self, datas=None):
         raise NotImplementedError
 
+    def get_fundshares(self):
+        '''Returns the current number of shares in the fund-like mode'''
+        return 1.0  # the abstract mode has only 1 share
+
+    fundshares = property(get_fundshares)
+
+    def get_fundvalue(self):
+        return self.getvalue()
+
+    fundvalue = property(get_fundvalue)
+
     def getposition(self, data):
         raise NotImplementedError
 
