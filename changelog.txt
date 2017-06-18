@@ -1,3 +1,7 @@
+1.9.53.121
+  - Fix #323 by providing default properties/methods for fundvalue/fundshares
+    for all brokers
+
 1.9.52.121
   - Redownload the YahooFinance sample data yhoo-1996-2015
   - Add unstable exception for TALIB SAR
