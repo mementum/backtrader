@@ -38,3 +38,9 @@ HeikinAshi
 **********
 
 .. autoclass:: HeikinAshi
+
+
+HeikinAshi
+**********
+
+.. autoclass:: Renko
