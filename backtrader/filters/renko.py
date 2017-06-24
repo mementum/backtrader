@@ -33,6 +33,9 @@ class Renko(Filter):
 
     Params:
 
+      - ``hilo`` (default: *False*) Use high and low instead of close to decide
+        if a new brick is needed
+
       - ``size`` (default: *None*) The size to consider for each brick
 
       - ``autosize`` (default: *20.0*) If *size* is *None*, this will be used
@@ -57,6 +60,7 @@ class Renko(Filter):
     '''
 
     params = (
+        ('hilo', False),
         ('size', None),
         ('autosize', 20.0),
         ('dynamic', False),
@@ -72,8 +76,16 @@ class Renko(Filter):
 
     def next(self, data):
         c = data.close[0]
+        h = data.high[0]
+        l = data.low[0]
 
-        if c >= self._top:
+        if self.p.hilo:
+            hiprice = h
+            loprice = l
+        else:
+            hiprice = loprice = c
+
+        if hiprice >= self._top:
             # deliver a renko brick from top -> top + size
             self._bot = bot = self._top
 
@@ -94,7 +106,7 @@ class Renko(Filter):
             data.openinterest[0] = 0.0
             return False  # length of data stream is unaltered
 
-        elif c <= self._bot:
+        elif loprice <= self._bot:
             # deliver a renko brick from bot -> bot - size
             self._top = top = self._bot
 
