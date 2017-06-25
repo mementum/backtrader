@@ -1423,6 +1423,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                     writer.next()
 
+    def _disable_runonce(self):
+        '''API for lineiterators to disable runonce (see HeikinAshi)'''
+        self._dorunonce = False
+
     def _runnext(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
