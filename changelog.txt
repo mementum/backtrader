@@ -1,3 +1,9 @@
+1.9.54.122
+  - Add haDelta indicator
+  - Allow indicators to disable runonce
+  - Add Renko bricks
+  - Rework ix -> iloc pull request and autodetection algorithm in PandasData
+
 1.9.53.121
   - Fix #323 by providing default properties/methods for fundvalue/fundshares
     for all brokers
