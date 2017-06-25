@@ -45,11 +45,14 @@ def runstrat():
     skiprows = 1 if args.noheaders else 0
     header = None if args.noheaders else 0
 
-    dataframe = pandas.read_csv(datapath,
-                                skiprows=skiprows,
-                                header=header,
-                                parse_dates=True,
-                                index_col=0)
+    dataframe = pandas.read_csv(
+        datapath,
+        skiprows=skiprows,
+        header=header,
+        # parse_dates=[0],
+        parse_dates=True,
+        index_col=0,
+    )
 
     if not args.noprint:
         print('--------------------------------------------------')
@@ -57,7 +60,10 @@ def runstrat():
         print('--------------------------------------------------')
 
     # Pass it to the backtrader datafeed and add it to the cerebro
-    data = bt.feeds.PandasData(dataname=dataframe)
+    data = bt.feeds.PandasData(dataname=dataframe,
+                               # datetime='Date',
+                               nocase=True,
+                               )
 
     cerebro.adddata(data)
 
