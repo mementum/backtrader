@@ -141,6 +141,8 @@ class MetaLineIterator(LineSeries.__class__):
 
 
 class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
+    _nextforce = True  # force cerebro to run in next mode (runonce=False)
+
     _mindatas = 1
     _ltype = LineSeries.IndType
 
@@ -201,6 +203,17 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def addindicator(self, indicator):
         # store in right queue
         self._lineiterators[indicator._ltype].append(indicator)
+
+        # use getattr because line buffers don't have this attribute
+        if getattr(indicator, '_nextforce', False):
+            # the indicator needs runonce=False
+            o = self
+            while o is not None:
+                if o._ltype == LineIterator.StratType:
+                    o.cerebro._disable_runonce()
+                    break
+
+                o = o._owner  # move up the hierarchy
 
     def bindlines(self, owner=None, own=None):
         if not owner:
