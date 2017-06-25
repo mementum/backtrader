@@ -109,6 +109,10 @@ class PandasData(feed.DataBase):
     This means that all parameters related to lines must have numeric
     values as indices into the tuples
 
+    Params:
+
+      - ``nocase`` (default *True*) case insensitive match of column names
+
     Note:
 
       - The ``dataname`` parameter is a Pandas DataFrame
@@ -127,6 +131,8 @@ class PandasData(feed.DataBase):
     '''
 
     params = (
+        ('nocase', True),
+
         # Possible values for datetime (must always be present)
         #  None : datetime is the "index" in the Pandas Dataframe
         #  -1 : autodetect position or case-wise equal name
@@ -158,8 +164,7 @@ class PandasData(feed.DataBase):
         colnames = list(self.p.dataname.columns.values)
         if self.p.datetime is None:
             # datetime is expected as index col and hence not returned
-            # add fake entry for the autodetection algorithm
-            colnames.insert(0, 0)
+            pass
 
         # try to autodetect if all columns are numeric
         cstrings = filter(lambda x: isinstance(x, string_types), colnames)
@@ -174,22 +179,21 @@ class PandasData(feed.DataBase):
 
             if isinstance(defmapping, integer_types) and defmapping < 0:
                 # autodetection requested
-                if colsnumeric:
-                    # matching names doesn't help, all indices are numeric
-                    # use current colname index
-                    self._colmapping[datafield] = colnames[i]
+                for colname in colnames:
+                    if isinstance(colname, string_types):
+                        if self.p.nocase:
+                            found = datafield.lower() == colname.lower()
+                        else:
+                            found = datafield == colname
 
-                else:
-                    # name matching may be possible
-                    for colname in colnames:
-                        if isinstance(colname, string_types):
-                            if datafield.lower() == colname.lower():
-                                self._colmapping[datafield] = colname
-                                break
+                        if found:
+                            self._colmapping[datafield] = colname
+                            break
 
-                    if datafield not in self._colmapping:
-                        # not yet there ... use current index
-                        self._colmapping[datafield] = colnames[i]
+                if datafield not in self._colmapping:
+                    # autodetection requested and not found
+                    self._colmapping[datafield] = None
+                    continue
             else:
                 # all other cases -- used given index
                 self._colmapping[datafield] = defmapping
@@ -201,10 +205,28 @@ class PandasData(feed.DataBase):
         self._idx = -1
 
         # Transform names (valid for .ix) into indices (good for .iloc)
+        if self.p.nocase:
+            colnames = [x.lower() for x in self.p.dataname.columns.values]
+        else:
+            colnames = [x for x in self.p.dataname.columns.values]
+
         for k, v in self._colmapping.items():
             if v is None:
                 continue  # special marker for datetime
-            self._colmapping[k] = self.p.dataname.columns.get_loc(v)
+            if isinstance(v, string_types):
+                try:
+                    if self.p.nocase:
+                        v = colnames.index(v.lower())
+                    else:
+                        v = colnames.index(v)
+                except ValueError as e:
+                    defmap = getattr(self.params, k)
+                    if isinstance(defmap, integer_types) and defmap < 0:
+                        v = None
+                    else:
+                        raise e  # let user now something failed
+
+            self._colmapping[k] = v
 
     def _load(self):
         self._idx += 1
@@ -234,7 +256,7 @@ class PandasData(feed.DataBase):
             tstamp = self.p.dataname.index[self._idx]
         else:
             # it's in a different column ... use standard column index
-            tstamp = self.p.dataname.index[coldtime][self._idx]
+            tstamp = self.p.dataname.iloc[self._idx, coldtime]
 
         # convert to float via datetime and store it
         dt = tstamp.to_pydatetime()
