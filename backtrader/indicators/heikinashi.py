@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 
 import backtrader as bt
+from backtrader.utils.py3 import range
 
 
 __all__ = ['HeikinAshi']
@@ -44,7 +45,16 @@ class HeikinAshi(bt.Indicator):
     '''
     lines = ('ha_open', 'ha_high', 'ha_low', 'ha_close',)
 
+    linealias = (
+        ('ha_open', 'open',),
+        ('ha_high', 'high',),
+        ('ha_low', 'low',),
+        ('ha_close', 'close',),
+    )
+
     plotinfo = dict(subplot=False)
+
+    _nextforce = True
 
     def __init__(self):
         o = self.data.open
