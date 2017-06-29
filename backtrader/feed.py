@@ -541,13 +541,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         else:
             self._barstash.append(bar)
 
-    def _save2stack(self, erase=False, force=False):
+    def _save2stack(self, erase=False, force=False, stash=False):
         '''Saves current bar to the bar stack for later retrieval
 
         Parameter ``erase`` determines removal from the data stream
         '''
         bar = [line[0] for line in self.itersize()]
-        self._barstack.append(bar)
+        if not stash:
+            self._barstack.append(bar)
+        else:
+            self._barstash.append(bar)
 
         if erase:  # remove bar if requested
             self.backwards(force=force)
