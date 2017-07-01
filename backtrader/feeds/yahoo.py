@@ -130,20 +130,19 @@ class YahooFinanceCSVData(feed.CSVDataBase):
 
         if self.p.version == 'v7':  # in v7 ohlc,adc,v, get real volume
             # In v7, the final seq is "adj close", close, volume
-            adjustedclose = c  # c was read above
-            c = float(linetokens[next(i)])
+            unadjustedclose = float(linetokens[next(i)])
             v = float(linetokens[next(i)])
 
-            adjfactor = adjustedclose / c  # reversed for v7
+            adjfactor = unadjustedclose / c  # reversed for v7
             # in v7 "adjusted prices" seem to be given, scale back for non adj
-            if not self.params.adjclose:
+            if not self.params.adjclose:  # unadjusted prices
                 o *= adjfactor
                 h *= adjfactor
                 l *= adjfactor
-                c = adjustedclose
+                c = unadjustedclose  # unadjusted already read in
                 # v *= adjfactor  # except volume which is the same as in v1
             else:
-                v /= adjfactor  # rescale vol down
+                v *= adjfactor  # rescale vol
         else:
             v = float(linetokens[next(i)])
             adjustedclose = float(linetokens[next(i)])
