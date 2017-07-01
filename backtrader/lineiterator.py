@@ -141,7 +141,7 @@ class MetaLineIterator(LineSeries.__class__):
 
 
 class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
-    _nextforce = True  # force cerebro to run in next mode (runonce=False)
+    _nextforce = False  # force cerebro to run in next mode (runonce=False)
 
     _mindatas = 1
     _ltype = LineSeries.IndType
