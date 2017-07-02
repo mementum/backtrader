@@ -108,7 +108,10 @@ class YahooFinanceCSVData(feed.CSVDataBase):
             h /= adjfactor
             l /= adjfactor
             c = adjustedclose
-            v /= adjfactor
+            if v:
+                v /= adjfactor
+            else:
+                v = None
 
             if self.p.round:
                 decimals = self.p.decimals
@@ -116,7 +119,8 @@ class YahooFinanceCSVData(feed.CSVDataBase):
                 h = round(h, decimals)
                 l = round(l, decimals)
                 c = round(c, decimals)
-                v = round(v, decimals)
+                if v:
+                    v = round(v, decimals)
 
         self.lines.open[0] = o
         self.lines.high[0] = h
