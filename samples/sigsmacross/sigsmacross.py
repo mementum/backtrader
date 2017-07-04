@@ -31,16 +31,17 @@ class SmaCross(bt.SignalStrategy):
     params = dict(sma1=10, sma2=20)
 
     def notify_order(self, order):
-        print('{} {} {}@{}'.format(
-            bt.num2date(order.executed.dt),
-            'buy' if order.isbuy() else 'sell',
-            order.executed.size,
-            order.executed.price)
-        )
+        if not order.alive():
+            print('{} {} {}@{}'.format(
+                bt.num2date(order.executed.dt),
+                'buy' if order.isbuy() else 'sell',
+                order.executed.size,
+                order.executed.price)
+            )
 
     def notify_trade(self, trade):
         if trade.isclosed:
-            print('protif {}'.format(trade.pnlcomm))
+            print('profit {}'.format(trade.pnlcomm))
 
     def __init__(self):
         sma1 = bt.ind.SMA(period=self.params.sma1)
