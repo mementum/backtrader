@@ -246,6 +246,10 @@ class BackBroker(bt.BrokerBase):
         ('fundmode', False),
     )
 
+    def __init__(self):
+        super(BackBroker, self).__init__()
+        self._userhist = []
+
     def init(self):
         super(BackBroker, self).init()
         self.startingcash = self.cash = self.p.cash
@@ -613,18 +617,25 @@ class BackBroker(bt.BrokerBase):
             self._ocos[oref] = ocoref  # ref to group leader
             self._ocol[ocoref].append(oref)  # add to group
 
+    def add_order_history(self, orders, notify=False):
+        oiter = iter(orders)
+        o = next(oiter, None)
+        self._userhist.append([o, oiter, notify])
+
     def buy(self, owner, data,
             size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
             parent=None, transmit=True,
+            histnotify=False,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
                          size=size, price=price, pricelimit=plimit,
                          exectype=exectype, valid=valid, tradeid=tradeid,
                          trailamount=trailamount, trailpercent=trailpercent,
-                         parent=parent, transmit=transmit)
+                         parent=parent, transmit=transmit,
+                         histnotify=histnotify)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -636,13 +647,15 @@ class BackBroker(bt.BrokerBase):
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
              parent=None, transmit=True,
+             histnotify=False,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
                           size=size, price=price, pricelimit=plimit,
                           exectype=exectype, valid=valid, tradeid=tradeid,
                           trailamount=trailamount, trailpercent=trailpercent,
-                          parent=parent, transmit=transmit)
+                          parent=parent, transmit=transmit,
+                          histnotify=histnotify)
 
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
@@ -801,6 +814,9 @@ class BackBroker(bt.BrokerBase):
 
     def notify(self, order):
         self.notifs.append(order.clone())
+
+    def _try_exec_historical(self, order):
+        self._execute(order, ago=0, price=order.created.price)
 
     def _try_exec_market(self, order, popen, phigh, plow):
         ago = 0
@@ -1029,6 +1045,51 @@ class BackBroker(bt.BrokerBase):
                                      popen, phigh, plow, pclose,
                                      pcreated, plimit)
 
+        elif order.exectype == Order.Historical:
+            self._try_exec_historical(order)
+
+    def _process_order_history(self):
+        for uhist in self._userhist:
+            uhorder, uhorders, uhnotify = uhist
+            while uhorder is not None:
+                try:
+                    dataidx = uhorder[3]  # 2nd field
+                except IndexError:
+                    dataidx = None  # Field not present, use default
+
+                if dataidx is None:
+                    d = self.cerebro.datas[0]
+                elif isinstance(dataidx, integer_types):
+                    d = self.cerebro.datas[dataidx]
+                else:  # assume string
+                    d = self.cerebro.datasbyname[dataidx]
+
+                dt = uhorder[0]  # date/datetime instance
+                if dt > d.datetime.datetime():
+                    break  # cannot execute yet 1st in queue, stop processing
+
+                size = uhorder[1]
+                price = uhorder[2]
+                owner = self.cerebro.runningstrats[0]
+                if size > 0:
+                    o = self.buy(owner=owner, data=d,
+                                 size=size, price=price,
+                                 exectype=Order.Historical,
+                                 histnotify=uhnotify)
+
+                    self.pending.append(o)
+
+                elif size > 0:
+                    o = self.sell(owner=owner, data=d,
+                                  size=abs(size), price=price,
+                                  exectype=Order.Historical,
+                                  histnotify=uhnotify)
+
+                    self.pending.append(o)
+
+                # update to next potential order
+                uhist[0] = uhorder = next(uhorders, None)
+
     def next(self):
         while self._toactivate:
             self._toactivate.popleft().activate()
@@ -1048,6 +1109,8 @@ class BackBroker(bt.BrokerBase):
                 pos.datetime = dt0  # mark last credit operation
 
         self.cash -= credit
+
+        self._process_order_history()
 
         # Iterate once over all elements of the pending queue
         self.pending.append(None)
