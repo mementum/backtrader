@@ -318,6 +318,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._tradingcal = None  # TradingCalendar()
 
         self._pretimers = list()
+        self._ohistory = list()
 
     @staticmethod
     def iterize(iterable):
@@ -334,6 +335,45 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def add_order_history(self, orders, notify=False):
+        '''
+        Add a history of orders to be directly executed in the broker for
+        performance evaluation
+
+          - ``orders``: is an iterable (ex: list, tuple, iterator, generator)
+            in which each element will be also an iterable (with length) with
+            the following sub-elements (2 formats are possible)
+
+            ``[datetime, size, price]`` or ``[datetime, size, price, data]``
+
+            **Note**: it must be sorted (or produce sorted elements) by
+              datetime ascending
+
+            where:
+
+              - ``datetime`` is a python ``date/datetime`` instance
+              - ``size`` is an integer (positive to *buy*, negative to *sell*)
+              - ``price`` is a float/integer
+              - ``data`` if present can take any of the following values
+
+                - *None* - The 1st data feed will be used as target
+                - *integer* - The data with that index (insertion order in
+                  **Cerebro*) will be used
+                - *string* - a data with that name, assigned for example with
+                  *``cerebro.addata(data, name=value), will be the target
+
+          - ``notify`` (default: *False*)
+
+            If ``True`` the 1st strategy inserted in the system will be
+            notified of the artificial orders created following the information
+            from each order in ``orders``
+
+        **Note**: Implicit in the description is the need to add a data feed
+          which is the target of the orders. This is for example needed by
+          analyzers which track for example the returns
+        '''
+        self._ohistory.append((orders, notify))
 
     def notify_timer(self, timer, when, *args, **kwargs):
         '''Receives a timer notification where ``timer`` is the timer which was
@@ -1122,6 +1162,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # try to activate in broker
             if hasattr(self._broker, 'set_coo'):
                 self._broker.set_coo(True)
+
+        for orders, onotify in self._ohistory:
+            self._broker.add_order_history(orders, onotify)
 
         self._broker.start()
 
