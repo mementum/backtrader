@@ -321,3 +321,5 @@ Reference
    .. automethod:: add_timer
 
    .. automethod:: notify_timer
+
+   .. automethod:: add_order_history
