@@ -227,6 +227,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
         ('trailamount', None), ('trailpercent', None),
         ('parent', None), ('transmit', True),
         ('simulated', False),
+        # To support historical order evaluation
+        ('histnotify', False),
     )
 
     DAY = datetime.timedelta()  # constant for DAY order identification
@@ -237,9 +239,10 @@ class OrderBase(with_metaclass(MetaParams, object)):
     # Volume Restrictions for orders
     V_None = range(1)
 
-    Market, Close, Limit, Stop, StopLimit, StopTrail, StopTrailLimit = range(7)
+    (Market, Close, Limit, Stop, StopLimit, StopTrail, StopTrailLimit,
+     Historical) = range(8)
     ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit', 'StopTrail',
-                 'StopTrailLimit']
+                 'StopTrailLimit', 'Historical']
 
     OrdTypes = ['Buy', 'Sell']
     Buy, Sell = range(2)
