@@ -561,7 +561,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             proctrades = self._tradespending
 
         for order in procorders:
-            self.notify_order(order)
+            if order.exectype != order.Historical or order.histnotify:
+                self.notify_order(order)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_order(order)
