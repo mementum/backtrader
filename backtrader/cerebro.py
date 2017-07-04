@@ -313,6 +313,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._dataid = itertools.count(1)
 
         self._broker = BackBroker()
+        self._broker.cerebro = self
 
         self._tradingcal = None  # TradingCalendar()
 
@@ -852,6 +853,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         one inherited from cerebro.
         '''
         self._broker = broker
+        broker.cerebro = self
         return broker
 
     def getbroker(self):
