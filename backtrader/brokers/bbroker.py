@@ -519,7 +519,7 @@ class BackBroker(bt.BrokerBase):
 
         return pref
 
-    def submit(self, order):
+    def submit(self, order, check=True):
         pref = self._take_children(order)
         if pref is None:  # order has not been taken
             return order
@@ -529,13 +529,13 @@ class BackBroker(bt.BrokerBase):
 
         if order.transmit:  # if single order, sent and queue cleared
             # if parent-child, the parent will be sent, the other kept
-            rets = [self.transmit(x) for x in pc]
+            rets = [self.transmit(x, check=check) for x in pc]
             return rets[-1]  # last one is the one triggering transmission
 
         return order
 
-    def transmit(self, order):
-        if self.p.checksubmit:
+    def transmit(self, order, check=True):
+        if check and self.p.checksubmit:
             order.submit()
             self.submitted.append(order)
             self.orders.append(order)
@@ -629,7 +629,7 @@ class BackBroker(bt.BrokerBase):
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
             parent=None, transmit=True,
-            histnotify=False,
+            histnotify=False, _checksubmit=True,
             **kwargs):
 
         order = BuyOrder(owner=owner, data=data,
@@ -642,14 +642,14 @@ class BackBroker(bt.BrokerBase):
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
 
-        return self.submit(order)
+        return self.submit(order, check=_checksubmit)
 
     def sell(self, owner, data,
              size, price=None, plimit=None,
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
              parent=None, transmit=True,
-             histnotify=False,
+             histnotify=False, _checksubmit=True,
              **kwargs):
 
         order = SellOrder(owner=owner, data=data,
@@ -662,7 +662,7 @@ class BackBroker(bt.BrokerBase):
         order.addinfo(**kwargs)
         self._ocoize(order, oco)
 
-        return self.submit(order)
+        return self.submit(order, check=_checksubmit)
 
     def _execute(self, order, ago=None, price=None, cash=None, position=None,
                  dtcoc=None):
@@ -1087,17 +1087,15 @@ class BackBroker(bt.BrokerBase):
                     o = self.buy(owner=owner, data=d,
                                  size=size, price=price,
                                  exectype=Order.Historical,
-                                 histnotify=uhnotify)
-
-                    self.pending.append(o)
+                                 histnotify=uhnotify,
+                                 _checksubmit=False)
 
                 elif size < 0:
                     o = self.sell(owner=owner, data=d,
                                   size=abs(size), price=price,
                                   exectype=Order.Historical,
-                                  histnotify=uhnotify)
-
-                    self.pending.append(o)
+                                  histnotify=uhnotify,
+                                  _checksubmit=False)
 
                 # update to next potential order
                 uhist[0] = uhorder = next(uhorders, None)
