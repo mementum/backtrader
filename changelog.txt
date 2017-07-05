@@ -3,6 +3,7 @@
   - Add swapcloses to YahooFinanceXXX family to allow end users to control what
     the adjusted price actually is
   - Some docs and samples updates
+  - Change default for _nextforce to False as it should be for most indicators
 
 1.9.54.122
   - Add haDelta indicator
