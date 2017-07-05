@@ -352,7 +352,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             where:
 
-              - ``datetime`` is a python ``date/datetime`` instance
+              - ``datetime`` is a python ``date/datetime`` instance or a string
+                with format YYYY-MM-DD[THH:MM:SS[.us]] where the elements in
+                brackets are optional
               - ``size`` is an integer (positive to *buy*, negative to *sell*)
               - ``price`` is a float/integer
               - ``data`` if present can take any of the following values

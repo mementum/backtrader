@@ -22,11 +22,13 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import datetime
 
 import backtrader as bt
 from backtrader.comminfo import CommInfoBase
 from backtrader.order import Order, BuyOrder, SellOrder
 from backtrader.position import Position
+from backtrader.utils.py3 import string_types
 
 __all__ = ['BackBroker', 'BrokerBack']
 
@@ -1052,6 +1054,7 @@ class BackBroker(bt.BrokerBase):
         for uhist in self._userhist:
             uhorder, uhorders, uhnotify = uhist
             while uhorder is not None:
+                uhorder = list(uhorder)  # to support assignment (if tuple)
                 try:
                     dataidx = uhorder[3]  # 2nd field
                 except IndexError:
@@ -1065,6 +1068,15 @@ class BackBroker(bt.BrokerBase):
                     d = self.cerebro.datasbyname[dataidx]
 
                 dt = uhorder[0]  # date/datetime instance
+                if isinstance(dt, string_types):
+                    dtfmt = '%Y-%m-%d'
+                    if 'T' in dt:
+                        dtfmt += 'T%H:%M:%S'
+                        if '.' in dt:
+                            dtfmt += '.%f'
+                    dt = datetime.datetime.strptime(dt, dtfmt)
+                    uhorder[0] = dt
+
                 if dt > d.datetime.datetime():
                     break  # cannot execute yet 1st in queue, stop processing
 
