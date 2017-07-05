@@ -1079,7 +1079,7 @@ class BackBroker(bt.BrokerBase):
 
                     self.pending.append(o)
 
-                elif size > 0:
+                elif size < 0:
                     o = self.sell(owner=owner, data=d,
                                   size=abs(size), price=price,
                                   exectype=Order.Historical,
