@@ -1,3 +1,9 @@
+1.9.55.122
+  - Add addorder_history support to replay history of orders
+  - Add swapcloses to YahooFinanceXXX family to allow end users to control what
+    the adjusted price actually is
+  - Some docs and samples updates
+
 1.9.54.122
   - Add haDelta indicator
   - Allow indicators to disable runonce
