@@ -336,7 +336,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         return niterable
 
-    def add_order_history(self, orders, notify=False):
+    def add_order_history(self, orders, notify=True):
         '''
         Add a history of orders to be directly executed in the broker for
         performance evaluation
@@ -363,7 +363,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 - *string* - a data with that name, assigned for example with
                   *``cerebro.addata(data, name=value), will be the target
 
-          - ``notify`` (default: *False*)
+          - ``notify`` (default: *True*)
 
             If ``True`` the 1st strategy inserted in the system will be
             notified of the artificial orders created following the information

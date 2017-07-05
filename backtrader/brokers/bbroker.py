@@ -617,7 +617,7 @@ class BackBroker(bt.BrokerBase):
             self._ocos[oref] = ocoref  # ref to group leader
             self._ocol[ocoref].append(oref)  # add to group
 
-    def add_order_history(self, orders, notify=False):
+    def add_order_history(self, orders, notify=True):
         oiter = iter(orders)
         o = next(oiter, None)
         self._userhist.append([o, oiter, notify])
