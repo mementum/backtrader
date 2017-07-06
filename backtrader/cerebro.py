@@ -361,9 +361,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 - *None* - The 1st data feed will be used as target
                 - *integer* - The data with that index (insertion order in
-                  **Cerebro*) will be used
+                  **Cerebro**) will be used
                 - *string* - a data with that name, assigned for example with
-                  *``cerebro.addata(data, name=value), will be the target
+                  ``cerebro.addata(data, name=value)``, will be the target
 
           - ``notify`` (default: *True*)
 
