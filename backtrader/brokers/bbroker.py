@@ -1067,6 +1067,9 @@ class BackBroker(bt.BrokerBase):
                 else:  # assume string
                     d = self.cerebro.datasbyname[dataidx]
 
+                if not len(d):
+                    break  # may start later as oter data feeds
+
                 dt = uhorder[0]  # date/datetime instance
                 if isinstance(dt, string_types):
                     dtfmt = '%Y-%m-%d'
