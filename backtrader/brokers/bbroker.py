@@ -1076,6 +1076,13 @@ class BackBroker(bt.BrokerBase):
                             dtfmt += '.%f'
                     dt = datetime.datetime.strptime(dt, dtfmt)
                     uhorder[0] = dt
+                elif isinstance(dt, datetime.datetime):
+                    pass
+                elif isinstance(dt, datetime.date):
+                    dt = datetime.datetime(year=dt.year,
+                                           month=dt.month,
+                                           day=dt.day)
+                    uhorder[0] = dt
 
                 if dt > d.datetime.datetime():
                     break  # cannot execute yet 1st in queue, stop processing
