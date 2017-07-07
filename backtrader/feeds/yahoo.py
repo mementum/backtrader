@@ -139,7 +139,10 @@ class YahooFinanceCSVData(feed.CSVDataBase):
             # In v7, the final seq is "adj close", close, volume
             adjustedclose = c  # c was read above
             c = float(linetokens[next(i)])
-            v = float(linetokens[next(i)])
+            try:
+                v = float(linetokens[next(i)])
+            except:  # cover the case in which volume is "null"
+                v = 0.0
 
             if self.p.swapcloses:  # swap closing prices if requested
                 c, adjustedclose = adjustedclose, c
