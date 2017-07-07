@@ -319,6 +319,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         self._pretimers = list()
         self._ohistory = list()
+        self._fhistory = None
 
     @staticmethod
     def iterize(iterable):
@@ -335,6 +336,30 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def set_fund_history(self, fund):
+        '''
+        Add a history of orders to be directly executed in the broker for
+        performance evaluation
+
+          - ``fund``: is an iterable (ex: list, tuple, iterator, generator)
+            in which each element will be also an iterable (with length) with
+            the following sub-elements (2 formats are possible)
+
+            ``[datetime, share_value, net asset value]``
+
+            **Note**: it must be sorted (or produce sorted elements) by
+              datetime ascending
+
+            where:
+
+              - ``datetime`` is a python ``date/datetime`` instance or a string
+                with format YYYY-MM-DD[THH:MM:SS[.us]] where the elements in
+                brackets are optional
+              - ``share_value`` is an float/integer
+              - ``net_asset_value`` is a float/integer
+        '''
+        self._fhistory = fund
 
     def add_order_history(self, orders, notify=True):
         '''
@@ -1164,6 +1189,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # try to activate in broker
             if hasattr(self._broker, 'set_coo'):
                 self._broker.set_coo(True)
+
+        if self._fhistory is not None:
+            self._broker.set_fund_history(self._fhistory)
 
         for orders, onotify in self._ohistory:
             self._broker.add_order_history(orders, onotify)

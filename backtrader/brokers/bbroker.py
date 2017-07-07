@@ -251,6 +251,8 @@ class BackBroker(bt.BrokerBase):
     def __init__(self):
         super(BackBroker, self).__init__()
         self._userhist = []
+        self._fundhist = []
+        self._fhistlast = [0.0, 0.0]  # share_value, net asset value
 
     def init(self):
         super(BackBroker, self).init()
@@ -463,7 +465,23 @@ class BackBroker(bt.BrokerBase):
             else:
                 pos_value_unlever += dvalue
 
-        self._value = self.cash + pos_value_unlever
+        if not self._fundhist:
+            self._value = v = self.cash + pos_value_unlever
+            self._fundval = self._value / self._fundshares  # update fundvalue
+        else:
+            # Try to fetch a value
+            fval, fvalue = self._process_fund_history()
+
+            self._value = fvalue
+            self.cash = fvalue - pos_value_unlever
+            self._fundval = fval
+            self._fundshares = fvalue / fval
+            lev = pos_value / (pos_value_unlever or 1.0)
+
+            # update the calculated values above to the historical values
+            pos_value_unlever = fvalue
+            pos_value = fvalue * lev
+
         self._valuemkt = pos_value_unlever
 
         self._valuelever = self.cash + pos_value
@@ -471,8 +489,6 @@ class BackBroker(bt.BrokerBase):
 
         self._leverage = pos_value / (pos_value_unlever or 1.0)
         self._unrealized = unrealized
-
-        self._fundval = self._value / self.fundshares  # update fundvalue
 
         return self._value if not lever else self._valuelever
 
@@ -623,6 +639,16 @@ class BackBroker(bt.BrokerBase):
         oiter = iter(orders)
         o = next(oiter, None)
         self._userhist.append([o, oiter, notify])
+
+    def set_fund_history(self, fund):
+        # iterable with the following pro item
+        # [datetime, share_value, net asset value]
+        fiter = iter(fund)
+        f = list(next(fiter))  # must not be empty
+        self._fundhist = [f, fiter]
+        self._fhistlast = f[1:]
+
+        self.set_cash(float(f[2]))
 
     def buy(self, owner, data,
             size, price=None, plimit=None,
@@ -1049,6 +1075,38 @@ class BackBroker(bt.BrokerBase):
 
         elif order.exectype == Order.Historical:
             self._try_exec_historical(order)
+
+    def _process_fund_history(self):
+        fhist = self._fundhist  # [last element, iterator]
+        f, funds = fhist
+        if not f:
+            return self._fhistlast
+
+        dt = f[0]  # date/datetime instance
+        if isinstance(dt, string_types):
+            dtfmt = '%Y-%m-%d'
+            if 'T' in dt:
+                dtfmt += 'T%H:%M:%S'
+                if '.' in dt:
+                    dtfmt += '.%f'
+            dt = datetime.datetime.strptime(dt, dtfmt)
+            f[0] = dt  # update value
+
+        elif isinstance(dt, datetime.datetime):
+            pass
+        elif isinstance(dt, datetime.date):
+            dt = datetime.datetime(year=dt.year, month=dt.month, day=dt.day)
+            f[0] = dt  # Update the value
+
+        # Synchronization with the strategy is not possible because the broker
+        # is called before the strategy advances. The 2 lines below would do it
+        # if possible
+        # st0 = self.cerebro.runningstrats[0]
+        # if dt <= st0.datetime.datetime():
+        self._fhistlast = f[1:]
+        fhist[0] = list(next(funds, []))
+
+        return self._fhistlast
 
     def _process_order_history(self):
         for uhist in self._userhist:
