@@ -45,6 +45,7 @@ class Trades(Observer):
 
     plotinfo = dict(plot=True, subplot=True,
                     plotname='Trades - Net Profit/Loss',
+                    plotymargin=0.10,
                     plothlines=[0.0])
 
     plotlines = dict(
@@ -137,7 +138,8 @@ class DataTrades(with_metaclass(MetaDataTrades, Observer)):
 
     params = (('usenames', True),)
 
-    plotinfo = dict(plot=True, subplot=True, plothlines=[0.0])
+    plotinfo = dict(plot=True, subplot=True, plothlines=[0.0],
+                    plotymargin=0.10)
 
     plotlines = dict()
 
