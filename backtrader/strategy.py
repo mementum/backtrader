@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import copy
 import datetime
 import inspect
 import itertools
@@ -514,9 +515,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                              comminfo=order.comminfo)
 
                 if trade.isclosed:
-                    self._tradespending.append(trade)
+                    self._tradespending.append(copy.copy(trade))
                     if quicknotify:
-                        qtrades.append(trade)
+                        qtrades.append(copy.copy(trade))
 
             # Update it if needed
             if exbit.opened:
@@ -537,14 +538,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 # orders have put the position down to 0 and the next order
                 # "opens" a position but "closes" the trade
                 if trade.isclosed:
-                    self._tradespending.append(trade)
+                    self._tradespending.append(copy.copy(trade))
                     if quicknotify:
-                        qtrades.append(trade)
+                        qtrades.append(copy.copy(trade))
 
             if trade.justopened:
-                self._tradespending.append(trade)
+                self._tradespending.append(copy.copy(trade))
                 if quicknotify:
-                    qtrades.append(trade)
+                    qtrades.append(copy.copy(trade))
 
         if quicknotify:
             self._notify(qorders=qorders, qtrades=qtrades)
