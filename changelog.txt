@@ -1,3 +1,9 @@
+1.9.56.122
+  - Handle volume as string null in YahooFinanceData
+  - Corrections/Improvements to order history support
+  - Add fund history support
+  - Increase plotting margin of trade observers
+
 1.9.55.122
   - Add addorder_history support to replay history of orders
   - Add swapcloses to YahooFinanceXXX family to allow end users to control what
