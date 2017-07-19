@@ -1,3 +1,9 @@
+1.9.57.122
+  - PR #326 Fix set_fundmode in bbroker
+  - Synchronize fund history mode with master clock
+  - Allow relocation of legend in plotting charts
+  - Adapt broker observer to fund mode
+
 1.9.56.122
   - Handle volume as string null in YahooFinanceData
   - Corrections/Improvements to order history support
