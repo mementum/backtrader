@@ -102,14 +102,15 @@ class Broker(Observer):
             self._fundmode = self.p.fund
 
         if self._fundmode:
-            self.plotlines.value._plotskip = True
+            self.plotlines.cash._plotskip = True
+            self.plotlines.value._name = 'FundValue'
 
     def next(self):
         if not self._fundmode:
             self.lines.value[0] = value = self._owner.broker.getvalue()
             self.lines.cash[0] = self._owner.broker.getcash()
         else:
-            self.lines[0][0] = self._owner.broker.fundvalue
+            self.lines.value[0] = self._owner.broker.fundvalue
 
 
 class FundValue(Observer):
