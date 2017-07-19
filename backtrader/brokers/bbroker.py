@@ -301,7 +301,7 @@ class BackBroker(bt.BrokerBase):
         If the argument fundstartval is not ``None``, it will used
         '''
         self.p.fundmode = fundmode
-        if self.fundstartval is not None:
+        if fundstartval is not None:
             self.set_fundstartval(fundstartval)
 
     def get_fundmode(self):
