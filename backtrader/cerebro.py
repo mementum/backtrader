@@ -36,7 +36,7 @@ from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .utils import OrderedDict, tzparse
+from .utils import OrderedDict, tzparse, num2date
 from .strategy import Strategy, SignalStrategy
 from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
@@ -1569,6 +1569,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                                if d is not None and i not in rsonly))
 
                 dmaster = datas[dts.index(dt0)]  # and timemaster
+                self._dtmaster = dmaster.num2date(dt0)
+                self._udtmaster = num2date(dt0)
 
                 # slen = len(runstrats[0])
                 # Try to get something for those that didn't return
