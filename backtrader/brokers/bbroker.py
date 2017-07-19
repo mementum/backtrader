@@ -252,7 +252,8 @@ class BackBroker(bt.BrokerBase):
         super(BackBroker, self).__init__()
         self._userhist = []
         self._fundhist = []
-        self._fhistlast = [0.0, 0.0]  # share_value, net asset value
+        # share_value, net asset value
+        self._fhistlast = [float('NaN'), float('NaN')]
 
     def init(self):
         super(BackBroker, self).init()
@@ -646,7 +647,7 @@ class BackBroker(bt.BrokerBase):
         fiter = iter(fund)
         f = list(next(fiter))  # must not be empty
         self._fundhist = [f, fiter]
-        self._fhistlast = f[1:]
+        # self._fhistlast = f[1:]
 
         self.set_cash(float(f[2]))
 
@@ -1103,8 +1104,9 @@ class BackBroker(bt.BrokerBase):
         # if possible
         # st0 = self.cerebro.runningstrats[0]
         # if dt <= st0.datetime.datetime():
-        self._fhistlast = f[1:]
-        fhist[0] = list(next(funds, []))
+        if dt <= self.cerebro._dtmaster:
+            self._fhistlast = f[1:]
+            fhist[0] = list(next(funds, []))
 
         return self._fhistlast
 
