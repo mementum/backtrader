@@ -444,7 +444,8 @@ class MetaLineSeries(LineMultiple.__class__):
 class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     plotinfo = dict(
         plot=True,
-        plotmaster=None
+        plotmaster=None,
+        legendloc=None,
     )
 
     csv = True

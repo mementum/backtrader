@@ -522,8 +522,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 handles, labels = ax.get_legend_handles_labels()
                 # Ensure that we have something to show
                 if labels:
+                    # location can come from the user
+                    loc = ind.plotinfo.legendloc or self.pinf.sch.legendindloc
+
                     # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                    legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
@@ -581,8 +584,12 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 # plot a legend
                 handles, labels = ax.get_legend_handles_labels()
                 if handles:
+
+                    # location can come from the user
+                    loc = data.plotinfo.legendloc or self.pinf.sch.legendindloc
+
                     # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                    legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
@@ -749,8 +756,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             l = self.pinf.labels[a]
 
             axlegend = a
+            loc = data.plotinfo.legendloc or self.pinf.sch.legenddataloc
             legend = axlegend.legend(h, l,
-                                     loc='upper left',
+                                     loc=loc,
                                      frameon=False, shadow=False,
                                      fancybox=False, prop=self.pinf.prop,
                                      numpoints=1, ncol=1)
