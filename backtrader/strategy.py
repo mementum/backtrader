@@ -421,7 +421,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             if lio:
                 values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
             else:
-                values.extend([''] * iocsv.lines.isize())
+                values.extend([''] * iocsv.lines.size())
 
         return values
 
