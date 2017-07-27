@@ -650,7 +650,7 @@ not the universal panacea.
 	  values everything seems the same, but it's obvious that sometimes
 	  that 5th place decimal plays a role.
 
-	  Rounding down to 2 decimals seems more realistic, because Marke
+	  Rounding down to 2 decimals seems more realistic, because Market
 	  Exchanges do only allow a number of decimals per asset (being that 2
 	  decimals usually for stocks)
 

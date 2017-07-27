@@ -35,7 +35,7 @@ about receiving them:
   *Data Feeds are automagically provided member variables to the strategy in the
   form of an array and shortcuts to the array positions*
 
-Quick preview of a Stragegy derived class declaration and running the platform::
+Quick preview of a Strategy derived class declaration and running the platform::
 
   class MyStrategy(bt.Strategy):
       params = dict(period=20)
