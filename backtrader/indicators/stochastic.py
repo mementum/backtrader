@@ -72,7 +72,7 @@ class StochasticFast(_StochasticBase):
       - ll = lowest(data.low, period)
       - knum = data.close - ll
       - kden = hh - ll
-      - k = 100 - (knum / kden)
+      - k = 100 * (knum / kden)
       - d = MovingAverage(k, period_dfast)
 
     See:
