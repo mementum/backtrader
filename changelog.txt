@@ -1,3 +1,9 @@
+1.9.58.122
+  - Provide default fundmode methods for all brokers
+  - Correct order notification if positions exist when starting the broker
+    and will be simulated
+  - Correct csv values output if object has no length
+
 1.9.57.122
   - PR #326 Fix set_fundmode in bbroker
   - Synchronize fund history mode with master clock
