@@ -207,7 +207,7 @@ How this effect can be avoided:
 
 .. thumbnail:: order_target_value.png
 
-order_target_value
+order_target_percent
 ==================
 
 In this case it is simply a percentage of the current portfolio value.
