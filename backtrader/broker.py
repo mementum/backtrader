@@ -126,6 +126,19 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
 
     fundvalue = property(get_fundvalue)
 
+    def set_fundmode(self, fundmode, fundstartval=None):
+        '''Set the actual fundmode (True or False)
+
+        If the argument fundstartval is not ``None``, it will used
+        '''
+        pass  # do nothing, not all brokers can support this
+
+    def get_fundmode(self):
+        '''Returns the actual fundmode (True or False)'''
+        return False
+
+    fundmode = property(get_fundmode, set_fundmode)
+
     def getposition(self, data):
         raise NotImplementedError
 
