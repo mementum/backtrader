@@ -125,7 +125,7 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
                           pos.size, pos.price)
 
             order.completed()
-            self.notify.order(order)
+            self.notify(order)
 
         elif pos.size > 0:
             order = BuyOrder(data=data,
