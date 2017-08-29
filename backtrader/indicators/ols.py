@@ -48,7 +48,7 @@ class OLS_Slope_InterceptN(PeriodN):
     def next(self):
         p0 = pd.Series(self.data0.get(size=self.p.period))
         p1 = pd.Series(self.data1.get(size=self.p.period))
-        p1 = sm.add_constant(p1, prepend=True)
+        p1 = sm.add_constant(p1, prepend=False)
         slope, intercept = sm.OLS(p0, p1).fit().params
 
         self.lines.slope[0] = slope
