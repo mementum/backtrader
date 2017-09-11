@@ -847,6 +847,9 @@ class BackBroker(bt.BrokerBase):
     def _try_exec_historical(self, order):
         self._execute(order, ago=0, price=order.created.price)
 
+    def _try_exec_simulated(self, order):
+        self._execute(order, ago=0, price=order.created.price)
+
     def _try_exec_market(self, order, popen, phigh, plow):
         ago = 0
         if self.p.coc and order.info.get('coc', True):
@@ -1076,6 +1079,9 @@ class BackBroker(bt.BrokerBase):
 
         elif order.exectype == Order.Historical:
             self._try_exec_historical(order)
+
+        elif order.exectype == Order.Simulated:
+            self._try_exec_simulated(order)
 
     def _process_fund_history(self):
         fhist = self._fundhist  # [last element, iterator]
