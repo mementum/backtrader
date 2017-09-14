@@ -41,3 +41,5 @@ from .logreturnsrolling import *
 
 from .calmar import *
 from .periodstats import *
+
+from .kelly import *
