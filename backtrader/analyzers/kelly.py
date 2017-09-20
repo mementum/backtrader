@@ -38,12 +38,12 @@ class Kelly(Analyzer):
     The optimal size is given as a percentage of the account value.
 
     Caution: Kellys works optimally for systems that do not change over time.
-    e.g. mechanical systems, tossing a coin, rolling a dice or for a casino,
-    the spin of a roulette wheel.
-    Whereas with trading systems. They are not fixed, and can work for a period
-    of time and then stop working due to market conditions.
-    Continuing to use Kelly's optimal percent to bet with, could incur heavy
-    losses. I'm speaking from personal experience here! :)
+    Such as mechanical systems e.g. tossing a coin, rolling a dice or a spin
+    of a roulette wheel.
+    Trading systems are not fixed, and may work for a period and then stop
+    working due to market conditions changing.
+    Continuing to use Kelly's optimal percent to bet with as a system stops
+    working, will incur heavy losses. I'm speaking from personal experience! :)
 
     LESSON: Kelly percent is optimal providing your system edge remains
     working. The catch is, assume no system edge remains forever. Prepare for
@@ -56,18 +56,19 @@ class Kelly(Analyzer):
         K = W - [(1 - W) / R]
 
     K = Kelly optimal percent
-    e.g. 0.156 = 15.6 percent of account was optimal bet size
+    e.g. 0.156 = 15.6 percent of account is the optimal bet size
     (based on the historical trades your system generated).
 
     W = Win rate
     e.g. 0.6 (= 60%)
-    Determined by counting profitable trades made.
+    Determined by percentage of profitable trades.
 
     R = Win/Loss ratio
     e.g. 1.5 = Winners were on average 1.5 x losers
-    Determined by taking average of all winners & average of all losers.
+    Determined by taking average of all winners and dividing by average of all
+    losing trades.
 
-    Because R and W are determined from trades the strategy generates when
+    Because R and W are determined from all trades the strategy generates when
     run, there needs to be at least 1 winner and 1 loser. Otherwise 'None'
     is returned.
 
@@ -98,15 +99,15 @@ class Kelly(Analyzer):
     def notify_trade(self, trade):
         if trade.status == trade.Closed:  # i.e. trade had both an entry & exit
         # Note: for trades that scratch (=breakeven), i.e. a trade has exactly
-        # $0 or 0 points profits. Should they be classed as a winner or loser?
+        # 0.0 points profits. Should they be classed as a winner or loser?
         # Or perhaps create a seperate category for 'breakeven'?
-        # On balance it probably doesn't make much difference.
 
+        # On balance it probably doesn't make much difference.
         # If we class as a win, the win percent will increase but the average
         # win will decrease, i.e. maths balances out. Vice versa with losers.
 
-        # I notice Backtrader assumes the same default, as used in
-        # modules such as 'tradeanalyzer.py'
+        # I notice Backtrader defaults to trades of 0.0 or greater are
+        # classed as winners. [Used in modules such as 'tradeanalyzer.py']
 
         # Likewise I will choose to class trades >=0 as winners.
 
@@ -129,9 +130,10 @@ class Kelly(Analyzer):
             avgLosses = abs(average(self.pnlLosses))  # Remove the -ve sign
             winLossRatio = avgWins / avgLosses
 
-            # Check winLoss ratio not 0 else division by zero later.
-            # BT convention is to class trades with profit >=0 as a winner.
-            # A rare bug can occur if all winners have value of 0.
+            # Check winLoss ratio not 0 else division by zero later because
+            # otherwise a rare bug can occur if all winners have value of 0.
+            # (Since BT convention is to class trades with profit >=0 as a
+            # winner)
             if winLossRatio == 0:
                 kellyPercent = None   # Because average of winners were 0.
 
