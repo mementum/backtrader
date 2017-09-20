@@ -477,6 +477,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         self._tradespending = list()
 
     def _addnotification(self, order, quicknotify=False):
+        #print('****HERE strategy _addnotification()')   # ROR TEST MUST REMOVE
         if not order.p.simulated:
             self._orderspending.append(order)
 
@@ -496,7 +497,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         datatrades = self._trades[tradedata][order.tradeid]
         if not datatrades:
             trade = Trade(data=tradedata, tradeid=order.tradeid,
-                          historyon=self._tradehistoryon)
+                          historyon=self._tradehistoryon,
+                          R=(order.info.R if 'R' in order.info else None)) #ROR added CHANGE TO CONDITIONAL, check R exisits
+            #R=(order.info.R if 'R' in order.info else None)
+            #print("dir  order.info ", dir(order.info))
+            #print("dir  order ", dir(order))
+            #print(" order.info ", order.info)
+            #print("££££££££££££££££££££££££xx  ", order.info.R, R)
+            #trade.ZZ_FUCKOFF_1 = order.info   # ROR ADDED TEST
             datatrades.append(trade)
         else:
             trade = datatrades[-1]
@@ -513,7 +521,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                              exbit.closedcomm,
                              exbit.pnl,
                              comminfo=order.comminfo)
-
+                #trade.ZZ_FUCKOFF_2 = order.info   # ROR ADDED TEST
                 if trade.isclosed:
                     self._tradespending.append(copy.copy(trade))
                     if quicknotify:
@@ -523,7 +531,16 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             if exbit.opened:
                 if trade.isclosed:
                     trade = Trade(data=tradedata, tradeid=order.tradeid,
-                                  historyon=self._tradehistoryon)
+                                  historyon=self._tradehistoryon,
+                                  R=(order.info.R if 'R' in order.info else None))  # ROR added
+                    #R=(order.info.R if 'R' in order.info else None)
+                    #print("dir  order.info ", dir(order.info))
+                    #print("dir  order ", dir(order))
+                    #print(" order.info ", order.info)
+                    #print("££££££££££££££££££££££££xx  ", order.info.R, R)  # ROR
+
+
+                    #trade.ZZ_FUCKOFF_3 = order.info   # ROR ADDED TEST
                     datatrades.append(trade)
 
                 trade.update(order,
