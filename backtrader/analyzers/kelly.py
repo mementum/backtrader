@@ -2,6 +2,9 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
+# This 'kelly.py' module was written by Richard O'Regan (London) September 2017
+#
+###############################################################################
 # Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,21 +22,14 @@
 #
 ###############################################################################
 
-###############################################################################
-#
-# This kelly.py module written by Richard O'Regan x/September/2017
-#
-###############################################################################
-
-
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import math
 
 from backtrader import Analyzer
-from backtrader.mathsupport import average, standarddev
+from backtrader.mathsupport import average
 from backtrader.utils import AutoOrderedDict
+
 
 class Kelly(Analyzer):
     '''Kelly formula was described in 1956 by J. L. Kelly, working at Bell Labs.
@@ -41,25 +37,51 @@ class Kelly(Analyzer):
     It is used to determine the optimal size of a series of bets (or trades).
     The optimal size is given as a percentage of the account value.
 
-    For example. Suppose Dick and Fanny have a bet. Dick makes a wager with Fanny.
-    He says; "Let's toss a coin together. If it lands on heads,
-    you must give me $1, but it it lands on tails, I will give you $2."
+    Caution: Kellys works optimally for systems that do not change over time.
+    e.g. mechanical systems, tossing a coin, rolling a dice or for a casino,
+    the spin of a roulette wheel.
+    Whereas with trading systems. They are not fixed, and can work for a period
+    of time and then stop working due to market conditions.
+    Continuing to use Kelly's optimal percent to bet with, could incur heavy
+    losses. I'm speaking from personal experience here! :)
 
-    Fanny has $100 in her purse.
+    LESSON: Kelly percent is optimal providing your system edge remains
+    working. The catch is, assume no system edge remains forever. Prepare for
+    your system to stop working over time. Markets change.
+
+    I personally find Kellys a useful measure for comparing systems.
 
     The formula:
 
-      - SquareRoot(NumberTrades) * Average(TradesProfit) / StdDev(TradesProfit)
+        K = W - [(1 - W) / R]
 
-    The sqn value should be deemed reliable when the number of trades >= 30
+    K = Kelly optimal percent
+    e.g. 0.156 = 15.6 percent of account was optimal bet size
+    (based on the historical trades your system generated).
+
+    W = Win rate
+    e.g. 0.6 (= 60%)
+    Determined by counting profitable trades made.
+
+    R = Win/Loss ratio
+    e.g. 1.5 = Winners were on average 1.5 x losers
+    Determined by taking average of all winners & average of all losers.
+
+    Because R and W are determined from trades the strategy generates when
+    run, there needs to be at least 1 winner and 1 loser. Otherwise 'None'
+    is returned.
+
+    Note: A negative Kelly percent e.g. -1.16 or -0.08, means the strategy lost
+    money. The sign is important here. The actual value does not give any useful
+    information as far as I can see.
 
     Methods:
 
       - get_analysis
 
-        Returns a dictionary with keys "sqn" and "trades" (number of
-        considered trades)
+        Returns a dictionary with keys "kellyPercent"
 
+    [This 'kelly.py' module was coded by Richard O'Regan (UK) September 2017.]
     '''
 
 
@@ -69,56 +91,64 @@ class Kelly(Analyzer):
         self.rets = AutoOrderedDict()
 
     def start(self):
-        super().start()   # Call parent class start() method..
+        super().start()   # Call parent class start() method
         self.pnlWins = list()       # Create list to hold winning trades
         self.pnlLosses = list()     # Create list to hold losing trades
 
     def notify_trade(self, trade):
-        if trade.status == trade.Closed:   # i.e. trade had both an entry and exit
+        if trade.status == trade.Closed:  # i.e. trade had both an entry & exit
+        # Note: for trades that scratch (=breakeven), i.e. a trade has exactly
+        # $0 or 0 points profits. Should they be classed as a winner or loser?
+        # Or perhaps create a seperate category for 'breakeven'?
+        # On balance it probably doesn't make much difference.
 
-            # Note for trades that scratch (i.e. breakeven), should they be
-            # classes as a winner or loser (or in their own seperate category?)
-            # On balance it probably doesn't make much difference.
-            # If a trade has exactly $0 or 0 points profit
+        # If we class as a win, the win percent will increase but the average
+        # win will decrease, i.e. maths balances out. Vice versa with losers.
 
-            # If we class as a win, the win percent will increase but the average
-            # win will decrease, i.e. maths balances out. Vice versa with losers.
+        # I notice Backtrader assumes the same default, as used in
+        # modules such as 'tradeanalyzer.py'
 
-            # Also in most situations, vast majority of trades after commisions
-            # applied, will not result in exactly breakeven. Far more likely will
-            # be a slight profit or loss even if close.
+        # Likewise I will choose to class trades >=0 as winners.
 
-            if trade.pnlcomm >= 0:    # Trades >=0 classed as profitable
-                self.pnlWins.append(trade.pnlcomm)    # Append to winner list
+            # Trades >=0 classed as profitable
+            if trade.pnlcomm >=0:
+                # Trade made money -> add to win list
+                self.pnlWins.append(trade.pnlcomm)
             else:
-                self.pnlLosses.append(trade.pnlcomm)  # Append to loser lise
+                # Trade lost money -> add to losses list
+                self.pnlLosses.append(trade.pnlcomm)
+
 
     def stop(self):
-
         # There must be at least one winning trade and one losing trade to
         # Calculate Kelly percent. Else get a division by zero error.
         if len(self.pnlWins) > 0 and len(self.pnlLosses) > 0:
-            #pnl_av = average(self.pnl)
-            #pnl_stddev = standarddev(self.pnl)
-            #qqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
 
             # Calculate average wins and losses
             avgWins = average(self.pnlWins)
-            avgLosses = average(self.pnlLosses)
+            avgLosses = abs(average(self.pnlLosses))  # Remove the -ve sign
             winLossRatio = avgWins / avgLosses
 
-            # Calculate probability of winning from our data
-            # Number of wins divide by number of trades
-            numberOfWins = len(self.pnlWins)
-            numberOfTrades = (len(self.pnlWins) + len(self.pnlLosses))
-            winProb = numberOfWins / numberOfTrades
+            # Check winLoss ratio not 0 else division by zero later.
+            # BT convention is to class trades with profit >=0 as a winner.
+            # A rare bug can occur if all winners have value of 0.
+            if winLossRatio == 0:
+                kellyPercent = None   # Because average of winners were 0.
 
-            # Now calculate Kelly percentage
-            # i.e. calculate optional percent of account to risk on each trade
-            kellyPercent = winProb - ((1 - winProb) / winLossRatio)
+            else:
+                # Calculate probability of winning from our data.
+                # Number of wins divide by number of trades.
+                numberOfWins = len(self.pnlWins)
+                numberOfLosses = len(self.pnlLosses)
+                numberOfTrades = numberOfWins + numberOfLosses
+                winProb = numberOfWins / numberOfTrades
+                inverse_winProb = 1 - winProb
+
+                # Now calculate Kelly percentage
+                # i.e. optimal percent of account to risk on each trade.
+                kellyPercent = winProb - (inverse_winProb / winLossRatio)
 
         else:
-            kellyPercent = None
+            kellyPercent = None  # Not enough information to calculate.
 
         self.rets.kellyPercent = kellyPercent
-        #self.rets.trades = self.count
