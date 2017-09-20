@@ -74,7 +74,11 @@ class SQN(Analyzer):
         if self.count > 1:
             pnl_av = average(self.pnl)
             pnl_stddev = standarddev(self.pnl)
-            sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
+            # Abort calc if stddev is 0, else will get division by zero error.
+            if pnl_stddev == 0:
+                sqn = None  # Cannot calculate.
+            else:
+                sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
         else:
             sqn = 0
 
