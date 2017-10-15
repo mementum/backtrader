@@ -66,6 +66,8 @@ else:
         _refname = '_taindcol'
         _taindcol = dict()
 
+        _KNOWN_UNSTABLE = ['SAR']
+
         def dopostinit(cls, _obj, *args, **kwargs):
             # Go to parent
             res = super(_MetaTALibIndicator, cls).dopostinit(_obj,
@@ -78,6 +80,10 @@ else:
             _obj.updateminperiod(lookback)
             if _obj._unstable:
                 _obj._lookback = 0
+
+            elif cls.__name__ in cls._KNOWN_UNSTABLE:
+                _obj._lookback = 0
+
             cerebro = bt.metabase.findowner(_obj, bt.Cerebro)
             tafuncinfo = _obj._tabstract.info
             _obj._tafunc = getattr(talib, tafuncinfo['name'], None)

@@ -74,7 +74,10 @@ class SQN(Analyzer):
         if self.count > 1:
             pnl_av = average(self.pnl)
             pnl_stddev = standarddev(self.pnl)
-            sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
+            try:
+                sqn = math.sqrt(len(self.pnl)) * pnl_av / pnl_stddev
+            except ZeroDivisionError:
+                sqn = None
         else:
             sqn = 0
 

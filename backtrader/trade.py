@@ -266,7 +266,7 @@ class Trade(object):
         self.barlen = len(self.data) - self.baropen
 
         # record if the position was closed (set to null)
-        self.isclosed = oldsize and not self.size
+        self.isclosed = bool(oldsize and not self.size)
 
         # record last bar for the trade
         if self.isclosed:

@@ -33,11 +33,14 @@ class St(bt.Strategy):
     )
 
     def __init__(self):
-        bt.ind.ParabolicSAR(period=20)
+        self.psar = bt.ind.ParabolicSAR(period=20)
         pass
 
     def next(self):
-        pass
+        txt = ['{:4d}'.format(len(self))]
+        txt.append('{}'.format(self.datetime.date()))
+        txt.append('{:.2f}'.format(self.psar[0]))
+        print(','.join(txt))
 
 
 def runstrat(args=None):

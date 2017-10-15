@@ -70,6 +70,12 @@ class YahooFinanceCSVData(feed.CSVDataBase):
 
         Set it to the empty string to get the original behavior
 
+      - ``swapcloses`` (default: ``False``)
+
+        If ``True`` the allegedly *adjusted close* and *non-adjusted close*
+        will be swapped. The downloads with the new ``v7`` API show at random
+        times the closing prices swapped. There is no known pattern
+
     '''
     params = (
         ('reverse', False),
@@ -77,6 +83,7 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         ('round', True),
         ('decimals', 2),
         ('version', 'v7'),
+        ('swapcloses', False),
     )
 
     def start(self):
@@ -132,9 +139,16 @@ class YahooFinanceCSVData(feed.CSVDataBase):
             # In v7, the final seq is "adj close", close, volume
             adjustedclose = c  # c was read above
             c = float(linetokens[next(i)])
-            v = float(linetokens[next(i)])
+            try:
+                v = float(linetokens[next(i)])
+            except:  # cover the case in which volume is "null"
+                v = 0.0
+
+            if self.p.swapcloses:  # swap closing prices if requested
+                c, adjustedclose = adjustedclose, c
 
             adjfactor = adjustedclose / c  # reversed for v7
+
             # in v7 "adjusted prices" seem to be given, scale back for non adj
             if not self.params.adjclose:
                 o *= adjfactor

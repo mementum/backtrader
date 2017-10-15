@@ -25,6 +25,7 @@ from __future__ import (absolute_import, division, print_function,
 import bisect
 import collections
 from datetime import date, datetime, timedelta
+from itertools import islice
 
 from .feed import AbstractDataBase
 from .metabase import MetaParams
@@ -107,8 +108,12 @@ class Timer(with_metaclass(MetaParams, object)):
         dday = ddate.day
         dc = bisect.bisect_left(mask, dday)  # "left" for days before dday
         daycarry = daycarry or (self.p.monthcarry and dc > 0)
-        curday = bisect.bisect_right(mask, dday, lo=dc) > 0  # check dday
-        dc += curday
+        if dc < len(mask):
+            curday = bisect.bisect_right(mask, dday, lo=dc) > 0  # check dday
+            dc += curday
+        else:
+            curday = False
+
         while dc:
             mask.popleft()
             dc -= 1
@@ -130,8 +135,12 @@ class Timer(with_metaclass(MetaParams, object)):
 
         dc = bisect.bisect_left(mask, dwkday)  # "left" for days before dday
         daycarry = daycarry or (self.p.weekcarry and dc > 0)
-        curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # check dday
-        dc += curday
+        if dc < len(mask):
+            curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # check dday
+            dc += curday
+        else:
+            curday = False
+
         while dc:
             mask.popleft()
             dc -= 1

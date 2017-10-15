@@ -36,7 +36,7 @@ from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .utils import OrderedDict, tzparse
+from .utils import OrderedDict, tzparse, num2date
 from .strategy import Strategy, SignalStrategy
 from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
@@ -313,10 +313,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         self._dataid = itertools.count(1)
 
         self._broker = BackBroker()
+        self._broker.cerebro = self
 
         self._tradingcal = None  # TradingCalendar()
 
         self._pretimers = list()
+        self._ohistory = list()
+        self._fhistory = None
 
     @staticmethod
     def iterize(iterable):
@@ -333,6 +336,71 @@ class Cerebro(with_metaclass(MetaParams, object)):
             niterable.append(elem)
 
         return niterable
+
+    def set_fund_history(self, fund):
+        '''
+        Add a history of orders to be directly executed in the broker for
+        performance evaluation
+
+          - ``fund``: is an iterable (ex: list, tuple, iterator, generator)
+            in which each element will be also an iterable (with length) with
+            the following sub-elements (2 formats are possible)
+
+            ``[datetime, share_value, net asset value]``
+
+            **Note**: it must be sorted (or produce sorted elements) by
+              datetime ascending
+
+            where:
+
+              - ``datetime`` is a python ``date/datetime`` instance or a string
+                with format YYYY-MM-DD[THH:MM:SS[.us]] where the elements in
+                brackets are optional
+              - ``share_value`` is an float/integer
+              - ``net_asset_value`` is a float/integer
+        '''
+        self._fhistory = fund
+
+    def add_order_history(self, orders, notify=True):
+        '''
+        Add a history of orders to be directly executed in the broker for
+        performance evaluation
+
+          - ``orders``: is an iterable (ex: list, tuple, iterator, generator)
+            in which each element will be also an iterable (with length) with
+            the following sub-elements (2 formats are possible)
+
+            ``[datetime, size, price]`` or ``[datetime, size, price, data]``
+
+            **Note**: it must be sorted (or produce sorted elements) by
+              datetime ascending
+
+            where:
+
+              - ``datetime`` is a python ``date/datetime`` instance or a string
+                with format YYYY-MM-DD[THH:MM:SS[.us]] where the elements in
+                brackets are optional
+              - ``size`` is an integer (positive to *buy*, negative to *sell*)
+              - ``price`` is a float/integer
+              - ``data`` if present can take any of the following values
+
+                - *None* - The 1st data feed will be used as target
+                - *integer* - The data with that index (insertion order in
+                  **Cerebro**) will be used
+                - *string* - a data with that name, assigned for example with
+                  ``cerebro.addata(data, name=value)``, will be the target
+
+          - ``notify`` (default: *True*)
+
+            If ``True`` the 1st strategy inserted in the system will be
+            notified of the artificial orders created following the information
+            from each order in ``orders``
+
+        **Note**: Implicit in the description is the need to add a data feed
+          which is the target of the orders. This is for example needed by
+          analyzers which track for example the returns
+        '''
+        self._ohistory.append((orders, notify))
 
     def notify_timer(self, timer, when, *args, **kwargs):
         '''Receives a timer notification where ``timer`` is the timer which was
@@ -641,7 +709,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         The signature of the callback must support the following:
 
-          - callback(msg, data, status, \*args, \*\*kwargs)
+          - callback(data, status, \*args, \*\*kwargs)
 
         The actual ``*args`` and ``**kwargs`` received are implementation
         defined (depend entirely on the *data/broker/store*) but in general one
@@ -660,7 +728,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     def _notify_data(self, data, status, *args, **kwargs):
         for callback in self.datacbs:
-            callback(msg, *args, **kwargs)
+            callback(data, status, *args, **kwargs)
 
         self.notify_data(data, status, *args, **kwargs)
 
@@ -852,6 +920,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         one inherited from cerebro.
         '''
         self._broker = broker
+        broker.cerebro = self
         return broker
 
     def getbroker(self):
@@ -865,8 +934,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     broker = property(getbroker, setbroker)
 
     def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
-             savefig=False, figfilename='backtrader-plot-{j}-{i}.png',
-             width=16, height=9, dpi=300, tight=True,
+             width=16, height=9, dpi=300, tight=True, use=None,
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -880,6 +948,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
         displayed inline
 
+        ``use``: set it to the name of the desired matplotlib backend. It will
+        take precedence over ``iplot``
+
         ``start``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the start
         of the plot
@@ -887,13 +958,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``end``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the end
         of the plot
-
-        ``savefig``: set to ``True`` to save to a file rather than plot
-
-        ``figfilename``: name of the file. Use ``{j}`` in the name for the
-        strategy index to which the figure corresponds and use ``{i}`` to
-        insert figure number if multiple figures are being used per strategy
-        plot
 
         ``width``: in inches of the saved figure
 
@@ -924,20 +988,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    start=start, end=end)
+                                    start=start, end=end, use=use)
                 # pfillers=pfillers2)
 
                 figs.append(rfig)
 
-            if savefig:
-                for j, stratfigs in enumerate(figs):
-                    for i, fig in enumerate(stratfigs):
-                        plotter.savefig(fig,
-                                        filename=figfilename.format(j=j, i=i),
-                                        width=width, height=height, dpi=dpi,
-                                        tight=tight)
-            else:
-                plotter.show()
+            plotter.show()
+
         return figs
 
     def __call__(self, iterstrat):
@@ -1117,6 +1174,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # try to activate in broker
             if hasattr(self._broker, 'set_coo'):
                 self._broker.set_coo(True)
+
+        if self._fhistory is not None:
+            self._broker.set_fund_history(self._fhistory)
+
+        for orders, onotify in self._ohistory:
+            self._broker.add_order_history(orders, onotify)
 
         self._broker.start()
 
@@ -1420,6 +1483,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                     writer.next()
 
+    def _disable_runonce(self):
+        '''API for lineiterators to disable runonce (see HeikinAshi)'''
+        self._dorunonce = False
+
     def _runnext(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
@@ -1487,6 +1554,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                                if d is not None and i not in rsonly))
 
                 dmaster = datas[dts.index(dt0)]  # and timemaster
+                self._dtmaster = dmaster.num2date(dt0)
+                self._udtmaster = num2date(dt0)
 
                 # slen = len(runstrats[0])
                 # Try to get something for those that didn't return

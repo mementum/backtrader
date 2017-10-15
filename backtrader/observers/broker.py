@@ -43,16 +43,39 @@ class Value(Observer):
     '''This observer keeps track of the current portfolio value in the broker
     including the cash
 
-    Params: None
+    Params:
+
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     '''
     _stclock = True
+
+    params = (
+        ('fund', None),
+    )
 
     lines = ('value',)
 
     plotinfo = dict(plot=True, subplot=True)
 
+    def start(self):
+        if self.p.fund is None:
+            self._fundmode = self._owner.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
     def next(self):
-        self.lines[0][0] = self._owner.broker.getvalue()
+        if not self._fundmode:
+            self.lines[0][0] = self._owner.broker.getvalue()
+        else:
+            self.lines[0][0] = self._owner.broker.fundvalue
 
 
 class Broker(Observer):
@@ -63,11 +86,59 @@ class Broker(Observer):
     '''
     _stclock = True
 
+    params = (
+        ('fund', None),
+    )
+
     alias = ('CashValue',)
     lines = ('cash', 'value')
 
     plotinfo = dict(plot=True, subplot=True)
 
+    def start(self):
+        if self.p.fund is None:
+            self._fundmode = self._owner.broker.fundmode
+        else:
+            self._fundmode = self.p.fund
+
+        if self._fundmode:
+            self.plotlines.cash._plotskip = True
+            self.plotlines.value._name = 'FundValue'
+
     def next(self):
-        self.lines.cash[0] = self._owner.broker.getcash()
-        self.lines.value[0] = value = self._owner.broker.getvalue()
+        if not self._fundmode:
+            self.lines.value[0] = value = self._owner.broker.getvalue()
+            self.lines.cash[0] = self._owner.broker.getcash()
+        else:
+            self.lines.value[0] = self._owner.broker.fundvalue
+
+
+class FundValue(Observer):
+    '''This observer keeps track of the current fund-like value
+
+    Params: None
+    '''
+    _stclock = True
+
+    alias = ('FundShareValue', 'FundVal')
+    lines = ('fundval',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
+    def next(self):
+        self.lines.fundval[0] = self._owner.broker.fundvalue
+
+
+class FundShares(Observer):
+    '''This observer keeps track of the current fund-like shares
+
+    Params: None
+    '''
+    _stclock = True
+
+    lines = ('fundshares',)
+
+    plotinfo = dict(plot=True, subplot=True)
+
+    def next(self):
+        self.lines.fundshares[0] = self._owner.broker.fundshares

@@ -60,3 +60,9 @@ class Observer(with_metaclass(MetaObserver, ObserverBase)):
 
     def _register_analyzer(self, analyzer):
         self._analyzers.append(analyzer)
+
+    def _start(self):
+        self.start()
+
+    def start(self):
+        pass

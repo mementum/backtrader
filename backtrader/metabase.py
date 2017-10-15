@@ -26,7 +26,7 @@ import itertools
 import sys
 
 import backtrader as bt
-from .utils.py3 import zip, string_types
+from .utils.py3 import zip, string_types, with_metaclass
 
 
 def findbases(kls, topclass):
@@ -289,6 +289,10 @@ class MetaParams(MetaBase):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
+
+
+class ParamsBase(with_metaclass(MetaParams, object)):
+    pass  # stub to allow easy subclassing without metaclasses
 
 
 class ItemCollection(object):

@@ -56,6 +56,7 @@ from .crossover import *
 from .dpo import *
 from .directionalmove import *
 from .envelope import *
+from .heikinashi import *
 from .lrsi import *
 from .macd import *
 from .momentum import *
@@ -72,6 +73,9 @@ from .trix import *
 from .tsi import *
 from .ultimateoscillator import *
 from .williams import *
+from .rmi import *
+from .awesomeoscillator import *
+from .accdecoscillator import *
 
 
 from .dv2 import *  # depends on percentrank
@@ -83,3 +87,4 @@ from .ichimoku import *
 
 from .hurst import *
 from .ols import *
+from .hadelta import *

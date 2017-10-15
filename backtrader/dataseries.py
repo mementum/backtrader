@@ -58,7 +58,7 @@ class TimeFrame(object):
 
 
 class DataSeries(LineSeries):
-    plotinfo = dict(plot=True, plotind=True)
+    plotinfo = dict(plot=True, plotind=True, plotylimited=True)
 
     _name = ''
     _compression = 1

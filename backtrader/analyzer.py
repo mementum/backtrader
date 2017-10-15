@@ -122,9 +122,9 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
       - ``prenext`` / ``nextstart`` / ``next`` family of methods that follow
         the calls made to the same methods in the strategy
 
-      - ``notify_trade`` / ``notify_order`` / ``notify_cashvalue`` which
-        receive the same notifications as the equivalent methods of the
-        strategy
+      - ``notify_trade`` / ``notify_order`` / ``notify_cashvalue`` /
+        ``notify_fund`` which receive the same notifications as the equivalent
+        methods of the strategy
 
     The mode of operation is open and no pattern is preferred. As such the
     analysis can be generated with the ``next`` calls, at the end of operations
@@ -156,6 +156,12 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
             child._notify_cashvalue(cash, value)
 
         self.notify_cashvalue(cash, value)
+
+    def _notify_fund(self, cash, value, fundvalue, shares):
+        for child in self._children:
+            child._notify_fund(cash, value, fundvalue, shares)
+
+        self.notify_fund(cash, value, fundvalue, shares)
 
     def _notify_trade(self, trade):
         for child in self._children:
@@ -195,6 +201,10 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
     def notify_cashvalue(self, cash, value):
         '''Receives the cash/value notification before each next cycle'''
+        pass
+
+    def notify_fund(self, cash, value, fundvalue, shares):
+        '''Receives the current cash, value, fundvalue and fund shares'''
         pass
 
     def notify_order(self, order):

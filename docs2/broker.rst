@@ -19,6 +19,7 @@ Reference
    .. automethod:: set_coc
    .. automethod:: set_coo
    .. automethod:: set_int2pnl
+   .. automethod:: set_fundstartval
 
    .. automethod:: set_slippage_perc
    .. automethod:: set_slippage_fixed
@@ -30,3 +31,6 @@ Reference
    .. automethod:: addcommissioninfo
 
    .. automethod:: getposition
+
+   .. automethod:: get_fundshares
+   .. automethod:: get_fundvalue

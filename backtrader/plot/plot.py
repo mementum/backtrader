@@ -323,15 +323,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.dplotsdown.pop(data, None)
                 self.dplotsover.pop(data, None)
 
-            elif data.plotinfo.plotmaster is not None:
-                # data doesn't add a row, but volume may
-                if self.pinf.sch.volume:
-                    nrows += rowsminor
             else:
-                # data adds rows, volume may
-                nrows += rowsmajor
-                if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
-                    nrows += rowsminor
+                pmaster = data.plotinfo.plotmaster
+                if pmaster is data:
+                    pmaster = None
+                if pmaster is not None:
+                    # data doesn't add a row, but volume may
+                    if self.pinf.sch.volume:
+                        nrows += rowsminor
+                else:
+                    # data adds rows, volume may
+                    nrows += rowsmajor
+                    if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
+                        nrows += rowsminor
 
         if False:
             # Datas and volumes
@@ -516,8 +520,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 handles, labels = ax.get_legend_handles_labels()
                 # Ensure that we have something to show
                 if labels:
+                    # location can come from the user
+                    loc = ind.plotinfo.legendloc or self.pinf.sch.legendindloc
+
                     # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                    legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
@@ -532,8 +539,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.plotind(iref, downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
-        voloverlay = (self.pinf.sch.voloverlay and
-                      data.plotinfo.plotmaster is None)
+        pmaster = data.plotinfo.plotmaster
+        if pmaster is data:
+            pmaster = None
+        voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         # if sefl.pinf.sch.voloverlay:
         if voloverlay:
@@ -573,8 +582,12 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 # plot a legend
                 handles, labels = ax.get_legend_handles_labels()
                 if handles:
+
+                    # location can come from the user
+                    loc = data.plotinfo.legendloc or self.pinf.sch.legendindloc
+
                     # Legend done here to ensure it includes all plots
-                    legend = ax.legend(loc=self.pinf.sch.legendindloc,
+                    legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
@@ -605,8 +618,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         volumes = data.volume.plotrange(self.pinf.xstart, self.pinf.xend)
 
         vollabel = 'Volume'
-        voloverlay = (self.pinf.sch.voloverlay and
-                      data.plotinfo.plotmaster is None)
+        pmaster = data.plotinfo.plotmaster
+        if pmaster is data:
+            pmaster = None
+
+        voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         if not voloverlay:
             vollabel += ' ({})'.format(data._dataname)
@@ -621,13 +637,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             self.pinf.daxis[data] = ax
             self.pinf.vaxis.append(ax)
         else:
-            if data.plotinfo.plotmaster is None:
+            if pmaster is None:
                 ax = self.newaxis(data, rowspan=self.pinf.sch.rowsmajor)
             elif getattr(data.plotinfo, 'sameaxis', False):
-                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster
             else:
-                axdatamaster = self.pinf.daxis[data.plotinfo.plotmaster]
+                axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster.twinx()
                 self.pinf.vaxis.append(ax)
 
@@ -642,11 +658,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             datalabel += ' (%d %s)' % (data._compression, tfname)
 
         plinevalues = getattr(data.plotinfo, 'plotlinevalues', True)
-        if self.pinf.sch.linevalues and plinevalues:
-            datalabel += ' O:%.2f H:%2.f L:%.2f C:%.2f' % \
-                         (opens[-1], highs[-1], lows[-1], closes[-1])
-
         if self.pinf.sch.style.startswith('line'):
+            if self.pinf.sch.linevalues and plinevalues:
+                datalabel += ' C:%.2f' % closes[-1]
+
             if axdatamaster is None:
                 color = self.pinf.sch.loc
             else:
@@ -657,6 +672,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 ax, self.pinf.xdata, closes,
                 color=color, label=datalabel)
         else:
+            if self.pinf.sch.linevalues and plinevalues:
+                datalabel += ' O:%.2f H:%.2f L:%.2f C:%.2f' % \
+                             (opens[-1], highs[-1], lows[-1], closes[-1])
             if self.pinf.sch.style.startswith('candle'):
                 plotted = plot_candlestick(
                     ax, self.pinf.xdata, opens, highs, lows, closes,
@@ -684,7 +702,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
         # make sure "over" indicators do not change our scale
-        ax.set_ylim(ax.get_ylim())
+        if data.plotinfo._get('plotylimited', True):
+            if axdatamaster is None:
+                ax.set_ylim(ax.get_ylim())
 
         if self.pinf.sch.volume:
             # if not self.pinf.sch.voloverlay:
@@ -734,8 +754,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             l = self.pinf.labels[a]
 
             axlegend = a
+            loc = data.plotinfo.legendloc or self.pinf.sch.legenddataloc
             legend = axlegend.legend(h, l,
-                                     loc='upper left',
+                                     loc=loc,
                                      frameon=False, shadow=False,
                                      fancybox=False, prop=self.pinf.prop,
                                      numpoints=1, ncol=1)
@@ -753,6 +774,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                              downinds=self.dplotsdown[downind])
 
         self.pinf.legpos[a] = len(self.pinf.handles[a])
+
+        if data.plotinfo._get('plotlog', False):
+            a = axdatamaster or ax
+            a.set_yscale('log')
 
     def show(self):
         self.mpyplot.show()
@@ -805,10 +830,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                         else:
                             break
 
-            if x.plotinfo.plotmaster is not None:
-                key = x.plotinfo.plotmaster
+            xpmaster = x.plotinfo.plotmaster
+            if xpmaster is x:
+                xpmaster = None
+            if xpmaster is not None:
+                key = xpmaster
 
-            if x.plotinfo.subplot and x.plotinfo.plotmaster is None:
+            if x.plotinfo.subplot and xpmaster is None:
                 if x.plotinfo.plotabove:
                     self.dplotsup[key].append(x)
                 else:

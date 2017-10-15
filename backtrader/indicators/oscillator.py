@@ -31,7 +31,7 @@ class OscillatorMixIn(Indicator):
     '''
     MixIn class to create a subclass with another indicator. The main line of
     that indicator will be substracted from the other base class main line
-    creating and oscillator
+    creating an oscillator
 
     The usage is:
 
@@ -97,7 +97,7 @@ class Oscillator(Indicator):
             datasrc = self.data.data
             self.dataosc = self.data
 
-            self.lines[0] = datasrc - self.dataosc
+        self.lines[0] = datasrc - self.dataosc
 
 
 # Automatic creation of Oscillating Lines

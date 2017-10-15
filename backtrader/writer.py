@@ -149,7 +149,7 @@ class WriterFile(WriterBase):
 
     def writelines(self, lines):
         for l in lines:
-            self.out.write(line + '\n')
+            self.out.write(l + '\n')
 
     def writelineseparator(self, level=0):
         sepnum = level % len(self.p.separators)

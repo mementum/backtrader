@@ -66,6 +66,14 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     def stop(self):
         pass
 
+    def add_order_history(self, orders, notify=False):
+        '''Add order history. See cerebro for details'''
+        raise NotImplementedError
+
+    def set_fund_history(self, fund):
+        '''Add fund history. See cerebro for details'''
+        raise NotImplementedError
+
     def getcommissioninfo(self, data):
         '''Retrieves the ``CommissionInfo`` scheme associated with the given
         ``data``'''
@@ -106,6 +114,30 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
 
     def getvalue(self, datas=None):
         raise NotImplementedError
+
+    def get_fundshares(self):
+        '''Returns the current number of shares in the fund-like mode'''
+        return 1.0  # the abstract mode has only 1 share
+
+    fundshares = property(get_fundshares)
+
+    def get_fundvalue(self):
+        return self.getvalue()
+
+    fundvalue = property(get_fundvalue)
+
+    def set_fundmode(self, fundmode, fundstartval=None):
+        '''Set the actual fundmode (True or False)
+
+        If the argument fundstartval is not ``None``, it will used
+        '''
+        pass  # do nothing, not all brokers can support this
+
+    def get_fundmode(self):
+        '''Returns the actual fundmode (True or False)'''
+        return False
+
+    fundmode = property(get_fundmode, set_fundmode)
 
     def getposition(self, data):
         raise NotImplementedError

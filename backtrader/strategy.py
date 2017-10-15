@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+import copy
 import datetime
 import inspect
 import itertools
@@ -373,6 +374,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._start()
 
+        for obs in self.observers:
+            if not isinstance(obs, list):
+                obs = [obs]  # support of multi-data observers
+
+            for o in obs:
+                o._start()
+
         # change operators to stage 2
         self._stage2()
 
@@ -413,7 +421,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             if lio:
                 values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
             else:
-                values.extend([''] * iocsv.lines.isize())
+                values.extend([''] * iocsv.lines.size())
 
         return values
 
@@ -507,9 +515,9 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                              comminfo=order.comminfo)
 
                 if trade.isclosed:
-                    self._tradespending.append(trade)
+                    self._tradespending.append(copy.copy(trade))
                     if quicknotify:
-                        qtrades.append(trade)
+                        qtrades.append(copy.copy(trade))
 
             # Update it if needed
             if exbit.opened:
@@ -530,14 +538,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 # orders have put the position down to 0 and the next order
                 # "opens" a position but "closes" the trade
                 if trade.isclosed:
-                    self._tradespending.append(trade)
+                    self._tradespending.append(copy.copy(trade))
                     if quicknotify:
-                        qtrades.append(trade)
+                        qtrades.append(copy.copy(trade))
 
             if trade.justopened:
-                self._tradespending.append(trade)
+                self._tradespending.append(copy.copy(trade))
                 if quicknotify:
-                    qtrades.append(trade)
+                    qtrades.append(copy.copy(trade))
 
         if quicknotify:
             self._notify(qorders=qorders, qtrades=qtrades)
@@ -554,7 +562,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             proctrades = self._tradespending
 
         for order in procorders:
-            self.notify_order(order)
+            if order.exectype != order.Historical or order.histnotify:
+                self.notify_order(order)
             for analyzer in itertools.chain(self.analyzers,
                                             self._slave_analyzers):
                 analyzer._notify_order(order)
@@ -570,10 +579,14 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         cash = self.broker.getcash()
         value = self.broker.getvalue()
+        fundvalue = self.broker.fundvalue
+        fundshares = self.broker.fundshares
 
         self.notify_cashvalue(cash, value)
+        self.notify_fund(cash, value, fundvalue, fundshares)
         for analyzer in itertools.chain(self.analyzers, self._slave_analyzers):
             analyzer._notify_cashvalue(cash, value)
+            analyzer._notify_fund(cash, value, fundvalue, fundshares)
 
     def add_timer(self, when,
                   offset=datetime.timedelta(), repeat=datetime.timedelta(),
@@ -688,7 +701,13 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
     def notify_cashvalue(self, cash, value):
         '''
-        Receives the current cash, value status of the strategy's broker
+        Receives the current fund value, value status of the strategy's broker
+        '''
+        pass
+
+    def notify_fund(self, cash, value, fundvalue, shares):
+        '''
+        Receives the current cash, value, fundvalue and fund shares
         '''
         pass
 

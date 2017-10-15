@@ -156,6 +156,9 @@ class PlotScheme(object):
         # Location of the legend for indicators (see matplotlib)
         self.legendindloc = 'upper left'
 
+        # Location of the legend for datafeeds (see matplotlib)
+        self.legenddataloc = 'upper left'
+
         # Plot the last value of a line after the Object name
         self.linevalues = True
 

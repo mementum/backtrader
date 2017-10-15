@@ -65,6 +65,15 @@ class Benchmark(TimeReturn):
         See the ``TimeReturn`` analyzer reference for a full explanation of the
         meaning of the parameter
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Remember that at any moment of a ``run`` the current values can be checked
     by looking at the *lines* by name at index ``0``.
 
@@ -79,6 +88,7 @@ class Benchmark(TimeReturn):
         ('_doprenext', False),
         # Set to false to ensure the asset is measured at 0% in the 1st tick
         ('firstopen', False),
+        ('fund', None)
     )
 
     def _plotlabel(self):
@@ -101,7 +111,8 @@ class Benchmark(TimeReturn):
 
     def next(self):
         super(Benchmark, self).next()
-        self.lines.benchmark[0] = self.tbench.rets[self.treturn.dtkey]
+        self.lines.benchmark[0] = self.tbench.rets.get(self.treturn.dtkey,
+                                                       float('NaN'))
 
     def prenext(self):
         if self.p._doprenext:

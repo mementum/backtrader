@@ -1,3 +1,74 @@
+1.9.58.122
+  - Provide default fundmode methods for all brokers
+  - Correct order notification if positions exist when starting the broker
+    and will be simulated
+  - Correct csv values output if object has no length
+
+1.9.57.122
+  - PR #326 Fix set_fundmode in bbroker
+  - Synchronize fund history mode with master clock
+  - Allow relocation of legend in plotting charts
+  - Adapt broker observer to fund mode
+
+1.9.56.122
+  - Handle volume as string null in YahooFinanceData
+  - Corrections/Improvements to order history support
+  - Add fund history support
+  - Increase plotting margin of trade observers
+
+1.9.55.122
+  - Add addorder_history support to replay history of orders
+  - Add swapcloses to YahooFinanceXXX family to allow end users to control what
+    the adjusted price actually is
+  - Some docs and samples updates
+  - Change default for _nextforce to False as it should be for most indicators
+
+1.9.54.122
+  - Add haDelta indicator
+  - Allow indicators to disable runonce
+  - Add Renko bricks
+  - Rework ix -> iloc pull request and autodetection algorithm in PandasData
+
+1.9.53.121
+  - Fix #323 by providing default properties/methods for fundvalue/fundshares
+    for all brokers
+
+1.9.52.121
+  - Redownload the YahooFinance sample data yhoo-1996-2015
+  - Add unstable exception for TALIB SAR
+  - Add notes about usage of Hurst exponent and lag_start/lag_end parameters
+    to override default lag values
+  - Fix #321 by correcting typo in Writer.writelines
+  - Add _start/start methods to Observers
+  - Add fund tracking mode to the observers
+  - Add new observers FundValue/FundShares
+  - Adapt observers to fundmode: Value, TimeReturn, LogReturns, DrawDown,
+    Benchmark
+  - Adapt analyzers to fundmode: DrawDown, Leverage, LogReturnsRolling,
+    PeriodStats, LogReturns, Sharpe, TimeReturn, VWR
+  - PR #319 for Pandas .ix deprecation (rewritten)
+
+1.9.51.121
+  - Fix PSAR calculations for resampled/replayed streams
+  - Sample for psar with intraday resampling 5 -> 15 minutes
+  - Set the environment of a backfill_from data in master ibdata
+  - Add dnames to the strategy documentation
+  - Allow plotmaster to point to itself
+  - Add plotylimited option to control vertical scaling locking on data plots
+  - Add (semi)logarithmic plotlog control to plotinfo
+  - Simplify live status detection for IB to allow optimization
+  - Keep the observer cycles always synchronized with the strategy cycles
+    regardless of running mode
+  - Correct arguments for top level cerebro callback for data notifications
+  - Add HeikinAshi candles indicator (plotted as lines)
+  - Add HeikinAshi as filter to directly modify the data
+  - Plot only last close value if lineonclose is plotted and correct high
+    printout
+  - Add PR #320 with indicators AwesomeOscillator,
+    AccelerationDecelerationOscillator, RelativeMomentumIndex
+  - Doc corrections and additions, including PR #319
+  - PR #315 with rewrite to generalize setting the backend
+
 1.9.50.117
   - Add TrueStrengthIndicator
   - Port YahooDownload tool to v7 API

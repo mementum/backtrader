@@ -47,6 +47,15 @@ class TimeReturn(Observer):
         Only used for sub-day timeframes to for example work on an hourly
         timeframe by specifying "TimeFrame.Minutes" and 60 as compression
 
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     Remember that at any moment of a ``run`` the current values can be checked
     by looking at the *lines* by name at index ``0``.
 
@@ -60,6 +69,7 @@ class TimeReturn(Observer):
     params = (
         ('timeframe', None),
         ('compression', None),
+        ('fund', None),
     )
 
     def _plotlabel(self):
@@ -75,4 +85,5 @@ class TimeReturn(Observer):
                                                       **self.p._getkwargs())
 
     def next(self):
-        self.lines.timereturn[0] = self.treturn.rets[self.treturn.dtkey]
+        self.lines.timereturn[0] = self.treturn.rets.get(self.treturn.dtkey,
+                                                         float('NaN'))

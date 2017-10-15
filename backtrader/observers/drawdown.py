@@ -29,9 +29,23 @@ class DrawDown(Observer):
     '''This observer keeps track of the current drawdown level (plotted) and
     the maxdrawdown (not plotted) levels
 
-    Params: None
+    Params:
+
+      - ``fund`` (default: ``None``)
+
+        If ``None`` the actual mode of the broker (fundmode - True/False) will
+        be autodetected to decide if the returns are based on the total net
+        asset value or on the fund value. See ``set_fundmode`` in the broker
+        documentation
+
+        Set it to ``True`` or ``False`` for a specific behavior
+
     '''
     _stclock = True
+
+    params = (
+        ('fund', None),
+    )
 
     lines = ('drawdown', 'maxdrawdown',)
 
@@ -40,7 +54,9 @@ class DrawDown(Observer):
     plotlines = dict(maxdrawdown=dict(_plotskip=True,))
 
     def __init__(self):
-        self._dd = self._owner._addanalyzer_slave(bt.analyzers.DrawDown)
+        kwargs = self.p._getkwargs()
+        self._dd = self._owner._addanalyzer_slave(bt.analyzers.DrawDown,
+                                                  **kwargs)
 
     def next(self):
         self.lines.drawdown[0] = self._dd.rets.drawdown  # update drawdown
@@ -68,7 +84,7 @@ class DrawDownLength(Observer):
         self.lines.len[0] = self._dd.rets.len  # update drawdown length
         self.lines.maxlen[0] = self._dd.rets.max.len  # update max length
 
-        
+
 class DrawDown_Old(Observer):
     '''This observer keeps track of the current drawdown level (plotted) and
     the maxdrawdown (not plotted) levels
