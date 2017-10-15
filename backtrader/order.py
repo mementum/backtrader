@@ -240,9 +240,9 @@ class OrderBase(with_metaclass(MetaParams, object)):
     V_None = range(1)
 
     (Market, Close, Limit, Stop, StopLimit, StopTrail, StopTrailLimit,
-     Historical) = range(8)
+     Historical, Simulated) = range(9)
     ExecTypes = ['Market', 'Close', 'Limit', 'Stop', 'StopLimit', 'StopTrail',
-                 'StopTrailLimit', 'Historical']
+                 'StopTrailLimit', 'Historical', 'Simulated']
 
     OrdTypes = ['Buy', 'Sell']
     Buy, Sell = range(2)
