@@ -98,6 +98,6 @@ class Transactions(bt.Analyzer):
                     entries.append([size, price, i, dname, -size * price])
 
         if entries:
-            self.rets[self.data0.datetime.datetime()] = entries
+            self.rets[self.strategy.datetime.datetime()] = entries
 
         self._positions.clear()
