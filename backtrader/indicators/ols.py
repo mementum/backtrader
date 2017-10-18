@@ -35,6 +35,9 @@ class OLS_Slope_InterceptN(PeriodN):
     squares) of data1 on data0
 
     Uses ``pandas`` and ``statsmodels``
+
+    Use ``prepend_constant`` to influence the paramter ``prepend`` of
+    sm.add_constant
     '''
     _mindatas = 2  # ensure at least 2 data feeds are passed
 
@@ -43,12 +46,15 @@ class OLS_Slope_InterceptN(PeriodN):
         ('statsmodels.api', 'sm'),
     )
     lines = ('slope', 'intercept',)
-    params = (('period', 10),)
+    params = (
+        ('period', 10),
+        ('prepend_constant', True),
+    )
 
     def next(self):
         p0 = pd.Series(self.data0.get(size=self.p.period))
         p1 = pd.Series(self.data1.get(size=self.p.period))
-        p1 = sm.add_constant(p1, prepend=True)
+        p1 = sm.add_constant(p1, prepend=prepend_constant)
         slope, intercept = sm.OLS(p0, p1).fit().params
 
         self.lines.slope[0] = slope
