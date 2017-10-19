@@ -43,3 +43,4 @@ from .calmar import *
 from .periodstats import *
 
 from .kelly import *
+from .basictradestats import *
