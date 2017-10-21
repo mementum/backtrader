@@ -619,7 +619,7 @@ class BasicTradeStats(Analyzer):
 
     def dpsf(self, n=None, dp=None, sf=None):
         # Decimal Place & Significant Figure formatting..
-        
+
         # Logic used to display numeric values neatly:
         # dp = decimal places
         # sf = significant figues
