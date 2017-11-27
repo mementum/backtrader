@@ -89,7 +89,7 @@ class CCXT(DataBase):
         self.ohlcv_limit = ohlcv_limit
 
         self._data = deque() # data queue for price data
-        self._last_id = None # last processed data id (trade id or timestamp for ohlcv)
+        self._last_id = '' # last processed data id (trade id or timestamp for ohlcv)
 
     def start(self, ):
         super(CCXT, self).start()
