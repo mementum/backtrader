@@ -89,7 +89,8 @@ class CCXT(DataBase):
         self.ohlcv_limit = ohlcv_limit
 
         self._data = deque() # data queue for price data
-        self._last_id = '' # last processed data id (trade id or timestamp for ohlcv)
+        self._last_id = '' # last processed trade id for ohlcv
+        self._last_ts = 0 # last processed timestamp for ohlcv
 
     def start(self, ):
         super(CCXT, self).start()
@@ -153,9 +154,9 @@ class CCXT(DataBase):
         for ohlcv in self.exchange.fetch_ohlcv(self.symbol, timeframe=granularity,
                                                since=since, limit=limit)[::-1]:
             tstamp = ohlcv[0]
-            if tstamp > self._last_id:
+            if tstamp > self._last_ts:
                 self._data.append(ohlcv)
-                self._last_id = tstamp
+                self._last_ts = tstamp
 
     def _load_ticks(self):
         sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
