@@ -55,7 +55,7 @@ class BaseCache(bt.LineSeries):
 
 
 if True:
-    impor os
+    import os
     import os.path
     import sqlite3
 
