@@ -112,12 +112,9 @@ class CCXT(DataBase):
             if self._state == self._ST_LIVE:
                 if self._timeframe == bt.TimeFrame.Ticks:
                     return self._load_ticks()
-                elif self.exchange.hasFetchOHLCV:
+                else:
                     self._fetch_ohlcv()
                     return self._load_ohlcv()
-                else:
-                    raise NotImplementedError("'%s' exchange doesn't support fetching OHLCV data" % \
-                                              self.exchange.name)
             elif self._state == self._ST_HISTORBACK:
                 ret = self._load_ohlcv()
                 if ret:
@@ -135,6 +132,10 @@ class CCXT(DataBase):
 
     def _fetch_ohlcv(self, fromdate=None):
         """Fetch OHLCV data into self._data queue"""
+        if not self.exchange.hasFetchOHLCV:
+            raise NotImplementedError("'%s' exchange doesn't support fetching OHLCV data" % \
+                                      self.exchange.name)
+
         granularity = self._GRANULARITIES.get((self._timeframe, self._compression))
         if granularity is None:
             raise ValueError("'%s' exchange doesn't support fetching OHLCV data for "
