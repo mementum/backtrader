@@ -147,7 +147,11 @@ class CCXT(DataBase):
             since = int((fromdate - datetime(1970, 1, 1)).total_seconds() * 1000)
             limit = None
         else:
-            since = None
+            if 0 < self._last_ts:
+                since = self._last_ts
+            else:
+                since = None
+
             limit = self.ohlcv_limit
 
         sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
