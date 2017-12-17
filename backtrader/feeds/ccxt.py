@@ -83,7 +83,7 @@ class CCXT(DataBase):
     # States for the Finite State Machine in _load
     _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(3)
 
-    def __init__(self, exchange, symbol, ohlcv_limit=10):
+    def __init__(self, exchange, symbol, ohlcv_limit=450):
         self.exchange = getattr(ccxt, exchange)()
         self.symbol = symbol
         self.ohlcv_limit = ohlcv_limit
@@ -145,23 +145,28 @@ class CCXT(DataBase):
 
         if fromdate:
             since = int((fromdate - datetime(1970, 1, 1)).total_seconds() * 1000)
-            limit = None
         else:
             if 0 < self._last_ts:
                 since = self._last_ts
             else:
                 since = None
 
-            limit = self.ohlcv_limit
+        limit = self.ohlcv_limit
 
-        sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
+        while True:
+            sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
 
-        for ohlcv in self.exchange.fetch_ohlcv(self.symbol, timeframe=granularity,
-                                               since=since, limit=limit)[::-1]:
-            tstamp = ohlcv[0]
-            if tstamp > self._last_ts:
-                self._data.append(ohlcv)
-                self._last_ts = tstamp
+            dlen = len(self._data)
+            for ohlcv in self.exchange.fetch_ohlcv(self.symbol, timeframe=granularity,
+                                                   since=since, limit=limit)[::-1]:
+                tstamp = ohlcv[0]
+                if tstamp > self._last_ts:
+                    self._data.append(ohlcv)
+                    self._last_ts = tstamp
+                    since = tstamp + 1
+
+            if dlen == len(self._data):
+                break
 
     def _load_ticks(self):
         sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
