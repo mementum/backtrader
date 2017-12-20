@@ -83,8 +83,8 @@ class CCXT(DataBase):
     # States for the Finite State Machine in _load
     _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(3)
 
-    def __init__(self, exchange, symbol, ohlcv_limit=450):
-        self.exchange = getattr(ccxt, exchange)()
+    def __init__(self, exchange, symbol, ohlcv_limit=450, config={}):
+        self.exchange = getattr(ccxt, exchange)(config)
         self.symbol = symbol
         self.ohlcv_limit = ohlcv_limit
 
