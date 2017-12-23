@@ -21,16 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import collections
-from copy import copy
-from datetime import date, datetime, timedelta
-import threading
-import time
-import uuid
-
 from backtrader import BrokerBase, OrderBase, Order
-from backtrader.utils.py3 import with_metaclass, queue, MAXFLOAT
-from backtrader.metabase import MetaParams
+from backtrader.utils.py3 import queue
 from backtrader.stores.ccxtstore import CCXTStore
 
 class CCXTOrder(OrderBase):
