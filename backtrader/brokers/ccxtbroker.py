@@ -55,10 +55,10 @@ class CCXTBroker(BrokerBase):
                    Order.Stop: 'stop',
                    Order.StopLimit: 'stop limit'}
 
-    def __init__(self, exchange, currency, config):
+    def __init__(self, exchange, currency, config, retries=5):
         super(CCXTBroker, self).__init__()
 
-        self.store = CCXTStore(exchange, config)
+        self.store = CCXTStore(exchange, config, retries)
 
         self.currency = currency
 
