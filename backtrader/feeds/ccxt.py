@@ -24,12 +24,10 @@ from __future__ import (absolute_import, division, print_function,
 
 from collections import deque
 from datetime import datetime
-from time import sleep
 
 import backtrader as bt
 from backtrader.feed import DataBase
-
-import ccxt
+from backtrader.stores.ccxtstore import CCXTStore
 
 class CCXT(DataBase):
     """
@@ -56,44 +54,21 @@ class CCXT(DataBase):
         ('backfill_start', False),  # do backfilling at the start
     )
 
-    # Supported granularities
-    _GRANULARITIES = {
-        (bt.TimeFrame.Minutes, 1): '1m',
-        (bt.TimeFrame.Minutes, 3): '3m',
-        (bt.TimeFrame.Minutes, 5): '5m',
-        (bt.TimeFrame.Minutes, 15): '15m',
-        (bt.TimeFrame.Minutes, 30): '30m',
-        (bt.TimeFrame.Minutes, 60): '1h',
-        (bt.TimeFrame.Minutes, 90): '90m',
-        (bt.TimeFrame.Minutes, 120): '2h',
-        (bt.TimeFrame.Minutes, 240): '4h',
-        (bt.TimeFrame.Minutes, 360): '6h',
-        (bt.TimeFrame.Minutes, 480): '8h',
-        (bt.TimeFrame.Minutes, 720): '12h',
-        (bt.TimeFrame.Days, 1): '1d',
-        (bt.TimeFrame.Days, 3): '3d',
-        (bt.TimeFrame.Weeks, 1): '1w',
-        (bt.TimeFrame.Weeks, 2): '2w',
-        (bt.TimeFrame.Months, 1): '1M',
-        (bt.TimeFrame.Months, 3): '3M',
-        (bt.TimeFrame.Months, 6): '6M',
-        (bt.TimeFrame.Years, 1): '1y',
-    }
-
     # States for the Finite State Machine in _load
     _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(3)
 
     def __init__(self, exchange, symbol, ohlcv_limit=450, config={}):
-        self.exchange = getattr(ccxt, exchange)(config)
         self.symbol = symbol
         self.ohlcv_limit = ohlcv_limit
+
+        self.store = CCXTStore(exchange, config)
 
         self._data = deque() # data queue for price data
         self._last_id = '' # last processed trade id for ohlcv
         self._last_ts = 0 # last processed timestamp for ohlcv
 
     def start(self, ):
-        super(CCXT, self).start()
+        DataBase.start(self)
 
         if self.p.fromdate:
             self._state = self._ST_HISTORBACK
@@ -132,16 +107,7 @@ class CCXT(DataBase):
 
     def _fetch_ohlcv(self, fromdate=None):
         """Fetch OHLCV data into self._data queue"""
-        if not self.exchange.hasFetchOHLCV:
-            raise NotImplementedError("'%s' exchange doesn't support fetching OHLCV data" % \
-                                      self.exchange.name)
-
-        granularity = self._GRANULARITIES.get((self._timeframe, self._compression))
-        if granularity is None:
-            raise ValueError("'%s' exchange doesn't support fetching OHLCV data for "
-                             "time frame %s, comression %s" % \
-                             (self.exchange.name, bt.TimeFrame.getname(self._timeframe),
-                             self._compression))
+        granularity = self.store.get_granularity(self._timeframe, self._compression)
 
         if fromdate:
             since = int((fromdate - datetime(1970, 1, 1)).total_seconds() * 1000)
@@ -154,11 +120,9 @@ class CCXT(DataBase):
         limit = self.ohlcv_limit
 
         while True:
-            sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
-
             dlen = len(self._data)
-            for ohlcv in self.exchange.fetch_ohlcv(self.symbol, timeframe=granularity,
-                                                   since=since, limit=limit)[::-1]:
+            for ohlcv in self.store.fetch_ohlcv(self.symbol, timeframe=granularity,
+                                                since=since, limit=limit)[::-1]:
                 tstamp = ohlcv[0]
                 if tstamp > self._last_ts:
                     self._data.append(ohlcv)
@@ -169,12 +133,11 @@ class CCXT(DataBase):
                 break
 
     def _load_ticks(self):
-        sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
         if self._last_id is None:
             # first time get the latest trade only
-            trades = [self.exchange.fetch_trades(self.symbol)[-1]]
+            trades = [self.store.fetch_trades(self.symbol)[-1]]
         else:
-            trades = self.exchange.fetch_trades(self.symbol)
+            trades = self.store.fetch_trades(self.symbol)
 
         for trade in trades:
             trade_id = trade['id']
