@@ -28,11 +28,10 @@ import threading
 import time
 import uuid
 
-import ccxt
-
 from backtrader import BrokerBase, OrderBase, Order
 from backtrader.utils.py3 import with_metaclass, queue, MAXFLOAT
 from backtrader.metabase import MetaParams
+from backtrader.stores.ccxtstore import CCXTStore
 
 class CCXTOrder(OrderBase):
     def __init__(self, owner, data, ccxt_order):
@@ -59,16 +58,17 @@ class CCXTBroker(BrokerBase):
     def __init__(self, exchange, currency, config):
         super(CCXTBroker, self).__init__()
 
-        self.exchange = getattr(ccxt, exchange)(config)
+        self.store = CCXTStore(exchange, config)
+
         self.currency = currency
 
         self.notifs = queue.Queue()  # holds orders which are notified
 
     def getcash(self):
-        return self.exchange.fetch_balance()['free'][self.currency]
+        return self.store.getcash(self.currency)
 
-    def getvalue(self):
-        return self.exchange.fetch_balance()['total'][self.currency]
+    def getvalue(self, datas=None):
+        return self.store.getvalue(self.currency)
 
     def get_notification(self):
         try:
@@ -81,15 +81,15 @@ class CCXTBroker(BrokerBase):
 
     def getposition(self, data):
         currency = data.symbol.split('/')[0]
-        return self.exchange.fetch_balance()['total'][currency]
+        return self.store.getposition(currency)
 
     def _submit(self, owner, data, exectype, side, amount, price, params):
         order_type = self.order_types.get(exectype)
-        ccxt_order = self.exchange.create_order(symbol=data.symbol, type=order_type, side=side,
-                                                amount=amount, price=price, params=params)
-        order = CCXTOrder(owner, data, ccxt_order)
+        _order = self.store.create_order(symbol=data.symbol, order_type=order_type, side=side,
+                                         amount=amount, price=price, params=params)
+        order = CCXTOrder(owner, data, _order)
         self.notify(order)
-        return order 
+        return order
 
     def buy(self, owner, data, size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
@@ -104,4 +104,4 @@ class CCXTBroker(BrokerBase):
         return self._submit(owner, data, exectype, 'sell', size, price, kwargs)
 
     def cancel(self, order):
-        return self.exchange.cancel_order(self, order['id'])
+        return self.store.cancel_order(order['id'])
