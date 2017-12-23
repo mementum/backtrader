@@ -22,8 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import time
-
 import ccxt
+
+from functools import wraps
+from ccxt.base.errors import NetworkError
 
 import backtrader as bt
 
@@ -55,8 +57,9 @@ class CCXTStore(object):
         (bt.TimeFrame.Years, 1): '1y',
     }
 
-    def __init__(self, exchange, config):
+    def __init__(self, exchange, config, retries):
         self.exchange = getattr(ccxt, exchange)(config)
+        self.retries = retries
 
     def get_granularity(self, timeframe, compression):
         if not self.exchange.hasFetchOHLCV:
@@ -71,26 +74,44 @@ class CCXTStore(object):
 
         return granularity
 
+    def retry(method):
+        @wraps(method)
+        def retry_method(self, *args, **kwargs):
+            for i in range(self.retries):
+                time.sleep(self.exchange.rateLimit / 1000)
+                try:
+                    return method(self, *args, **kwargs)
+                except NetworkError:
+                    if i == self.retries - 1:
+                        raise
+
+        return retry_method
+
+    @retry
     def getcash(self, currency):
         return self.exchange.fetch_balance()['free'][currency]
 
+    @retry
     def getvalue(self, currency):
         return self.exchange.fetch_balance()['total'][currency]
 
+    @retry
     def getposition(self, currency):
         return self.getvalue(currency)
 
+    @retry
     def create_order(self, symbol, order_type, side, amount, price, params):
         return self.exchange.create_order(symbol=symbol, type=order_type, side=side,
                                           amount=amount, price=price, params=params)
 
+    @retry
     def cancel_order(self, order_id):
         return self.exchange.cancel_order(order_id)
 
+    @retry
     def fetch_trades(self, symbol):
-        time.sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
         return self.exchange.fetch_trades(symbol)
 
+    @retry
     def fetch_ohlcv(self, symbol, timeframe, since, limit):
-        time.sleep(self.exchange.rateLimit / 1000) # time.sleep wants seconds
         return self.exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=limit)
