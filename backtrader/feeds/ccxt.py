@@ -112,7 +112,7 @@ class CCXT(DataBase):
         if fromdate:
             since = int((fromdate - datetime(1970, 1, 1)).total_seconds() * 1000)
         else:
-            if 0 < self._last_ts:
+            if self._last_ts > 0:
                 since = self._last_ts
             else:
                 since = None
@@ -150,7 +150,7 @@ class CCXT(DataBase):
         try:
             trade = self._data.popleft()
         except IndexError:
-            return # no data in the queue
+            return False # no data in the queue
 
         trade_time, price, size = trade
 
@@ -161,15 +161,13 @@ class CCXT(DataBase):
         self.lines.close[0] = price
         self.lines.volume[0] = size
 
-        print("%s: loaded tick: time: %s, price: %s, size: %s" % (self._name, trade_time, price, size))
-
         return True
 
     def _load_ohlcv(self):
         try:
             ohlcv = self._data.popleft()
         except IndexError:
-            return  # no data in the queue
+            return False # no data in the queue
 
         tstamp, open_, high, low, close, volume = ohlcv
 
@@ -181,9 +179,6 @@ class CCXT(DataBase):
         self.lines.low[0] = low
         self.lines.close[0] = close
         self.lines.volume[0] = volume
-
-        print("%s: loaded ohlcv:  time: %s, open: %s, high: %s, low: %s, close: %s, volume: %s" % \
-              (self._name, dtime.strftime('%Y-%m-%d %H:%M:%S'), open_, high, low, close, volume))
 
         return True
 
