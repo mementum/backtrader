@@ -68,9 +68,13 @@ class CCXTStore(object):
 
         granularity = self._GRANULARITIES.get((timeframe, compression))
         if granularity is None:
+            raise ValueError("backtrader CCXT module doesn't support fetching OHLCV "
+                             "data for time frame %s, comression %s" % \
+                             (bt.TimeFrame.getname(timeframe), compression))
+
+        if self.exchange.timeframes and granularity not in self.exchange.timeframes:
             raise ValueError("'%s' exchange doesn't support fetching OHLCV data for "
-                             "time frame %s, comression %s" % \
-                             (self.exchange.name, bt.TimeFrame.getname(timeframe), compression))
+                             "%s time frame" % (self.exchange.name, granularity))
 
         return granularity
 
