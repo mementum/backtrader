@@ -29,7 +29,7 @@ Data Feeds - Passing them around
 ********************************
 
 The basis of the work with the platform will be done with *Strategies*. And
-these will get passed *Data Feeds* The platform end user does not need to care
+these will get passed *Data Feeds*. The platform end user does not need to care
 about receiving them:
 
   *Data Feeds are automagically provided member variables to the strategy in the
@@ -724,7 +724,6 @@ Functions:
   - ``max`` -> ``Max``
   - ``min`` -> ``Min``
   - ``sum`` -> ``Sum``
-  - ``reduce`` -> ``Reduce``
 
     ``Sum`` actually uses ``math.fsum`` as the underlying operation because the
     platform works with floating point numbers and applying a regular ``sum``
