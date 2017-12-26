@@ -21,7 +21,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from . import Indicator, Max, MovAv, MeanDev
+from . import Indicator, MeanDev, MovAv
 
 
 class CommodityChannelIndex(Indicator):
