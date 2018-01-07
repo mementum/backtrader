@@ -150,7 +150,7 @@ class CCXT(DataBase):
         try:
             trade = self._data.popleft()
         except IndexError:
-            return False # no data in the queue
+            return None # no data in the queue
 
         trade_time, price, size = trade
 
@@ -167,7 +167,7 @@ class CCXT(DataBase):
         try:
             ohlcv = self._data.popleft()
         except IndexError:
-            return False # no data in the queue
+            return None # no data in the queue
 
         tstamp, open_, high, low, close, volume = ohlcv
 
