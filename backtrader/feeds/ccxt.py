@@ -123,6 +123,9 @@ class CCXT(DataBase):
             dlen = len(self._data)
             for ohlcv in self.store.fetch_ohlcv(self.symbol, timeframe=granularity,
                                                 since=since, limit=limit)[::-1]:
+                if None in ohlcv:
+                    continue
+
                 tstamp = ohlcv[0]
                 if tstamp > self._last_ts:
                     self._data.append(ohlcv)
