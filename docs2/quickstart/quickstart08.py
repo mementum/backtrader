@@ -55,12 +55,13 @@ class TestStrategy(bt.Strategy):
             return
 
         # Check if an order has been completed
-        # Attention: broker could reject order if not enougth cash
+        # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
-                    (order.executed.price,
+                    'BUY EXECUTED, Size: %d, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (self.sizer.getsizing(self.data, order.isbuy()),
+                     order.executed.price,
                      order.executed.value,
                      order.executed.comm))
 
