@@ -30,8 +30,8 @@ class CCXTOrder(OrderBase):
         self.owner = owner
         self.data = data
         self.ccxt_order = ccxt_order
-        self.ordtype = self.Buy if ccxt_order['info']['side'] == 'buy' else self.Sell
-        self.size = float(ccxt_order['info']['original_amount'])
+        self.ordtype = self.Buy if ccxt_order['side'] == 'buy' else self.Sell
+        self.size = float(ccxt_order['amount'])
 
         super(CCXTOrder, self).__init__()
 
