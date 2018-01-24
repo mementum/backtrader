@@ -62,7 +62,7 @@ class CCXTStore(object):
         self.retries = retries
 
     def get_granularity(self, timeframe, compression):
-        if not self.exchange.hasFetchOHLCV:
+        if not self.exchange.has['fetchOHLCV']:
             raise NotImplementedError("'%s' exchange doesn't support fetching OHLCV data" % \
                                       self.exchange.name)
 
