@@ -27,7 +27,7 @@ from . import Indicator, CmpEx
 class PivotPoint(Indicator):
     '''
     Defines a level of significance by taking into account the average of price
-    bar componentes of the past period of a larget timeframe. For example when
+    bar components of the past period of a larger timeframe. For example when
     operating with days, the values are taking from the already "past" month
     fixed prices.
 
@@ -106,7 +106,7 @@ class PivotPoint(Indicator):
 class FibonacciPivotPoint(Indicator):
     '''
     Defines a level of significance by taking into account the average of price
-    bar componentes of the past period of a larget timeframe. For example when
+    bar components of the past period of a larger timeframe. For example when
     operating with days, the values are taking from the already "past" month
     fixed prices.
 
@@ -192,7 +192,7 @@ class FibonacciPivotPoint(Indicator):
 class DemarkPivotPoint(Indicator):
     '''
     Defines a level of significance by taking into account the average of price
-    bar componentes of the past period of a larget timeframe. For example when
+    bar components of the past period of a larger timeframe. For example when
     operating with days, the values are taking from the already "past" month
     fixed prices.
 

@@ -64,7 +64,7 @@ class StochasticFast(_StochasticBase):
       - It will go up if closing prices are close to the highs
       - It will roughly go down if closing prices are close to the lows
 
-    It shows divergence if the extremes keep on growign but closing prices
+    It shows divergence if the extremes keep on growing but closing prices
     do not in the same manner (distance to the extremes grow)
 
     Formula:
