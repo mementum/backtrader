@@ -51,7 +51,7 @@ class ParabolicSAR(PeriodN):
     for entry (and reverse)
 
     How to select the 1st signal is left unspecified in the book and the
-    increase/derease of bars
+    increase/decrease of bars
 
     See:
       - https://en.wikipedia.org/wiki/Parabolic_SAR
