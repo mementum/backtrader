@@ -1,3 +1,6 @@
+1.9.60.122
+  - Remove unused files
+
 1.9.58.122
   - Provide default fundmode methods for all brokers
   - Correct order notification if positions exist when starting the broker
