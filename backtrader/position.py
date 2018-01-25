@@ -144,8 +144,8 @@ class Position(object):
                price - new position price
                    If a position is increased the new average price will be
                    returned
-                   If a position is reduced the price of the reamining size
-                   does not chance
+                   If a position is reduced the price of the remaining size
+                   does not change
                    If a position is closed the price is nullified
                    If a position is reversed the price is the price given as
                    argument
