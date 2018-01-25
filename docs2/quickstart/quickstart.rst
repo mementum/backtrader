@@ -138,7 +138,7 @@ The amount of boilerplate has grown slightly, because we added:
     *Data Feed* file
 
   - Having *datetime* objects to filter on which data from the *Data Feed* we
-    will be operatign
+    will be operating
 
 Aside from that, the *Data Feed* is created and added to **cerebro**.
 
