@@ -1,5 +1,7 @@
 1.9.60.122
   - Remove unused files
+  - README update, Docstring corrections, documentation corrections
+  - Update travis settings
 
 1.9.58.122
   - Provide default fundmode methods for all brokers
