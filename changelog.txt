@@ -1,3 +1,6 @@
+1.9.61.122
+  - Add `_skipnan` to plotlines to allow joining two points with a line
+
 1.9.60.122
   - Remove unused files
   - README update, Docstring corrections, documentation corrections

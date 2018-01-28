@@ -438,7 +438,18 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 plotkwargs['zorder'] = self.pinf.zordernext(ax)
 
             pltmethod = getattr(ax, lineplotinfo._get('_method', 'plot'))
-            plottedline = pltmethod(self.pinf.xdata, lplot, **plotkwargs)
+
+            xdata, lplotarray = self.pinf.xdata, lplot
+            if lineplotinfo._get('_skipnan', False):
+                # Get the full array and a mask to skipnan
+                lplotarray = np.array(lplot)
+                lplotmask = np.isfinite(lplotarray)
+
+                # Get both the axis and the data masked
+                lplotarray = lplotarray[lplotmask]
+                xdata = np.array(xdata)[lplotmask]
+
+            plottedline = pltmethod(xdata, lplotarray, **plotkwargs)
             try:
                 plottedline = plottedline[0]
             except:
