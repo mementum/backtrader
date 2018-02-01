@@ -1,5 +1,6 @@
 1.9.61.122
   - Add `_skipnan` to plotlines to allow joining two points with a line
+  - buy_bracket/sell_bracket allow suppressing stop/limit orders
 
 1.9.60.122
   - Remove unused files
