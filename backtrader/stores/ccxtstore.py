@@ -119,3 +119,7 @@ class CCXTStore(object):
     @retry
     def fetch_ohlcv(self, symbol, timeframe, since, limit):
         return self.exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=limit)
+
+    @retry
+    def fetch_open_orders(self):
+        return self.exchange.fetchOpenOrders()

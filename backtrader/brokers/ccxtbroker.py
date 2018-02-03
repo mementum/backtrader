@@ -97,3 +97,6 @@ class CCXTBroker(BrokerBase):
 
     def cancel(self, order):
         return self.store.cancel_order(order['id'])
+
+    def get_orders_open(self, safe=False):
+        return self.store.fetch_open_orders()
