@@ -144,12 +144,12 @@ class ParabolicSAR(PeriodN):
         if tr:  # long trade
             if hi > ep:
                 ep = hi
-                af = max(af + self.p.af, self.p.afmax)
+                af = min(af + self.p.af, self.p.afmax)
 
         else:  # downtrend
             if lo < ep:
                 ep = lo
-                af = max(af + self.p.af, self.p.afmax)
+                af = min(af + self.p.af, self.p.afmax)
 
         sar = sar + af * (ep - sar)  # calculate the sar for tomorrow
 
