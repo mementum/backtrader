@@ -25,7 +25,7 @@ import time
 from functools import wraps
 
 import ccxt
-from ccxt.base.errors import NetworkError
+from ccxt.base.errors import NetworkError, ExchangeError
 
 import backtrader as bt
 
@@ -85,7 +85,7 @@ class CCXTStore(object):
                 time.sleep(self.exchange.rateLimit / 1000)
                 try:
                     return method(self, *args, **kwargs)
-                except NetworkError:
+                except (NetworkError, ExchangeError):
                     if i == self.retries - 1:
                         raise
 
