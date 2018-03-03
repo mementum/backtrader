@@ -36,8 +36,10 @@ class PandasDataOptix(btfeeds.PandasData):
               ('optix_pess', -1),
               ('optix_opt', -1))
 
-    datafields = btfeeds.PandasData.datafields + (
-        ['optix_close', 'optix_pess', 'optix_opt'])
+    if False:
+        # No longer needed with version 1.9.62.122
+        datafields = btfeeds.PandasData.datafields + (
+            ['optix_close', 'optix_pess', 'optix_opt'])
 
 
 class StrategyOptix(bt.Strategy):

@@ -71,7 +71,10 @@ class PandasDirectData(feed.DataBase):
             return False
 
         # Set the standard datafields - except for datetime
-        for datafield in self.datafields[1:]:
+        for datafield in self.getlinealiases():
+            if datafield == 'datetime':
+                continue
+
             # get the column index
             colidx = getattr(self.params, datafield)
 
@@ -86,7 +89,7 @@ class PandasDirectData(feed.DataBase):
             line[0] = row[colidx]
 
         # datetime
-        colidx = getattr(self.params, self.datafields[0])
+        colidx = getattr(self.params, 'datetime')
         tstamp = row[colidx]
 
         # convert to float via datetime and store it
@@ -94,7 +97,7 @@ class PandasDirectData(feed.DataBase):
         dtnum = date2num(dt)
 
         # get the line to be set
-        line = getattr(self.lines, self.datafields[0])
+        line = getattr(self.lines, 'datetime')
         line[0] = dtnum
 
         # Done ... return
@@ -174,7 +177,7 @@ class PandasData(feed.DataBase):
         self._colmapping = dict()
 
         # Build the column mappings to internal fields in advance
-        for i, datafield in enumerate(self.datafields):
+        for datafield in self.getlinealiases():
             defmapping = getattr(self.params, datafield)
 
             if isinstance(defmapping, integer_types) and defmapping < 0:
@@ -236,7 +239,10 @@ class PandasData(feed.DataBase):
             return False
 
         # Set the standard datafields
-        for datafield in self.datafields[1:]:
+        for datafield in self.getlinealiases():
+            if datafield == 'datetime':
+                continue
+
             colindex = self._colmapping[datafield]
             if colindex is None:
                 # datafield signaled as missing in the stream: skip it
@@ -249,7 +255,7 @@ class PandasData(feed.DataBase):
             line[0] = self.p.dataname.iloc[self._idx, colindex]
 
         # datetime conversion
-        coldtime = self._colmapping[self.datafields[0]]
+        coldtime = self._colmapping['datetime']
 
         if coldtime is None:
             # standard index in the datetime
