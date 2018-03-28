@@ -76,7 +76,7 @@ class Store(with_metaclass(MetaSingleton, object)):
             self.datas.append(data)
 
             if self.broker is not None:
-                if hasattt(self.broker, 'data_started'):
+                if hasattr(self.broker, 'data_started'):
                     self.broker.data_started(data)
 
         elif broker is not None:
