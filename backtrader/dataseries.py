@@ -40,7 +40,7 @@ class TimeFrame(object):
     names = Names  # support old naming convention
 
     @classmethod
-    def getname(cls, tframe, compression=None):
+    def getname(cls, tframe, compression=1):
         tname = cls.Names[tframe]
         if compression > 1 or tname == cls.Names[-1]:
             return tname  # for plural or 'NoTimeFrame' return plain entry
