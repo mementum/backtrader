@@ -1215,7 +1215,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             kargs['transmit'] = True
             kargs['size'] = o.size
             olimit = self.buy(**kargs)
-            oret.append(olimit)
         else:
             olimit = None
 
