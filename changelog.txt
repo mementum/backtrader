@@ -1,3 +1,9 @@
+1.9.63.122
+  - Add optimization callbacks when running with 1 Core
+  - Correct sell_bracket by removing old append code
+  - Correct typo in store.py
+  - Pass period from RateOfChange100 to underlying ROC
+
 1.9.62.122
   - Correct PSAR acceleration capping
   - Enable PandasData line extension without the need to extend datafields
