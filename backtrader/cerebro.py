@@ -1126,6 +1126,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for iterstrat in iterstrats:
                 runstrat = self.runstrategies(iterstrat)
                 self.runstrats.append(runstrat)
+                if self._dooptimize:
+                    for cb in self.optcbs:
+                        cb(runstrat)  # callback receives finished strategy
         else:
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
