@@ -75,6 +75,12 @@ class CCXTBroker(BrokerBase):
         currency = data.symbol.split('/')[0]
         return self.store.getposition(currency)
 
+    def get_value(self, datas=None, mkt=False, lever=False):
+        return self.store.getvalue(self.currency)
+
+    def get_cash(self):
+        return self.store.getcash(self.currency)
+
     def _submit(self, owner, data, exectype, side, amount, price, params):
         order_type = self.order_types.get(exectype)
         _order = self.store.create_order(symbol=data.symbol, order_type=order_type, side=side,
