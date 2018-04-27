@@ -65,9 +65,6 @@ class Position(object):
 
         self.updt = None
 
-    def clone(self):
-        return copy(self)
-
     def fix(self, size, price):
         oldsize = self.size
         self.size = size
