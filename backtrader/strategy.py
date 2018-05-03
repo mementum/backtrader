@@ -405,7 +405,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         # prepare the indicators/observers data headers
         for iocsv in self.indobscsv:
-            headers.append(iocsv.__class__.__name__)
+            name = iocsv.plotinfo.plotname or iocsv.__class__.__name__
+            headers.append(name)
             headers.append('len')
             headers.extend(iocsv.getlinealiases())
 
@@ -415,7 +416,8 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         values = list()
 
         for iocsv in self.indobscsv:
-            values.append(iocsv.__class__.__name__)
+            name = iocsv.plotinfo.plotname or iocsv.__class__.__name__
+            values.append(name)
             lio = len(iocsv)
             values.append(lio)
             if lio:
