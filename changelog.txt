@@ -1,3 +1,7 @@
+1.9.64.122
+  - Avoid stage2 comparison using [0] in API methods
+  - Support plotname, if given, as name of indicator in csv output
+
 1.9.63.122
   - Add optimization callbacks when running with 1 Core
   - Correct sell_bracket by removing old append code
