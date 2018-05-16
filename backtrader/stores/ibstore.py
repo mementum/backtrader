@@ -715,7 +715,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.histexreq[tickerId] = dict(
                 contract=contract, enddate=enddate, begindate=intdate,
                 timeframe=timeframe, compression=compression,
-                what=what, useRTH=useRTH)
+                what=what, useRTH=useRTH, tz=tz, sessionend=sessionend)
 
         barsize = self.tfcomp_to_size(timeframe, compression)
         self.histfmt[tickerId] = timeframe >= TimeFrame.Days
