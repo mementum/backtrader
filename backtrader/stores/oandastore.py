@@ -510,7 +510,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                 o = self.oapi.create_order(self.p.account, **okwargs)
             except Exception as e:
                 self.put_notification(e)
-                self.broker._reject(order.ref)
+                self.broker._reject(oref)
                 return
 
             # Ids are delivered in different fields and all must be fetched to
