@@ -515,7 +515,6 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
             # Ids are delivered in different fields and all must be fetched to
             # match them (as executions) to the order generated here
-            _o = {'id': None}
             oids = list()
             for oidfield in self._OIDSINGLE:
                 if oidfield in o and 'id' in o[oidfield]:
