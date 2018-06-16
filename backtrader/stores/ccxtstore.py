@@ -93,11 +93,11 @@ class CCXTStore(object):
 
     @retry
     def getcash(self, currency):
-        return self.exchange.fetch_balance()['free'][currency]
+        return self.exchange.fetch_balance()['free'].get(currency, 0.0)
 
     @retry
     def getvalue(self, currency):
-        return self.exchange.fetch_balance()['total'][currency]
+        return self.exchange.fetch_balance()['total'].get(currency, 0.0)
 
     @retry
     def getposition(self, currency):
