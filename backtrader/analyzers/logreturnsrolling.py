@@ -106,8 +106,8 @@ class LogReturnsRolling(bt.TimeFrameAnalyzerBase):
         else:
             self._fundmode = self.p.fund
 
-        self._values = collections.deque([float('Nan')] * self.p.compression,
-                                         maxlen=self.p.compression)
+        self._values = collections.deque([float('Nan')] * self.compression,
+                                         maxlen=self.compression)
 
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
