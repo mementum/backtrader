@@ -73,6 +73,7 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
     '''
     params = (
         ('use_positions', True),
+        ('commission', OandaCommInfo(mult=1.0, stocklike=False)),
     )
 
     def __init__(self, **kwargs):
@@ -89,11 +90,9 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         self.startingcash = self.cash = 0.0
         self.startingvalue = self.value = 0.0
         self.positions = collections.defaultdict(Position)
-        self.addcommissioninfo(self, OandaCommInfo(mult=1.0, stocklike=False))
 
     def start(self):
         super(OandaBroker, self).start()
-        self.addcommissioninfo(self, OandaCommInfo(mult=1.0, stocklike=False))
         self.o.start(broker=self)
         self.startingcash = self.cash = cash = self.o.get_cash()
         self.startingvalue = self.value = self.o.get_value()
