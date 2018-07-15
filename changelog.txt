@@ -1,3 +1,10 @@
+1.9.65.122
+  - Fix commission info assigment and orderref seeking in OandaStore (PR#367)
+  - Add strategy type to OptReturn (PR#364)
+  - Fix prepend_constant for OLS_Transformation (PR#368)
+  - Fix LogReturnsRolling compression when not specified (PR#369)
+  - Have ints instead of bools in some values with 1 Trade in TradeAnalyzer
+
 1.9.64.122
   - Avoid stage2 comparison using [0] in API methods
   - Support plotname, if given, as name of indicator in csv output
