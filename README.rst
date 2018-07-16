@@ -40,7 +40,8 @@ For **feedback/questions/...** use the `Community <https://community.backtrader.
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
-::
+
+.. code-block:: python
 
   from datetime import datetime
   import backtrader as bt
