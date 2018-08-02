@@ -47,6 +47,11 @@ try:
 except ImportError:
     pass  # The user may not have something installed
 
+try:
+    from .alpaca import AlpacaData
+except ImportError:
+    pass  # The user may not have something installed
+
 
 from .vchartfile import VChartFile
 
