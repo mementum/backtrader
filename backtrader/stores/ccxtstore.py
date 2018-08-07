@@ -28,7 +28,17 @@ import ccxt
 from ccxt.base.errors import NetworkError, ExchangeError
 
 import backtrader as bt
+from backtrader import OrderBase
 
+class CCXTOrder(OrderBase):
+    def __init__(self, owner, data, ccxt_order):
+        self.owner = owner
+        self.data = data
+        self.ccxt_order = ccxt_order
+        self.ordtype = self.Buy if ccxt_order['info']['side'] == 'buy' else self.Sell
+        self.size = float(ccxt_order['info']['original_amount'])
+
+        super(CCXTOrder, self).__init__()
 
 class CCXTStore(object):
     '''API provider for CCXT feed and broker classes.'''
@@ -109,8 +119,8 @@ class CCXTStore(object):
                                           amount=amount, price=price, params=params)
 
     @retry
-    def cancel_order(self, order_id):
-        return self.exchange.cancel_order(order_id)
+    def cancel_order(self, order):
+        return self.exchange.cancel_order(order.ccxt_order['id'])
 
     @retry
     def fetch_trades(self, symbol):
