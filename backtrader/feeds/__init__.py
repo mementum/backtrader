@@ -46,10 +46,10 @@ try:
     from .oanda import OandaData
 except ImportError:
     pass  # The user may not have something installed
-    
+
 import sys
 sysver = sys.version_info
-if sysver.major >= 3 and sysver.minor >= 4:
+if sysver.major >= 3 and sysver.minor > 4:
 	try:
 	    from .alpaca import AlpacaData
 	except ImportError:

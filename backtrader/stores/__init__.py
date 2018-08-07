@@ -44,7 +44,7 @@ except ImportError:
 # Alpaca api requires Python version greater than 3.4
 import sys
 sysver = sys.version_info
-if sysver.major >= 3 and sysver.minor >= 4:
+if sysver.major >= 3 and sysver.minor > 4:
 	try:
 	    from .alpacastore import AlpacaStore
 	except ImportError:
