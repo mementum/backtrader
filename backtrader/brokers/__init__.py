@@ -40,3 +40,11 @@ try:
     from .oandabroker import OandaBroker
 except ImportError as e:
     pass  # The user may not have something installed
+
+import sys
+sysver = sys.version_info
+if sysver.major >= 3 and sysver.minor > 4:
+	try:
+	    from .alpacabroker import AlpacaBroker
+	except ImportError as e:
+	    pass  # The user may not have something installed

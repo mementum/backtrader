@@ -24,6 +24,8 @@ from __future__ import (absolute_import, division, print_function,
 # The modules below should/must define __all__ with the objects wishes
 # or prepend an "_" (underscore) to private classes/variables
 
+
+
 try:
     from .ibstore import IBStore
 except ImportError:
@@ -38,6 +40,15 @@ try:
     from .oandastore import OandaStore
 except ImportError:
     pass  # The user may not have a module installed
+
+# Alpaca api requires Python version greater than 3.4
+import sys
+sysver = sys.version_info
+if sysver.major >= 3 and sysver.minor > 4:
+	try:
+	    from .alpacastore import AlpacaStore
+	except ImportError:
+	    pass  # The user may not have a module installed
 
 
 from .vchartfile import VChartFile
