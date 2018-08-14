@@ -35,8 +35,8 @@ class CCXTOrder(OrderBase):
         self.owner = owner
         self.data = data
         self.ccxt_order = ccxt_order
-        self.ordtype = self.Buy if ccxt_order['info']['side'] == 'buy' else self.Sell
-        self.size = float(ccxt_order['info']['original_amount'])
+        self.ordtype = self.Buy if ccxt_order['side'] == 'buy' else self.Sell
+        self.size = float(ccxt_order['amount'])
 
         super(CCXTOrder, self).__init__()
 
@@ -115,8 +115,9 @@ class CCXTStore(object):
 
     @retry
     def create_order(self, symbol, order_type, side, amount, price, params):
-        return self.exchange.create_order(symbol=symbol, type=order_type, side=side,
-                                          amount=amount, price=price, params=params)
+        order = self.exchange.create_order(symbol=symbol, type=order_type, side=side,
+                                           amount=amount, price=price, params=params)
+        return self.exchange.parse_order(order['info'])
 
     @retry
     def cancel_order(self, order):
