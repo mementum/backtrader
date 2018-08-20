@@ -111,7 +111,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     def __init__(self, data):
         self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
         self.subweeks = self.p.timeframe < TimeFrame.Weeks
-        self.componly = (self.subdays and
+        self.componly = (not self.subdays and
                          data._timeframe == self.p.timeframe and
                          not (self.p.compression % data._compression)
                          )
@@ -524,7 +524,6 @@ class Resampler(_BaseResampler):
 
         if consumed:
             self.bar.bupdate(data)  # update new or existing bar
-            data.backwards()  # remove used bar
 
         # if self.bar.isopen and (onedge or (docheckover and checkbarover))
         cond = self.bar.isopen()
@@ -533,6 +532,10 @@ class Resampler(_BaseResampler):
                 if docheckover:
                     cond = self._checkbarover(data, fromcheck=fromcheck,
                                               forcedata=forcedata)
+
+        if consumed:
+            data.backwards()  # remove used bar
+
         if cond:
             dodeliver = False
             if forcedata is not None:

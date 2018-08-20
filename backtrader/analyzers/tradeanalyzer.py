@@ -85,8 +85,8 @@ class TradeAnalyzer(Analyzer):
             res = AutoDict()
             # Trade just closed
 
-            won = res.won = trade.pnlcomm >= 0.0
-            lost = res.lost = not res.won
+            won = res.won = int(trade.pnlcomm >= 0.0)
+            lost = res.lost = int(not won)
             tlong = res.tlong = trade.long
             tshort = res.tshort = not trade.long
 

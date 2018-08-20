@@ -510,12 +510,11 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                 o = self.oapi.create_order(self.p.account, **okwargs)
             except Exception as e:
                 self.put_notification(e)
-                self.broker._reject(order.ref)
+                self.broker._reject(oref)
                 return
 
             # Ids are delivered in different fields and all must be fetched to
             # match them (as executions) to the order generated here
-            _o = {'id': None}
             oids = list()
             for oidfield in self._OIDSINGLE:
                 if oidfield in o and 'id' in o[oidfield]:

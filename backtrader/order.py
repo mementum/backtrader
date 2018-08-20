@@ -34,7 +34,7 @@ from .utils import AutoOrderedDict
 
 class OrderExecutionBit(object):
     '''
-    Intended to hold information about order exeuction. A "bit" does not
+    Intended to hold information about order execution. A "bit" does not
     determine if the order has been fully/partially executed, it just holds
     information.
 

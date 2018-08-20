@@ -50,11 +50,11 @@ class TrueLow(Indicator):
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
     Technical Trading Systems"* for the ATR
 
-    Records the "true high" which is the maximum of today's high and
+    Records the "true low" which is the minimum of today's low and
     yesterday's close
 
     Formula:
-      - truelow = min(high, close_prev)
+      - truelow = min(low, close_prev)
 
     See:
       - http://en.wikipedia.org/wiki/Average_true_range

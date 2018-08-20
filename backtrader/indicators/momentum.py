@@ -61,7 +61,6 @@ class MomentumOscillator(Indicator):
     lines = ('momosc',)
 
     # Accepted parameters (and defaults) -
-    # MovAvg also parameter to allow experimentation
     params = (('period', 12),
               ('band', 100.0))
 
@@ -93,7 +92,6 @@ class RateOfChange(Indicator):
     lines = ('roc',)
 
     # Accepted parameters (and defaults) -
-    # MovAvg also parameter to allow experimentation
     params = (('period', 12),)
 
     def __init__(self):
@@ -120,10 +118,9 @@ class RateOfChange100(Indicator):
     # Named output lines
     lines = ('roc100',)
 
-    # Accepted parameters (and defaults) -
-    # MovAvg also parameter to allow experimentation
+    # Accepted parameters (and defaults)
     params = (('period', 12),)
 
     def __init__(self):
-        self.l.roc100 = 100.0 * ROC(self.data)
+        self.l.roc100 = 100.0 * ROC(self.data, period=self.p.period)
         super(RateOfChange100, self).__init__()

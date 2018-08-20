@@ -1,3 +1,35 @@
+1.9.65.122
+  - Fix commission info assigment and orderref seeking in OandaStore (PR#367)
+  - Add strategy type to OptReturn (PR#364)
+  - Fix prepend_constant for OLS_Transformation (PR#368)
+  - Fix LogReturnsRolling compression when not specified (PR#369)
+  - Have ints instead of bools in some values with 1 Trade in TradeAnalyzer
+
+1.9.64.122
+  - Avoid stage2 comparison using [0] in API methods
+  - Support plotname, if given, as name of indicator in csv output
+
+1.9.63.122
+  - Add optimization callbacks when running with 1 Core
+  - Correct sell_bracket by removing old append code
+  - Correct typo in store.py
+  - Pass period from RateOfChange100 to underlying ROC
+
+1.9.62.122
+  - Correct PSAR acceleration capping
+  - Enable PandasData line extension without the need to extend datafields
+
+1.9.61.122
+  - Add `_skipnan` to plotlines to allow joining two points with a line
+  - buy_bracket/sell_bracket allow suppressing stop/limit orders
+  - Add stop-loss approaches sample
+  - Correct codes for minutes compression
+
+1.9.60.122
+  - Remove unused files
+  - README update, Docstring corrections, documentation corrections
+  - Update travis settings
+
 1.9.58.122
   - Provide default fundmode methods for all brokers
   - Correct order notification if positions exist when starting the broker

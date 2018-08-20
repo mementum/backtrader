@@ -36,7 +36,7 @@ from .brokers import BackBroker
 from .metabase import MetaParams
 from . import observers
 from .writer import WriterFile
-from .utils import OrderedDict, tzparse, num2date
+from .utils import OrderedDict, tzparse, num2date, date2num
 from .strategy import Strategy, SignalStrategy
 from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
@@ -443,7 +443,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                   weekdays=[], weekcarry=False,
                   monthdays=[], monthcarry=True,
                   allow=None,
-                  tzdata=None, cheat=False,
+                  tzdata=None, strats=False, cheat=False,
                   *args, **kwargs):
         '''
         Schedules a timer to invoke ``notify_timer``
@@ -1126,6 +1126,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for iterstrat in iterstrats:
                 runstrat = self.runstrategies(iterstrat)
                 self.runstrats.append(runstrat)
+                if self._dooptimize:
+                    for cb in self.optcbs:
+                        cb(runstrat)  # callback receives finished strategy
         else:
             if self.p.optdatas and self._dopreload and self._dorunonce:
                 for data in self.datas:
@@ -1322,7 +1325,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         if attrname.startswith('data'):
                             setattr(a, attrname, None)
 
-                oreturn = OptReturn(strat.params, analyzers=strat.analyzers)
+                oreturn = OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
                 results.append(oreturn)
 
             return results
@@ -1509,6 +1512,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ldatas = len(datas)
         ldatas_noclones = ldatas - clonecount
         lastqcheck = False
+        dt0 = date2num(datetime.datetime.max) - 2  # default at max
         while d0ret or d0ret is None:
             # if any has live data in the buffer, no data will wait anything
             newqcheck = not any(d.haslivedata() for d in datas)
