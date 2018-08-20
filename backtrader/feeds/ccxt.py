@@ -64,7 +64,7 @@ class CCXT(DataBase):
         self.store = CCXTStore(exchange, config, retries)
 
         self._data = deque() # data queue for price data
-        self._last_id = '' # last processed trade id for ohlcv
+        self._last_id = 0 # last processed trade id for ohlcv
         self._last_ts = 0 # last processed timestamp for ohlcv
 
     def start(self, ):
@@ -136,14 +136,14 @@ class CCXT(DataBase):
                 break
 
     def _load_ticks(self):
-        if self._last_id is None:
+        if self._last_id == 0:
             # first time get the latest trade only
             trades = [self.store.fetch_trades(self.symbol)[-1]]
         else:
             trades = self.store.fetch_trades(self.symbol)
 
         for trade in trades:
-            trade_id = trade['id']
+            trade_id = int(trade['id'])
 
             if trade_id > self._last_id:
                 trade_time = datetime.strptime(trade['datetime'], '%Y-%m-%dT%H:%M:%S.%fZ')
