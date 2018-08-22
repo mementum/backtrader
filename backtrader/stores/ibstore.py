@@ -218,6 +218,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.qs = collections.OrderedDict()  # key: tickerId -> queues
         self.ts = collections.OrderedDict()  # key: queue -> tickerId
         self.iscash = dict()  # tickerIds from cash products (for ex: EUR.JPY)
+        self.isindex = dict() # tickerIds from indexes (e.g. SPX, VIX)
 
         self.histexreq = dict()  # holds segmented historical requests
         self.histfmt = dict()  # holds datetimeformat for request
@@ -576,12 +577,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             # Invalidate tickerId in qs (where it is a key)
             q = self.qs.pop(tickerId, None)  # invalidate old
             iscash = self.iscash.pop(tickerId, None)
+            isindex = self.isindex.pop(tickerId, None)
 
             # Update ts: q -> ticker
             tickerId = self.nextTickerId()  # get new tickerId
             self.ts[q] = tickerId  # Update ts: q -> tickerId
             self.qs[tickerId] = q  # Update qs: tickerId -> q
             self.iscash[tickerId] = iscash
+            self.isindex[tickerId] = isindex
 
         return tickerId, q
 
@@ -597,6 +600,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.qs[tickerId] = q  # can be managed from other thread
             self.ts[q] = tickerId
             self.iscash[tickerId] = False
+            self.isindex[tickerId] = False
 
         return tickerId, q
 
@@ -607,6 +611,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.qs.pop(tickerId, None)
 
         self.iscash.pop(tickerId, None)
+        self.isindex.pop(tickerId, None)
 
         if sendnone:
             q.put(None)
@@ -726,8 +731,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.iscash[tickerId] = True
             if not what:
                 what = 'BID'  # default for cash unless otherwise specified
-        else:
-            what = what or 'TRADES'
+        elif contract.m_secType == 'IND':
+            self.isindex[tickerId] = True
+
+        what = what or 'TRADES'
 
         self.conn.reqHistoricalData(
             tickerId,
@@ -752,8 +759,10 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.iscash[tickerId] = True
             if not what:
                 what = 'BID'  # TRADES doesn't work
-        else:
-            what = what or 'TRADES'
+        elif contract.m_secType == 'IND':
+            self.isindex[tickerId] = True
+
+        what = what or 'TRADES'
 
         # split barsize "x time", look in sizes for (tf, comp) get tf
         tframe = self._sizes[barsize.split()[1]][0]
@@ -836,6 +845,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         if contract.m_secType in ['CASH', 'CFD']:
             self.iscash[tickerId] = True
             ticks = ''  # cash markets do not get RTVOLUME
+        if contract.m_secType == 'IND':
+            self.isindex[tickerId] = True
+            ticks = ''
 
         # q.put(None)  # to kickstart backfilling
         # Can request 233 also for cash ... nothing will arrive
@@ -877,12 +889,13 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         A RTVolume which will only contain a price is put into the client's
         queue to have a consistent cross-market interface
         '''
-        # Used for "CASH" markets
+        # Used for "CASH" markets and indexes
         # The price field has been seen to be missing in some instances even if
         # "field" is 1
         tickerId = msg.tickerId
-        if self.iscash[tickerId]:
-            if msg.field == 1:  # Bid Price
+        if self.iscash[tickerId] or self.isindex[tickerId]:
+            if (self.iscash[tickerId] and msg.field == 1) or \
+               (self.isindex[tickerId] and msg.field == 4):
                 try:
                     if msg.price == -1.0:
                         # seems to indicate the stream is halted for example in
