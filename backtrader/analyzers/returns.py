@@ -132,7 +132,7 @@ class Returns(TimeFrameAnalyzerBase):
             if nlrtot < 0.0:
                 rtot = float('-inf')
             else:
-                rtot = math.log(rtot)
+                rtot = math.log(nlrtot)
 
         self.rets['rtot'] = rtot
 
