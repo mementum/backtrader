@@ -67,6 +67,27 @@ class CCXTStore(object):
         (bt.TimeFrame.Years, 1): '1y',
     }
 
+    # exchange -> store dictionary to track already initialized exchanges
+    stores = {}
+    # exchange -> config dictionry
+    configs = {}
+
+    @classmethod
+    def get_store(cls, exchange, config, retries):
+        store = cls.stores.get(exchange)
+        if store:
+            store_conf = cls.configs[exchange]
+            if store_conf:
+                if not set(config.items()).issubset(set(store_conf.items())):
+                    raise ValueError("%s exchange is already configured: %s" % \
+                                     (exchange, store_conf))
+            return store
+
+        cls.configs[exchange] = config
+        cls.stores[exchange] = cls(exchange, config, retries)
+
+        return cls.stores[exchange]
+
     def __init__(self, exchange, config, retries):
         self.exchange = getattr(ccxt, exchange)(config)
         self.retries = retries

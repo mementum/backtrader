@@ -61,7 +61,7 @@ class CCXT(DataBase):
         self.symbol = symbol
         self.ohlcv_limit = ohlcv_limit
 
-        self.store = CCXTStore(exchange, config, retries)
+        self.store = CCXTStore.get_store(exchange, config, retries)
 
         self._data = deque() # data queue for price data
         self._last_id = '' # last processed trade id for ohlcv

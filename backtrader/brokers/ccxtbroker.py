@@ -40,7 +40,7 @@ class CCXTBroker(BrokerBase):
     def __init__(self, exchange, currency, config, retries=5):
         super(CCXTBroker, self).__init__()
 
-        self.store = CCXTStore(exchange, config, retries)
+        self.store = CCXTStore.get_store(exchange, config, retries)
 
         self.currency = currency
 
