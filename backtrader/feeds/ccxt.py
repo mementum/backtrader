@@ -136,11 +136,11 @@ class CCXT(DataBase):
                 break
 
     def _load_ticks(self):
-        if self._last_id is None:
+        if self._last_id:
+            trades = self.store.fetch_trades(self.symbol)
+        else:
             # first time get the latest trade only
             trades = [self.store.fetch_trades(self.symbol)[-1]]
-        else:
-            trades = self.store.fetch_trades(self.symbol)
 
         for trade in trades:
             trade_id = trade['id']
