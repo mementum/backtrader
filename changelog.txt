@@ -1,3 +1,12 @@
+1.9.66.122
+  - Fix regression introduced with 8f537a1c2c271eb5cfc592b373697732597d26d6
+    which voids the count of lost trades
+  - Allow rollover to distinguish between no values temporarily (with None)
+    and no values permanently (with False)
+  - Avoid math domain error for negative returns in logarithmic calculations
+  - Fix local variable declaration for compound returns
+  - Fix typo in date2num tz conversion which shows up in direct usage
+
 1.9.65.122
   - Fix commission info assigment and orderref seeking in OandaStore (PR#367)
   - Add strategy type to OptReturn (PR#364)
