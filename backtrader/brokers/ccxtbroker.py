@@ -75,7 +75,7 @@ class CCXTBroker(BrokerBase):
         order_type = self.order_types.get(exectype)
         _order = self.store.create_order(symbol=data.symbol, order_type=order_type, side=side,
                                          amount=amount, price=price, params=params)
-        order = CCXTOrder(owner, data, _order)
+        order = CCXTOrder(owner, data, amount, _order)
         self.notify(order)
         return order
 

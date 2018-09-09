@@ -31,12 +31,16 @@ import backtrader as bt
 from backtrader import OrderBase
 
 class CCXTOrder(OrderBase):
-    def __init__(self, owner, data, ccxt_order):
+    def __init__(self, owner, data, size, ccxt_order):
         self.owner = owner
         self.data = data
         self.ccxt_order = ccxt_order
         self.ordtype = self.Buy if ccxt_order['side'] == 'buy' else self.Sell
-        self.size = float(ccxt_order['amount'])
+        amount = ccxt_order.get('amount')
+        if amount:
+            self.size = float(amount)
+        else:
+            self.size = size
 
         super(CCXTOrder, self).__init__()
 
