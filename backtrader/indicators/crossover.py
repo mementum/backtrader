@@ -69,7 +69,7 @@ class CrossDown(_CrossBase):
     This indicator is not automatically plotted
 
     Formula:
-      - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
+      - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
     '''
     _crossup = False
 
