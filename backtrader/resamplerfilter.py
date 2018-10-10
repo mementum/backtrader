@@ -111,15 +111,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     def __init__(self, data):
         self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
         self.subweeks = self.p.timeframe < TimeFrame.Weeks
-        self.componly = (self.subdays and
+        self.componly = (not self.subdays and
                          data._timeframe == self.p.timeframe and
-                         not (self.p.compression % data._compression)
-                         )
+                         not (self.p.compression % data._compression))
 
         self.bar = _Bar(maxdate=True)  # bar holder
         self.compcount = 0  # count of produced bars to control compression
         self._firstbar = True
-        self.componly = self.componly and not self.subdays
         self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
                              self.subweeks)
 
@@ -145,16 +143,12 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         chkdata = DTFaker(data, forcedata) if fromcheck else data
 
         isover = False
-        if not self._barover(chkdata):
+        if not self.componly and not self._barover(chkdata):
             return isover
 
         if self.subdays and self.p.bar2edge:
             isover = True
-        elif True or not fromcheck:  # fromcheck doesn't increase compcount
-            # The comment besides elif seems to be from very old code and no
-            # longer apply.
-            # CHECK: if the condition check can be removed
-            # over time/date limit - increase number of bars completed
+        elif not fromcheck:  # fromcheck doesn't increase compcount
             self.compcount += 1
             if not (self.compcount % self.p.compression):
                 # boundary crossed and enough bars for compression ... proceed
@@ -516,6 +510,8 @@ class Resampler(_BaseResampler):
                 return True
 
             if self.componly:  # only if not subdays
+                # Get a session ref before rewinding
+                _, self._lastdteos = self.data._getnexteos()
                 consumed = True
 
             else:
