@@ -148,11 +148,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
         if self.subdays and self.p.bar2edge:
             isover = True
-        elif True or not fromcheck:  # fromcheck doesn't increase compcount
-            # The comment besides elif seems to be from very old code and no
-            # longer apply.
-            # CHECK: if the condition check can be removed
-            # over time/date limit - increase number of bars completed
+        elif not fromcheck:  # fromcheck doesn't increase compcount
             self.compcount += 1
             if not (self.compcount % self.p.compression):
                 # boundary crossed and enough bars for compression ... proceed
