@@ -111,13 +111,13 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
     def __init__(self, data):
         self.subdays = TimeFrame.Ticks < self.p.timeframe < TimeFrame.Days
         self.subweeks = self.p.timeframe < TimeFrame.Weeks
-        self.componly = (data._timeframe == self.p.timeframe and
+        self.componly = (not self.subdays and
+                         data._timeframe == self.p.timeframe and
                          not (self.p.compression % data._compression))
 
         self.bar = _Bar(maxdate=True)  # bar holder
         self.compcount = 0  # count of produced bars to control compression
         self._firstbar = True
-        # self.componly = self.componly and not self.subdays
         self.doadjusttime = (self.p.bar2edge and self.p.adjbartime and
                              self.subweeks)
 
