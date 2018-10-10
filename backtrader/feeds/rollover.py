@@ -152,7 +152,7 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
 
     def _load(self):
         while self._d is not None:
-            if self._d.next() is not False:  # no values from current data src
+            if self._d.next() is False:  # no values from current data src
                 if self._ds:
                     self._d = self._ds.pop(0)
                     self._dts.pop(0)
