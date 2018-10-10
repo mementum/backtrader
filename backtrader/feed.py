@@ -742,6 +742,9 @@ class DataClone(AbstractDataBase):
         self.p.sessionstart = self.data.p.sessionstart
         self.p.sessionend = self.data.p.sessionend
 
+        self.p.timeframe = self.data.p.timeframe
+        self.p.compression = self.data.p.compression
+
     def _start(self):
         # redefine to copy data bits from guest data
         self.start()
