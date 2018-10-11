@@ -595,7 +595,7 @@ class LineSeriesStub(LineSeries):
     def __init__(self, line, slave=False):
         self.lines = self.__class__.lines(initlines=[line])
         # give a change to find the line owner (for plotting at least)
-        self.owner = line._owner
+        self.owner = self._owner = line._owner
         self._minperiod = line._minperiod
         self.slave = slave
 
