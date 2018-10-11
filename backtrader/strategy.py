@@ -166,18 +166,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
             while True:
                 if id(clk) in dataids:
-                    break
+                    break  # already top-level clock (data feed)
 
-                clk2 = getattr(clk, '._clock', None)
+                # See if the current clock has higher level clocks
+                clk2 = getattr(clk, '_clock', None)
                 if clk2 is None:
-                    clk2 = getattr(clk._owner, '._clock', None)
+                    clk2 = getattr(clk._owner, '_clock', None)
 
-                clk = clk2
-                if clk is None:
-                    break
+                if clk2 is None:
+                    break  # if no clock found, bail out
+
+                clk = clk2  # keep the ref and try to go up the hierarchy
 
             if clk is None:
-                continue
+                continue  # no clock found, go to next
 
             _dminperiods[clk].append(lineiter._minperiod)
 
