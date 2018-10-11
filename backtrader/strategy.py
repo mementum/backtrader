@@ -34,6 +34,7 @@ from .utils.py3 import (filter, keys, integer_types, iteritems, itervalues,
 import backtrader as bt
 from .lineiterator import LineIterator, StrategyBase
 from .lineroot import LineSingle
+from .lineseries import LineSeriesStub
 from .metabase import ItemCollection, findowner
 from .trade import Trade
 from .utils import OrderedDict, AutoOrderedDict, AutoDictList
@@ -181,11 +182,30 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
             if clk is None:
                 continue  # no clock found, go to next
 
+            # LineSeriesStup wraps a line and the clock is the wrapped line and
+            # no the wrapper itself.
+            if isinstance(clk, LineSeriesStub):
+                clk = clk.lines[0]
+
             _dminperiods[clk].append(lineiter._minperiod)
 
         self._minperiods = list()
         for data in self.datas:
-            # dminperiod = max(_dminperiods[data] or [self._minperiod])
+
+            # Do not only consider the data as clock but also its lines which
+            # may have been individually passed as clock references and
+            # discovered as clocks above
+
+            # Initialize with data min period if any
+            dlminperiods = _dminperiods[data]
+
+            for l in data.lines:  # search each line for min periods
+                if l in _dminperiods:
+                    dlminperiods += _dminperiods[l]  # found, add it
+
+            # keep the reference to the line if any was found
+            _dminperiods[data] = [max(dlminperiods)] if dlminperiods else []
+
             dminperiod = max(_dminperiods[data] or [data._minperiod])
             self._minperiods.append(dminperiod)
 
