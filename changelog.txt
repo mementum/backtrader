@@ -1,3 +1,10 @@
+1.9.67.122
+  - Fix compression only scenarios when resampling and resampling after
+    changes in 1.9.66.122
+  - Final correction for rollover fix introduced in 1.9.66.122
+  - Cover use case for mininum period calculation when all
+    operations/indicators don't use the data feeds directly but lines of it
+
 1.9.66.122
   - Fix regression introduced with 8f537a1c2c271eb5cfc592b373697732597d26d6
     which voids the count of lost trades

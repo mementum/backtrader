@@ -93,7 +93,7 @@ Live Trading and backtesting platform written in Python.
   - *TA-Lib* indicator support (needs python *ta-lib* / check the docs)
   - Easy development of custom indicators
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
-    integration
+    integration (**deprecated**)
   - Flexible definition of commission schemes
   - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop*,
     *StopLimit*, *StopTrail*, *StopTrailLimit*and *OCO* orders, bracket order,
@@ -124,7 +124,7 @@ Python 2/3 Support
 ==================
 
   - Python ``2.7``
-  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5`` / ``3.6``
+  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5`` / ``3.6`` / ``3.7``
 
   - It also works with ``pypy`` and ``pypy3`` (no plotting - ``matplotlib`` is
     not supported under *pypy*)
