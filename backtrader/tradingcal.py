@@ -66,7 +66,7 @@ class TradingCalendarBase(with_metaclass(MetaParams, object)):
         Returns the next trading day (datetime/date instance) after ``day``
         (datetime/date instance)
         '''
-        return self._next_day(day)[0]  # 1st ret elem is next day
+        return self._nextday(day)[0]  # 1st ret elem is next day
 
     def nextday_week(self, day):
         '''
