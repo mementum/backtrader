@@ -1,3 +1,9 @@
+1.9.68.122
+  - [PR 376] Fix call to _nextday in TradingCalendar
+  - Clean up and rework of Yahoo Data. The data feeds seems to be reliable
+    again
+  - IBStore Support for IND prices (simplfication of PR 373)
+
 1.9.67.122
   - Fix compression only scenarios when resampling and resampling after
     changes in 1.9.66.122
