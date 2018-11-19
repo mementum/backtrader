@@ -160,6 +160,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         Time in seconds: how often the time offset has to be refreshed
 
+      - ``indcash`` (default: ``True``)
+
+        Manage IND codes as if they were cash for price retrieval
     '''
 
     # Set a base for the data requests (historical/realtime) to distinguish the
@@ -180,6 +183,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('timeout', 3.0),  # timeout between reconnections
         ('timeoffset', True),  # Use offset to server for timestamps if needed
         ('timerefresh', 60.0),  # How often to refresh the timeoffset
+        ('indcash', True),  # Treat IND codes as CASH elements
     )
 
     @classmethod
@@ -723,11 +727,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.histtz[tickerId] = tz
 
         if contract.m_secType in ['CASH', 'CFD']:
-            self.iscash[tickerId] = True
+            self.iscash[tickerId] = 1  # msg.field code
             if not what:
                 what = 'BID'  # default for cash unless otherwise specified
-        else:
-            what = what or 'TRADES'
+
+        elif contract.m_secType in ['IND'] and self.p.indcash:
+            self.iscash[tickerId] = 4  # msg.field code
+
+        what = what or 'TRADES'
 
         self.conn.reqHistoricalData(
             tickerId,
@@ -881,8 +888,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # The price field has been seen to be missing in some instances even if
         # "field" is 1
         tickerId = msg.tickerId
-        if self.iscash[tickerId]:
-            if msg.field == 1:  # Bid Price
+        fieldcode = self.iscash[tickerId]
+        if fieldcode:
+            if msg.field == fieldcode:  # Expected cash field code
                 try:
                     if msg.price == -1.0:
                         # seems to indicate the stream is halted for example in
