@@ -1,3 +1,9 @@
+1.9.69.122:
+  - Fix offline Yahoo feed by moving the new adjclose line up to the offline
+    feed
+  - Adapt the yahoodownload tool to the current status (ex: data not reversed)
+  - Redownload all yahoo data feeds
+
 1.9.68.122
   - [PR 376] Fix call to _nextday in TradingCalendar
   - Clean up and rework of Yahoo Data. The data feeds seems to be reliable
