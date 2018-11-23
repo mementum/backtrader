@@ -53,9 +53,6 @@ different ways. Use the docs (and examples) Luke!
   cerebro = bt.Cerebro()
   cerebro.addstrategy(SmaCross)
 
-  # **NOTE**: Read the note about the Yahoo API above. This sample is kept for
-  # historical reasons. Use any other data feed.
-
   data0 = bt.feeds.YahooFinanceData(dataname='MSFT', fromdate=datetime(2011, 1, 1),
                                     todate=datetime(2012, 12, 31))
   cerebro.adddata(data0)
