@@ -357,6 +357,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
         templ = env.get_template(template)
+        templ.globals['title'] = 'BackTest ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         templ.globals['now'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         html = file_html(model,
@@ -484,7 +485,7 @@ class Bokeh(metaclass=bt.MetaParams):
             return
 
         def make_document(doc: Document):
-            doc.title = "Backtrader Optimization Result"
+            doc.title = "Optimization Result"
 
             env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
             doc.template = env.get_template("basic.html.j2")

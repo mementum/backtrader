@@ -189,7 +189,7 @@ class Figure(object):
         self.plot_indicator(obj, master)
 
     def plot_indicator(self, obj: Union[bt.Indicator, bt.Observer], master, strat_clk: array=None):
-        pl = obj.plotlabel()
+        pl =  f'{obj.plotlabel()} '
         if isinstance(obj, bt.Indicator):
             pl += Figure._get_datas_description(obj)
         elif isinstance(obj, bt.Observer):

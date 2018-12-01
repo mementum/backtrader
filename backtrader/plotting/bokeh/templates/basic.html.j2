@@ -21,14 +21,14 @@ that accepts these same parameters.
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>{{ title|e if title else "Bokeh Plot" }}</title>
+        <title>BackTest Results ({{ now }})</title>
         {{ bokeh_css }}
         {{ bokeh_js }}
         {{ stylesheet }}
     </head>
     <body>
         {%if show_headline %}
-            <div id="headline">Backtrader Backtesting Results ({{ now }})</div>
+            <div id="headline">BackTest Results ({{ now }})</div>
         {%endif%}
         {{ plot_div|indent(8) }}
         {{ plot_script|indent(8) }}
