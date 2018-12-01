@@ -3,7 +3,6 @@ import bisect
 import os
 import sys
 import tempfile
-from jinja2 import Environment, PackageLoader
 import datetime
 from typing import List, Dict, Callable
 import backtrader as bt
@@ -29,8 +28,13 @@ from typing import Optional, Union
 import logging
 from array import array
 
-_logger = logging.getLogger(__name__)
+try:
+    from jinja2 import Environment, PackageLoader
+except ImportError as e:
+    raise ImportError(
+        'jinja2 seems to be missing. Needed for plotting support')
 
+_logger = logging.getLogger(__name__)
 
 if 'ipykernel' in sys.modules:
     from IPython.core.display import display, HTML
@@ -286,7 +290,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         panels = []
         if len(figs) > 0:
-            chart_grid = gridplot([[x] for x in figs], sizing_mode='fixed', toolbar_location='right', toolbar_options={'logo': None})
+            chart_grid = gridplot([[x] for x in figs], sizing_mode='fixed', toolbar_location='left', toolbar_options={'logo': None})
             panels.append(Panel(child=chart_grid, title="Charts"))
 
         panel_analyzers = self._get_analyzer_tab(fp)

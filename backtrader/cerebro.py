@@ -990,10 +990,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                                     numfigs=numfigs, iplot=iplot,
                                     start=start, end=end, use=use)
                 # pfillers=pfillers2)
+                plotter.show()
 
                 figs.append(rfig)
-
-            plotter.show()
 
         return figs
 

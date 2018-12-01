@@ -2,9 +2,13 @@ import backtrader as bt
 from typing import Dict, Optional, List, Union
 import math
 from datetime import datetime
-import pandas
 import logging
 
+try:
+    import pandas
+except ImportError:
+    raise ImportError(
+        'Pandas seems to be missing. Needed for plotting support')
 
 _logger = logging.getLogger(__name__)
 
