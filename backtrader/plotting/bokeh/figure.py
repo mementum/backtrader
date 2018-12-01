@@ -96,7 +96,7 @@ class Figure(object):
 
     def _init_figure(self):
         # plot height will be set later
-        f = figure(tools=Figure._tools, plot_width=self._scheme.plot_width, logo=None, sizing_mode='scale_width', x_axis_type='linear')
+        f = figure(tools=Figure._tools, plot_width=self._scheme.plot_width, sizing_mode='scale_width', x_axis_type='linear')
         # TODO: backend webgl (output_backend="webgl") removed due to this bug:
         # https://github.com/bokeh/bokeh/issues/7568
 
