@@ -104,21 +104,23 @@ setuptools.setup(
     # simple. Or you can use find_packages().
     packages=setuptools.find_packages(exclude=['docs', 'docs2', 'samples']),
     # packages=['backtrader', '],
+    package_data={'backtrader.plotting.bokeh': ['templates/*.j2']},
+
 
     # List run-time dependencies here.
     # These will be installed by pip when your
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    # install_requires=['six'],
+    install_requires=['bokeh==0.13', 'jinja2', 'plotly', 'pandas'],
 
     # List additional groups of dependencies here
     # (e.g. development dependencies).
     # You can install these using the following syntax, for example:
     # $ pip install -e .[dev,test]
-    extras_require={
-        'plotting':  ['matplotlib'],
-    },
+    # extras_require={
+    #     'plotting':  ['matplotlib'],
+    # },
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these

@@ -29,6 +29,7 @@ from .drawdown import *
 from .timereturn import *
 from .sharpe import *
 from .tradeanalyzer import *
+from .tradelist import *
 from .sqn import *
 from .leverage import *
 from .positions import *

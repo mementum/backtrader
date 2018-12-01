@@ -1,0 +1,57 @@
+<style>
+    body {
+        background-color: {{body_background_color}};
+        color: {{text_color}};
+    }
+
+    #headline {
+        font-size: 200%;
+        font-family: "Segoe UI", "Arial Black", Gadget, sans-serif;
+        color: {{headline_color}};
+    }
+
+    .bk-root {
+        font-family: "Segoe UI", "Arial Black", Gadget, sans-serif;
+    }
+    .bk-toolbar {position: fixed;}
+
+    .slick-header-column {
+        background-color: {{datatable_header_color}} !important;
+        background-image: none !important;
+        font-size: 130%;
+    }
+
+    .slick-row.even {
+        background-color: {{datatable_row_color_even}} !important;
+    }
+
+    .slick-row.odd {
+        background-color: {{datatable_row_color_odd}} !important;
+    }
+
+    .bk-root .bk-bs-nav-tabs>li.bk-bs-active>span {
+        background-color: {{tab_active_background_color}} !important;
+        color: {{tab_active_color}} !important;
+        border-color: {{tab_active_background_color}} !important;
+    }
+
+    .bk-root .bk-bs-nav>li>span:hover {
+        background-color: {{tab_active_background_color}} !important;
+        border-color: {{tab_active_background_color}} !important;
+        color: {{tab_active_color}} !important;
+    }
+
+    .bk-tooltip {
+        border-radius: 3px;
+        background-color: {{tooltip_background_color}} !important;
+        border-color: {{tooltip_background_color}} !important;
+    }
+
+    .bk-tooltip-row-label {
+        color: {{tooltip_text_color_label}} !important;
+    }
+
+    .bk-tooltip-row-value {
+        color: {{tooltip_text_color_value}} !important;
+    }
+</style>

@@ -1,0 +1,6 @@
+* data feeds with different length (first feed is master?)
+* resizable/hidable figures
+* hover tooltips triggering on all lines without duplicate tooltips (for multiple partial lines)
+
+* Linked Crosshair
+* permanent tooltip
