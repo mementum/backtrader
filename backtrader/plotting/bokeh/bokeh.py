@@ -238,7 +238,7 @@ class Bokeh(metaclass=bt.MetaParams):
             return
 
         strat_figures = []
-        self._fp.analyzers = [a for _, a in strategy.analyzers.getitems()]
+        self._fp.analyzers = [a for _, a in strategy.analyzers.getitems() if a.p.plot is True ]
 
         st_dtime = strategy.lines.datetime.plot()
         if start is None:

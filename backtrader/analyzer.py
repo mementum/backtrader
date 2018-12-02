@@ -87,6 +87,8 @@ class MetaAnalyzer(bt.MetaParams):
 
 
 class Analyzer(with_metaclass(MetaAnalyzer, object)):
+    params = (('plot', True),)
+    
     '''Analyzer base class. All analyzers are subclass of this one
 
     An Analyzer instance operates in the frame of a strategy and provides an
