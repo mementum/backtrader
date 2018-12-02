@@ -940,7 +940,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         from . import plotting
         plotter = plotting.Bokeh(**kwargs)
-        plotter.plot_result(result, columns)
+        return plotter.plot_result(result, columns)
 
     def plot(self, plotter=None, iplot=True, start=None, end=None, **kwargs):
         '''
@@ -967,15 +967,15 @@ class Cerebro(with_metaclass(MetaParams, object)):
             from . import plotting
             plotter = plotting.Bokeh(**kwargs)
 
-        figs = []
+        filenames = []
         for stratlist in self.runstrats:
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, iplot=iplot, start=start, end=end)
-                plotter.show()
+                filename = plotter.show()
 
-                figs.append(rfig)
+                filenames.append(filename)
 
-        return figs
+        return filenames
 
     def __call__(self, iterstrat):
         '''

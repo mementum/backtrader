@@ -180,14 +180,17 @@ class Bokeh(metaclass=bt.MetaParams):
         if not bttypes.is_valid_result(result):
             return
 
+        filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:
                 self.plot(s)
-            self.show()
+            filenames.append(self.show())
         else:
             raise Exception(f"Unsupported result type: {str(result)}")
+
+        return filenames
 
     #  region interface for backtrader
     def plot(self, obj: Union[bt.Strategy, bt.OptReturn], iplot=True, start=None, end=None):
@@ -208,6 +211,7 @@ class Bokeh(metaclass=bt.MetaParams):
     def show(self):
         """Called by backtrader to display a figure"""
         model = self.generate_model()
+        filename = None
         if self._iplot:
             css = self._output_stylesheet()
             display(HTML(css))
@@ -218,6 +222,9 @@ class Bokeh(metaclass=bt.MetaParams):
 
         self._reset()
         self._num_plots += 1
+
+        return filename
+
 
     def savefig(self, fig, filename, width, height, dpi, tight):
         self._generate_output(fig, filename)

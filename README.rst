@@ -116,7 +116,7 @@ List of built-in Indicators (122)
 
   - `Indicators Reference <http://www.backtrader.com/docu/indautoref.html>`_
 
-Python 2/3 Support
+Python 3 Support
 ==================
 
   - Python ``2.7``
