@@ -139,5 +139,5 @@ setuptools.setup(
     # entry_points={'console_scripts': ['sample=sample:main',],},
     entry_points={'console_scripts': ['btrun=backtrader.btrun:btrun']},
 
-    # scripts=['tools/bt-run.py'],
+    scripts=['tools/bt-run.py'],
 )
