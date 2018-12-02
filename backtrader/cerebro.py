@@ -25,6 +25,7 @@ import datetime
 import collections
 import itertools
 import multiprocessing
+from typing import Optional, Union, List
 
 import backtrader as bt
 from .utils.py3 import (map, range, zip, with_metaclass, string_types,
@@ -933,23 +934,23 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
-             width=16, height=9, dpi=300, tight=True, use=None,
-             **kwargs):
+    def visualize(self, result: Union[List[Strategy], List[List[OptReturn]]], columns=None, **kwargs):
+        '''
+        Either plots the strategies inside cerebro or starts Optimization Analysis Server
+        '''
+        from . import plotting
+        plotter = plotting.Bokeh(**kwargs)
+        plotter.plot_result(result, columns)
+
+    def plot(self, plotter=None, iplot=True, start=None, end=None, **kwargs):
         '''
         Plots the strategies inside cerebro
 
-        If ``plotter`` is None a default ``Plot`` instance is created and
+        If ``plotter`` is None a default ``Bokeh`` instance is created and
         ``kwargs`` are passed to it during instantiation.
-
-        ``numfigs`` split the plot in the indicated number of charts reducing
-        chart density if wished
 
         ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
         displayed inline
-
-        ``use``: set it to the name of the desired matplotlib backend. It will
-        take precedence over ``iplot``
 
         ``start``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the start
@@ -958,38 +959,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``end``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the end
         of the plot
-
-        ``width``: in inches of the saved figure
-
-        ``height``: in inches of the saved figure
-
-        ``dpi``: quality in dots per inches of the saved figure
-
-        ``tight``: only save actual content and not the frame of the figure
         '''
         if self._exactbars > 0:
             return
 
         if not plotter:
-            from . import plot
-            if self.p.oldsync:
-                plotter = plot.Plot_OldSync(**kwargs)
-            else:
-                plotter = plot.Plot(**kwargs)
-
-        # pfillers = {self.datas[i]: self._plotfillers[i]
-        # for i, x in enumerate(self._plotfillers)}
-
-        # pfillers2 = {self.datas[i]: self._plotfillers2[i]
-        # for i, x in enumerate(self._plotfillers2)}
+            from . import plotting
+            plotter = plotting.Bokeh(**kwargs)
 
         figs = []
         for stratlist in self.runstrats:
             for si, strat in enumerate(stratlist):
-                rfig = plotter.plot(strat, figid=si * 100,
-                                    numfigs=numfigs, iplot=iplot,
-                                    start=start, end=end, use=use)
-                # pfillers=pfillers2)
+                rfig = plotter.plot(strat, iplot=iplot, start=start, end=end)
                 plotter.show()
 
                 figs.append(rfig)

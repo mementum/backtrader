@@ -119,7 +119,7 @@ setuptools.setup(
     # You can install these using the following syntax, for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'plotting':  ['matplotlib', 'bokeh', 'jinja2', 'pandas'],
+        'plotting':  ['bokeh', 'jinja2', 'pandas'],
     },
 
     # If there are data files included in your packages that need to be
@@ -139,5 +139,5 @@ setuptools.setup(
     # entry_points={'console_scripts': ['sample=sample:main',],},
     entry_points={'console_scripts': ['btrun=backtrader.btrun:btrun']},
 
-    scripts=['tools/bt-run.py'],
+    # scripts=['tools/bt-run.py'],
 )

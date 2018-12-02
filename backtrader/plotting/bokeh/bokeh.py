@@ -4,27 +4,32 @@ import os
 import sys
 import tempfile
 import datetime
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Optional, Union
 import backtrader as bt
-from bokeh.models import ColumnDataSource, Model
-from bokeh.models.widgets import Panel, Tabs, DataTable, TableColumn
-from bokeh.layouts import column, gridplot, row
-from bokeh.server.server import Server
-from bokeh.document import Document
-from bokeh.application import Application
-from bokeh.application.handlers.function import FunctionHandler
+
+try:
+    from bokeh.models import ColumnDataSource, Model
+    from bokeh.models.widgets import Panel, Tabs, DataTable, TableColumn
+    from bokeh.layouts import column, gridplot, row
+    from bokeh.server.server import Server
+    from bokeh.document import Document
+    from bokeh.application import Application
+    from bokeh.application.handlers.function import FunctionHandler
+    from bokeh.embed import file_html
+    from bokeh.models.widgets import NumberFormatter
+    from bokeh.resources import CDN
+    from bokeh.util.browser import view
+except ImportError as e:
+    raise ImportError(
+        'Bokeh seems to be missing. Needed for plotting support')
+
 from backtrader.plotting.utils import get_data_obj
 from .. import bttypes
 
 from .figure import Figure, HoverContainer
 from .datatable import TableGenerator
-from ..schemes import Blackly
+from ..schemes import Tradimo
 from ..schemes.scheme import Scheme
-from bokeh.embed import file_html
-from bokeh.models.widgets import NumberFormatter
-from bokeh.resources import CDN
-from bokeh.util.browser import view
-from typing import Optional, Union
 import logging
 from array import array
 
@@ -51,7 +56,7 @@ class FigurePage(object):
 
 
 class Bokeh(metaclass=bt.MetaParams):
-    params = (('scheme', Blackly()),
+    params = (('scheme', Tradimo()),
               ('filename', None))
 
     def __init__(self, **kwargs):
@@ -184,7 +189,41 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception(f"Unsupported result type: {str(result)}")
 
-    def _blueprint_strategy(self, strategy: bt.Strategy, start=None, end=None, **kwargs):
+    #  region interface for backtrader
+    def plot(self, obj: Union[bt.Strategy, bt.OptReturn], iplot=True, start=None, end=None):
+        """Called by backtrader to plot either a strategy or an optimization results"""
+
+        self._iplot = iplot and 'ipykernel' in sys.modules
+
+        if isinstance(obj, bt.Strategy):
+            self._blueprint_strategy(obj, start, end)
+        elif isinstance(obj, bt.OptReturn):
+            if not hasattr(obj, 'strategycls'):
+                raise Exception("Missing field 'strategycls' in OptReturn. Include this commit in your backtrader package to fix it: 'https://github.com/verybadsoldier/backtrader/commit/f03a0ed115338ed8f074a942f6520b31c630bcfb'")
+            self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
+        else:
+            raise Exception(f'Unsupported plot source object: {str(type(obj))}')
+        return [self._fp]
+
+    def show(self):
+        """Called by backtrader to display a figure"""
+        model = self.generate_model()
+        if self._iplot:
+            css = self._output_stylesheet()
+            display(HTML(css))
+            show(model)
+        else:
+            filename = self._output_plot_file(model, self.p.filename)
+            view(filename)
+
+        self._reset()
+        self._num_plots += 1
+
+    def savefig(self, fig, filename, width, height, dpi, tight):
+        self._generate_output(fig, filename)
+    #  endregion
+
+    def _blueprint_strategy(self, strategy: bt.Strategy, start=None, end=None):
         if not strategy.datas:
             return
 
@@ -360,12 +399,13 @@ class Bokeh(metaclass=bt.MetaParams):
             filename = os.path.join(tmpdir, f"bt_bokeh_plot_{self._num_plots}.html")
 
         env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
+        title = 'BackTest ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         templ = env.get_template(template)
-        templ.globals['title'] = 'BackTest ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        templ.globals['now'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        templ.globals['title'] = title
 
         html = file_html(model,
                          template=templ,
+                         title=title,
                          resources=CDN,
                          template_variables=dict(
                              stylesheet=self._output_stylesheet(),
@@ -377,45 +417,6 @@ class Bokeh(metaclass=bt.MetaParams):
             f.write(html)
 
         return filename
-
-    def savefig(self, fig, filename, width, height, dpi, tight):
-        self._generate_output(fig, filename)
-
-    #  region interface for backtrader
-    def plot(self, obj: Union[bt.Strategy, bt.OptReturn], figid=0, numfigs=1, iplot=True, start=None, end=None, use=None, **kwargs):
-        """Called by backtrader to plot either a strategy or an optimization results"""
-
-        if numfigs > 1:
-            raise Exception("numfigs must be 1")
-        if use is not None:
-            raise Exception("Different backends by 'use' not supported")
-
-        self._iplot = iplot and 'ipykernel' in sys.modules
-
-        if isinstance(obj, bt.Strategy):
-            self._blueprint_strategy(obj, start, end, **kwargs)
-        elif isinstance(obj, bt.OptReturn):
-            if not hasattr(obj, 'strategycls'):
-                raise Exception("Missing field 'strategycls' in OptReturn. Include this commit in your backtrader package to fix it: 'https://github.com/verybadsoldier/backtrader/commit/f03a0ed115338ed8f074a942f6520b31c630bcfb'")
-            self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
-        else:
-            raise Exception(f'Unsupported plot source object: {str(type(obj))}')
-        return [self._fp]
-
-    def show(self):
-        """Called by backtrader to display a figure"""
-        model = self.generate_model()
-        if self._iplot:
-            css = self._output_stylesheet()
-            display(HTML(css))
-            show(model)
-        else:
-            filename = self._output_plot_file(model, self.p.filename)
-            view(filename)
-
-        self._reset()
-        self._num_plots += 1
-    #  endregion
 
     def _reset(self):
         self._fp = FigurePage()
@@ -489,10 +490,14 @@ class Bokeh(metaclass=bt.MetaParams):
             return
 
         def make_document(doc: Document):
-            doc.title = "Optimization Result"
+            doc.title = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
-            doc.template = env.get_template("basic.html.j2")
+            templ = env.get_template("basic.html.j2")
+            templ.globals['title'] = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            templ.globals['show_headline'] = self.p.scheme.show_headline
+            templ.globals['stylesheet'] = self._output_stylesheet()
+            doc.template = templ
 
             model = self.generate_optresult_model(result, columns)
             doc.add_root(model)
@@ -500,7 +505,7 @@ class Bokeh(metaclass=bt.MetaParams):
         Bokeh._run_server(make_document)
 
     @staticmethod
-    def _run_server(fnc_make_document, iplot=True, notebook_url="localhost:8889", port=80):
+    def _run_server(fnc_make_document, iplot=True, notebook_url="localhost:8889", port=8080):
         """Runs a Bokeh webserver application. Documents will be created using fnc_make_document"""
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
@@ -509,7 +514,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             apps = {'/': app}
 
-            print("Open your browser here: http://localhost")
+            print("Open your browser here: http://localhost:8080")
             server = Server(apps, port=port)
             server.run_until_shutdown()
     #  endregion
