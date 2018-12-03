@@ -31,7 +31,7 @@ def get_params_str(params: Optional[bt.AutoInfoClass]) -> str:
             return f"{value:.2f}"
 
     plabs = [f"{x}: {get_value_str(x, y)}" for x, y in user_params.items()]
-    plabs = '/'.join(plabs)
+    plabs = ', '.join(plabs)
     return plabs
 
 

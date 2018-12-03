@@ -458,6 +458,7 @@ class Figure(object):
             kwargs['y_range_name'] = "axvol"
         else:
             self.figure.yaxis.formatter = ax_formatter
+
             adapt_yranges(self.figure.y_range, df.volume)
             self.figure.y_range.end /= self._scheme.volscaling
 
