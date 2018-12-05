@@ -382,7 +382,8 @@ class Bokeh(metaclass=bt.MetaParams):
         for _ in range(0, self.p.scheme.analyzer_tab_num_cols):
             col_childs.append([])
 
-        for a in fp.analyzers:
+        plottable_analyzers = (a for a in fp.analyzers if a.p.plot is True)
+        for a in plottable_analyzers:
             table_header, elements = self._tablegen.get_analyzers_tables(a, table_width)
 
             col_childs = sorted(col_childs, key=lambda x: _get_column_row_count(x))

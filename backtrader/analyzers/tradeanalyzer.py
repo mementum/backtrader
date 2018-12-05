@@ -204,5 +204,6 @@ class TradeAnalyzer(Analyzer):
                     # max/min
                     m = trls_wl.max or 0
                     trls_wl.max = max(m, barlen2)
-                    m = trls_wl.min or MAXINT
+                    # m = trls_wl.min or MAXINT # need to double check this, produces wrong result if won/long = 0
+                    m = trls_wl.min or 0 # need to double check this, produces wrong result if won/long = 0
                     trls_wl.min = min(m, barlen2 or m)

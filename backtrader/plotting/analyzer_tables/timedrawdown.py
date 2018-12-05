@@ -6,14 +6,14 @@ def datatable(self):
 
     a = self.get_analysis()
     if 'drawdown' in a:
-      cols1[0].append('DrawDown (%)')
+      cols1[0].append('Drawdown (%)')
       cols1[1].append(a['drawdown'])
 
-    cols1[0].append('Max DrawDown (%)')
+    cols1[0].append('Max Drawdown (%)')
     cols1[1].append(a['maxdrawdown'])
 
-    cols1[0].append('Max DrawDown Period')
+    cols1[0].append('Max Drawdown Period')
     cols1[1].append(a['maxdrawdownperiod'])
 
-    return "TimeDrawDown", [cols1]
+    return "Time Drawdown", [cols1]
 

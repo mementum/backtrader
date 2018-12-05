@@ -48,7 +48,7 @@ class Transactions(bt.Analyzer):
         ``pyfolio`` and the header names are taken from the samples used for
         it::
 
-          'date', 'amount', 'price', 'sid', 'symbol', 'value'
+          'date', 'sid', 'symbol', 'amount', 'price', 'value'
 
     Methods:
 
@@ -59,7 +59,7 @@ class Transactions(bt.Analyzer):
     '''
     params = (
         ('headers', False),
-        ('_pfheaders', ('date', 'amount', 'price', 'sid', 'symbol', 'value')),
+        ('_pfheaders', ('date', 'sid', 'symbol', 'amount', 'price', 'value')),
     )
 
     def start(self):
@@ -95,7 +95,7 @@ class Transactions(bt.Analyzer):
             if pos is not None:
                 size, price = pos.size, pos.price
                 if size:
-                    entries.append([size, price, i, dname, -size * price])
+                    entries.append([dname, size, price, -size * price])
 
         if entries:
             # self.rets[self.strategy.datetime.datetime().replace(tzinfo=self.strategy.data._tz)] = entries

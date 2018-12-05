@@ -115,7 +115,7 @@ class Trade(object):
       - ``baropen`` (``int``): bar in which this trade was opened
 
       - ``dtopen`` (``float``): float coded datetime in which the trade was
-        closed
+        opened
 
         - Use method ``open_datetime`` to get a Python datetime.datetime
           or use the platform provided ``num2date`` method
@@ -175,8 +175,10 @@ class Trade(object):
 
         self.baropen = 0
         self.dtopen = 0.0
+        # self.priceopen = 0.0
         self.barclose = 0
         self.dtclose = 0.0
+        # self.priceclose = 0.0
         self.barlen = 0
 
         self.historyon = historyon
@@ -257,6 +259,7 @@ class Trade(object):
         if self.justopened:
             self.baropen = len(self.data)
             self.dtopen = 0.0 if order.p.simulated else self.data.datetime[0]
+            # self.priceopen = price
             self.long = self.size > 0
 
         # Any size means the trade was opened
@@ -273,6 +276,7 @@ class Trade(object):
             self.isopen = False
             self.barclose = len(self.data)
             self.dtclose = self.data.datetime[0]
+            # self.priceclose = price
 
             self.status = self.Closed
         elif self.isopen:

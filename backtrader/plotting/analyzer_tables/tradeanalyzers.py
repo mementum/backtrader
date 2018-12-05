@@ -65,11 +65,11 @@ def datatable(self):
 
         tables.append(tab3)
 
-        tab4 = [['Long', ColummDataType.STRING], ['Gross', ColummDataType.FLOAT], ['Net', ColummDataType.FLOAT]]
-        tab4[0].append('Longest')
-        tab4[1].append(a['streak']['won']['longest'])
-        tab4[2].append(a['streak']['lost']['longest'])
-        tables.append(tab4)
+        # tab4 = [['Long', ColummDataType.STRING], ['Gross', ColummDataType.FLOAT], ['Net', ColummDataType.FLOAT]]
+        # tab4[0].append('Longest')
+        # tab4[1].append(a['streak']['won']['longest'])
+        # tab4[2].append(a['streak']['lost']['longest'])
+        # tables.append(tab4)
 
         tab5 = [['Trades', ColummDataType.STRING], ['Total', ColummDataType.INT], ['Won', ColummDataType.INT], ['Lost', ColummDataType.INT]]
         tab5[0].append('Long')

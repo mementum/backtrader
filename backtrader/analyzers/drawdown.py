@@ -148,7 +148,7 @@ class TimeDrawDown(bt.TimeFrameAnalyzerBase):
         drawdown stats as values, the following keys/attributes are available:
 
         - ``drawdown`` - drawdown value in 0.xx %
-        - ``maxdrawdown`` - drawdown value in monetary units
+        - ``maxdrawdown`` - max drawdown value in 0.xx %
         - ``maxdrawdownperiod`` - drawdown length
 
       - Those are available during runs as attributes

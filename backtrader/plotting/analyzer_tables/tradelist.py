@@ -1,17 +1,14 @@
 from backtrader.plotting.bokeh.datatable import ColummDataType
 
-# ('ref', 'size', 'pricein', 'priceout', 'chng%', 'pnl', 'pnl%', 'cumpnl', 'nbars', 'mfe%', 'mae%')),
-
 def datatable(self):
     cols = [['Ref', ColummDataType.INT],
             ['Ticker', ColummDataType.STRING],
-            ['Size', ColummDataType.INT],
-            ['Bars', ColummDataType.INT],
-            ['PriceIn', ColummDataType.FLOAT],
-            ['PriceOut', ColummDataType.FLOAT],
-            ['Chng%', ColummDataType.FLOAT],
+            ['Position', ColummDataType.STRING],
+            ['Periods', ColummDataType.INT],
+            ['DateIn', ColummDataType.DATETIME],
+            ['DateOut', ColummDataType.DATETIME],
             ['PNL', ColummDataType.FLOAT],
-            ['PNL%', ColummDataType.FLOAT],
+            ['CPNL', ColummDataType.FLOAT],
             ['MFE%', ColummDataType.FLOAT],
             ['MAE%', ColummDataType.FLOAT],
             ]
@@ -28,6 +25,6 @@ def datatable(self):
         cols[7].append(v[0][6])
         cols[8].append(v[0][7])
         cols[9].append(v[0][8])
-        cols[10].append(v[0][9])
+        # cols[10].append(v[0][9])
 
     return "Trades", [cols]
