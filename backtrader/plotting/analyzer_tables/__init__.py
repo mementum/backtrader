@@ -4,7 +4,7 @@ from .drawdown import datatable as drawdown
 from .timedrawdown import datatable as timedrawdown
 from .sharperatio import datatable as sharperatio
 from .tradeanalyzers import datatable as tradeanalyzer
-from .tradelist import datatable as tradelist
+from .tradedetails import datatable as tradedetails
 from .transactions import datatable as transactions
 from .calmar import datatable as calmar
 from .annualreturn import datatable as annualreturn
@@ -33,7 +33,7 @@ def inject_datatables():
         backtrader.analyzers.VariabilityWeightedReturn: vwr,
         backtrader.analyzers.TimeReturn: timereturn,
         backtrader.analyzers.SQN: sqn,
-        backtrader.analyzers.TradeList: tradelist
+        backtrader.analyzers.TradeDetails: tradedetails
     }
 
     for cls, labdict in _atables.items():

@@ -5,15 +5,14 @@ def datatable(self):
             ['Ticker', ColummDataType.STRING],
             ['Position', ColummDataType.STRING],
             ['Periods', ColummDataType.INT],
-            ['DateIn', ColummDataType.DATETIME],
-            ['DateOut', ColummDataType.DATETIME],
+            ['TimeIn', ColummDataType.DATETIME],
+            ['TimeOut', ColummDataType.DATETIME],
             ['PNL', ColummDataType.FLOAT],
             ['CPNL', ColummDataType.FLOAT],
             ['MFE%', ColummDataType.FLOAT],
             ['MAE%', ColummDataType.FLOAT],
             ]
 
-    # size, price, i, dname, -size * price
     for k, v in self.get_analysis().items():
         cols[0].append(k)
         cols[1].append(v[0][0])
@@ -27,4 +26,4 @@ def datatable(self):
         cols[9].append(v[0][8])
         # cols[10].append(v[0][9])
 
-    return "Trades", [cols]
+    return "Trade Details", [cols]

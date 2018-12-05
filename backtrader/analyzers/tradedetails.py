@@ -3,21 +3,20 @@ from __future__ import (absolute_import, division, print_function,
 import collections
 
 import backtrader as bt
-from backtrader import Order, Position
 
-class TradeList(bt.Analyzer):
+class TradeDetails(bt.Analyzer):
     params = (
         ('headers', False),
         ('_pfheaders', ('ref', 'ticker', 'size', 'nbars', 'datein', 'dateout', 'pnl', 'cpnl', 'mfe', 'mae')),
     )
 
     def start(self):
-        super(TradeList, self).start()
+        super(TradeDetails, self).start()
         if self.p.headers:
             self.rets[self.p._pfheaders[0]] = [list(self.p._pfheaders[1:])]
 
     def stop(self):
-        super(TradeList, self).stop()
+        super(TradeDetails, self).stop()
 
     def __init__(self):
         self.cumprofit = 0.0
@@ -37,7 +36,8 @@ class TradeList(bt.Analyzer):
                 pnl = trade.history[len(trade.history)-1].status.pnlcomm
                 barlen = trade.history[len(trade.history)-1].status.barlen
             else:
-                # we can calculate MFE/MAE using average price just as well (using trade.price) for trades that have not increased position it'll be the same as price open
+                # we can calculate MFE/MAE using average price just as well (using trade.price) for trades that have not increased position 
+                # it'll be the same as price open, alternatively trade object can be extended to include priceopen and priceclosed properties
                 # pricein = trade.priceopen
                 pricein = trade.price
                 # priceout = trade.priceclose
@@ -51,7 +51,7 @@ class TradeList(bt.Analyzer):
                 dateout = dateout.date()
 
             pnlpcnt = 100 * pnl / brokervalue
-            pbar = pnl / barlen
+            # pbar = pnl / barlen
             self.cumprofit += pnl
 
             # MFE/MAE calculation is only possible if we have access to full data history, this is better than just failing if exactbars is True
