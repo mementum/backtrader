@@ -8,7 +8,7 @@ from typing import List, Dict, Callable, Optional, Union
 import backtrader as bt
 
 try:
-    from bokeh.models import ColumnDataSource, Model
+    from bokeh.models import ColumnDataSource, Model, Paragraph
     from bokeh.models.widgets import Panel, Tabs, DataTable, TableColumn
     from bokeh.layouts import column, gridplot, row
     from bokeh.server.server import Server
@@ -182,6 +182,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+            # this will not return a result, starts a server
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:
@@ -478,9 +479,10 @@ class Bokeh(metaclass=bt.MetaParams):
                 cds.add(ll, k)
                 tab_columns.append(TableColumn(field=k, title=k, sortable=False, formatter=col_formatter))
 
-        selector = DataTable(source=cds, columns=tab_columns, width=1600, height=150)
+        selector = DataTable(source=cds, columns=tab_columns, width=self.p.scheme.plot_width, height=150)
+        title = Paragraph(text="Parameters", width=self.p.scheme.plot_width, style={'font-size': 'large'})
 
-        model = column([selector, self.plot_and_generate_model(opts[0])])
+        model = column([title, selector, self.plot_and_generate_model(opts[0])])
 
         def update(_name, _old, new):
             if len(new) == 0:
@@ -522,7 +524,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             apps = {'/': app}
 
-            print("Open your browser here: http://localhost:8080")
+            print("Running optimization server. Open your browser here: http://localhost:8080")
             server = Server(apps, port=port)
             server.run_until_shutdown()
     #  endregion

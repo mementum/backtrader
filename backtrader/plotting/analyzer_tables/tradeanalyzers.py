@@ -71,21 +71,29 @@ def datatable(self):
         # tab4[2].append(a['streak']['lost']['longest'])
         # tables.append(tab4)
 
-        tab5 = [['Trades', ColummDataType.STRING], ['Total', ColummDataType.INT], ['Won', ColummDataType.INT], ['Lost', ColummDataType.INT]]
+        tab5 = [['Trades', ColummDataType.STRING], ['Total', ColummDataType.INT], ['Won', ColummDataType.INT], ['Lost', ColummDataType.INT], ['% Won', ColummDataType.INT]]
         tab5[0].append('Long')
         tab5[1].append(a['long']['total'])
         tab5[2].append(a['long']['won'])
         tab5[3].append(a['long']['lost'])
+        tab5[4].append((a['long']['won'] / a['long']['total'] if a['long']['total'] else 0) * 100)
 
         tab5[0].append('Short')
         tab5[1].append(a['short']['total'])
         tab5[2].append(a['short']['won'])
         tab5[3].append(a['short']['lost'])
+        tab5[4].append((a['short']['won'] / a['short']['total'] if a['short']['total'] else 0) * 100)
 
         tab5[0].append('All')
         tab5[1].append(a['won']['total'] + a['lost']['total'])
         tab5[2].append(a['won']['total'])
         tab5[3].append(a['lost']['total'])
+        tab5[4].append((a['won']['total'] / (a['won']['total'] + a['lost']['total']) if (a['won']['total'] + a['lost']['total']) else 0) * 100)
+
+        # tab5[0].append('All')
+        # tab5[1].append(a['won']['total'] + a['lost']['total'])
+        # tab5[2].append(a['won']['total'])
+        # tab5[3].append(a['lost']['total'])
 
         tables.append(tab5)
 
