@@ -32,10 +32,12 @@ from .sierrachart import *
 from .mt4csv import *
 from .pandafeed import *
 from .influxfeed import *
+
 try:
     from .ibdata import *
 except ImportError:
-    pass  # The user may not have ibpy installed
+    raise ImportError(
+        'IbPy2 seems to be missing. Needed for live trading using IB.')
 
 try:
     from .vcdata import *
