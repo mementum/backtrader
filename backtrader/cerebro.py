@@ -938,6 +938,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''
         Either plots the strategies inside cerebro or starts Optimization Analysis Server
         '''
+        if self._exactbars > 0:
+            return
+
         from . import plotting
         plotter = plotting.Bokeh(**kwargs)
         return plotter.plot_result(result, columns)

@@ -24,4 +24,5 @@ from __future__ import (absolute_import, division, print_function,
 import backtrader.tools as bttools
 
 if __name__ == '__main__':
-    bttools.btrun()
+    bttools.yahoodownload()
+

@@ -44,7 +44,7 @@ logging.basicConfig(
     level=logging.INFO)
 
 
-class YahooDownload(object):
+class YahooDownloader(object):
     urlhist = 'https://finance.yahoo.com/quote/{}/history'
     urldown = 'https://query1.finance.yahoo.com/v7/finance/download'
     retries = 3
@@ -160,6 +160,68 @@ class YahooDownload(object):
         f.close()
 
 
+def yahoodownload():
+    args = parse_args()
+
+    logging.info('Processing input parameters')
+    logging.info('Processing fromdate')
+    try:
+        fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
+    except Exception as e:
+        logging.error('Converting fromdate failed')
+        logging.error(str(e))
+        sys.exit(1)
+
+    logging.info('Processing todate')
+    todate = datetime.datetime.today()
+    if args.todate:
+        try:
+            todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
+        except Exception as e:
+            logging.error('Converting todate failed')
+            logging.error(str(e))
+            sys.exit(1)
+
+    logging.info('Do Not Reverse flag status')
+    reverse = args.reverse
+
+    logging.info('Downloading from yahoo')
+    try:
+        yahoodown = YahooDownloader(
+            ticker=args.ticker,
+            fromdate=fromdate,
+            todate=todate,
+            period=args.timeframe,
+            reverse=reverse)
+
+    except Exception as e:
+        logging.error('Downloading data from Yahoo failed')
+        logging.error(str(e))
+        sys.exit(1)
+
+    outfile = '{}_{}-{}-{}.csv'.format(args.timeframe.capitalize(), args.ticker, fromdate.strftime('%Y-%m-%d'), todate.strftime('%Y-%m-%d'))
+    if args.outfile:
+        outfile = args.outfile
+
+    logging.info('Opening output file')
+    try:
+        ofile = io.open(outfile, 'w')
+    except IOError as e:
+        logging.error('Error opening output file')
+        logging.error(str(e))
+        sys.exit(1)
+
+    logging.info('Writing downloaded data to output file')
+    try:
+        yahoodown.writetofile(ofile)
+    except Exception as e:
+        logging.error('Writing to output file failed')
+        logging.error(str(e))
+        sys.exit(1)
+
+    logging.info('All operations completed successfully')
+    sys.exit(0)
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Download Yahoo CSV Finance Data')
@@ -176,68 +238,12 @@ def parse_args():
     parser.add_argument('--fromdate', required=True,
                         help='Starting date in YYYY-MM-DD format')
 
-    parser.add_argument('--todate', required=True,
+    parser.add_argument('--todate', required=False,
                         help='Ending date in YYYY-MM-DD format')
 
-    parser.add_argument('--outfile', required=True,
+    parser.add_argument('--outfile', required=False,
                         help='Output file name')
 
     return parser.parse_args()
 
 
-if __name__ == '__main__':
-
-    args = parse_args()
-
-    logging.info('Processing input parameters')
-    logging.info('Processing fromdate')
-    try:
-        fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
-    except Exception as e:
-        logging.error('Converting fromdate failed')
-        logging.error(str(e))
-        sys.exit(1)
-
-    logging.info('Processing todate')
-    try:
-        todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
-    except Exception as e:
-        logging.error('Converting todate failed')
-        logging.error(str(e))
-        sys.exit(1)
-
-    logging.info('Do Not Reverse flag status')
-    reverse = args.reverse
-
-    logging.info('Downloading from yahoo')
-    try:
-        yahoodown = YahooDownload(
-            ticker=args.ticker,
-            fromdate=fromdate,
-            todate=todate,
-            period=args.timeframe,
-            reverse=reverse)
-
-    except Exception as e:
-        logging.error('Downloading data from Yahoo failed')
-        logging.error(str(e))
-        sys.exit(1)
-
-    logging.info('Opening output file')
-    try:
-        ofile = io.open(args.outfile, 'w')
-    except IOError as e:
-        logging.error('Error opening output file')
-        logging.error(str(e))
-        sys.exit(1)
-
-    logging.info('Writing downloaded data to output file')
-    try:
-        yahoodown.writetofile(ofile)
-    except Exception as e:
-        logging.error('Writing to output file failed')
-        logging.error(str(e))
-        sys.exit(1)
-
-    logging.info('All operations completed successfully')
-    sys.exit(0)
