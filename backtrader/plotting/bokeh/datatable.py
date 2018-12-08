@@ -26,7 +26,7 @@ class TableGenerator(object):
 
         def add_to_table(item: object, baselabel: str=""):
             for ak, av in item.items():
-                label = f"{baselabel} - {ak}" if len(baselabel) > 0 else ak
+                label = '{} - {}'.format(baselabel, ak) if len(baselabel) > 0 else ak
                 if isinstance(av, (bt.AutoOrderedDict, OrderedDict)):
                     add_to_table(av, label)
                 else:
@@ -46,9 +46,9 @@ class TableGenerator(object):
         elif ctype == ColummDataType.STRING:
             return StringFormatter()
         elif ctype == ColummDataType.PERCENTAGE:
-            return NumberFormatter(format="0.000 %")
+            return NumberFormatter(format=self._scheme.number_format + " %")
         else:
-            raise Exception(f"Unsupported ColumnDataType: '{ctype}'")
+            raise Exception("Unsupported ColumnDataType: '{}'".format(ctype))
 
     def get_analyzers_tables(self, analyzer: bt.analyzers.Analyzer, table_width) -> (Paragraph, List[DataTable]):
         if hasattr(analyzer, 'get_analysis_table'):
@@ -57,16 +57,16 @@ class TableGenerator(object):
             # Analyzer does not provide a table function. Use our generic one
             title, table_columns_list = TableGenerator._get_analysis_table_generic(analyzer)
 
-        param_str = get_params_str(analyzer.params)
+        param_str = get_params_str(analyzer.params, self._scheme.number_format)
         if len(param_str) > 0:
-            title += f' ({param_str})'
+            title += ' ({})'.format(param_str)
 
         elems: List[DataTable] = []
         for table_columns in table_columns_list:
             cds = ColumnDataSource()
             columns = []
             for i, c in enumerate(table_columns):
-                col_name = f'col{i}'
+                col_name = 'col{}'.format(i)
                 cds.add(c[2:], col_name)
                 columns.append(TableColumn(field=col_name, title=c[0], formatter=self._get_formatter(c[1])))
             column_height = len(table_columns[0]) * 25

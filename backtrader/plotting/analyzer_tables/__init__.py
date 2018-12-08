@@ -39,6 +39,6 @@ def inject_datatables():
     for cls, labdict in _atables.items():
         curlab = getattr(cls, _DATATABLE_FNC_NAME, None)
         if curlab is not None:
-            _logger.warning(f"Analyzer class '{cls.__name__}' already contains a function 'get_rets_table'. Not overriding.")
+            _logger.warning("Analyzer class '{}' already contains a function 'get_rets_table'. Not overriding.".format(cls.__name__))
             continue
         setattr(cls, _DATATABLE_FNC_NAME, labdict)

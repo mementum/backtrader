@@ -173,7 +173,7 @@ class Bokeh(metaclass=bt.MetaParams):
                 self.plot(s)
             return self.generate_model()
         else:
-            raise Exception(f"Unsupported result type: {str(result)}")
+            raise Exception('Unsupported result type: {}'.format(str(result)))
 
     def plot_result(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None):
         """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
@@ -189,7 +189,7 @@ class Bokeh(metaclass=bt.MetaParams):
                 self.plot(s)
             filenames.append(self.show())
         else:
-            raise Exception(f"Unsupported result type: {str(result)}")
+            raise Exception('Unsupported result type: {}'.format(str(result)))
 
         return filenames
 
@@ -324,7 +324,7 @@ class Bokeh(metaclass=bt.MetaParams):
         elif self.p.scheme.plot_mode == 'tabs':
             return self._generate_model_tabs(self._fp)
         else:
-            raise Exception(f"Unsupported plot mode: {self.p.scheme.plot_mode}")
+            raise Exception('Unsupported plot mode: {}'.format(self.p.scheme.plot_mode))
 
     def _generate_model_single(self, fp: FigurePage):
         """Print all figures in one column. Plot observers first, then all plotabove then rest"""
@@ -405,10 +405,10 @@ class Bokeh(metaclass=bt.MetaParams):
     def _output_plot_file(self, model, filename=None, template="basic.html.j2"):
         if filename is None:
             tmpdir = tempfile.gettempdir()
-            filename = os.path.join(tmpdir, f"bt_bokeh_plot_{self._num_plots}.html")
+            filename = os.path.join(tmpdir, 'bt_bokeh_plot_{}.html'.format(self._num_plots))
 
         env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
-        title = 'BackTest ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        title = 'BackTest {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         templ = env.get_template(template)
         templ.globals['title'] = title
 
@@ -450,7 +450,7 @@ class Bokeh(metaclass=bt.MetaParams):
         cds = ColumnDataSource()
         tab_columns = []
 
-        col_formatter = NumberFormatter(format='0.000')
+        col_formatter = NumberFormatter(format=self._scheme.number_format)
         opts = optresult if bttypes.is_optresult(optresult) else [x['result'] for x in optresult['optresult']]
         if bttypes.is_ordered_optresult(optresult):
             benchmarks = [x['benchmark'] for x in Bokeh._get_limited_optresult(optresult['optresult'], num_item_limit)]
@@ -461,16 +461,16 @@ class Bokeh(metaclass=bt.MetaParams):
             # add suffix when dealing with more than 1 strategy
             strat_suffix = ''
             if len(opts[0]) > 1:
-                strat_suffix = f' [{idx}]'
+                strat_suffix = ' [{}]'.format(idx)
 
             for name, val in strat.params._getitems():
-                tab_columns.append(TableColumn(field=f"{idx}_{name}", title=f'{name}{strat_suffix}', sortable=False, formatter=col_formatter))
+                tab_columns.append(TableColumn(field='{}_{}'.format(idx, name), title='{}{}'.format(name, strat_suffix), sortable=False, formatter=col_formatter))
 
                 # get value for the current param for all results
                 pvals = []
                 for opt in Bokeh._get_limited_optresult(opts, num_item_limit):
                     pvals.append(opt[idx].params._get(name))
-                cds.add(pvals, f"{idx}_{name}")
+                cds.add(pvals, '{}_{}'.format(idx, name))
 
         # add user columns specified by parameter 'columns'
         if columns is not None:
@@ -504,7 +504,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
             env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
             templ = env.get_template("basic.html.j2")
-            templ.globals['title'] = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            templ.globals['title'] = 'BackTest (Optimization) {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             templ.globals['show_headline'] = self.p.scheme.show_headline
             templ.globals['stylesheet'] = self._output_stylesheet()
             doc.template = templ

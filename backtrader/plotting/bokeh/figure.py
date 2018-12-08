@@ -165,7 +165,7 @@ class Figure(object):
             self.plot_observer(obj, master)
             height_set = self._scheme.plot_height_observer
         else:
-            raise Exception(f"Unsupported plot object: {type(obj)}")
+            raise Exception("Unsupported plot object: {}".format(type(obj)))
 
         self.datas.append(obj)
 
@@ -184,17 +184,17 @@ class Figure(object):
                 names.append(x._name)
             elif isinstance(x, bt.Indicator):
                 names.append(x.plotlabel())
-        return f"({','.join(names)})"
+        return "({})".format(','.join(names))
 
     def plot_observer(self, obj, master):
         self.plot_indicator(obj, master)
 
     def plot_indicator(self, obj: Union[bt.Indicator, bt.Observer], master, strat_clk: array=None):
-        pl =  f'{obj.plotlabel()} '
+        pl =  '{} '.format(obj.plotlabel())
         if isinstance(obj, bt.Indicator):
             pl += Figure._get_datas_description(obj)
         elif isinstance(obj, bt.Observer):
-            pl += get_strategy_label(type(obj._owner), obj._owner.params)
+            pl += get_strategy_label(type(obj._owner), obj._owner.params, self._scheme.number_format)
 
         self._figure_append_title(pl)
         indlabel = obj.plotlabel()
@@ -266,7 +266,7 @@ class Figure(object):
                             'd': self.figure.diamond,
                             }
                 if marker not in mrk_fncs:
-                    raise Exception(f"Sorry, unsupported marker: '{marker}'. Please report to GitHub.")
+                    raise Exception("Sorry, unsupported marker: '{}'. Please report to GitHub.".format(marker))
                 glyph_fnc = mrk_fncs[marker]
             elif method == "bar":
                 kwglyphs['bottom'] = 0
@@ -287,7 +287,7 @@ class Figure(object):
 
                 glyph_fnc = self.figure.line
             else:
-                raise Exception(f"Unknown plotting method '{method}'")
+                raise Exception("Unknown plotting method '{}'".format(method))
 
             renderer = glyph_fnc("index", source=self._cds, **kwglyphs)
 
@@ -297,8 +297,8 @@ class Figure(object):
             else:
                 self._add_hover_renderer(renderer)
 
-            hover_label = f"{indlabel} - {linealias}"
-            hover_data = f"@{source_id}{{{self._scheme.number_format}}}"
+            hover_label = "{} - {}".format(indlabel, linealias)
+            hover_data = "@{}{{{}}}".format(source_id, self._scheme.number_format)
             if not self._scheme.merge_data_hovers:
                 # add hover tooltip for indicators/observers's data
                 self._hoverc.add_hovertip_for_data(hover_label, hover_data, obj._clock)
@@ -359,7 +359,7 @@ class Figure(object):
         source_id = Figure._source_id(data)
         title = sanitize_source_name(data._name or '<NoName>')
         if len(data._env.strats) > 1:
-            title += f" ({get_strategy_label(type(self._strategy), self._strategy.params)})"
+            title += ' ({})'.format(get_strategy_label(type(self._strategy), self._strategy.params, self._scheme.number_format))
 
         # append to title
         self._figure_append_title(title)
@@ -393,7 +393,8 @@ class Figure(object):
             renderer = self.figure.line('index', source_id + 'close', source=self._cds, line_color=color, legend=data._name)
             self._set_single_hover_renderer(renderer)
 
-            self._hoverc.add_hovertip("Close", f"@{source_id}close")
+            self._hoverc.add_hovertip("Close", "@{}close{{({})}}".format(source_id, self._scheme.number_format))
+            # self._hoverc.add_hovertip("Close", '@{}close'.format(source_id))
         elif self._scheme.style == 'bar':
             self.figure.segment('index', source_id + 'high', 'index', source_id + 'low', source=self._cds, color=source_id + 'colors_wicks', legend=data._name)
             renderer = self.figure.vbar('index',
@@ -407,12 +408,13 @@ class Figure(object):
             self._set_single_hover_renderer(renderer)
 
             hover_target = None if self._scheme.merge_data_hovers else self.figure
-            self._hoverc.add_hovertip("Open", f"@{source_id}open{{{self._scheme.number_format}}}", hover_target)
-            self._hoverc.add_hovertip("High", f"@{source_id}high{{{self._scheme.number_format}}}", hover_target)
-            self._hoverc.add_hovertip("Low", f"@{source_id}low{{{self._scheme.number_format}}}", hover_target)
-            self._hoverc.add_hovertip("Close", f"@{source_id}close{{{self._scheme.number_format}}}", hover_target)
+            self._hoverc.add_hovertip("Open", "@{}open{{({})}}".format(source_id, self._scheme.number_format), hover_target)
+            self._hoverc.add_hovertip("High", "@{}high{{({})}}".format(source_id, self._scheme.number_format), hover_target)
+            self._hoverc.add_hovertip("Low", "@{}low{{({})}}".format(source_id, self._scheme.number_format), hover_target)
+            self._hoverc.add_hovertip("Close", "@{}close{{({})}}".format(source_id, self._scheme.number_format), hover_target)
+
         else:
-            raise Exception(f"Unsupported style '{self._scheme.style}'")
+            raise Exception("Unsupported style '{}'".format(self._scheme.style))
 
         adapt_yranges(self.figure.y_range, df.low, df.high)
 
@@ -434,8 +436,8 @@ class Figure(object):
         is_up = df.close > df.open
         colors = [colorup if x else colordown for x in is_up]
 
-        self._add_to_cds(df.volume, f'{source_id}volume')
-        self._add_to_cds(colors, f'{source_id}volume_colors')
+        self._add_to_cds(df.volume, '{}volume'.format(source_id))
+        self._add_to_cds(colors, '{}volume_colors'.format(source_id))
 
         kwargs = {'fill_alpha': alpha,
                   'line_alpha': alpha,
@@ -462,7 +464,8 @@ class Figure(object):
             adapt_yranges(self.figure.y_range, df.volume)
             self.figure.y_range.end /= self._scheme.volscaling
 
-        self.figure.vbar('index', get_bar_width(), f'{source_id}volume', 0, source=self._cds, fill_color=f'{source_id}volume_colors', line_color="black", **kwargs)
+        self.figure.vbar('index', get_bar_width(), '{}volume'.format(source_id), 0, source=self._cds, fill_color='{}volume_colors'.format(source_id), line_color="black", **kwargs)
 
         hover_target = None if self._scheme.merge_data_hovers else self.figure
-        self._hoverc.add_hovertip("Volume", f"@{source_id}volume{{({self._scheme.number_format})}}", hover_target)
+        self._hoverc.add_hovertip("Volume", "@{}volume{{({})}}".format(source_id, self._scheme.number_format), hover_target)
+

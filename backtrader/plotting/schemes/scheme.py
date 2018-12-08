@@ -244,4 +244,4 @@ class Scheme(PlotScheme):
         self.merge_data_hovers = True
 
         self.number_format = '0,0.000'
-        self.number_format_volume = '0.00 a'
+        self.number_format_volume = '0 a'

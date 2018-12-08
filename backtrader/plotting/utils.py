@@ -17,10 +17,10 @@ def get_nondefault_params(params: object) -> Dict[str, object]:
     return {key: params._get(key) for key in params._getkeys() if not params.isdefault(key)}
 
 
-def get_params_str(params: Optional[bt.AutoInfoClass]) -> str:
+def get_params_str(params: Optional[bt.AutoInfoClass], number_format) -> str:
     user_params = get_nondefault_params(params)
 
-    def get_value_str(name, value):
+    def get_value_str(name, value, number_format):
         if name == "timeframe":
             return bt.TimeFrame.getname(value, 1)
         elif isinstance(value, int):
@@ -28,16 +28,21 @@ def get_params_str(params: Optional[bt.AutoInfoClass]) -> str:
         elif isinstance(value, list):
             return ','.join(value)
         else:
-            return f"{value:.2f}"
+            format_str = number_format.split('.')
+            if len(format_str) == 2:
+                decimal_points = len(format_str[1])
+            else:
+                decimal_points = 2
+            return "{:.{}f}".format(value, decimal_points)
 
-    plabs = [f"{x}: {get_value_str(x, y)}" for x, y in user_params.items()]
+    plabs = ["{}: {}".format(x, get_value_str(x, y, number_format)) for x, y in user_params.items()]
     plabs = ', '.join(plabs)
     return plabs
 
 
-def get_strategy_label(strategycls: bt.MetaStrategy, params: Optional[bt.AutoInfoClass]) -> str:
+def get_strategy_label(strategycls: bt.MetaStrategy, params: Optional[bt.AutoInfoClass], number_format) -> str:
     label = strategycls.__name__
-    plabs = get_params_str(params)
+    plabs = get_params_str(params, number_format)
     return f'{label} [{plabs}]'
 
 
@@ -76,7 +81,7 @@ def convert_to_pandas(strat_clk, obj: bt.LineSeries, start: datetime=None, end: 
         data = line.plotrange(start, end)
 
         ndata = resample_line(data, obj.lines.datetime.plotrange(start, end), strat_clk)
-        logging.info(f"Filled_line: {linealias}: {str(ndata)}")
+        logging.info("Filled_line: {}: {}".format(linealias, str(ndata)))
 
         df[name_prefix + linealias] = ndata
 
