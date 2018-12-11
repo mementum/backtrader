@@ -1,6 +1,7 @@
 import backtrader as bt
 from typing import Dict, Optional, List, Union
 import math
+import numbers
 from datetime import datetime
 import logging
 
@@ -33,7 +34,10 @@ def get_params_str(params: Optional[bt.AutoInfoClass], number_format) -> str:
                 decimal_points = len(format_str[1])
             else:
                 decimal_points = 2
-            return "{:.{}f}".format(value, decimal_points)
+            if isinstance(value, numbers.Number):
+                return "{:.{}f}".format(value, decimal_points)
+            else:
+                return "{}".format(value)
 
     plabs = ["{}: {}".format(x, get_value_str(x, y, number_format)) for x, y in user_params.items()]
     plabs = ', '.join(plabs)
