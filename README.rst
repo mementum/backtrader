@@ -144,9 +144,7 @@ From *pypi*:
 
 An example for *IB* Data Feeds/Trading:
 
-  - ``IbPy`` doesn't seem to be in PyPi. Do either::
-
-      pip install ibpy2
+  -  ``pip install ibpy2``
 
 For other functionalities like: ``Visual Chart``, ``Oanda``, ``TA-Lib``, check
 the dependencies in the documentation.
