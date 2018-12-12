@@ -76,20 +76,20 @@ class DownloadStrategy(bt.Strategy):
             dt = self.data.datetime.date(0).strftime('%Y-%m-%d')
             fields.append(dt)
 
-        o = '%.2f' % self.data.open[0]
+        o = self.data.open[0]
         fields.append(o)
-        h = '%.2f' % self.data.high[0]
+        h = self.data.high[0]
         fields.append(h)
-        l = '%.2f' % self.data.low[0]
+        l = self.data.low[0]
         fields.append(l)
-        c = '%.2f' % self.data.close[0]
+        c = self.data.close[0]
         fields.append(c)
-        v = '%d' % self.data.volume[0]
+        v = self.data.volume[0]
         fields.append(v)
-        oi = '%d' % self.data.openinterest[0]
+        oi = self.data.openinterest[0]
         fields.append(oi)
 
-        txt = self.p.separator.join(fields)
+        txt = self.p.separator.join(str(x) for x in fields)
         txt += '\n'
         self.f.write(txt)
 
