@@ -137,7 +137,11 @@ setuptools.setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     # entry_points={'console_scripts': ['sample=sample:main',],},
-    entry_points={'console_scripts': ['btrun=backtrader.tools:btrun','yahoodownload=backtrader.tools:yahoodownload', 'ibdownload=backtrader.tools:ibdownload']},
+    entry_points={'console_scripts': [
+        'btrun=backtrader.tools:btrun',
+        'yahoodownload=backtrader.tools:yahoodownload', 
+        'ibdownload=backtrader.tools:ibdownload'
+    ]},
 
     # scripts=['tools/bt-run.py', 'tools/yahoo-download.py', 'tools/ib-download.py'],
 )
