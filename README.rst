@@ -71,7 +71,7 @@ Live Trading and backtesting platform written in Python.
 
   - Live Data Feed and Trading with
 
-    - Interactive Brokers (needs ``IbPy`` and benefits greatly from an
+    - Interactive Brokers (needs ``IbPy2`` and benefits greatly from an
       installed ``pytz``)
     - *Visual Chart* (needs a fork of ``comtypes`` until a pull request is
       integrated in the release and benefits from ``pytz``)
@@ -146,11 +146,7 @@ An example for *IB* Data Feeds/Trading:
 
   - ``IbPy`` doesn't seem to be in PyPi. Do either::
 
-      pip install git+https://github.com/blampe/IbPy.git
-
-    or (if ``git`` is not available in your system)::
-
-      pip install https://github.com/blampe/IbPy/archive/master.zip
+      pip install ibpy2
 
 For other functionalities like: ``Visual Chart``, ``Oanda``, ``TA-Lib``, check
 the dependencies in the documentation.
