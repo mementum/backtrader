@@ -87,7 +87,7 @@ class MetaAnalyzer(bt.MetaParams):
 
 
 class Analyzer(with_metaclass(MetaAnalyzer, object)):
-    params = (('plot', True),)
+    params = (('plot', True),('plotname', None),)
     
     '''Analyzer base class. All analyzers are subclass of this one
 

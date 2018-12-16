@@ -10,5 +10,8 @@ def datatable(self):
         cols1[0].append(k)
         cols1[1].append(v)
 
-    return "Gross Leverage", [cols1]
+    name = "Gross Leverage"
+    if self.p.plotname:
+        name = self.p.plotname
 
+    return name, [cols1]

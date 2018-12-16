@@ -15,5 +15,9 @@ def datatable(self):
     cols1[0].append('Max Drawdown Period')
     cols1[1].append(a['maxdrawdownperiod'])
 
-    return "Time Drawdown", [cols1]
+    name = "Time Drawdown"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols1]
 

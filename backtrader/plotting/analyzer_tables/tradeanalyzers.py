@@ -154,5 +154,9 @@ def datatable(self):
 
         tables.append(tab_len)
 
-    return "Transaction Analyzer", tables
+    name = "Transaction Analyzer"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, tables
 

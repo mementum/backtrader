@@ -27,5 +27,9 @@ def datatable(self):
     table1[0].append("Worst")
     table1[1].append(a.worst)
 
-    return "Period Stats", [table1]
+    name = "Period Stats"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [table1]
 

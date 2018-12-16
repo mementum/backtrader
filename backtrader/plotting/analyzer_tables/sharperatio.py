@@ -7,4 +7,9 @@ def datatable(self):
 
     a = self.get_analysis()
     cols[1].append(a['sharperatio'])
-    return "Sharpe-Ratio", [cols]
+
+    name = "Sharpe Ratio"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols]

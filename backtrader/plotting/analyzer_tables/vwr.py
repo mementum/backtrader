@@ -8,5 +8,9 @@ def datatable(self):
     cols1[0].append('VWR')
     cols1[1].append(a['vwr'])
 
-    return "Variability-Weighted Return", [cols1]
+    name = "Variability-Weighted Return"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols1]
 

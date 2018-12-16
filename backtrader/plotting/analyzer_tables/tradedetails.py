@@ -26,4 +26,8 @@ def datatable(self):
         cols[9].append(v[0][8])
         # cols[10].append(v[0][9])
 
-    return "Trade Details", [cols]
+    name = "Trade Details"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols]

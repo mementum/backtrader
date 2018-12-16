@@ -17,5 +17,9 @@ def datatable(self):
     cols1[1].append(a['drawdown'])
     cols1[2].append(a['max']['drawdown'])
 
-    return "Drawdown", [cols1]
+    name = "Drawdown"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols1]
 

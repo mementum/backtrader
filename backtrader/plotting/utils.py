@@ -15,7 +15,7 @@ _logger = logging.getLogger(__name__)
 
 
 def get_nondefault_params(params: object) -> Dict[str, object]:
-    return {key: params._get(key) for key in params._getkeys() if not params.isdefault(key)}
+    return {key: params._get(key) for key in params._getkeys() if not params.isdefault(key) and key != 'plotname'}
 
 
 def get_params_str(params: Optional[bt.AutoInfoClass], number_format) -> str:

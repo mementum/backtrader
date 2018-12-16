@@ -14,5 +14,9 @@ def datatable(self):
     cols1[0].append('Annualized Return (%)')
     cols1[1].append(round(a['rnorm100'], 2))
 
-    return "Returns", [cols1]
+    name = "Returns"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols1]
 

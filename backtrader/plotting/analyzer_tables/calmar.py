@@ -10,5 +10,8 @@ def datatable(self):
         cols1[0].append(k)
         cols1[1].append(v)
 
-    return "Calmar", [cols1]
+    name = "Calmar"
+    if self.p.plotname:
+        name = self.p.plotname
 
+    return name, [cols1]

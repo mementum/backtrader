@@ -11,5 +11,9 @@ def datatable(self):
     cols1[0].append('Trades')
     cols1[1].append(a['trades'])
 
-    return "SystemQualityNumber", [cols1]
+    name = "System Quality Number"
+    if self.p.plotname:
+        name = self.p.plotname
+
+    return name, [cols1]
 
