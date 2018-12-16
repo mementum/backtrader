@@ -60,6 +60,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - TICKER-IND-EXCHANGE-CURRENCY  # Index
 
           - TICKER-YYYYMM-EXCHANGE  # Future
+          - TICKER-CONTFUT-EXCHANGE # Future (Historical Only)
           - TICKER-YYYYMM-EXCHANGE-CURRENCY  # Future
           - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULT  # Future
           - TICKER-FUT-EXCHANGE-CURRENCY-YYYYMM-MULT # Future
@@ -297,6 +298,9 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 sectype = 'FUT'
             else:  # Assume OPTIONS - YYYYMMDD
                 sectype = 'OPT'
+        
+        if self.p.historical is True and sectype == 'CONTFUT':
+            sectype = 'CONTFUT'
 
         if sectype == 'CASH':  # need to address currency for Forex
             symbol, curr = symbol.split('.')
