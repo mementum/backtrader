@@ -450,12 +450,12 @@ class Bokeh(metaclass=bt.MetaParams):
         cds = ColumnDataSource()
         tab_columns = []
 
-        col_formatter = NumberFormatter(format=self._scheme.number_format)
+        col_formatter = NumberFormatter(format=self.p.scheme.number_format)
         opts = optresult if bttypes.is_optresult(optresult) else [x['result'] for x in optresult['optresult']]
         if bttypes.is_ordered_optresult(optresult):
             benchmarks = [x['benchmark'] for x in Bokeh._get_limited_optresult(optresult['optresult'], num_item_limit)]
             cds.add(benchmarks, "benchmark")
-            tab_columns.append(TableColumn(field='benchmark', title=optresult['benchmark_label'], sortable=False, formatter=col_formatter))
+            tab_columns.append(TableColumn(field='benchmark', title=optresult['benchmark_label'], sortable=False))
 
         for idx, strat in enumerate(opts[0]):
             # add suffix when dealing with more than 1 strategy
@@ -464,7 +464,7 @@ class Bokeh(metaclass=bt.MetaParams):
                 strat_suffix = ' [{}]'.format(idx)
 
             for name, val in strat.params._getitems():
-                tab_columns.append(TableColumn(field='{}_{}'.format(idx, name), title='{}{}'.format(name, strat_suffix), sortable=False, formatter=col_formatter))
+                tab_columns.append(TableColumn(field='{}_{}'.format(idx, name), title='{}{}'.format(name, strat_suffix), sortable=False))
 
                 # get value for the current param for all results
                 pvals = []
@@ -477,7 +477,7 @@ class Bokeh(metaclass=bt.MetaParams):
             for k, v in columns.items():
                 ll = [str(v(x)) for x in Bokeh._get_limited_optresult(optresult, num_item_limit)]
                 cds.add(ll, k)
-                tab_columns.append(TableColumn(field=k, title=k, sortable=False, formatter=col_formatter))
+                tab_columns.append(TableColumn(field=k, title=k, sortable=False))
 
         selector = DataTable(source=cds, columns=tab_columns, width=self.p.scheme.plot_width, height=150)
         title = Paragraph(text="Parameters", width=self.p.scheme.plot_width, style={'font-size': 'large'})
