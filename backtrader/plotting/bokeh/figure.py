@@ -50,7 +50,7 @@ class HoverContainer(object):
 
 
 class Figure(object):
-    _tools = "pan,xwheel_zoom,box_zoom,zoom_in,zoom_out,crosshair,reset"
+    _tools = "pan,box_zoom,xwheel_zoom,reset"
 
     def __init__(self, strategy: bt.Strategy, cds: ColumnDataSource, hoverc: HoverContainer, start, end, scheme, master_type, plotabove: bool):
         self._strategy = strategy
