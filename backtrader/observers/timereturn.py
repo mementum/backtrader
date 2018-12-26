@@ -64,7 +64,7 @@ class TimeReturn(Observer):
 
     lines = ('timereturn',)
     plotinfo = dict(plot=True, subplot=True)
-    plotlines = dict(timereturn=dict(_name='Return'))
+    plotlines = dict(timereturn=dict(_name='Return', _method='bar'),)
 
     params = (
         ('timeframe', None),

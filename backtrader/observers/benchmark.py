@@ -81,7 +81,7 @@ class Benchmark(TimeReturn):
     _stclock = True
 
     lines = ('benchmark',)
-    plotlines = dict(benchmark=dict(_name='Benchmark'))
+    plotlines = dict(benchmark=dict(_name='Benchmark', _method='bar'),)
 
     params = (
         ('data', None),

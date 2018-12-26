@@ -270,7 +270,7 @@ class Figure(object):
                 glyph_fnc = mrk_fncs[marker]
             elif method == "bar":
                 kwglyphs['bottom'] = 0
-                kwglyphs['line_color'] = 'black'
+                kwglyphs['line_color'] = None
                 kwglyphs['fill_color'] = color
                 kwglyphs['width'] = get_bar_width()
                 kwglyphs['top'] = source_id
@@ -464,7 +464,7 @@ class Figure(object):
             adapt_yranges(self.figure.y_range, df.volume)
             self.figure.y_range.end /= self._scheme.volscaling
 
-        self.figure.vbar('index', get_bar_width(), '{}volume'.format(source_id), 0, source=self._cds, fill_color='{}volume_colors'.format(source_id), line_color="black", **kwargs)
+        self.figure.vbar('index', get_bar_width(), '{}volume'.format(source_id), 0, source=self._cds, fill_color='{}volume_colors'.format(source_id), line_color=None, **kwargs)
 
         hover_target = None if self._scheme.merge_data_hovers else self.figure
         self._hoverc.add_hovertip("Volume", "@{}volume{{({})}}".format(source_id, self._scheme.number_format), hover_target)
