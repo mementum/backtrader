@@ -190,11 +190,11 @@ def parse_args():
 
     parser.add_argument('--timeframe', required=False, default='minutes',
                        choices=TIMEFRAMES.keys(),
-                       help='Ending date in YYYY-MM-DD[THH:MM:SS] format')
+                       help='What data resolution to use. Can be one of the above choices.')
 
     parser.add_argument('--compression', required=False, default=1,
                        type=int,
-                       help='Ending date in YYYY-MM-DD[THH:MM:SS] format')
+                       help='How to compress the data. Can be one of the above choices.')
 
     rth_parser = parser.add_mutually_exclusive_group(required=False)
     rth_parser.add_argument('--rth', dest='userth', action='store_true')
