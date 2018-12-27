@@ -122,8 +122,8 @@ def ibdownload():
     logging.info('Downloading from IB')
     try:
         cerebro = bt.Cerebro(tz=0)
-        data = bt.feeds.IBData(dataname=args.ticker, host=args.host, port=int(args.port), clientId=int(args.client), timeframe=TIMEFRAMES[args.timeframe], compression=int(args.compression), 
-          historical=True, useRTH=args.userth, fromdate=fromdate, todate=todate)
+        data = bt.feeds.IBData(dataname=args.ticker, host=args.host, port=int(args.port), clientId=int(args.client), timeframe=TIMEFRAMES[args.timeframe], 
+            compression=int(args.compression), historical=True, useRTH=args.userth, fromdate=fromdate, todate=todate)
 
         cerebro.adddata(data)
 
@@ -154,6 +154,7 @@ def ibdownload():
 # - TICKER-YYYYMM-EXCHANGE-CURRENCY  # Future
 # - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULT  # Future
 # - TICKER-FUT-EXCHANGE-CURRENCY-YYYYMM-MULT # Future
+# - TICKER-CONTFUT-EXCHANGE # Continuous Future (only for historical data)
 
 # - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT  # FOP
 # - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT-MULT  # FOP
@@ -194,7 +195,7 @@ def parse_args():
 
     parser.add_argument('--compression', required=False, default=1,
                        type=int,
-                       help='How to compress the data. Can be one of the above choices.')
+                       help='How to compress the data. Integer')
 
     rth_parser = parser.add_mutually_exclusive_group(required=False)
     rth_parser.add_argument('--rth', dest='userth', action='store_true')
