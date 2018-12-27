@@ -122,7 +122,7 @@ def ibdownload():
     logging.info('Downloading from IB')
     try:
         cerebro = bt.Cerebro(tz=0)
-        data = bt.feeds.IBData(dataname=args.ticker, host=args.host, port=int(args.port), clientId=1, timeframe=TIMEFRAMES[args.timeframe], compression=int(args.compression), 
+        data = bt.feeds.IBData(dataname=args.ticker, host=args.host, port=int(args.port), clientId=int(args.client), timeframe=TIMEFRAMES[args.timeframe], compression=int(args.compression), 
           historical=True, useRTH=args.userth, fromdate=fromdate, todate=todate)
 
         cerebro.adddata(data)
@@ -174,7 +174,10 @@ def parse_args():
                         help='IB gateway/tws host to download from')
 
     parser.add_argument('--port', required=False, default='7497',
-                        help='IB gateway/tws port to download from')  
+                        help='IB gateway/tws port to download from')
+
+    parser.add_argument('--client', required=False, default='25',
+                        help='clientId to use when connecting to IB gateway/tws')  
 
     parser.add_argument('--ticker', required=True,
                         help='Ticker to be downloaded')
