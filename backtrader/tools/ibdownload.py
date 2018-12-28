@@ -96,8 +96,8 @@ class DownloadStrategy(bt.Strategy):
 def ibdownload():
     args = parse_args()
 
-    logging.info('Processing input parameters')
-    logging.info('Processing fromdate')
+    logging.debug('Processing input parameters')
+    logging.debug('Processing fromdate')
     try:
         fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     except Exception as e:
@@ -105,7 +105,7 @@ def ibdownload():
         logging.error(str(e))
         sys.exit(1)
 
-    logging.info('Processing todate')
+    logging.debug('Processing todate')
     todate = datetime.datetime.today()
     if args.todate:
         try:
@@ -122,7 +122,8 @@ def ibdownload():
     logging.info('Downloading from IB')
     try:
         cerebro = bt.Cerebro(tz=0)
-        data = bt.feeds.IBData(dataname=args.ticker, host=args.host, port=int(args.port), clientId=int(args.client), timeframe=TIMEFRAMES[args.timeframe], 
+        ibstore = bt.stores.IBStore(host=str(args.host), port=int(args.port), clientId=int(args.client), reconnect=1)
+        data = ibstore.getdata(dataname=args.ticker, timeframe=TIMEFRAMES[args.timeframe], 
             compression=int(args.compression), historical=True, useRTH=args.userth, fromdate=fromdate, todate=todate)
 
         cerebro.adddata(data)
