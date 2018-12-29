@@ -115,7 +115,7 @@ class Trade(object):
       - ``baropen`` (``int``): bar in which this trade was opened
 
       - ``dtopen`` (``float``): float coded datetime in which the trade was
-        closed
+        opened
 
         - Use method ``open_datetime`` to get a Python datetime.datetime
           or use the platform provided ``num2date`` method
