@@ -731,7 +731,17 @@ class BackBroker(bt.BrokerBase):
             cash = self.cash
         else:
             pnl = 0
-            price = pprice_orig = order.created.price
+            if not self.p.coo:
+                price = pprice_orig = order.created.price
+            else:
+                # When doing cheat on open, the price to be considered for a
+                # market order is the opening price and not the default closing
+                # price with which the order was created
+                if order.exectype == Order.Market:
+                    price = pprice_orig = order.data.open[0]
+                else:
+                    price = pprice_orig = order.created.price
+
             psize, pprice, opened, closed = position.update(size, price)
 
         # "Closing" totally or partially is possible. Cash may be re-injected
