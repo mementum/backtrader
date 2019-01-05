@@ -58,7 +58,7 @@ class DownloadStrategy(bt.Strategy):
             self.f = open(self.p.outfile, 'w')
             logging.info('opened file {}'.format(self.p.outfile))
 
-        headers = 'Date,Open,High,Low,Close,Volume,OpenInterest\n'
+        headers = 'date,open,high,low,close,volume,openinterest\n'
         self.f.write(headers)
 
     def stop(self):

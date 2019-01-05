@@ -59,7 +59,7 @@ class InfluxDB(feed.DataBase):
         ('open', 'open'),
         ('close', 'close'),
         ('volume', 'volume'),
-        ('ointerest', 'oi'),
+        ('openinterest', 'openinterest'),
     )
 
     def start(self):
@@ -84,13 +84,13 @@ class InfluxDB(feed.DataBase):
 
         qstr = ('SELECT first("{open_f}") AS "open", max("{high_f}") AS "high", '
                 'min("{low_f}") AS "low", last("{close_f}") AS "close", '
-                'sum("{vol_f}") AS "volume", sum("{oi_f}") AS "openinterest" '
+                'sum("{volume_f}") AS "volume", sum("{openinterest_f}") AS "openinterest" '
                 'FROM "{dataname}" '
                 'WHERE {time} '
                 'GROUP BY time({timeframe}) fill(none)').format(
                     open_f=self.p.open, high_f=self.p.high,
                     low_f=self.p.low, close_f=self.p.close,
-                    vol_f=self.p.volume, oi_f=self.p.ointerest,
+                    volume_f=self.p.volume, openinterest_f=self.p.openinterest,
                     timeframe=tf, time=st, dataname=self.p.dataname)
 
         try:
