@@ -39,10 +39,11 @@ class InfluxDBTool(object):
             return
 
         df = pd.read_csv(sourcefile, header=0, infer_datetime_format=True, index_col=0, parse_dates=True)
+        df.columns = [x.lower() for x in df.columns] # lowercase on import for consistency
 
-        # df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        # df = df.set_index('Datetime')
-        # df = df.drop(['Date', 'Time'], axis=1)
+        # df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'])
+        # df = df.set_index('datetime')
+        # df = df.drop(['date', 'time'], axis=1)
 
         try:
             self.dfdb.write_points(df, ticker)
