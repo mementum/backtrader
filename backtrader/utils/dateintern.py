@@ -206,7 +206,7 @@ def date2num(dt, tz=None):
     is a :func:`float`.
     """
     if tz is not None:
-        dt = tz.localize(tz)
+        dt = tz.localize(dt)
 
     if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
         delta = dt.tzinfo.utcoffset(dt)
