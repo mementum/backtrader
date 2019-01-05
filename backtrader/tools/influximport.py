@@ -39,11 +39,25 @@ class InfluxDBTool(object):
             return
 
         df = pd.read_csv(sourcefile, header=0, infer_datetime_format=True, index_col=0, parse_dates=True)
-        df.columns = [x.lower() for x in df.columns] # lowercase on import for consistency
+        
+        # cleanup data for import
+        # lowercase on import for consistency and drop 'Adj Close if data coming from Yahoo'
+        df.columns = [x.lower() for x in df.columns]
+        if 'adj close' in df.columns:
+            df.drop('adj close', axis=1, inplace=True)
+        df[['high', 'low', 'open', 'close']] = df[['high', 'low', 'open', 'close']].astype(float)
+        df['volume'] = df['volume'].astype(int)
 
-        # df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'])
-        # df = df.set_index('datetime')
-        # df = df.drop(['date', 'time'], axis=1)
+        if 'openinterest' in df.columns:
+            df['openinterest'] = df['openinterest'].astype(int)
+
+        # handle separate time column if necessary
+        if 'time' in df.columns:
+            df['datetime'] = pd.to_datetime(df.index + ' ' + df['time'])
+            df = df.set_index('datetime')
+            df.drop('time', axis=1, inplace=True)
+
+        df.dropna(inplace=True)
 
         try:
             self.dfdb.write_points(df, ticker)
@@ -70,10 +84,10 @@ def influximport():
     exoptgroup = parser.add_mutually_exclusive_group(required=True)
     exoptgroup.add_argument("--ticker",
                             action='store', default=None,
-                            help="Ticker to load data for.")
+                            help="Ticker to load data for followed by file to load data from. E.g. SPY:SPY.csv")
     exoptgroup.add_argument('--ticker-file',
                             action='store', default=None,
-                            help='List of tickers to load.')
+                            help='List of tickers to load. Same format as for individual tickers')
     parser.add_argument('--host',
                         required=False, action='store',
                         default=None,
