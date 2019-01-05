@@ -692,6 +692,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel,
+                    alpha=self.pinf.sch.baralpha,
                     fillup=self.pinf.sch.barupfill,
                     filldown=self.pinf.sch.bardownfill)
 

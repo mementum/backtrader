@@ -122,7 +122,10 @@ class PlotScheme(object):
         self.barupfill = True
         self.bardownfill = True
 
-        # Wether the candlesticks have to be filled or be transparent
+        # Opacity for the filled candlesticks (1.0 opaque - 0.0 transparent)
+        self.baralpha = 1.0
+
+        # Alpha blending for fill areas between lines (_fill_gt and _fill_lt)
         self.fillalpha = 0.20
 
         # Wether to plot volume or not. Note: if the data in question has no
