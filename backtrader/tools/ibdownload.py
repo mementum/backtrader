@@ -84,9 +84,9 @@ class DownloadStrategy(bt.Strategy):
         fields.append(l)
         c = self.data.close[0]
         fields.append(c)
-        v = self.data.volume[0]
+        v = int(self.data.volume[0])
         fields.append(v)
-        oi = self.data.openinterest[0]
+        oi = int(self.data.openinterest[0])
         fields.append(oi)
 
         txt = self.p.separator.join(str(x) for x in fields)
