@@ -288,8 +288,8 @@ class Trade(object):
             # position reduced/closed
             pnl = comminfo.profitandloss(-size, self.price, price)
 
-            self.pnl += pnl
-            self.pnlcomm = self.pnl - self.commission
+        self.pnl += pnl
+        self.pnlcomm = self.pnl - self.commission
 
         self.value = comminfo.getvaluesize(self.size, self.price)
 
