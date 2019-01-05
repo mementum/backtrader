@@ -75,7 +75,7 @@ def test_run(main=False):
     # assert tr.value == value
     assert tr.commission == commission
     assert not tr.pnl
-    assert not tr.pnlcomm
+    assert tr.pnlcomm == tr.pnl - tr.commission
 
     upsize = -5
     upprice = 12.5
