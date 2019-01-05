@@ -10,38 +10,39 @@ import pandas as pd
 from influxdb import DataFrameClient as dfclient
 from influxdb.exceptions import InfluxDBClientError
 
-
-
 class InfluxDBTool(object):
-    def __init__(self):
+    def __init__(self, args):
         self._host = args.host if args.host else 'localhost'
         self._port = args.port if args.port else 8086
         self._username = args.username if args.username else None
         self._password = args.password if args.password else None
         self._database = args.database if args.database else 'instruments'
-        self._ticker = args.ticker
-        self._cache = os.path.expanduser(args.sourcepath)
+        self._sourcepath = os.path.expanduser(args.sourcepath)
 
         self.dfdb = dfclient(self._host, self._port,
                              self._username, self._password,
                              self._database)
 
-    def write_dataframe_to_idb(self, ticker):
+    def write_dataframe_to_idb(self, t):
         """Write Pandas Dataframe to InfluxDB database"""
-        cachepath = self._cache
-        cachefile = ('%s/%s-1M.csv.gz' % (cachepath, ticker))
 
-        if not os.path.exists(cachefile):
+        ticker, tickerpath = t.split(":")
+        if tickerpath is None:
+            tickerpath = ticker
+
+        sourcepath = self._sourcepath
+        sourcefile = ('%s/%s' % (sourcepath, tickerpath))
+
+        if not os.path.exists(sourcefile):
             log.warn('Import file does not exist: %s' %
-                     (cachefile))
+                     (sourcefile))
             return
 
-        df = pd.read_csv(cachefile, compression='infer', header=0,
-                         infer_datetime_format=True)
+        df = pd.read_csv(sourcefile, header=0, infer_datetime_format=True, index_col=0, parse_dates=True)
 
-        df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df = df.set_index('Datetime')
-        df = df.drop(['Date', 'Time'], axis=1)
+        # df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
+        # df = df.set_index('Datetime')
+        # df = df.drop(['Date', 'Time'], axis=1)
 
         try:
             self.dfdb.write_points(df, ticker)
@@ -60,18 +61,18 @@ class InfluxDBTool(object):
         return tickers
 
 
-if __name__ == "__main__":
+def influximport():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Run InfluxDB Import")
 
-    exoptgroup = parser.add_mutually_exclusive_group(required=False)
+    exoptgroup = parser.add_mutually_exclusive_group(required=True)
     exoptgroup.add_argument("--ticker",
-                            action='store', default='SPY',
-                            help="Ticker to request data for.")
-    exoptgroup.add_argument('--ticker-list',
                             action='store', default=None,
-                            help='Path to folder to create files.')
+                            help="Ticker to load data for.")
+    exoptgroup.add_argument('--ticker-file',
+                            action='store', default=None,
+                            help='List of tickers to load.')
     parser.add_argument('--host',
                         required=False, action='store',
                         default=None,
@@ -94,7 +95,7 @@ if __name__ == "__main__":
                         help='InfluxDB database to use.')
     parser.add_argument('--sourcepath',
                         required=False, action='store',
-                        default='~/.iqfeed/data',
+                        default='.',
                         help='Path to CSV source folder.')
     parser.add_argument('--testrun',
                         required=False, action='store_true',
@@ -112,7 +113,7 @@ if __name__ == "__main__":
         parser.print_help()
         parser.exit(1)
 
-    tool = InfluxDBTool()
+    tool = InfluxDBTool(args)
 
     log = logging.getLogger()
     log_console = logging.StreamHandler(sys.stdout)
@@ -125,12 +126,12 @@ if __name__ == "__main__":
         log.setLevel(logging.INFO)
 
     tickers = []
-    if args.ticker_list:
-        tickers = tool.get_tickers_from_file(args.ticker_list)
+    if args.ticker_file:
+        tickers = tool.get_tickers_from_file(args.ticker_file)
     else:
         tickers.append(args.ticker.rstrip())
 
     for (i, ticker) in enumerate(tickers):
         log.info("Processing %s (%d out of %d)", ticker, i+1,
                  len(tickers))
-        tool.write_dataframe_to_idb(ticker=ticker)
+        tool.write_dataframe_to_idb(ticker)

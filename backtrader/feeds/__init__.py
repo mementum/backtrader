@@ -31,13 +31,16 @@ from .quandl import *
 from .sierrachart import *
 from .mt4csv import *
 from .pandafeed import *
-from .influxfeed import *
+
+try:
+    from .influxfeed import *
+except ImportError:
+    raise ImportError('InfluxDB Python bindings seem to be missing.')
 
 try:
     from .ibdata import *
 except ImportError:
-    raise ImportError(
-        'IbPy2 seems to be missing. Needed for live trading using IB.')
+    raise ImportError('IbPy2 seems to be missing. Needed for live trading using IB.')
 
 try:
     from .vcdata import *

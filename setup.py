@@ -140,7 +140,8 @@ setuptools.setup(
     entry_points={'console_scripts': [
         'btrun=backtrader.tools:btrun',
         'yahoodownload=backtrader.tools:yahoodownload', 
-        'ibdownload=backtrader.tools:ibdownload'
+        'ibdownload=backtrader.tools:ibdownload',
+        'influximport=backtrader.tools:influximport'
     ]},
 
     # scripts=['tools/bt-run.py', 'tools/yahoo-download.py', 'tools/ib-download.py'],
