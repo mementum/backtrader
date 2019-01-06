@@ -21,7 +21,7 @@ class InfluxDBTool(object):
 
         self.dfdb = dfclient(self._host, self._port,
                              self._username, self._password,
-                             self._database)
+                             self._database, timeout=15)
 
     def write_dataframe_to_idb(self, t):
         """Write Pandas Dataframe to InfluxDB database"""
@@ -60,7 +60,7 @@ class InfluxDBTool(object):
         df.dropna(inplace=True)
 
         try:
-            self.dfdb.write_points(df, ticker)
+            self.dfdb.write_points(df, ticker, batch_size=100000)
         except InfluxDBClientError as err:
             log.error('Write to database failed: %s' % err)
 
