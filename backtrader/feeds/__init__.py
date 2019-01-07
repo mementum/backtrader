@@ -35,12 +35,12 @@ from .pandafeed import *
 try:
     from .influxfeed import *
 except ImportError:
-    raise ImportError('InfluxDB Python bindings seem to be missing.')
+    pass
 
 try:
     from .ibdata import *
 except ImportError:
-    raise ImportError('IbPy2 seems to be missing. Needed for live trading using IB.')
+    pass
 
 try:
     from .vcdata import *

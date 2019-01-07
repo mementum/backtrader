@@ -42,11 +42,6 @@ TIMEFRAMES = dict(
 
 
 class InfluxDB(feed.DataBase):
-    frompackages = (
-        ('influxdb', [('InfluxDBClient', 'idbclient')]),
-        ('influxdb.exceptions', 'InfluxDBClientError')
-    )
-
     params = (
         ('host', '127.0.0.1'),
         ('port', '8086'),
