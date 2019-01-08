@@ -448,6 +448,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 # Get both the axis and the data masked
                 lplotarray = lplotarray[lplotmask]
                 xdata = np.array(xdata)[lplotmask]
+            
+            # Make sure both axis are the same size
+            axis_size = min(len(xdata), len(lplotarray))
+            lplotarray = lplotarray[:axis_size]
+            xdata = xdata[:axis_size]
 
             plottedline = pltmethod(xdata, lplotarray, **plotkwargs)
             try:
