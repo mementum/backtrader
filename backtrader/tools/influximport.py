@@ -6,9 +6,13 @@ import os
 import io
 import logging
 import argparse
-import pandas as pd
-from influxdb import DataFrameClient as dfclient
-from influxdb.exceptions import InfluxDBClientError
+
+try:
+    import pandas as pd
+    from influxdb import DataFrameClient as dfclient
+    from influxdb.exceptions import InfluxDBClientError
+except ImportError:
+    pass
 
 class InfluxDBTool(object):
     def __init__(self, args):
