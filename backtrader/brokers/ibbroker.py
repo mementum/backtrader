@@ -25,6 +25,7 @@ import collections
 from copy import copy
 from datetime import date, datetime, timedelta
 import threading
+import pickle
 import uuid
 
 import ib.ext.Order
@@ -404,6 +405,42 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     def next(self):
         self.notifs.put(None)  # mark notificatino boundary
 
+    def saveaspickle(self, picklepath):
+        state = {"orderbyid": self.orderbyid, "executions": self.executions, "ordstatus": self.ordstatus}
+        pickle.dump(state, open(picklepath, "wb"))
+
+    def loadaspickle(self, picklepath):
+        state = pickle.load(open(picklepath, "rb"))
+        self.orderbyid, self.executions, self.ordstatus = state["orderbyid"], state["executions"], state["ordstatus"]
+
+    def add_open_orders(self, notify=False):
+        pass
+        # TODO: try to get currently active orders from IB and load them into orderbyid/executions/ordstatus dicts
+        # self.reqOpenOrders()
+
+        # def openOrder(self, orderId: OrderId, contract: Contract, order: Order, orderState: OrderState):
+        # super().openOrder(orderId, contract, order, orderState)
+        # print("OpenOrder. ID:", orderId, "Symbol:", contract.symbol, "SecType:", contract.secType,
+        #         "Exchange:", contract.exchange, "Action:", order.action, "OrderType:", order.orderType,
+        #     "TotalQuantity:", order.totalQuantity, "Status:", orderState.status)
+        # order.contract = contract
+        # self.permId2ord[order.permId] = order
+
+        # def orderStatus(self, orderId: OrderId, status: str, filled: float,
+        # remaining: float, avgFillPrice: float, permId: int,
+        # parentId: int, lastFillPrice: float, clientId: int,
+        # whyHeld: str, mktCapPrice: float):
+        # super().orderStatus(orderId, status, filled, remaining,
+        #     avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice)
+        #     print("OrderStatus. Id:", orderId, "Status:", status, "Filled:", filled,
+        #     "Remaining:", remaining, "AvgFillPrice:", avgFillPrice,
+        #     "PermId:", permId, "ParentId:", parentId, "LastFillPrice:",
+        #     lastFillPrice, "ClientId:", clientId, "WhyHeld:", whyHeld, "MktCapPrice:", mktCapPrice)
+
+        # def openOrderEnd(self):
+        #     super().openOrderEnd()
+        #     print("OpenOrderEnd")
+
     # Order statuses in msg
     (SUBMITTED, FILLED, CANCELLED, INACTIVE,
      PENDINGSUBMIT, PENDINGCANCEL, PRESUBMITTED) = (
@@ -481,7 +518,12 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         with self._lock_orders:
             ex = self.executions.pop(cr.m_execId)
             oid = ex.m_orderId
-            order = self.orderbyid[oid]
+
+            try:
+                order = self.orderbyid[oid]
+            except (KeyError, AttributeError):
+                return  # no order or no execId in cr
+
             ostatus = self.ordstatus[oid].pop(ex.m_cumQty)
 
             position = self.getposition(order.data, clone=False)
