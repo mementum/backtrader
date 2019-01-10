@@ -69,7 +69,7 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     def saveaspickle(self, picklepath):
         raise NotImplementedError
 
-    def loadaspickle(self, picklepath):
+    def loadfrompickle(self, picklepath):
         raise NotImplementedError
 
     def add_open_orders(self, orders=list(), notify=False):

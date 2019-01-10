@@ -409,7 +409,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         state = {"orderbyid": self.orderbyid, "executions": self.executions, "ordstatus": self.ordstatus}
         pickle.dump(state, open(picklepath, "wb"))
 
-    def loadaspickle(self, picklepath):
+    def loadfrompickle(self, picklepath):
         state = pickle.load(open(picklepath, "rb"))
         self.orderbyid, self.executions, self.ordstatus = state["orderbyid"], state["executions"], state["ordstatus"]
 
