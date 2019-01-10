@@ -416,30 +416,20 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     def add_open_orders(self, notify=False):
         pass
         # TODO: try to get currently active orders from IB and load them into orderbyid/executions/ordstatus dicts
-        # self.reqOpenOrders()
+        # from ib.opt import Connection, message
+        # from ib.ext.Contract import Contract
+        # from ib.ext.Order import Order
 
-        # def openOrder(self, orderId: OrderId, contract: Contract, order: Order, orderState: OrderState):
-        # super().openOrder(orderId, contract, order, orderState)
-        # print("OpenOrder. ID:", orderId, "Symbol:", contract.symbol, "SecType:", contract.secType,
-        #         "Exchange:", contract.exchange, "Action:", order.action, "OrderType:", order.orderType,
-        #     "TotalQuantity:", order.totalQuantity, "Status:", orderState.status)
-        # order.contract = contract
-        # self.permId2ord[order.permId] = order
+        # def print_open_order_messege(msg):
+        #     print ("open_order: " + str(msg.orderId) + "::" + str(msg.contract) + "::" + str(msg.order) + "::"+str(msg.orderState))
 
-        # def orderStatus(self, orderId: OrderId, status: str, filled: float,
-        # remaining: float, avgFillPrice: float, permId: int,
-        # parentId: int, lastFillPrice: float, clientId: int,
-        # whyHeld: str, mktCapPrice: float):
-        # super().orderStatus(orderId, status, filled, remaining,
-        #     avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice)
-        #     print("OrderStatus. Id:", orderId, "Status:", status, "Filled:", filled,
-        #     "Remaining:", remaining, "AvgFillPrice:", avgFillPrice,
-        #     "PermId:", permId, "ParentId:", parentId, "LastFillPrice:",
-        #     lastFillPrice, "ClientId:", clientId, "WhyHeld:", whyHeld, "MktCapPrice:", mktCapPrice)
+        # def print_order_status_messege(msg):
+        #     print ("order_status: " + str(msg.orderId) + "::" + "Status: " + msg.status + ", Filled: " + str(msg.filled) + ", Remaining: " + str(msg.remaining) + ", avgFillPrice: " + str(msg.avgFillPrice))
 
-        # def openOrderEnd(self):
-        #     super().openOrderEnd()
-        #     print("OpenOrderEnd")
+        # con.register(print_open_order_messege, message.openOrder)
+        # con.register(print_order_status_messege, message.orderStatus)
+        # con.reqAllOpenOrders()
+        # con.reqOpenOrders()
 
     # Order statuses in msg
     (SUBMITTED, FILLED, CANCELLED, INACTIVE,
@@ -516,10 +506,9 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
     def push_commissionreport(self, cr):
         with self._lock_orders:
-            ex = self.executions.pop(cr.m_execId)
-            oid = ex.m_orderId
-
             try:
+                ex = self.executions.pop(cr.m_execId)
+                oid = ex.m_orderId
                 order = self.orderbyid[oid]
             except (KeyError, AttributeError):
                 return  # no order or no execId in cr
