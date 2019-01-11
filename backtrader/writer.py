@@ -32,8 +32,33 @@ from backtrader.utils.py3 import (map, with_metaclass, string_types,
 
 
 class WriterBase(with_metaclass(bt.MetaParams, object)):
-    pass
+    params = (
+        ('livedata', False),
+        ('out', None),
+        ('csv', False),
+    )
 
+    def __init__(self):
+        self.headers = list()
+        self.values = list()
+
+    def start(self):
+        pass
+    
+    def stop(self):
+        pass
+
+    def next(self):
+        self.values = list()
+
+    def addheaders(self, headers):
+        self.headers.extend(headers)
+
+    def addvalues(self, values):
+        self.values.extend(values)
+
+    def writedict(self, dct, level=0, recurse=False):
+        pass
 
 class WriterFile(WriterBase):
     '''The system wide writer class.
@@ -86,7 +111,6 @@ class WriterFile(WriterBase):
         ('out', sys.stdout),
         ('close_out', False),
 
-        ('csv', False),
         ('csvsep', ','),
         ('csv_filternan', True),
         ('csv_counter', True),
@@ -98,9 +122,8 @@ class WriterFile(WriterBase):
     )
 
     def __init__(self):
+        super(WriterFile, self).__init__()
         self._len = itertools.count(1)
-        self.headers = list()
-        self.values = list()
 
         # open file if needed
         if isinstance(self.p.out, string_types):
@@ -111,28 +134,24 @@ class WriterFile(WriterBase):
             self.close_out = self.p.close_out
 
     def start(self):
-        if self.p.csv:
-            self.writelineseparator()
-            self.writeiterable(self.headers, counter='Id')
+        self.writelineseparator()
+        self.writeiterable(self.headers, counter='Id')
 
     def stop(self):
         if self.close_out:
             self.out.close()
 
     def next(self):
-        if self.p.csv:
-            self.writeiterable(self.values, func=str, counter=next(self._len))
-            self.values = list()
+        self.writeiterable(self.values, func=str, counter=next(self._len))
+        self.values = list()
 
     def addheaders(self, headers):
-        if self.p.csv:
-            self.headers.extend(headers)
+        self.headers.extend(headers)
 
     def addvalues(self, values):
-        if self.p.csv:
-            if self.p.csv_filternan:
-                values = map(lambda x: x if x == x else '', values)
-            self.values.extend(values)
+        if self.p.csv_filternan:
+            values = map(lambda x: x if x == x else '', values)
+        self.values.extend(values)
 
     def writeiterable(self, iterable, func=None, counter=''):
         if self.p.csv_counter:
@@ -201,7 +220,6 @@ class WriterFile(WriterBase):
             else:
                 kline += ' ' + str(val)
                 self.writeline(kline)
-
 
 class WriterStringIO(WriterFile):
     params = (('out', io.StringIO),)

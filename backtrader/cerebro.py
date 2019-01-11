@@ -1172,15 +1172,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for feed in self.feeds:
             feed.start()
 
-        if self.writers_csv:
-            wheaders = list()
-            for data in self.datas:
-                if data.csv:
-                    wheaders.extend(data.getwriterheaders())
+        wheaders = list()
+        for data in self.datas:
+            wheaders.extend(data.getwriterheaders())
 
-            for writer in self.runwriters:
-                if writer.p.csv:
-                    writer.addheaders(wheaders)
+        for writer in self.runwriters:
+            writer.addheaders(wheaders)
 
         # self._plotfillers = [list() for d in self.datas]
         # self._plotfillers2 = [list() for d in self.datas]
@@ -1247,8 +1244,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 strat._start()
 
                 for writer in self.runwriters:
-                    if writer.p.csv:
-                        writer.addheaders(strat.getwriterheaders())
+                    writer.addheaders(strat.getwriterheaders())
 
             if not predata:
                 for strat in runstrats:
@@ -1454,20 +1450,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if not self.runwriters:
             return
 
-        if self.writers_csv:
-            wvalues = list()
-            for data in self.datas:
-                if data.csv:
-                    wvalues.extend(data.getwritervalues())
+        livedata = any(d._laststatus == d.LIVE for d in self.datas)
+        wvalues = list()
+        for data in self.datas:
+            wvalues.extend(data.getwritervalues())
 
-            for strat in runstrats:
-                wvalues.extend(strat.getwritervalues())
+        for strat in runstrats:
+            wvalues.extend(strat.getwritervalues())
 
-            for writer in self.runwriters:
-                if writer.p.csv:
-                    writer.addvalues(wvalues)
+        for writer in self.runwriters:
+            writer.p.livedata = livedata
+            writer.addvalues(wvalues)
 
-                    writer.next()
+            writer.next()
 
     def _disable_runonce(self):
         '''API for lineiterators to disable runonce (see HeikinAshi)'''
