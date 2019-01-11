@@ -36,6 +36,7 @@ class WriterBase(with_metaclass(bt.MetaParams, object)):
         ('livedata', False),
         ('out', None),
         ('csv', False),
+        ('counter', False),
     )
 
     def __init__(self):
