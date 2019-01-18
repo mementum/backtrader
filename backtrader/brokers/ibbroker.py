@@ -407,11 +407,13 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
     def saveaspickle(self, picklepath):
         state = {"orderbyid": self.orderbyid, "executions": self.executions, "ordstatus": self.ordstatus}
-        pickle.dump(state, open(picklepath, "wb"))
+        with open(picklepath, "wb") as f:
+            pickle.dump(state, f)
 
     def loadfrompickle(self, picklepath):
         try:
-            state = pickle.load(open(picklepath, "rb"))
+            with open(picklepath, "rb") as f:
+                state = pickle.load(f)
             self.orderbyid, self.executions, self.ordstatus = state["orderbyid"], state["executions"], state["ordstatus"]
         except EOFError as e:
             print("failed to read pickle file from: {}, got: {}".format(picklepath, e))
