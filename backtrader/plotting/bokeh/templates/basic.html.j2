@@ -25,12 +25,46 @@ that accepts these same parameters.
         {{ bokeh_css }}
         {{ bokeh_js }}
         {{ stylesheet }}
+        <script> 
+            function waitForAddedNode(params) {
+                new MutationObserver(function(mutations) {
+                    var el = document.querySelectorAll(params.cls);
+                    if (el.length > 0) {
+                        this.disconnect();
+                        params.done(el);
+                    }
+                }).observe(params.parent || document, {
+                    subtree: !!params.recursive,
+                    childList: true,
+                });
+            }
+
+            waitForAddedNode({
+                cls: '.bk-widget',
+                parent: document.querySelector('#dashboard'),
+                recursive: true,
+                done: function(el) {
+                    document.getElementById('dashboard').className = "loaded"
+                    document.getElementById('loading').className = "invisible"
+                }
+            })
+        </script>
     </head>
     <body>
-        {%if show_headline %}
-            <div id="headline">{{ title }}</div>
-        {%endif%}
-        {{ plot_div|indent(8) }}
-        {{ plot_script|indent(8) }}
+        <div id="loading">
+            <ul class="spinner">
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+            </ul>
+        </div>
+        <div id="dashboard">
+            {%if show_headline %}
+                <div id="headline">{{ title }}</div>
+            {%endif%}
+            {{ plot_div|indent(8) }}
+            {{ plot_script|indent(8) }}
+        </div>
     </body>
 </html>

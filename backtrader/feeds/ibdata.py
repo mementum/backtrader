@@ -342,7 +342,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return precon
 
     def start(self):
-        '''Starts the IB connecction and gets the real contract and
+        '''Starts the IB connection and gets the real contract and
         contractdetails if it exists'''
         super(IBData, self).start()
         # Kickstart store and get queue to wait on
