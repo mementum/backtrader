@@ -13,7 +13,7 @@ def convert_color(color):
         return matplotlib.colors.to_hex(color)
 
 
-def sanitize_source_name(name: str) -> str:
+def sanitize_source_name(name):
     """removes illegal characters from source name to make it compatible with Bokeh"""
     forbidden_chars = ' (),.-/*:'
     for fc in forbidden_chars:
@@ -21,7 +21,7 @@ def sanitize_source_name(name: str) -> str:
     return name
 
 
-def get_bar_width() -> float:
+def get_bar_width():
     return 0.5
 
 
@@ -34,9 +34,9 @@ _style_mpl2bokeh = {
 }
 
 
-def convert_linestyle(style: str) -> str:
+def convert_linestyle(style):
     """Converts a backtrader/matplotlib style string to bokeh style string"""
-    return _style_mpl2bokeh[style];
+    return _style_mpl2bokeh[style]
 
 
 def adapt_yranges(y_range, data_min, data_max=None):
@@ -59,7 +59,7 @@ def adapt_yranges(y_range, data_min, data_max=None):
     y_range.end = dmax
 
 
-def generate_stylesheet(scheme, template="basic.css.j2") -> str:
+def generate_stylesheet(scheme, template="basic.css.j2"):
     env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
     templ = env.get_template(template)
 

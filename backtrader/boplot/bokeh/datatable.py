@@ -15,12 +15,12 @@ class ColummDataType(Enum):
 
 
 class TableGenerator(object):
-    def __init__(self, scheme, cerebro: bt.Cerebro=None):
+    def __init__(self, scheme, cerebro=None):
         self._scheme = scheme
         self._cerebtro: bt.Cerebro = cerebro
 
     @staticmethod
-    def _get_analysis_table_generic(analyzer: bt.analyzers.Analyzer) -> List[List[object]]:
+    def _get_analysis_table_generic(analyzer):
         """Returns two columns labeled 'Performance' and 'Value'"""
         table = [['Performance', ColummDataType.STRING], ['Value', ColummDataType.STRING]]
 
@@ -50,7 +50,7 @@ class TableGenerator(object):
         else:
             raise Exception("Unsupported ColumnDataType: '{}'".format(ctype))
 
-    def get_analyzers_tables(self, analyzer: bt.analyzers.Analyzer, table_width) -> (Paragraph, List[DataTable]):
+    def get_analyzers_tables(self, analyzer, table_width):
         if hasattr(analyzer, 'get_analysis_table'):
             title, table_columns_list = analyzer.get_analysis_table()
         else:
@@ -61,7 +61,7 @@ class TableGenerator(object):
         if len(param_str) > 0:
             title += ' ({})'.format(param_str)
 
-        elems: List[DataTable] = []
+        elems = []
         for table_columns in table_columns_list:
             cds = ColumnDataSource()
             columns = []

@@ -929,7 +929,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def visualize(self, result: Union[List[Strategy], List[List[bttypes.OptReturn]]], columns=None, iplot=False, start=None, end=None, **kwargs):
+    def visualize(self, result, columns=None, iplot=False, start=None, end=None, **kwargs):
         '''
         Either plots the strategies inside cerebro or starts Optimization Analysis Server
         '''
@@ -940,7 +940,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         p = boplot.Bokeh(**kwargs)
         return p.plot_result(result, columns, iplot, start, end)
 
-    def plot(self, result: Union[List[Strategy], List[List[bttypes.OptReturn]]], plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
+    def plot(self, result, plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
              width=16, height=9, dpi=300, tight=True, use=None,
              **kwargs):
         '''

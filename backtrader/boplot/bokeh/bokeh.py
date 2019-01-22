@@ -49,10 +49,10 @@ if 'ipykernel' in sys.modules:
 
 class FigurePage(object):
     def __init__(self):
-        self.figures: List[Figure] = []
-        self.cds: ColumnDataSource = None
-        self.analyzers: List[bt.Analyzer, bt.MetaStrategy, Optional[bt.AutoInfoClass]] = []
-        self.strategies: List[bt.Strategy] = None
+        self.figures = []
+        self.cds = None
+        self.analyzers = []
+        self.strategies = None
         self.current_strategy_params = None
 
 
@@ -162,7 +162,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         return start, end
 
-    def generate_result_model(self, result: Union[List[bt.Strategy], List[List[bttypes.OptReturn]]], columns=None, num_item_limit=None) -> Model:
+    def generate_result_model(self, result, columns=None, num_item_limit=None):
         """Generates a model from a result object"""
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
             return self.generate_optresult_model(result, columns, num_item_limit)
@@ -173,7 +173,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception('Unsupported result type: {}'.format(str(result)))
 
-    def plot_result(self, result: Union[List[bt.Strategy], List[List[bttypes.OptReturn]]], columns=None, iplot=False, start=None, end=None):
+    def plot_result(self, result, columns=None, iplot=False, start=None, end=None):
         """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
         filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
@@ -189,7 +189,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         return filenames
 
-    def plot(self, obj: Union[bt.Strategy, bttypes.OptReturn], iplot=False, start=None, end=None):
+    def plot(self, obj, iplot=False, start=None, end=None):
         """Called by backtrader to plot either a strategy or an optimization results"""
 
         self._iplot = iplot and 'ipykernel' in sys.modules
@@ -227,7 +227,7 @@ class Bokeh(metaclass=bt.MetaParams):
         self._generate_output(fig, filename)
     #  endregion
 
-    def _blueprint_strategy(self, strategy: bt.Strategy, start=None, end=None):
+    def _blueprint_strategy(self, strategy, start=None, end=None):
         if not strategy.datas:
             return
 
@@ -314,7 +314,7 @@ class Bokeh(metaclass=bt.MetaParams):
         return self.generate_model()
 
     # region Generator Methods
-    def generate_model(self) -> Model:
+    def generate_model(self):
         """Returns a model generated from internal blueprints"""
         if self.p.scheme.plot_mode == 'single':
             return self._generate_model_single(self._fp)
@@ -323,7 +323,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception('Unsupported plot mode: {}'.format(self.p.scheme.plot_mode))
 
-    def _generate_model_single(self, fp: FigurePage):
+    def _generate_model_single(self, fp):
         """Print all figures in one column. Plot observers first, then all plotabove then rest"""
         figs = list(fp.figures)
         observers = [x for x in figs if issubclass(x.master_type, bt.Observer)]
@@ -343,7 +343,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         return Tabs(tabs=panels)
 
-    def _generate_model_tabs(self, fp: FigurePage):
+    def _generate_model_tabs(self, fp):
         figs = list(fp.figures)
         observers = [x for x in figs if issubclass(x.master_type, bt.Observer)]
         datas = [x for x in figs if issubclass(x.master_type, bt.DataBase)]
@@ -368,8 +368,8 @@ class Bokeh(metaclass=bt.MetaParams):
         return Tabs(tabs=panels)
     # endregion
 
-    def _get_analyzer_tab(self, fp: FigurePage) -> Optional[Panel]:
-        def _get_column_row_count(col) -> int:
+    def _get_analyzer_tab(self, fp):
+        def _get_column_row_count(col):
             return sum([x.height for x in col if x.height is not None])
 
         if len(fp.analyzers) == 0:
@@ -434,13 +434,13 @@ class Bokeh(metaclass=bt.MetaParams):
         self._fp = FigurePage()
 
     @staticmethod
-    def _get_limited_optresult(optresult: Union[bttypes.OptResult, bttypes.OrderedOptResult], num_item_limit=None):
+    def _get_limited_optresult(optresult, num_item_limit=None):
         if num_item_limit is None:
             return optresult
         return optresult[0:num_item_limit]
 
     @staticmethod
-    def _get_opt_count(optresult: Union[bttypes.OptResult, bttypes.OrderedOptResult]):
+    def _get_opt_count(optresult):
         if isinstance(optresult[0], dict):
             # OrderedOptResult
             return len(optresult['optresult'][0]['result'])
@@ -448,7 +448,7 @@ class Bokeh(metaclass=bt.MetaParams):
             # OptResult
             return len(optresult[0])
 
-    def generate_optresult_model(self, optresult: Union[bttypes.OptResult, bttypes.OrderedOptResult], columns=None, num_item_limit=None) -> Model:
+    def generate_optresult_model(self, optresult, columns=None, num_item_limit=None):
         """Generates and returns an interactive model for an OptResult or an OrderedOptResult"""
         cds = ColumnDataSource()
         tab_columns = []
@@ -498,7 +498,7 @@ class Bokeh(metaclass=bt.MetaParams):
         cds.selected.on_change('indices', update)
         return model
 
-    def run_optresult_server(self, result: bttypes.OptResult, columns: Dict[str, Callable]=None):
+    def run_optresult_server(self, result, columns=None):
         """Serves an optimization resulst as a Bokeh application running on a web server"""
         def make_document(doc: Document):
             doc.title = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

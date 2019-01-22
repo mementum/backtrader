@@ -7,10 +7,6 @@ class OptReturn(object):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-BtResult = List[bt.Strategy]  # backtrader backtest result
-OptResult = List[List[OptReturn]]  # backtrader optresult
-
-
 class OrderedOptResult:
     """Class to store an optresult which has been evaluated by a benchmark. The benchmark has a name (`benchmark_label`)."""
     class BenchmarkedResult:
@@ -18,16 +14,16 @@ class OrderedOptResult:
             self.benchmark = benchmark
             self.result = result
 
-    def __init__(self, benchmark_label: str, optresult: List[BenchmarkedResult]):
+    def __init__(self, benchmark_label, optresult):
         self.benchmark_label: str = benchmark_label
-        self.optresult: List[OrderedOptResult.BenchmarkedResult] = optresult
+        self.optresult = optresult
 
 
-def is_btresult(result: Union[BtResult, OptResult, OrderedOptResult]):
+def is_btresult(result):
     return isinstance(result, List) and isinstance(result[0], bt.Strategy) and len(result) > 0
 
 
-def is_optresult(result: Union[BtResult, OptResult, OrderedOptResult]):
+def is_optresult(result):
     return isinstance(result, List) and \
            isinstance(result[0], List) and \
            len(result[0]) > 0 and \
@@ -35,5 +31,5 @@ def is_optresult(result: Union[BtResult, OptResult, OrderedOptResult]):
            len(result) > 0
 
 
-def is_ordered_optresult(result: Union[BtResult, OptResult, OrderedOptResult]):
+def is_ordered_optresult(result):
     return isinstance(result, OrderedOptResult)

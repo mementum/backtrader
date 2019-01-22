@@ -1,5 +1,4 @@
 import backtrader as bt
-from typing import Dict, Optional, List, Union
 import math
 import numbers
 from datetime import datetime
@@ -14,11 +13,11 @@ except ImportError:
 _logger = logging.getLogger(__name__)
 
 
-def get_nondefault_params(params: object) -> Dict[str, object]:
+def get_nondefault_params(params):
     return {key: params._get(key) for key in params._getkeys() if not params.isdefault(key) and key != 'plotname'}
 
 
-def get_params_str(params: Optional[bt.AutoInfoClass], number_format) -> str:
+def get_params_str(params, number_format):
     user_params = get_nondefault_params(params)
 
     def get_value_str(name, value, number_format):
@@ -55,7 +54,7 @@ def get_strategy_label(strategycls, params, number_format):
         return "{} [{}]".format(label, plabs)
 
 
-def nanfilt(x: List) -> List:
+def nanfilt(x):
     """filters all NaN values from a list"""
     return [value for value in x if not math.isnan(value)]
 
@@ -80,7 +79,7 @@ def resample_line(line, line_clk, new_clk):
     return new_line
 
 
-def convert_to_pandas(strat_clk, obj: bt.LineSeries, start: datetime=None, end: datetime=None, name_prefix: str="") -> pandas.DataFrame:
+def convert_to_pandas(strat_clk, obj, start=None, end=None, name_prefix=""):
     df = pandas.DataFrame()
     for lineidx in range(obj.size()):
         line = obj.lines[lineidx]
@@ -98,7 +97,7 @@ def convert_to_pandas(strat_clk, obj: bt.LineSeries, start: datetime=None, end: 
     return df
 
 
-def get_data_obj(ind: Union[bt.Indicator, bt.LineSeriesStub]):
+def get_data_obj(ind):
     """obj can be a data object or just a single line (in case indicator was created with an explicit line)"""
     while True:
         if isinstance(ind, bt.LineSeriesStub):

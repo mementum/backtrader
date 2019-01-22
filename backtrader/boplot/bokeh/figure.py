@@ -1,4 +1,3 @@
-from typing import Union
 import collections
 from array import array
 
@@ -24,15 +23,15 @@ class HoverContainer(object):
         self._hover_tooltips = collections.defaultdict(list)
         self._hover_tooltips_data = collections.defaultdict(list)
 
-    def add_hovertip(self, label: str, tmpl: str, target_figure=None) -> None:
+    def add_hovertip(self, label, tmpl, target_figure=None):
         """hover_target being None means all"""
         self._hover_tooltips[target_figure].append((label, tmpl))
 
-    def add_hovertip_for_data(self, label: str, tmpl: str, target_data) -> None:
+    def add_hovertip_for_data(self, label, tmpl, target_data):
         """adds a hovertip for a target data"""
         self._hover_tooltips_data[target_data].append((label, tmpl))
 
-    def apply_hovertips(self, figures) -> None:
+    def apply_hovertips(self, figures):
         """Add hovers to to all figures from the figures list"""
         for f in figures:
             for t in f.figure.tools:
@@ -53,7 +52,7 @@ class HoverContainer(object):
 class Figure(object):
     _tools = "pan,box_zoom,xwheel_zoom,reset"
 
-    def __init__(self, strategy: bt.Strategy, cds: ColumnDataSource, hoverc: HoverContainer, start, end, scheme, master_type, plotabove: bool):
+    def __init__(self, strategy, cds, hoverc, start, end, scheme, master_type, plotabove):
         self._strategy = strategy
         self._cds: ColumnDataSource = cds
         self._hoverc = hoverc
@@ -61,7 +60,7 @@ class Figure(object):
         self._start = start
         self._end = end
         self.figure = None
-        self._hover: HoverTool = None
+        self._hover = None
         self._coloridx = collections.defaultdict(lambda: -1)
         self._hover_line_set = False
         self.master_type = master_type
@@ -69,7 +68,7 @@ class Figure(object):
         self.datas = []  # list of all datas that have been plotted to this figure
         self._init_figure()
 
-    def _set_single_hover_renderer(self, ren: Renderer):
+    def _set_single_hover_renderer(self, ren):
         """Sets this figure's hover to a single renderer"""
         if self._hover_line_set:
             return
@@ -77,7 +76,7 @@ class Figure(object):
         self._hover.renderers = [ren]
         self._hover_line_set = True
 
-    def _add_hover_renderer(self, ren: Renderer):
+    def _add_hover_renderer(self, ren):
         """Adds another hover render target. Only has effect if not single renderer has been set before"""
         if self._hover_line_set:
             return
@@ -88,7 +87,7 @@ class Figure(object):
             self._hover.renderers = [ren]
 
 
-    def _nextcolor(self, key: object=None) -> None:
+    def _nextcolor(self, key=None):
         self._coloridx[key] += 1
         return self._coloridx[key]
 
@@ -175,7 +174,7 @@ class Figure(object):
             self.figure.plot_height = height_set
 
     @staticmethod
-    def _get_datas_description(ind: bt.Indicator) -> str:
+    def _get_datas_description(ind):
         """Returns a string listing all involved data feeds. Empty string if there is only a single feed in the mix"""
         names = []
         for x in ind.datas:
@@ -190,7 +189,7 @@ class Figure(object):
     def plot_observer(self, obj, master):
         self.plot_indicator(obj, master)
 
-    def plot_indicator(self, obj: Union[bt.Indicator, bt.Observer], master, strat_clk: array=None):
+    def plot_indicator(self, obj, master, strat_clk=None):
         pl =  '{} '.format(obj.plotlabel())
         if isinstance(obj, bt.Indicator):
             pl += Figure._get_datas_description(obj)
@@ -356,7 +355,7 @@ class Figure(object):
     def _source_id(source):
         return str(id(source))
 
-    def plot_data(self, data: bt.AbstractDataBase, master, strat_clk: array=None):
+    def plot_data(self, data, master, strat_clk=None):
         source_id = Figure._source_id(data)
         title = sanitize_source_name(data._name or '<NoName>')
         if len(data._env.strats) > 1:
@@ -423,7 +422,7 @@ class Figure(object):
         if self._scheme.volume and self._scheme.voloverlay:
             self.plot_volume(data, strat_clk, self._scheme.voltrans, True)
 
-    def plot_volume(self, data: bt.AbstractDataBase, strat_clk: array, alpha, extra_axis=False):
+    def plot_volume(self, data, strat_clk, alpha, extra_axis=False):
         source_id = Figure._source_id(data)
 
         df = convert_to_pandas(strat_clk, data, self._start, self._end)
