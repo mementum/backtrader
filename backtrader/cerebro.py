@@ -27,6 +27,7 @@ import itertools
 import multiprocessing
 from typing import Optional, Union, List
 
+
 import backtrader as bt
 from .utils.py3 import (map, range, zip, with_metaclass, string_types,
                         integer_types)
@@ -45,13 +46,7 @@ from .timer import Timer
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
-
-class OptReturn(object):
-    def __init__(self, params, **kwargs):
-        self.p = self.params = params
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
+from . import bttypes
 
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
@@ -934,7 +929,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def visualize(self, result: Union[List[Strategy], List[List[OptReturn]]], columns=None, iplot=False, start=None, end=None, **kwargs):
+    def visualize(self, result: Union[List[Strategy], List[List[bttypes.OptReturn]]], columns=None, iplot=False, start=None, end=None, **kwargs):
         '''
         Either plots the strategies inside cerebro or starts Optimization Analysis Server
         '''
@@ -945,42 +940,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         p = boplot.Bokeh(**kwargs)
         return p.plot_result(result, columns, iplot, start, end)
 
-    def boplot(self, plotter=None, iplot=False, start=None, end=None, **kwargs):
-        '''
-        Plots the strategies inside cerebro
-
-        If ``plotter`` is None a default ``Bokeh`` instance is created and
-        ``kwargs`` are passed to it during instantiation.
-
-        ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
-        displayed inline
-
-        ``start``: An index to the datetime line array of the strategy or a
-        ``datetime.date``, ``datetime.datetime`` instance indicating the start
-        of the plot
-
-        ``end``: An index to the datetime line array of the strategy or a
-        ``datetime.date``, ``datetime.datetime`` instance indicating the end
-        of the plot
-        '''
-        if self._exactbars > 0:
-            return
-
-        if not plotter:
-            from . import boplot
-            plotter = boplot.Bokeh(**kwargs)
-
-        filenames = []
-        for stratlist in self.runstrats:
-            for si, strat in enumerate(stratlist):
-                rfig = plotter.plot(strat, iplot=iplot, start=start, end=end)
-                filename = plotter.show()
-
-                filenames.append(filename)
-
-        return filenames
-
-    def matplot(self, plotter=None, numfigs=1, iplot=False, start=None, end=None,
+    def plot(self, result: Union[List[Strategy], List[List[bttypes.OptReturn]]], plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
              width=16, height=9, dpi=300, tight=True, use=None,
              **kwargs):
         '''
@@ -990,13 +950,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``kwargs`` are passed to it during instantiation.
 
         ``numfigs`` split the plot in the indicated number of charts reducing
-        chart density if wished
+        chart density if wished (ignored if rendering using Bokeh)
 
         ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
         displayed inline
 
         ``use``: set it to the name of the desired matplotlib backend. It will
-        take precedence over ``iplot``
+        take precedence over ``iplot`` (ignored if rendering using Bokeh)
 
         ``start``: An index to the datetime line array of the strategy or a
         ``datetime.date``, ``datetime.datetime`` instance indicating the start
@@ -1006,43 +966,65 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``datetime.date``, ``datetime.datetime`` instance indicating the end
         of the plot
 
-        ``width``: in inches of the saved figure
+        ``width``: in inches of the saved figure (ignored if rendering using Bokeh)
 
-        ``height``: in inches of the saved figure
+        ``height``: in inches of the saved figure (ignored if rendering using Bokeh)
 
-        ``dpi``: quality in dots per inches of the saved figure
+        ``dpi``: quality in dots per inches of the saved figure (ignored if rendering using Bokeh)
 
-        ``tight``: only save actual content and not the frame of the figure
+        ``tight``: only save actual content and not the frame of the figure (ignored if rendering using Bokeh)
         '''
         if self._exactbars > 0:
             return
 
         if not plotter:
-            from . import matplot
-            if self.p.oldsync:
-                plotter = matplot.Plot_OldSync(**kwargs)
+            if backend == 'matplotlib':
+                from . import matplot
+                if self.p.oldsync:
+                    plotter = matplot.Plot_OldSync(**kwargs)
+                else:
+                    plotter = matplot.Plot(**kwargs)
+
+
+                # pfillers = {self.datas[i]: self._plotfillers[i]
+                # for i, x in enumerate(self._plotfillers)}
+
+                # pfillers2 = {self.datas[i]: self._plotfillers2[i]
+                # for i, x in enumerate(self._plotfillers2)}
+                figs = []
+                if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+                    print('optimization results cannot be plotted with matplotlib.')
+                    return
+                elif bttypes.is_btresult(result):
+                    for si, strat in enumerate(result):
+                        rfig = plotter.plot(strat, figid=si * 100,
+                                        numfigs=numfigs, iplot=iplot,
+                                        start=start, end=end, use=use)
+                        plotter.show()
+
+                        figs.append(rfig)
+
+                return figs
             else:
-                plotter = matplot.Plot(**kwargs)
+                from . import boplot
+                plotter = boplot.Bokeh(**kwargs)
 
-        # pfillers = {self.datas[i]: self._plotfillers[i]
-        # for i, x in enumerate(self._plotfillers)}
+                filenames = []
+                if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+                    for stratlist in result:
+                        for si, strat in enumerate(stratlist):
+                            rfig = plotter.plot(strat, iplot=iplot, start=start, end=end)
+                            filename = plotter.show()
 
-        # pfillers2 = {self.datas[i]: self._plotfillers2[i]
-        # for i, x in enumerate(self._plotfillers2)}
+                            filenames.append(filename)
+                elif bttypes.is_btresult(result):
+                    for strat in result:
+                        plotter.plot(strat, iplot, start, end)
+                        filename = plotter.show()
 
-        figs = []
-        for stratlist in self.runstrats:
-            for si, strat in enumerate(stratlist):
-                rfig = plotter.plot(strat, figid=si * 100,
-                                    numfigs=numfigs, iplot=iplot,
-                                    start=start, end=end, use=use)
-                # pfillers=pfillers2)
+                        filenames.append(filename)
 
-                figs.append(rfig)
-
-            plotter.show()
-
-        return figs
+                return filenames
 
     def __call__(self, iterstrat):
         '''
@@ -1368,7 +1350,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         if attrname.startswith('data'):
                             setattr(a, attrname, None)
 
-                oreturn = OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
+                oreturn = bttypes.OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
                 results.append(oreturn)
 
             return results

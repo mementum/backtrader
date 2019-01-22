@@ -24,7 +24,7 @@ except ImportError as e:
         'Bokeh seems to be missing. Needed for bokeh plotting support')
 
 from ..utils import get_data_obj
-from .. import bttypes
+from ... import bttypes
 
 from .figure import Figure, HoverContainer
 from .datatable import TableGenerator
@@ -161,7 +161,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         return start, end
 
-    def generate_result_model(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None, num_item_limit=None) -> Model:
+    def generate_result_model(self, result: Union[List[bt.Strategy], List[List[bttypes.OptReturn]]], columns=None, num_item_limit=None) -> Model:
         """Generates a model from a result object"""
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
             return self.generate_optresult_model(result, columns, num_item_limit)
@@ -172,7 +172,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception('Unsupported result type: {}'.format(str(result)))
 
-    def plot_result(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None, iplot=False, start=None, end=None):
+    def plot_result(self, result: Union[List[bt.Strategy], List[List[bttypes.OptReturn]]], columns=None, iplot=False, start=None, end=None):
         """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
         filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
@@ -187,17 +187,17 @@ class Bokeh(metaclass=bt.MetaParams):
 
         return filenames
 
-    def plot(self, obj: Union[bt.Strategy, bt.OptReturn], iplot=False, start=None, end=None):
+    def plot(self, obj: Union[bt.Strategy, bttypes.OptReturn], iplot=False, start=None, end=None):
         """Called by backtrader to plot either a strategy or an optimization results"""
 
         self._iplot = iplot and 'ipykernel' in sys.modules
 
         if isinstance(obj, bt.Strategy):
             self._blueprint_strategy(obj, start, end)
-        elif isinstance(obj, bt.OptReturn):
+        elif isinstance(obj, bttypes.OptReturn):
             self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
         else:
-            raise Exception(f'Unsupported plot source object: {str(type(obj))}')
+            raise Exception('Unsupported plot source object: {}'.format(str(type(obj))))
         return [self._fp]
 
     def show(self):
