@@ -53,6 +53,7 @@ class FigurePage(object):
         self.cds = None
         self.analyzers = []
         self.strategies = None
+        self.current_strategy_cls = None
         self.current_strategy_params = None
 
 
@@ -181,7 +182,6 @@ class Bokeh(metaclass=bt.MetaParams):
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:
-                self._fp.current_strategy_params = s.params
                 self.plot(s, iplot, start, end)
             filenames.append(self.show())
         else:
@@ -195,9 +195,11 @@ class Bokeh(metaclass=bt.MetaParams):
         self._iplot = iplot and 'ipykernel' in sys.modules
 
         if isinstance(obj, bt.Strategy):
+            self._fp.current_strategy_cls = obj.__class__
             self._fp.current_strategy_params = obj.params
             self._blueprint_strategy(obj, start, end)
         elif isinstance(obj, bttypes.OptReturn):
+            self._fp.current_strategy_cls = obj.strategycls
             self._fp.current_strategy_params = obj.params
 
             self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
@@ -394,8 +396,8 @@ class Bokeh(metaclass=bt.MetaParams):
             childs.append(column(children=c, sizing_mode='fixed'))
 
         if fp.current_strategy_params is not None:
-            s_params = get_strategy_label(None, fp.current_strategy_params, self.p.scheme.number_format)
-            strat_params = Paragraph(text="Key Parameters [{}]".format(s_params), width=self.p.scheme.plot_width, style={'font-size': 'large'})
+            s_params = get_strategy_label(fp.current_strategy_cls, fp.current_strategy_params, self.p.scheme.number_format)
+            strat_params = Paragraph(text=s_params, width=self.p.scheme.plot_width, style={'font-size': 'large'})
             m = column([strat_params, row(children=childs, sizing_mode='fixed')])
         else:
             m = row(children=childs, sizing_mode='fixed')
