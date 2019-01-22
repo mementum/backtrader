@@ -513,7 +513,8 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             apps = {'/': app}
 
-            print("Running optimization server. Open your browser here: http://localhost:8080")
+            print("Running optimization server.")
             server = Server(apps, port=port)
+            server.io_loop.add_callback(server.show, "/")
             server.run_until_shutdown()
     #  endregion
