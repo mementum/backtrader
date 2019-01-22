@@ -23,7 +23,7 @@ except ImportError as e:
     raise ImportError(
         'Bokeh seems to be missing. Needed for bokeh plotting support')
 
-from ..utils import get_data_obj
+from ..utils import get_strategy_label, get_data_obj
 from ... import bttypes
 
 from .figure import Figure, HoverContainer
@@ -53,6 +53,7 @@ class FigurePage(object):
         self.cds: ColumnDataSource = None
         self.analyzers: List[bt.Analyzer, bt.MetaStrategy, Optional[bt.AutoInfoClass]] = []
         self.strategies: List[bt.Strategy] = None
+        self.current_strategy_params = None
 
 
 class Bokeh(metaclass=bt.MetaParams):
@@ -180,6 +181,7 @@ class Bokeh(metaclass=bt.MetaParams):
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:
+                self._fp.current_strategy_params = s.params
                 self.plot(s, iplot, start, end)
             filenames.append(self.show())
         else:
@@ -193,8 +195,11 @@ class Bokeh(metaclass=bt.MetaParams):
         self._iplot = iplot and 'ipykernel' in sys.modules
 
         if isinstance(obj, bt.Strategy):
+            self._fp.current_strategy_params = obj.params
             self._blueprint_strategy(obj, start, end)
         elif isinstance(obj, bttypes.OptReturn):
+            self._fp.current_strategy_params = obj.params
+
             self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
         else:
             raise Exception('Unsupported plot source object: {}'.format(str(type(obj))))
@@ -231,6 +236,7 @@ class Bokeh(metaclass=bt.MetaParams):
 
         strat_figures = []
         self._fp.analyzers = [a for _, a in strategy.analyzers.getitems() if a.p.plot is True ]
+
 
         st_dtime = strategy.lines.datetime.plot()
         if start is None:
@@ -387,8 +393,14 @@ class Bokeh(metaclass=bt.MetaParams):
                 break
             childs.append(column(children=c, sizing_mode='fixed'))
 
-        childs = row(children=childs, sizing_mode='fixed')
-        return Panel(child=childs, title="Analyzers")
+        if fp.current_strategy_params is not None:
+            s_params = get_strategy_label(None, fp.current_strategy_params, self.p.scheme.number_format)
+            strat_params = Paragraph(text="Key Parameters [{}]".format(s_params), width=self.p.scheme.plot_width, style={'font-size': 'large'})
+            m = column([strat_params, row(children=childs, sizing_mode='fixed')])
+        else:
+            m = row(children=childs, sizing_mode='fixed')
+
+        return Panel(child=m, title="Analyzers")
 
     def _output_stylesheet(self, template="basic.css.j2"):
         return generate_stylesheet(self.p.scheme, template)
@@ -472,7 +484,7 @@ class Bokeh(metaclass=bt.MetaParams):
                 tab_columns.append(TableColumn(field=k, title=k, sortable=False, formatter=col_formatter_str))
 
         selector = DataTable(source=cds, columns=tab_columns, width=self.p.scheme.plot_width, height=150)
-        title = Paragraph(text="Parameters", width=self.p.scheme.plot_width, style={'font-size': 'large'})
+        title = Paragraph(text="Optimization Results", width=self.p.scheme.plot_width, style={'font-size': 'large'})
 
         model = column([title, selector, self.plot_and_generate_model(opts[0])])
 

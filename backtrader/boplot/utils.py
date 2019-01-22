@@ -46,10 +46,13 @@ def get_params_str(params: Optional[bt.AutoInfoClass], number_format) -> str:
     return plabs
 
 
-def get_strategy_label(strategycls: bt.MetaStrategy, params: Optional[bt.AutoInfoClass], number_format) -> str:
-    label = strategycls.__name__
-    plabs = get_params_str(params, number_format)
-    return f'{label} [{plabs}]'
+def get_strategy_label(strategycls, params, number_format):
+    if strategycls is None:
+        return get_params_str(params, number_format)
+    else:
+        label = strategycls.__name__
+        plabs = get_params_str(params, number_format)
+        return "{} [{}]".format(label, plabs)
 
 
 def nanfilt(x: List) -> List:
