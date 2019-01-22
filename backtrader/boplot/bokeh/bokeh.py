@@ -16,12 +16,12 @@ try:
     from bokeh.application import Application
     from bokeh.application.handlers.function import FunctionHandler
     from bokeh.embed import file_html
-    from bokeh.models.widgets import NumberFormatter
+    from bokeh.models.widgets import NumberFormatter, StringFormatter
     from bokeh.resources import CDN
     from bokeh.util.browser import view
 except ImportError as e:
     raise ImportError(
-        'Bokeh seems to be missing. Needed for plotting support')
+        'Bokeh seems to be missing. Needed for bokeh plotting support')
 
 from ..utils import get_data_obj
 from .. import bttypes
@@ -37,7 +37,7 @@ try:
     from jinja2 import Environment, PackageLoader
 except ImportError as e:
     raise ImportError(
-        'jinja2 seems to be missing. Needed for plotting support')
+        'jinja2 seems to be missing. Needed for bokeh plotting support')
 
 _logger = logging.getLogger(__name__)
 
@@ -163,9 +163,6 @@ class Bokeh(metaclass=bt.MetaParams):
 
     def generate_result_model(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None, num_item_limit=None) -> Model:
         """Generates a model from a result object"""
-        if not bttypes.is_valid_result(result):
-            return
-
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
             return self.generate_optresult_model(result, columns, num_item_limit)
         elif bttypes.is_btresult(result):
@@ -177,9 +174,6 @@ class Bokeh(metaclass=bt.MetaParams):
 
     def plot_result(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None, iplot=False, start=None, end=None):
         """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
-        if not bttypes.is_valid_result(result):
-            return
-
         filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
             # this will not return a result, starts a server
@@ -447,12 +441,13 @@ class Bokeh(metaclass=bt.MetaParams):
         cds = ColumnDataSource()
         tab_columns = []
 
-        col_formatter = NumberFormatter(format=self.p.scheme.number_format)
-        opts = optresult if bttypes.is_optresult(optresult) else [x['result'] for x in optresult['optresult']]
+        col_formatter_num = NumberFormatter(format=self.p.scheme.number_format)
+        col_formatter_str = StringFormatter()
+        opts = optresult if bttypes.is_optresult(optresult) else [x.result for x in optresult.optresult]
         if bttypes.is_ordered_optresult(optresult):
-            benchmarks = [x['benchmark'] for x in Bokeh._get_limited_optresult(optresult['optresult'], num_item_limit)]
+            benchmarks = [x.benchmark for x in Bokeh._get_limited_optresult(optresult.optresult, num_item_limit)]
             cds.add(benchmarks, "benchmark")
-            tab_columns.append(TableColumn(field='benchmark', title=optresult['benchmark_label'], sortable=False))
+            tab_columns.append(TableColumn(field='benchmark', title=optresult.benchmark_label, sortable=False, formatter=col_formatter_num))
 
         for idx, strat in enumerate(opts[0]):
             # add suffix when dealing with more than 1 strategy
@@ -474,7 +469,7 @@ class Bokeh(metaclass=bt.MetaParams):
             for k, v in columns.items():
                 ll = [str(v(x)) for x in Bokeh._get_limited_optresult(optresult, num_item_limit)]
                 cds.add(ll, k)
-                tab_columns.append(TableColumn(field=k, title=k, sortable=False))
+                tab_columns.append(TableColumn(field=k, title=k, sortable=False, formatter=col_formatter_str))
 
         selector = DataTable(source=cds, columns=tab_columns, width=self.p.scheme.plot_width, height=150)
         title = Paragraph(text="Parameters", width=self.p.scheme.plot_width, style={'font-size': 'large'})
@@ -493,9 +488,6 @@ class Bokeh(metaclass=bt.MetaParams):
 
     def run_optresult_server(self, result: bttypes.OptResult, columns: Dict[str, Callable]=None):
         """Serves an optimization resulst as a Bokeh application running on a web server"""
-        if len(result) == 0:
-            return
-
         def make_document(doc: Document):
             doc.title = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

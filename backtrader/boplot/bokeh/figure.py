@@ -356,7 +356,7 @@ class Figure(object):
     def _source_id(source):
         return str(id(source))
 
-    def plot_data(self, data: bt.feeds.DataBase, master, strat_clk: array=None):
+    def plot_data(self, data: bt.AbstractDataBase, master, strat_clk: array=None):
         source_id = Figure._source_id(data)
         title = sanitize_source_name(data._name or '<NoName>')
         if len(data._env.strats) > 1:
@@ -423,7 +423,7 @@ class Figure(object):
         if self._scheme.volume and self._scheme.voloverlay:
             self.plot_volume(data, strat_clk, self._scheme.voltrans, True)
 
-    def plot_volume(self, data: bt.feeds.DataBase, strat_clk: array, alpha, extra_axis=False):
+    def plot_volume(self, data: bt.AbstractDataBase, strat_clk: array, alpha, extra_axis=False):
         source_id = Figure._source_id(data)
 
         df = convert_to_pandas(strat_clk, data, self._start, self._end)
