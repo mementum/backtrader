@@ -93,7 +93,7 @@ class RewriteStrategy(bt.Strategy):
         self.f.write(bytes(txt))
 
 
-def runstrat(pargs=None):
+def btrewrite(pargs=None):
     args = parse_args(pargs)
 
     cerebro = bt.Cerebro()
@@ -179,4 +179,4 @@ def parse_args(pargs=None):
 
 
 if __name__ == '__main__':
-    runstrat()
+    btrewrite()

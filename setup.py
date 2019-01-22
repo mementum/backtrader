@@ -141,8 +141,9 @@ setuptools.setup(
         'btrun=backtrader.tools:btrun',
         'yahoodownload=backtrader.tools:yahoodownload', 
         'ibdownload=backtrader.tools:ibdownload',
-        'influximport=backtrader.tools:influximport'
+        'influximport=backtrader.tools:influximport',
+        'btrewrite=backtrader.tools:btrewrite'
     ]},
 
-    # scripts=['tools/bt-run.py', 'tools/yahoo-download.py', 'tools/ib-download.py'],
+    # scripts=[],
 )
