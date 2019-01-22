@@ -934,18 +934,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def visualize(self, result: Union[List[Strategy], List[List[OptReturn]]], columns=None, **kwargs):
+    def visualize(self, result: Union[List[Strategy], List[List[OptReturn]]], columns=None, iplot=False, start=None, end=None, **kwargs):
         '''
         Either plots the strategies inside cerebro or starts Optimization Analysis Server
         '''
         if self._exactbars > 0:
             return
 
-        from . import plotting
-        plotter = plotting.Bokeh(**kwargs)
-        return plotter.plot_result(result, columns)
+        from . import boplot
+        p = boplot.Bokeh(**kwargs)
+        return p.plot_result(result, columns, iplot, start, end)
 
-    def plot(self, plotter=None, iplot=True, start=None, end=None, **kwargs):
+    def boplot(self, plotter=None, iplot=False, start=None, end=None, **kwargs):
         '''
         Plots the strategies inside cerebro
 
@@ -967,8 +967,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
             return
 
         if not plotter:
-            from . import plotting
-            plotter = plotting.Bokeh(**kwargs)
+            from . import boplot
+            plotter = boplot.Bokeh(**kwargs)
 
         filenames = []
         for stratlist in self.runstrats:
@@ -979,6 +979,70 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 filenames.append(filename)
 
         return filenames
+
+    def matplot(self, plotter=None, numfigs=1, iplot=False, start=None, end=None,
+             width=16, height=9, dpi=300, tight=True, use=None,
+             **kwargs):
+        '''
+        Plots the strategies inside cerebro
+
+        If ``plotter`` is None a default ``Plot`` instance is created and
+        ``kwargs`` are passed to it during instantiation.
+
+        ``numfigs`` split the plot in the indicated number of charts reducing
+        chart density if wished
+
+        ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
+        displayed inline
+
+        ``use``: set it to the name of the desired matplotlib backend. It will
+        take precedence over ``iplot``
+
+        ``start``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the start
+        of the plot
+
+        ``end``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the end
+        of the plot
+
+        ``width``: in inches of the saved figure
+
+        ``height``: in inches of the saved figure
+
+        ``dpi``: quality in dots per inches of the saved figure
+
+        ``tight``: only save actual content and not the frame of the figure
+        '''
+        if self._exactbars > 0:
+            return
+
+        if not plotter:
+            from . import matplot
+            if self.p.oldsync:
+                plotter = matplot.Plot_OldSync(**kwargs)
+            else:
+                plotter = matplot.Plot(**kwargs)
+
+        # pfillers = {self.datas[i]: self._plotfillers[i]
+        # for i, x in enumerate(self._plotfillers)}
+
+        # pfillers2 = {self.datas[i]: self._plotfillers2[i]
+        # for i, x in enumerate(self._plotfillers2)}
+
+        figs = []
+        for stratlist in self.runstrats:
+            for si, strat in enumerate(stratlist):
+                rfig = plotter.plot(strat, figid=si * 100,
+                                    numfigs=numfigs, iplot=iplot,
+                                    start=start, end=end, use=use)
+                # pfillers=pfillers2)
+
+                figs.append(rfig)
+
+            plotter.show()
+
+        return figs
 
     def __call__(self, iterstrat):
         '''

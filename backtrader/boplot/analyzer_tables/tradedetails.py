@@ -1,4 +1,4 @@
-from backtrader.plotting.bokeh.datatable import ColummDataType
+from ..bokeh.datatable import ColummDataType
 
 def datatable(self):
     cols = [['Ref', ColummDataType.INT],

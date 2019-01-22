@@ -1,7 +1,7 @@
 from jinja2 import Environment, PackageLoader
 import backtrader
 import matplotlib.colors
-from backtrader.plotting.utils import nanfilt
+from ..utils import nanfilt
 
 def convert_color(color):
     """if color is a float value then it is interpreted as a shade of grey and converted to the corresponding html color code"""
@@ -60,7 +60,7 @@ def adapt_yranges(y_range, data_min, data_max=None):
 
 
 def generate_stylesheet(scheme, template="basic.css.j2") -> str:
-    env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
+    env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
     templ = env.get_template(template)
 
     css = templ.render(dict(

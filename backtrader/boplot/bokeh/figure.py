@@ -4,9 +4,11 @@ from array import array
 
 import backtrader as bt
 
-from backtrader.plotting.utils import get_strategy_label, get_data_obj
+from ..utils import get_strategy_label, get_data_obj
+from ..utils import convert_to_pandas, nanfilt
+from ..utils import resample_line
+
 from .utils import convert_color, sanitize_source_name, get_bar_width, convert_linestyle, adapt_yranges
-from backtrader.plotting.utils import convert_to_pandas, nanfilt
 
 from bokeh.models import Span
 from bokeh.plotting import figure
@@ -14,7 +16,6 @@ from bokeh.models import HoverTool, CrosshairTool
 from bokeh.models import LinearAxis, DataRange1d, Renderer
 from bokeh.models.formatters import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, FuncTickFormatter, DatetimeTickFormatter
-from backtrader.plotting.utils import resample_line
 
 
 class HoverContainer(object):

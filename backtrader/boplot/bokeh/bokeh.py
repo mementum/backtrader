@@ -23,7 +23,7 @@ except ImportError as e:
     raise ImportError(
         'Bokeh seems to be missing. Needed for plotting support')
 
-from backtrader.plotting.utils import get_data_obj
+from ..utils import get_data_obj
 from .. import bttypes
 
 from .figure import Figure, HoverContainer
@@ -69,7 +69,7 @@ class Bokeh(metaclass=bt.MetaParams):
         self._num_plots = 0
         self._tablegen = TableGenerator(self.p.scheme)
         if not isinstance(self.p.scheme, Scheme):
-            raise Exception("Provided scheme has to be a subclass of backtrader.plotting.schemes.scheme.Scheme")
+            raise Exception("Provided scheme has to be a subclass of backtrader.boplot.schemes.scheme.Scheme")
 
         self._fp = FigurePage()
 
@@ -175,7 +175,7 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception('Unsupported result type: {}'.format(str(result)))
 
-    def plot_result(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None):
+    def plot_result(self, result: Union[List[bt.Strategy], List[List[bt.OptReturn]]], columns=None, iplot=False, start=None, end=None):
         """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
         if not bttypes.is_valid_result(result):
             return
@@ -186,15 +186,14 @@ class Bokeh(metaclass=bt.MetaParams):
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:
-                self.plot(s)
+                self.plot(s, iplot, start, end)
             filenames.append(self.show())
         else:
             raise Exception('Unsupported result type: {}'.format(str(result)))
 
         return filenames
 
-    #  region interface for backtrader
-    def plot(self, obj: Union[bt.Strategy, bt.OptReturn], iplot=True, start=None, end=None):
+    def plot(self, obj: Union[bt.Strategy, bt.OptReturn], iplot=False, start=None, end=None):
         """Called by backtrader to plot either a strategy or an optimization results"""
 
         self._iplot = iplot and 'ipykernel' in sys.modules
@@ -202,8 +201,6 @@ class Bokeh(metaclass=bt.MetaParams):
         if isinstance(obj, bt.Strategy):
             self._blueprint_strategy(obj, start, end)
         elif isinstance(obj, bt.OptReturn):
-            if not hasattr(obj, 'strategycls'):
-                raise Exception("Missing field 'strategycls' in OptReturn. Include this commit in your backtrader package to fix it: 'https://github.com/verybadsoldier/backtrader/commit/f03a0ed115338ed8f074a942f6520b31c630bcfb'")
             self._fp.analyzers = [a for _, a in obj.analyzers.getitems()]
         else:
             raise Exception(f'Unsupported plot source object: {str(type(obj))}')
@@ -407,7 +404,7 @@ class Bokeh(metaclass=bt.MetaParams):
             tmpdir = tempfile.gettempdir()
             filename = os.path.join(tmpdir, 'bt_bokeh_plot_{}.html'.format(self._num_plots))
 
-        env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
+        env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
         title = 'BackTest {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         templ = env.get_template(template)
         templ.globals['title'] = title
@@ -502,7 +499,7 @@ class Bokeh(metaclass=bt.MetaParams):
         def make_document(doc: Document):
             doc.title = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            env = Environment(loader=PackageLoader('backtrader.plotting.bokeh', 'templates'))
+            env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
             templ = env.get_template("basic.html.j2")
             templ.globals['title'] = 'BackTest (Optimization) {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             templ.globals['show_headline'] = self.p.scheme.show_headline

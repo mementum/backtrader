@@ -9,7 +9,7 @@ try:
     import pandas
 except ImportError:
     raise ImportError(
-        'Pandas seems to be missing. Needed for plotting support')
+        'Pandas seems to be missing. Needed for bokeh plotting support')
 
 _logger = logging.getLogger(__name__)
 
