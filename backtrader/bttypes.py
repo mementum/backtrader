@@ -1,5 +1,4 @@
 import backtrader as bt
-from typing import Union, List
 
 class OptReturn(object):
     def __init__(self, params, **kwargs):
@@ -20,12 +19,12 @@ class OrderedOptResult:
 
 
 def is_btresult(result):
-    return isinstance(result, List) and isinstance(result[0], bt.Strategy) and len(result) > 0
+    return isinstance(result, list) and isinstance(result[0], bt.Strategy) and len(result) > 0
 
 
 def is_optresult(result):
-    return isinstance(result, List) and \
-           isinstance(result[0], List) and \
+    return isinstance(result, list) and \
+           isinstance(result[0], list) and \
            len(result[0]) > 0 and \
            isinstance(result[0][0], (OptReturn, bt.Strategy)) and \
            len(result) > 0

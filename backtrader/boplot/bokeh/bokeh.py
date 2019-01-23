@@ -4,7 +4,6 @@ import os
 import sys
 import tempfile
 import datetime
-from typing import List, Dict, Callable, Optional, Union
 import backtrader as bt
 
 try:
