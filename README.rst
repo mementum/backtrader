@@ -99,7 +99,7 @@ Live Trading and backtesting platform written in Python.
   - Cheat-on-Close and Cheat-on-Open modes
   - Schedulers
   - Trading Calendars
-  - Plotting (requires Bokeh)
+  - Plotting (supports 2 backends: matplotlib and bokeh)
 
 Documentation
 =============
@@ -140,7 +140,9 @@ From *pypi*:
 
   - ``pip install backtrader[plotting]``
 
-    If ``Bokeh`` is not installed and you wish to do some plotting
+    If ``matplotlib`` and ``bokeh`` are not installed and you wish to do some plotting
+
+.. note:: The minimum matplotlib version is ``1.4.1``
 
 An example for *IB* Data Feeds/Trading:
 
