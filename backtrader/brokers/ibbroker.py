@@ -405,36 +405,18 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     def next(self):
         self.notifs.put(None)  # mark notificatino boundary
 
-    def saveaspickle(self, picklepath):
+    def save_as_pickle(self, picklepath):
         state = {"orderbyid": self.orderbyid, "executions": self.executions, "ordstatus": self.ordstatus}
         with open(picklepath, "wb") as f:
             pickle.dump(state, f)
 
-    def loadfrompickle(self, picklepath):
+    def load_from_pickle(self, picklepath):
         try:
             with open(picklepath, "rb") as f:
                 state = pickle.load(f)
             self.orderbyid, self.executions, self.ordstatus = state["orderbyid"], state["executions"], state["ordstatus"]
         except EOFError as e:
             print("failed to read pickle file from: {}, got: {}".format(picklepath, e))
-
-    def add_open_orders(self, notify=False):
-        pass
-        # TODO: try to get currently active orders from IB and load them into orderbyid/executions/ordstatus dicts
-        # from ib.opt import Connection, message
-        # from ib.ext.Contract import Contract
-        # from ib.ext.Order import Order
-
-        # def print_open_order_messege(msg):
-        #     print ("open_order: " + str(msg.orderId) + "::" + str(msg.contract) + "::" + str(msg.order) + "::"+str(msg.orderState))
-
-        # def print_order_status_messege(msg):
-        #     print ("order_status: " + str(msg.orderId) + "::" + "Status: " + msg.status + ", Filled: " + str(msg.filled) + ", Remaining: " + str(msg.remaining) + ", avgFillPrice: " + str(msg.avgFillPrice))
-
-        # con.register(print_open_order_messege, message.openOrder)
-        # con.register(print_order_status_messege, message.orderStatus)
-        # con.reqAllOpenOrders()
-        # con.reqOpenOrders()
 
     # Order statuses in msg
     (SUBMITTED, FILLED, CANCELLED, INACTIVE,

@@ -47,7 +47,7 @@ class InfluxDB(feed.DataBase):
         ('port', '8086'),
         ('username', None),
         ('password', None),
-        ('database', 'instruments'),
+        ('database', None),
         ('timeframe', bt.TimeFrame.Days),
         ('high', 'high'),
         ('low', 'low'),

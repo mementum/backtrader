@@ -25,7 +25,6 @@ import datetime
 import collections
 import itertools
 import multiprocessing
-from typing import Optional, Union, List
 
 
 import backtrader as bt
@@ -43,8 +42,6 @@ from .strategy import Strategy, SignalStrategy
 from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
 from .timer import Timer
-
-# Defined here to make it pickable. Ideally it could be defined inside Cerebro
 
 from . import bttypes
 
