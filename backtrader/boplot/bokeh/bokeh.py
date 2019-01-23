@@ -174,11 +174,11 @@ class Bokeh(metaclass=bt.MetaParams):
         else:
             raise Exception('Unsupported result type: {}'.format(str(result)))
 
-    def plot_result(self, result, columns=None, iplot=False, start=None, end=None):
-        """Plots a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
+    def visualize(self, result, columns=None, iplot=False, start=None, end=None):
+        """Visualize a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
         filenames = []
         if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
-            # this will not return a result, starts a server
+            # this will not complete the call, starts a blocking server
             self.run_optresult_server(result, columns)
         elif bttypes.is_btresult(result):
             for s in result:

@@ -929,22 +929,45 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def visualize(self, result, columns=None, iplot=False, start=None, end=None, **kwargs):
+    def visualize(self, result=None, columns=None, iplot=False, start=None, end=None, **kwargs):
         '''
-        Either plots the strategies inside cerebro or starts Optimization Analysis Server
+        Plots the strategies passed as result, defaults to strategies inside cerebro
+
+        If ``results`` is None strategies inside cerebro will be used
+
+        ``columns``: additional columns to pass to optimization server for rendering, ignored if not optimizing results
+
+        ``iplot``: if ``True`` and running in a ``notebook`` the charts will be
+        displayed inline
+
+        ``use``: set it to the name of the desired matplotlib backend. It will
+        take precedence over ``iplot`` (ignored if rendering using Bokeh)
+
+        ``start``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the start
+        of the plot
+
+        ``end``: An index to the datetime line array of the strategy or a
+        ``datetime.date``, ``datetime.datetime`` instance indicating the end
+        of the plot
         '''
         if self._exactbars > 0:
             return
 
+        if result is None:
+            result = self.runstrats
+
         from . import boplot
         p = boplot.Bokeh(**kwargs)
-        return p.plot_result(result, columns, iplot, start, end)
+        return p.visualize(result, columns, iplot, start, end)
 
-    def plot(self, result, plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
+    def plot(self, result=None, plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
              width=16, height=9, dpi=300, tight=True, use=None,
              **kwargs):
         '''
-        Plots the strategies inside cerebro
+        Plots the strategies passed as result, defaults to strategies inside cerebro
+
+        If ``results`` is None strategies inside cerebro will be used
 
         If ``plotter`` is None a default ``Plot`` instance is created and
         ``kwargs`` are passed to it during instantiation.
@@ -977,6 +1000,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if self._exactbars > 0:
             return
 
+        if result is None:
+            result = self.runstrats
+
         if not plotter:
             if backend == 'matplotlib':
                 from . import matplot
@@ -991,10 +1017,21 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                 # pfillers2 = {self.datas[i]: self._plotfillers2[i]
                 # for i, x in enumerate(self._plotfillers2)}
-                figs = []
+                figs = [] 
                 if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
-                    print('optimization results cannot be plotted with matplotlib.')
-                    return
+                    for stratlist in result:
+                        for si, strat in enumerate(stratlist):
+                            if isinstance(strat, bttypes.OptReturn):
+                                print("matplotlib backend cannot be used with optimization results, use backend='bokeh' instead.")
+                                return
+                            else:
+                                rfig = plotter.plot(strat, figid=si * 100,
+                                                numfigs=numfigs, iplot=iplot,
+                                                start=start, end=end, use=use)
+                                plotter.show()
+
+                                figs.append(rfig)
+
                 elif bttypes.is_btresult(result):
                     for si, strat in enumerate(result):
                         rfig = plotter.plot(strat, figid=si * 100,
@@ -1003,7 +1040,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         plotter.show()
 
                         figs.append(rfig)
-
                 return figs
             else:
                 from . import boplot
