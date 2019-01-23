@@ -15,7 +15,7 @@ class OrderedOptResult:
             self.result = result
 
     def __init__(self, benchmark_label, optresult):
-        self.benchmark_label: str = benchmark_label
+        self.benchmark_label = benchmark_label
         self.optresult = optresult
 
 
