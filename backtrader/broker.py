@@ -66,12 +66,6 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     def stop(self):
         pass
 
-    def save_as_pickle(self, picklepath):
-        raise NotImplementedError
-
-    def load_from_pickle(self, picklepath):
-        raise NotImplementedError
-
     def add_order_history(self, orders, notify=False):
         '''Add order history. See cerebro for details'''
         raise NotImplementedError

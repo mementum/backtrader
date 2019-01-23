@@ -25,7 +25,6 @@ import collections
 from copy import copy
 from datetime import date, datetime, timedelta
 import threading
-import pickle
 import uuid
 
 import ib.ext.Order
@@ -404,19 +403,6 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
     def next(self):
         self.notifs.put(None)  # mark notificatino boundary
-
-    def save_as_pickle(self, picklepath):
-        state = {"orderbyid": self.orderbyid, "executions": self.executions, "ordstatus": self.ordstatus}
-        with open(picklepath, "wb") as f:
-            pickle.dump(state, f)
-
-    def load_from_pickle(self, picklepath):
-        try:
-            with open(picklepath, "rb") as f:
-                state = pickle.load(f)
-            self.orderbyid, self.executions, self.ordstatus = state["orderbyid"], state["executions"], state["ordstatus"]
-        except EOFError as e:
-            print("failed to read pickle file from: {}, got: {}".format(picklepath, e))
 
     # Order statuses in msg
     (SUBMITTED, FILLED, CANCELLED, INACTIVE,
