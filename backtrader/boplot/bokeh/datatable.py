@@ -16,7 +16,7 @@ class ColummDataType(Enum):
 class TableGenerator(object):
     def __init__(self, scheme, cerebro=None):
         self._scheme = scheme
-        self._cerebtro: bt.Cerebro = cerebro
+        self._cerebtro = cerebro
 
     @staticmethod
     def _get_analysis_table_generic(analyzer):
