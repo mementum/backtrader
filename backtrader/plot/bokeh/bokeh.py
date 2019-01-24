@@ -19,23 +19,24 @@ try:
     from bokeh.models.widgets import NumberFormatter, StringFormatter
     from bokeh.resources import CDN
     from bokeh.util.browser import view
+
+    from .figure import Figure, HoverContainer
+    from .datatable import TableGenerator
+    from .schemes import Tradimo
+    from .schemes.scheme import Scheme
+
 except ImportError as e:
     raise ImportError(
         'Bokeh seems to be missing. Needed for bokeh plotting support')
-
-from .utils import generate_stylesheet, get_strategy_label, get_data_obj
-from ... import bttypes
-
-from .figure import Figure, HoverContainer
-from .datatable import TableGenerator
-from .schemes import Tradimo
-from .schemes.scheme import Scheme
 
 try:
     from jinja2 import Environment, PackageLoader
 except ImportError as e:
     raise ImportError(
         'jinja2 seems to be missing. Needed for bokeh plotting support')
+
+from .utils import generate_stylesheet, get_strategy_label, get_data_obj
+
 
 _logger = logging.getLogger(__name__)
 
@@ -163,9 +164,9 @@ class Bokeh(metaclass=bt.MetaParams):
 
     def generate_result_model(self, result, columns=None, num_item_limit=None):
         """Generates a model from a result object"""
-        if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+        if bt.is_optresult(result) or bt.is_ordered_optresult(result):
             return self.generate_optresult_model(result, columns, num_item_limit)
-        elif bttypes.is_btresult(result):
+        elif bt.is_btresult(result):
             for s in result:
                 self.plot(s)
             return self.generate_model()
@@ -175,10 +176,10 @@ class Bokeh(metaclass=bt.MetaParams):
     def visualize(self, result, columns=None, iplot=False, start=None, end=None):
         """Visualize a cerebro result. Pass either a list of strategies or a list of list of optreturns"""
         filenames = []
-        if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+        if bt.is_optresult(result) or bt.is_ordered_optresult(result):
             # this will not complete the call, starts a blocking server
             self.run_optresult_server(result, columns)
-        elif bttypes.is_btresult(result):
+        elif bt.is_btresult(result):
             for s in result:
                 self.plot(s, iplot, start, end)
             filenames.append(self.show())
@@ -196,7 +197,7 @@ class Bokeh(metaclass=bt.MetaParams):
             self._fp.current_strategy_cls = obj.__class__
             self._fp.current_strategy_params = obj.params
             self._blueprint_strategy(obj, start, end)
-        elif isinstance(obj, bttypes.OptReturn):
+        elif isinstance(obj, bt.OptReturn):
             self._fp.current_strategy_cls = obj.strategycls
             self._fp.current_strategy_params = obj.params
 
@@ -455,8 +456,8 @@ class Bokeh(metaclass=bt.MetaParams):
 
         col_formatter_num = NumberFormatter(format=self.p.scheme.number_format)
         col_formatter_str = StringFormatter()
-        opts = optresult if bttypes.is_optresult(optresult) else [x.result for x in optresult.optresult]
-        if bttypes.is_ordered_optresult(optresult):
+        opts = optresult if bt.is_optresult(optresult) else [x.result for x in optresult.optresult]
+        if bt.is_ordered_optresult(optresult):
             benchmarks = [x.benchmark for x in Bokeh._get_limited_optresult(optresult.optresult, num_item_limit)]
             cds.add(benchmarks, "benchmark")
             tab_columns.append(TableColumn(field='benchmark', title=optresult.benchmark_label, sortable=False, formatter=col_formatter_num))

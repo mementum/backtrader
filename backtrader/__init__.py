@@ -88,3 +88,16 @@ from . import talib as talib
 # Load contributed indicators and studies
 import backtrader.indicators.contrib
 import backtrader.studies.contrib
+
+def is_btresult(result):
+    return isinstance(result, list) and isinstance(result[0], Strategy) and len(result) > 0
+
+def is_optresult(result):
+    return isinstance(result, list) and \
+           isinstance(result[0], list) and \
+           len(result[0]) > 0 and \
+           isinstance(result[0][0], (OptReturn, Strategy)) and \
+           len(result) > 0
+
+def is_ordered_optresult(result):
+    return isinstance(result, OrderedOptResult)

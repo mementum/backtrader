@@ -43,7 +43,24 @@ from .tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
 from .timer import Timer
 
-from . import bttypes
+
+class OptReturn(object):
+    def __init__(self, params, **kwargs):
+        self.p = self.params = params
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+class OrderedOptResult:
+    """Class to store an optresult which has been evaluated by a benchmark. The benchmark has a name (`benchmark_label`)."""
+    class BenchmarkedResult:
+        def __init__(self, benchmark, result):
+            self.benchmark = benchmark
+            self.result = result
+
+    def __init__(self, benchmark_label, optresult):
+        self.benchmark_label = benchmark_label
+        self.optresult = optresult
+
 
 class Cerebro(with_metaclass(MetaParams, object)):
     '''Params:
@@ -1015,10 +1032,10 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 # pfillers2 = {self.datas[i]: self._plotfillers2[i]
                 # for i, x in enumerate(self._plotfillers2)}
                 figs = [] 
-                if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+                if bt.is_optresult(result) or bt.is_ordered_optresult(result):
                     for stratlist in result:
                         for si, strat in enumerate(stratlist):
-                            if isinstance(strat, bttypes.OptReturn):
+                            if isinstance(strat, OptReturn):
                                 print("matplotlib backend cannot be used with optimization results, use backend='bokeh' instead.")
                                 return
                             else:
@@ -1029,7 +1046,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                                 figs.append(rfig)
 
-                elif bttypes.is_btresult(result):
+                elif bt.is_btresult(result):
                     for si, strat in enumerate(result):
                         rfig = plotter.plot(strat, figid=si * 100,
                                         numfigs=numfigs, iplot=iplot,
@@ -1043,14 +1060,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 plotter = bokeh.Bokeh(**kwargs)
 
                 filenames = []
-                if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):
+                if bt.is_optresult(result) or bt.is_ordered_optresult(result):
                     for stratlist in result:
                         for si, strat in enumerate(stratlist):
                             rfig = plotter.plot(strat, iplot=iplot, start=start, end=end)
                             filename = plotter.show()
 
                             filenames.append(filename)
-                elif bttypes.is_btresult(result):
+                elif bt.is_btresult(result):
                     for strat in result:
                         plotter.plot(strat, iplot, start, end)
                         filename = plotter.show()
@@ -1383,7 +1400,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         if attrname.startswith('data'):
                             setattr(a, attrname, None)
 
-                oreturn = bttypes.OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
+                oreturn = OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
                 results.append(oreturn)
 
             return results
