@@ -1,9 +1,10 @@
-from .utils import generate_stylesheet
 import bisect
 import os
 import sys
 import tempfile
 import datetime
+import logging
+from array import array
 import backtrader as bt
 
 try:
@@ -22,15 +23,13 @@ except ImportError as e:
     raise ImportError(
         'Bokeh seems to be missing. Needed for bokeh plotting support')
 
-from ..utils import get_strategy_label, get_data_obj
+from .utils import generate_stylesheet, get_strategy_label, get_data_obj
 from ... import bttypes
 
 from .figure import Figure, HoverContainer
 from .datatable import TableGenerator
-from ..schemes import Tradimo
-from ..schemes.scheme import Scheme
-import logging
-from array import array
+from .schemes import Tradimo
+from .schemes.scheme import Scheme
 
 try:
     from jinja2 import Environment, PackageLoader
@@ -70,7 +69,7 @@ class Bokeh(metaclass=bt.MetaParams):
         self._num_plots = 0
         self._tablegen = TableGenerator(self.p.scheme)
         if not isinstance(self.p.scheme, Scheme):
-            raise Exception("Provided scheme has to be a subclass of backtrader.boplot.schemes.scheme.Scheme")
+            raise Exception("Provided scheme has to be a subclass of backtrader.plot.bokeh.scheme.Scheme")
 
         self._fp = FigurePage()
 
@@ -411,7 +410,7 @@ class Bokeh(metaclass=bt.MetaParams):
             tmpdir = tempfile.gettempdir()
             filename = os.path.join(tmpdir, 'bt_bokeh_plot_{}.html'.format(self._num_plots))
 
-        env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
+        env = Environment(loader=PackageLoader('backtrader.plot.bokeh', 'templates'))
         title = 'BackTest {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         templ = env.get_template(template)
         templ.globals['title'] = title
@@ -504,7 +503,7 @@ class Bokeh(metaclass=bt.MetaParams):
         def make_document(doc: Document):
             doc.title = 'BackTest (Optimization) ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            env = Environment(loader=PackageLoader('backtrader.boplot.bokeh', 'templates'))
+            env = Environment(loader=PackageLoader('backtrader.plot.bokeh', 'templates'))
             templ = env.get_template("basic.html.j2")
             templ.globals['title'] = 'BackTest (Optimization) {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             templ.globals['show_headline'] = self.p.scheme.show_headline

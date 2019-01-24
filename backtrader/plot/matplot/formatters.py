@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import matplotlib.dates as mdates
 import matplotlib.ticker as mplticker
 
-from ..utils import num2date
+from ...utils import num2date
 
 
 class MyVolFormatter(mplticker.Formatter):

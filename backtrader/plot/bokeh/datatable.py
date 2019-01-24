@@ -2,7 +2,7 @@ import backtrader as bt
 from collections import OrderedDict
 from bokeh.models import ColumnDataSource, Paragraph, TableColumn, DataTable, DateFormatter, NumberFormatter, StringFormatter, Widget
 from enum import Enum
-from ..utils import get_params_str
+from .utils import get_params_str
 
 
 class ColummDataType(Enum):

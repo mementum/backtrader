@@ -104,7 +104,7 @@ setuptools.setup(
     # simple. Or you can use find_packages().
     packages=setuptools.find_packages(exclude=['docs', 'docs2', 'samples']),
     # packages=['backtrader', '],
-    package_data={'backtrader.boplot.bokeh': ['templates/*.j2']},
+    package_data={'backtrader.plot.bokeh': ['templates/*.j2']},
 
 
     # List run-time dependencies here.

@@ -1,4 +1,4 @@
-from ..bokeh.datatable import ColummDataType
+from ..datatable import ColummDataType
 
 # self.rets[self.strategy.datetime.datetime().replace(tzinfo=self.strategy.data._tz)] = entries
 # 'date', 'size', 'amount', 'price', 'sid', 'symbol', 'value'

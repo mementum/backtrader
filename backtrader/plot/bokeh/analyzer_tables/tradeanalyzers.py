@@ -1,4 +1,4 @@
-from ..bokeh.datatable import ColummDataType
+from ..datatable import ColummDataType
 
 
 def datatable(self):

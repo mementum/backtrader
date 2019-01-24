@@ -60,7 +60,7 @@
 # The modified version uses the y limits of each axis to calculate the initial
 # position of each line avoiding the distorsion
 
-from ..utils.py3 import zip
+from ...utils.py3 import zip
 
 class Widget(object):
     """

@@ -954,8 +954,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if result is None:
             result = self.runstrats
 
-        from . import boplot
-        p = boplot.Bokeh(**kwargs)
+        from .plot import bokeh
+        p = bokeh.Bokeh(**kwargs)
         return p.visualize(result, columns, iplot, start, end)
 
     def plot(self, result=None, plotter=None, backend='bokeh', numfigs=1, iplot=False, start=None, end=None,
@@ -1002,7 +1002,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if not plotter:
             if backend == 'matplotlib':
-                from . import matplot
+                from .plot import matplot
                 if self.p.oldsync:
                     plotter = matplot.Plot_OldSync(**kwargs)
                 else:
@@ -1039,8 +1039,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         figs.append(rfig)
                 return figs
             else:
-                from . import boplot
-                plotter = boplot.Bokeh(**kwargs)
+                from .plot import bokeh
+                plotter = bokeh.Bokeh(**kwargs)
 
                 filenames = []
                 if bttypes.is_optresult(result) or bttypes.is_ordered_optresult(result):

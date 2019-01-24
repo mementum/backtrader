@@ -36,8 +36,8 @@ import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
 import matplotlib.ticker as mticker
 
-from ..utils.py3 import range, with_metaclass, string_types, integer_types
-from .. import AutoInfoClass, MetaParams, TimeFrame, date2num
+from ...utils.py3 import range, with_metaclass, string_types, integer_types
+from ... import AutoInfoClass, MetaParams, TimeFrame, date2num
 
 from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
 from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)

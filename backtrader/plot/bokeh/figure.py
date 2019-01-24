@@ -3,10 +3,9 @@ from array import array
 
 import backtrader as bt
 
-from ..utils import get_strategy_label, get_data_obj
-from ..utils import convert_to_pandas, nanfilt
-from ..utils import resample_line
-
+from .utils import get_strategy_label, get_data_obj
+from .utils import convert_to_pandas, nanfilt
+from .utils import resample_line
 from .utils import convert_color, sanitize_source_name, get_bar_width, convert_linestyle, adapt_yranges
 
 from bokeh.models import Span
