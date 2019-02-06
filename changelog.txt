@@ -1,3 +1,12 @@
+1.9.70.122:
+  - Use opening price for submission check for Market orders when
+    cheat-on-open is active
+  - Update pnlcomm on all operations and not just profit/loss locking
+  - Correct comment for fillalpha and add baralpha for candlestick opacity
+  - Merge PR 378 (doc typo) PR 378 (rollover for live feeds and tz use
+    in datetime utilities)
+  - Use internal dict for data feed presence test and update trade observer
+
 1.9.69.122:
   - Fix offline Yahoo feed by moving the new adjclose line up to the offline
     feed
