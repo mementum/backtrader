@@ -72,6 +72,11 @@ class MetaLineIterator(LineSeries.__class__):
         if not _obj.datas and isinstance(_obj, (IndicatorBase, ObserverBase)):
             _obj.datas = _obj._owner.datas[0:mindatas]
 
+        # Create a dictionary to be able to check for presence
+        # lists in python use "==" operator when testing for presence with "in"
+        # which doesn't really check for presence but for equality
+        _obj.ddatas = {x: None for x in _obj.datas}
+
         # For each found data add access member -
         # for the first data 2 (data and data0)
         if _obj.datas:
