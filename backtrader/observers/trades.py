@@ -84,7 +84,7 @@ class Trades(Observer):
 
     def next(self):
         for trade in self._owner._tradespending:
-            if trade.data not in self.datas:
+            if trade.data not in self.ddatas:
                 continue
 
             if not trade.isclosed:
@@ -145,7 +145,7 @@ class DataTrades(with_metaclass(MetaDataTrades, Observer)):
 
     def next(self):
         for trade in self._owner._tradespending:
-            if trade.data not in self.datas:
+            if trade.data not in self.ddatas:
                 continue
 
             if not trade.isclosed:
