@@ -1,3 +1,9 @@
+1.9.71.122:
+  - Improve on indicator legend plotting to overcome matplotlib legend
+    reordering
+  - Added PercenSizerInt and AllSizerInt which truncate the returned size
+    to an int, suited better for stocks/futures
+
 1.9.70.122:
   - Use opening price for submission check for Market orders when
     cheat-on-open is active
