@@ -35,6 +35,7 @@ class PercentSizer(bt.Sizer):
 
     params = (
         ('percents', 20),
+        ('retint', False),  # return an int size or rather the float value
     )
 
     def __init__(self):
@@ -47,11 +48,39 @@ class PercentSizer(bt.Sizer):
         else:
             size = position.size
 
+        if self.p.retint:
+            size = int(size)
+
         return size
 
 
 class AllInSizer(PercentSizer):
     '''This sizer return all available cash of broker
+
+     Params:
+       - ``percents`` (default: ``100``)
+     '''
+    params = (
+        ('percents', 100),
+    )
+
+
+class PercentSizerInt(PercentSizer):
+    '''This sizer return percents of available cash in form of size truncated
+    to an int
+
+    Params:
+      - ``percents`` (default: ``20``)
+    '''
+
+    params = (
+        ('retint', True),  # return an int size or rather the float value
+    )
+
+
+class AllInSizerInt(PercentSizerInt):
+    '''This sizer return all available cash of broker with the
+    size truncated to an int
 
      Params:
        - ``percents`` (default: ``100``)
