@@ -1,3 +1,11 @@
+1.9.72.122:
+  - Cover case in which result in high-level overridden operations have
+    multiple lines and wer not be taken into account for minimum period
+    calculations
+  - Add "Int" variants of percentage based sizers to import
+  - Trades observer to show net profit instead of brutto, with parameter
+    to control behavior
+
 1.9.71.122:
   - Improve on indicator legend plotting to overcome matplotlib legend
     reordering
