@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import backtrader as bt
 
-__all__ = ['PercentSizer', 'AllInSizer']
+__all__ = ['PercentSizer', 'AllInSizer', 'PercentSizerInt', 'AllInSizerInt']
 
 
 class PercentSizer(bt.Sizer):
