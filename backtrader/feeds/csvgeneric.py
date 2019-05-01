@@ -87,10 +87,10 @@ class GenericCSVData(feed.CSVDataBase):
     def start(self):
         super(GenericCSVData, self).start()
 
+        self._dtstr = False
         if isinstance(self.p.dtformat, string_types):
             self._dtstr = True
         elif isinstance(self.p.dtformat, integer_types):
-            self._dtstr = False
             idt = int(self.p.dtformat)
             if idt == 1:
                 self._dtconvert = lambda x: datetime.utcfromtimestamp(int(x))

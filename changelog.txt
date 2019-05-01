@@ -1,3 +1,10 @@
+1.9.73.123:
+  - Add utility NonZeroDifference indicator
+  - Redefine CrossUp, CrossDown and CrossOver indicators using
+    NonZeroDifference to cover the case in which the crossing entities
+    converge right before crossing up and down
+  - PR #382 (Travis: Python 3.7, 3.8-dev travis), PR #383 PivotPoint doc
+
 1.9.72.122:
   - Cover case in which result in high-level overridden operations have
     multiple lines and wer not be taken into account for minimum period
