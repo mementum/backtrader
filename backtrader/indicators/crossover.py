@@ -67,11 +67,13 @@ class _CrossBase(Indicator):
     plotinfo = dict(plotymargin=0.05, plotyhlines=[0.0, 1.0])
 
     def __init__(self):
+        nzd = NonZeroDifference(self.data0, self.data1)
+
         if self._crossup:
-            before = self.data0(-1) < self.data1(-1)
+            before = nzd(-1) < 0.0  # data0 was below or at 0
             after = self.data0 > self.data1
         else:
-            before = self.data0(-1) > self.data1(-1)
+            before = nzd(-1) > 0.0  # data0 was above or at 0
             after = self.data0 < self.data1
 
         self.lines.cross = And(before, after)
@@ -83,12 +85,11 @@ class CrossUp(_CrossBase):
     indicator upwards
 
     It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1t and 2nd data
-
-    This indicator is not automatically plotted
+    index (-1) of both the 1st and 2nd data
 
     Formula:
-      - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
+      - diff = data - data1
+      - upcross =  last_non_zero_diff < 0 and data0(0) > data1(0)
     '''
     _crossup = True
 
@@ -99,12 +100,11 @@ class CrossDown(_CrossBase):
     indicator upwards
 
     It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1t and 2nd data
-
-    This indicator is not automatically plotted
+    index (-1) of both the 1st and 2nd data
 
     Formula:
-      - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
+      - diff = data - data1
+      - downcross = last_non_zero_diff > 0 and data0(0) < data1(0)
     '''
     _crossup = False
 
@@ -119,11 +119,10 @@ class CrossOver(Indicator):
     It does need to look into the current time index (0) and the previous time
     index (-1) of both the 1t and 2nd data
 
-    This indicator is not automatically plotted
-
     Formula:
-      - upcross = data0(-1) < data1(-1) and data0(0) > data1(0)
-      - downcross = data0(-1) > data1(-1) and data0(0) < data1(0)
+      - diff = data - data1
+      - upcross =  last_non_zero_diff < 0 and data0(0) > data1(0)
+      - downcross = last_non_zero_diff > 0 and data0(0) < data1(0)
       - crossover = upcross - downcross
     '''
     _mindatas = 2
