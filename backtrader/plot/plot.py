@@ -69,7 +69,7 @@ class PInfo(object):
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
     def newfig(self, figid, numfig, mpyplot):
-        fig = mpyplot.figure(figid + numfig, figsize=(16,10))
+        fig = mpyplot.figure(figid + numfig, figsize=self.sch.figsize)
         self.figs.append(fig)
         self.daxis = collections.OrderedDict()
         self.vaxis = list()

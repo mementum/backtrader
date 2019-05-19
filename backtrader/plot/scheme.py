@@ -76,6 +76,9 @@ tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
 
 class PlotScheme(object):
     def __init__(self):
+        # figure size
+        self.figsize = (16,10)
+
         # to have a tight packing on the chart wether only the x axis or also
         # the y axis have (see matplotlib)
         self.ytight = False
