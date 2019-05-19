@@ -136,7 +136,7 @@ class PlotScheme(object):
         self.volume = True
 
         # Wether to overlay the volume on the data or use a separate subchart
-        self.voloverlay = True
+        self.voloverlay = False
         # Scaling of the volume to the data when plotting as overlay
         self.volscaling = 0.33
         # Pushing overlay volume up for better visibiliy. Experimentation
