@@ -113,7 +113,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
-    def plot(self, strategy, figid=0, numfigs=1, iplot=True,
+    def plot(self, strategy, figid=0, numfigs=1, iplot=False,
              start=None, end=None, **kwargs):
         # pfillers={}):
         if not strategy.datas:
@@ -122,8 +122,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if not len(strategy):
             return
 
-        if iplot:
-            if 'ipykernel' in sys.modules:
+        if 'ipykernel' in sys.modules:
+            if iplot:
+                matplotlib.use('nbagg')
+            else:
                 matplotlib.use('module://ipykernel.pylab.backend_inline')
 
         # this import must not happen before matplotlib.use

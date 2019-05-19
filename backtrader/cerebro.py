@@ -933,7 +933,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
+    def plot(self, plotter=None, numfigs=1, iplot=False, start=None, end=None,
              width=16, height=9, dpi=300, tight=True, use=None,
              **kwargs):
         '''
