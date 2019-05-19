@@ -103,8 +103,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
     def drawtag(self, ax, x, y, facecolor, edgecolor, alpha=0.9, **kwargs):
 
-        txt = ax.text(x, y, '%.2f' % y, va='center', ha='left',
-                      fontsize=self.pinf.sch.subtxtsize,
+        txt = ax.text(x+1.5, y, '%.2f' % y, va='center', ha='left',
+                      fontsize=self.pinf.sch.subtxttagsize,
                       bbox=dict(boxstyle=tag_box_style,
                                 facecolor=facecolor,
                                 edgecolor=edgecolor,
@@ -132,6 +132,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         import matplotlib.pyplot as mpyplot
         self.mpyplot = mpyplot
         self.mpyplot.style.use('bmh')
+        matplotlib.rcParams['font.family'] = 'monospace'
 
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)

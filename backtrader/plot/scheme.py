@@ -153,7 +153,9 @@ class PlotScheme(object):
         # Transparency for text labels (NOT USED CURRENTLY)
         self.subtxttrans = 0.66
         # Default font text size for labels on the chart
-        self.subtxtsize = 16
+        self.subtxtsize = 9
+        # Default font text size for tag
+        self.subtxttagsize = 16
 
         # Transparency for the legend (NOT USED CURRENTLY)
         self.legendtrans = 0.25
