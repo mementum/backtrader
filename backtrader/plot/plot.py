@@ -69,7 +69,7 @@ class PInfo(object):
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
     def newfig(self, figid, numfig, mpyplot):
-        fig = mpyplot.figure(figid + numfig)
+        fig = mpyplot.figure(figid + numfig, figsize=(16,10))
         self.figs.append(fig)
         self.daxis = collections.OrderedDict()
         self.vaxis = list()
@@ -124,11 +124,12 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         if iplot:
             if 'ipykernel' in sys.modules:
-                matplotlib.use('nbagg')
+                matplotlib.use('module://ipykernel.pylab.backend_inline')
 
         # this import must not happen before matplotlib.use
         import matplotlib.pyplot as mpyplot
         self.mpyplot = mpyplot
+        self.mpyplot.style.use('bmh')
 
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)
@@ -239,7 +240,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             # Put the subplots as indicated by hspace
             fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
-                                top=0.98, left=0.05, bottom=0.05, right=0.95)
+                                top=0.98, left=0.05, bottom=0.05, right=0.9)
 
             laxis = list(self.pinf.daxis.values())
 
@@ -260,6 +261,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             # but the labels from all axis but the last have to be hidden
             for ax in laxis:
                 self.mpyplot.setp(ax.get_xticklabels(), visible=False)
+                for side in ax.spines.values():
+                    side.set_color('0.0')
 
             self.mpyplot.setp(lastax.get_xticklabels(), visible=True,
                               rotation=self.pinf.sch.tickrotation)

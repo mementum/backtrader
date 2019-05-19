@@ -107,20 +107,20 @@ class PlotScheme(object):
 
         # Default plotstyle for the OHLC bars which (line -> line on close)
         # Other options: 'bar' and 'candle'
-        self.style = 'line'
+        self.style = 'candle'
 
         # Default color for the 'line on close' plot
         self.loc = 'black'
         # Default color for a bullish bar/candle (0.75 -> intensity of gray)
-        self.barup = '0.75'
+        self.barup = 'green'
         # Default color for a bearish bar/candle
-        self.bardown = 'red'
+        self.bardown = '0.3'
         # Level of transparency to apply to bars/cancles (NOT USED)
         self.bartrans = 1.0
 
         # Wether the candlesticks have to be filled or be transparent
         self.barupfill = True
-        self.bardownfill = True
+        self.bardownfill = False
 
         # Opacity for the filled candlesticks (1.0 opaque - 0.0 transparent)
         self.baralpha = 1.0
@@ -150,7 +150,7 @@ class PlotScheme(object):
         # Transparency for text labels (NOT USED CURRENTLY)
         self.subtxttrans = 0.66
         # Default font text size for labels on the chart
-        self.subtxtsize = 9
+        self.subtxtsize = 16
 
         # Transparency for the legend (NOT USED CURRENTLY)
         self.legendtrans = 0.25
@@ -169,7 +169,8 @@ class PlotScheme(object):
         self.valuetags = True
 
         # Default color for horizontal lines (see plotinfo.plothlines)
-        self.hlinescolor = '0.66'  # shade of gray
+        # self.hlinescolor = '0.66'  # shade of gray
+        self.hlinescolor = '0.0'  # shade of gray
         # Default style for horizontal lines
         self.hlinesstyle = '--'
         # Default width for horizontal lines
