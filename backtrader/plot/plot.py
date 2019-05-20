@@ -656,7 +656,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         if not voloverlay:
-            vollabel += ' ({})'.format(data._dataname)
+            vollabel += ' ({})'.format(data._name)
 
         # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
         axdatamaster = None
