@@ -1,3 +1,7 @@
+1.9.74.123:
+  - Correct calculation in haDelta indicator
+  - Use initial datalabel for non-overlaid volume plot
+
 1.9.73.123:
   - Add utility NonZeroDifference indicator
   - Redefine CrossUp, CrossDown and CrossOver indicators using
