@@ -653,10 +653,14 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if pmaster is data:
             pmaster = None
 
+        datalabel = ''
+        if hasattr(data, '_name') and data._name:
+            datalabel += data._name
+
         voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         if not voloverlay:
-            vollabel += ' ({})'.format(data._dataname)
+            vollabel += ' ({})'.format(datalabel)
 
         # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
         axdatamaster = None
@@ -677,11 +681,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster.twinx()
                 self.pinf.vaxis.append(ax)
-
-        datalabel = ''
-        dataname = ''
-        if hasattr(data, '_name') and data._name:
-            datalabel += data._name
 
         if hasattr(data, '_compression') and \
            hasattr(data, '_timeframe'):
