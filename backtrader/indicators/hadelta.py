@@ -65,8 +65,7 @@ class haDelta(bt.Indicator):
 
     def __init__(self):
         d = bt.ind.HeikinAshi(self.data) if self.p.autoheikin else self.data
-        o, c = d.close, d.open
 
-        self.lines.haDelta = hd = c - o
+        self.lines.haDelta = hd = d.close - d.open
         self.lines.smoothed = self.p.movav(hd, period=self.p.period)
         super(haDelta, self).__init__()
