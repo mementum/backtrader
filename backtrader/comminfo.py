@@ -215,7 +215,7 @@ class CommInfoBase(with_metaclass(MetaParams)):
         '''Returns the value of a position given a price. For future-like
         objects it is fixed at size * margin'''
         if not self._stocklike:
-            return abs(position.size) * self.get_margin(price)
+            return abs(position.size) * self.get_margin(position.price)
 
         size = position.size
         if size >= 0:
