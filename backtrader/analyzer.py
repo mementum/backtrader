@@ -434,11 +434,13 @@ class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
             seconds=self.timeframe == TimeFrame.Seconds,
             microseconds=self.timeframe == TimeFrame.MicroSeconds)
 
+        # Add extra day if present
+        if extradays:
+            dt += datetime.timedelta(days=extradays)
+
         # Replace intraday parts with the calculated ones and update it
         dtcmp = dt.replace(hour=ph, minute=pm, second=ps, microsecond=pus)
         dtcmp -= tadjust
-        if extradays:
-            dt += datetime.timedelta(days=extradays)
         dtkey = dtcmp
 
         return dtcmp, dtkey
