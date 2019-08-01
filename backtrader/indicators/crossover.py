@@ -97,7 +97,7 @@ class CrossUp(_CrossBase):
 class CrossDown(_CrossBase):
     '''
     This indicator gives a signal if the 1st provided data crosses over the 2nd
-    indicator upwards
+    indicator downwards
 
     It does need to look into the current time index (0) and the previous time
     index (-1) of both the 1st and 2nd data
