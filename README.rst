@@ -181,6 +181,7 @@ Alternatives
 If after seeing the docs and some samples (see the blog also) you feel this is
 not your cup of tea, you can always have a look at similar Python platforms:
 
+  - `LEAN <https://github.com/QuantConnect/Lean>`_
   - `PyAlgoTrade <https://github.com/gbeced/pyalgotrade>`_
   - `Zipline <https://github.com/quantopian/zipline>`_
   - `Ultra-Finance <https://code.google.com/p/ultra-finance/>`_
