@@ -1,0 +1,86 @@
+# !/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from backtrader import DataBase, date2num
+import datetime as dt
+import urlparse
+import psycopg2
+
+class PsqlDatabase(DataBase):
+    '''
+    Fetches data from PSQL, and wraps it into a Feed consumable by cerebro
+    takes url connection string in form of :
+        postgres://{user}:{pw}@{host}:{port [optional]}/{database}
+
+    must also pass a datestart and a table name conforming to a similar schema as following:
+            ticker        char(5),
+            date          date,
+            high          numeric(10,4),
+            low           numeric(10,4),
+            open          numeric(10,4),
+            close         numeric(10,4),
+            volume        integer,
+            unique (ticker, date)
+    '''
+
+    params = (
+        ('url', None),
+        ('dataname', None),
+        ('table', None),
+        ('startdate', None),
+        ('ticker', None),
+    )
+
+    def start(self):
+        try:
+            cursor = self.connect_db()
+        except Exception as e:
+            print('Failed to establish connection to PSQL: {}'.format(e))
+            return
+
+        query = ("""SELECT date, high, low, open, close, volume """
+                 """FROM {table} """
+                 """WHERE ticker = '{ticker}' """
+                 """AND date >= '{startdate}' """
+                 """ORDER BY date asc""".format(
+            table=self.p.table,
+            ticker=self.p.ticker,
+            startdate=dt.datetime.strftime(self.p.startdate, '%Y-%m-%d')
+        ))
+
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            print('PSQL query failed: {}'.format(e))
+
+        self.price_rows = cursor.fetchall()
+        self.price_i = 0
+        super(PsqlDatabase, self).start()
+
+    def _load(self):
+        if self.price_i >= len(self.price_rows):
+            return False
+        row = self.price_rows[self.price_i]
+        self.price_i += 1
+
+        self.lines.datetime[0] = date2num(row[0])
+        self.lines.high[0]     = row[1]
+        self.lines.low[0]      = row[2]
+        self.lines.open[0]     = row[3]
+        self.lines.close[0]    = row[4]
+        self.lines.volume[0]   = row[5]
+        self.lines.openinterest[0] = 0.0
+
+        return True
+
+    def connect_db(self):
+        url = urlparse.urlparse(self.p.url)
+        dbname = url.path[1:]
+        user = url.username
+        password = url.password
+        host = url.hostname
+        conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
+
+        return conn.cursor()
