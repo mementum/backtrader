@@ -24,9 +24,9 @@ from __future__ import (absolute_import, division, print_function,
 import itertools
 import time
 try:
-    time_clock = time.clock
-except:  # py38
     time_clock = time.process_time
+except:
+    time_clock = time.clock
 
 import testcommon
 
