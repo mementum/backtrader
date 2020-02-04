@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import itertools
 import time
+import sys
 
 
 import testcommon
@@ -78,14 +79,20 @@ class TestStrategy(bt.Strategy):
 
     def start(self):
         self.broker.setcommission(commission=2.0, mult=10.0, margin=1000.0)
-        self.tstart = time.clock()
+        if sys.version_info >= (3, 8):
+            self.tstart = time.perf_counter()
+        else:
+            self.tstart = time.clock()
         self.buy_create_idx = itertools.count()
 
     def stop(self):
         global _chkvalues
         global _chkcash
 
-        tused = time.clock() - self.tstart
+        if sys.version_info >= (3, 8):
+            tused = time.perf_counter() - self.tstart
+        else:
+            tused = time.clock() - self.tstart
         if self.p.printdata:
             self.log(('Time used: %s  - Period % d - '
                       'Start value: %.2f - End value: %.2f') %
