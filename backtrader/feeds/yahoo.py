@@ -297,6 +297,8 @@ class YahooFinanceData(YahooFinanceCSVData):
             self.f = None
             return
 
+        crumb = urlquote(crumb)
+
         # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history&crumb=crumb
 
         # Try to download
