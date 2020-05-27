@@ -1,16 +1,12 @@
 
-backtrader
-==========
+backtrader2 : An on going and open project
+==========================================
 
-.. image:: https://img.shields.io/pypi/v/backtrader.svg
-   :alt: PyPi Version
+
+.. image:: https://img.shields.io/pypi/dm/backtrader.svg
+   :alt: PyPi Monthly Donwloads
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
-
-..  .. image:: https://img.shields.io/pypi/dm/backtrader.svg
-       :alt: PyPi Monthly Donwloads
-       :scale: 100%
-       :target: https://pypi.python.org/pypi/backtrader/
 
 .. image:: https://img.shields.io/pypi/l/backtrader.svg
    :alt: License
@@ -25,17 +21,23 @@ backtrader
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-**Yahoo API Note**:
+**Important Update**
 
-  [2018-11-16] After some testing it would seem that data downloads can be
-  again relied upon over the web interface (or API ``v7``)
+Backtrader is a flexible and powerful backtesting engine written in python.
+The original project found wide appeal due to its versatility. Over time however,
+the original code base became inaccessible to bug fixes and enhancements.
 
-**Tickets**
+Backtrader2 is a forked copy of backtrader by the community of users that seeks to make
+backtrader an ongoing project.
 
-  If it's **NOT an issue** (i.e.: bug), don't post it as an issue. It will be
-  automatically closed.
+Initially backtrader2 will fix bugs. Just submit an issue and pull requests.
 
-For **feedback/questions/...** use the `Community <https://community.backtrader.com>`_
+New code ideas are welcome but will not be addressed at this time. But please do enter them as an issue
+and tag it with 'enhancement' so that we can track your idea down the road.
+
+**Backtrader's back and we look forward to its future!**
+
+For feedback/questions/... use the `Community <https://community.backtrader.com>`_
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
@@ -174,39 +176,3 @@ X.Y.Z.I
   - Z: Revision version number. To be changed for documentation updates, small
     changes, small bug fixes
   - I: Number of Indicators already built into the platform
-
-Alternatives
-============
-
-If after seeing the docs and some samples (see the blog also) you feel this is
-not your cup of tea, you can always have a look at similar Python platforms:
-
-  - `PyAlgoTrade <https://github.com/gbeced/pyalgotrade>`_
-  - `Zipline <https://github.com/quantopian/zipline>`_
-  - `Ultra-Finance <https://code.google.com/p/ultra-finance/>`_
-  - `ProfitPy <https://code.google.com/p/profitpy/>`_
-  - `pybacktest <https://github.com/ematvey/pybacktest>`_
-  - `prophet <https://github.com/Emsu/prophet>`_
-  - `quant <https://github.com/maihde/quant>`_
-  - `AlephNull <https://github.com/CarterBain/AlephNull>`_
-  - `Trading with Python <http://www.tradingwithpython.com/>`_
-  - `visualize-wealth <https://github.com/benjaminmgross/visualize-wealth>`_
-  - `tia: Toolkit for integration and analysis
-    <https://github.com/bpsmith/tia>`_
-  - `QuantSoftware Toolkit
-    <http://wiki.quantsoftware.org/index.php?title=QuantSoftware_ToolKit>`_
-  - `Pinkfish <http://fja05680.github.io/pinkfish/>`_
-  - `bt <http://pmorissette.github.io/bt/index.html>`_
-
-     ``bt`` slightly pre-dates ``backtrader`` and has a completely different
-     approach but it is funny *bt* was also chosen as the abbreviation for
-     ``backtrader`` during imports and that some of the methods have the same
-     naming (obvious naming anyhow): ``run``, ``plot`` ...
-
-  - `PyThalesians <https://github.com/thalesians/pythalesians>`_
-
-  - `QSTrader <https://github.com/mhallsmoore/qstrader/>`_
-  - `QSForex <https://github.com/mhallsmoore/qsforex>`_
-  - `pysystemtrade <https://github.com/robcarver17/pysystemtrade>`_
-  - `QTPyLib <https://github.com/ranaroussi/qtpylib>`_
-  - `RQalpha <https://github.com/ricequant/rqalpha>`_
