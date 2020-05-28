@@ -95,13 +95,6 @@ class BackBroker(bt.BrokerBase):
           exchanges for many products for a couple of minutes after the end of
           the session
 
-        - ``eosbar`` (default: ``False``):
-          With intraday bars consider a bar with the same ``time`` as the end
-          of session to be the end of the session. This is not usually the
-          case, because some bars (final auction) are produced by many
-          exchanges for many products for a couple of minutes after the end of
-          the session
-
         - ``filler`` (default: ``None``)
 
           A callable with signature: ``callable(order, price, ago)``
