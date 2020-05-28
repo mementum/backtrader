@@ -21,13 +21,22 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import sys
+
+
 try:
     import matplotlib
 except ImportError:
     raise ImportError(
         'Matplotlib seems to be missing. Needed for plotting support')
 else:
-    matplotlib.use('TkAgg')
+    touse = 'TKAgg' if sys.platform != 'darwin' else 'MacOSX'
+    try:
+        matplotlib.use(touse)
+    except:
+        # if another backend has already been loaded, an exception will be
+        # generated and this can be skipped
+        pass
 
 
 from .plot import Plot, Plot_OldSync
