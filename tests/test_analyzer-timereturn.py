@@ -22,6 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import time
+try:
+    time_clock = time.process_time
+except:
+    time_clock = time.clock
 
 import testcommon
 
@@ -88,7 +92,7 @@ class TestStrategy(bt.Strategy):
             self.log('Starting portfolio value: %.2f' % self.broker.getvalue(),
                      nodate=True)
 
-        self.tstart = time.clock()
+        self.tstart = time_clock()
 
         self.buycreate = list()
         self.sellcreate = list()
@@ -96,7 +100,7 @@ class TestStrategy(bt.Strategy):
         self.sellexec = list()
 
     def stop(self):
-        tused = time.clock() - self.tstart
+        tused = time_clock() - self.tstart
         if self.p.printdata:
             self.log('Time used: %s' % str(tused))
             self.log('Final portfolio value: %.2f' % self.broker.getvalue())
