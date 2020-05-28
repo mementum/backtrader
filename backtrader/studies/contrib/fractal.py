@@ -3,7 +3,7 @@
 
 ###############################################################################
 #
-# Copyright (C) 2017 Christoph Giese <cgi1>
+# Copyright (C) 2015-2020 Daniel Rodriguez
 # (based on backtrader from Daniel Rodriguez)
 #
 # This program is free software: you can redistribute it and/or modify
