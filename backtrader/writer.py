@@ -122,14 +122,9 @@ class WriterFile(WriterBase):
             self.writelineseparator()
             self.writeiterable(self.headers, counter='Id')
 
-        self.buffer = []
-
     def stop(self):
-        self.out.write("\n".join(self.buffer) + "\n")
-        self.buffer = None
         if self.close_out:
             self.out.close()
-            self.out = None
 
     def next(self):
         if self.p.csv:
@@ -157,7 +152,7 @@ class WriterFile(WriterBase):
         self.writeline(line)
 
     def writeline(self, line):
-        self.buffer.append(line)
+        self.out.write(line + '\n')
 
     def writelines(self, lines):
         for l in lines:
