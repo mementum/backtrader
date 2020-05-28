@@ -480,6 +480,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 q.put(-msg.errorCode)
                 self.cancelQueue(q)
 
+        elif msg.errorCode == 10225:
+            # 10225-Bust event occurred, current subscription is deactivated.
+            # Please resubscribe real-time bars immediately.
+            try:
+                q = self.qs[msg.id]
+            except KeyError:
+                pass  # should not happend but it can
+            else:
+                q.put(-msg.errorCode)
+
         elif msg.errorCode == 326:  # not recoverable, clientId in use
             self.dontreconnect = True
             self.conn.disconnect()
