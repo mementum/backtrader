@@ -179,7 +179,7 @@ class PlotScheme(object):
         self.lcolors = tableau10
 
         # strftime Format string for the display of ticks on the x axis
-        self.fmt_x_ticks = None
+        self.fmt_x_ticks = '%Y-%m-%d %H:%M'
 
         # strftime Format string for the display of data points values
         self.fmt_x_data = None
