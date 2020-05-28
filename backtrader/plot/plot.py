@@ -271,8 +271,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         return figs
 
     def setlocators(self, ax):
-        comp = getattr(self.pinf.clock, '_compression', 1)
-        tframe = getattr(self.pinf.clock, '_timeframe', TimeFrame.Days)
+        clock = sorted(self.pinf.clock.datas,
+                       key=lambda x: (x._timeframe, x._compression))[0]
+
+        comp = getattr(clock, '_compression', 1)
+        tframe = getattr(clock, '_timeframe', TimeFrame.Days)
 
         if self.pinf.sch.fmt_x_data is None:
             if tframe == TimeFrame.Years:
