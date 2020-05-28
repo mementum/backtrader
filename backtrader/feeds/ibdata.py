@@ -113,6 +113,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - 'BID' for CASH assets
           - 'TRADES' for any other
 
+        Use 'ASK' for the Ask quote of cash assets
+        
         Check the IB API docs if another value is wished
 
       - ``rtbar`` (default: ``False``)
@@ -412,7 +414,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             return
 
         if self._usertvol:
-            self.qlive = self.ib.reqMktData(self.contract)
+            self.qlive = self.ib.reqMktData(self.contract, self.p.what)
         else:
             self.qlive = self.ib.reqRealTimeBars(self.contract)
 

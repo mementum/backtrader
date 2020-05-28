@@ -759,6 +759,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.iscash[tickerId] = True
             if not what:
                 what = 'BID'  # TRADES doesn't work
+            elif what is 'ASK':
+                self.iscash[tickerId] = 2
         else:
             what = what or 'TRADES'
 
@@ -827,7 +829,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
             self.cancelQueue(q, True)
 
-    def reqMktData(self, contract):
+    def reqMktData(self, contract, what=None):
         '''Creates a MarketData subscription
 
         Params:
@@ -843,7 +845,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         if contract.m_secType in ['CASH', 'CFD']:
             self.iscash[tickerId] = True
             ticks = ''  # cash markets do not get RTVOLUME
-
+            if what is 'ASK':
+                self.iscash[tickerId] = 2
+                
         # q.put(None)  # to kickstart backfilling
         # Can request 233 also for cash ... nothing will arrive
         self.conn.reqMktData(tickerId, contract, bytes(ticks), False)
