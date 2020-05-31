@@ -105,7 +105,7 @@ class WriterFile(WriterBase):
         self.headers = list()
         self.values = list()
 
-    def start(self):
+    def _start_output(self):
         # open file if needed
         if not hasattr(self, 'out') or not self.out:
             if self.p.out is None:
@@ -117,6 +117,9 @@ class WriterFile(WriterBase):
             else:
                 self.out = self.p.out
                 self.close_out = self.p.close_out
+
+    def start(self):
+        self._start_output()
 
         if self.p.csv:
             self.writelineseparator()
@@ -215,6 +218,9 @@ class WriterStringIO(WriterFile):
 
     def __init__(self):
         super(WriterStringIO, self).__init__()
+
+    def _start_output(self):
+        super(WriterStringIO, self)._start_output()
         self.out = self.out()
 
     def stop(self):
