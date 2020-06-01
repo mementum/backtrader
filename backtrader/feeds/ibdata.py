@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -113,6 +113,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
           - 'BID' for CASH assets
           - 'TRADES' for any other
 
+        Use 'ASK' for the Ask quote of cash assets
+        
         Check the IB API docs if another value is wished
 
       - ``rtbar`` (default: ``False``)
@@ -363,6 +365,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         else:
             self._state = self._ST_START  # initial state for _load
         self._statelivereconn = False  # if reconnecting in live state
+        self._subcription_valid = False  # subscription state
         self._storedmsg = dict()  # keep pending live message (under None)
 
         if not self.ib.connected():
@@ -408,14 +411,15 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
     def reqdata(self):
         '''request real-time data. checks cash vs non-cash) and param useRT'''
-        if self.contract is None:
+        if self.contract is None or self._subcription_valid:
             return
 
         if self._usertvol:
-            self.qlive = self.ib.reqMktData(self.contract)
+            self.qlive = self.ib.reqMktData(self.contract, self.p.what)
         else:
             self.qlive = self.ib.reqRealTimeBars(self.contract)
 
+        self._subcription_valid = True
         return self.qlive
 
     def canceldata(self):
@@ -444,7 +448,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     if True:
                         return None
 
-                    # Code invalidated until further checking is done
+                # Code invalidated until further checking is done
                     if not self._statelivereconn:
                         return None  # indicate timeout situation
 
@@ -471,6 +475,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     continue  # to reenter the loop and hit st_historback
 
                 if msg is None:  # Conn broken during historical/backfilling
+                    self._subcription_valid = False
                     self.put_notification(self.CONNBROKEN)
                     # Try to reconnect
                     if not self.ib.reconnect(resub=True):
@@ -487,6 +492,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 elif msg == -1100:  # conn broken
                     # Tell to wait for a message to do a backfill
                     # self._state = self._ST_DISCONN
+                    self._subcription_valid = False
                     self._statelivereconn = self.p.backfill
                     continue
 
@@ -498,6 +504,14 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
                 elif msg == -1101:  # conn broken/restored tickerId gone
                     # The message may be duplicated
+                    self._subcription_valid = False
+                    if not self._statelivereconn:
+                        self._statelivereconn = self.p.backfill
+                        self.reqdata()  # resubscribe
+                    continue
+
+                elif msg == -10225:  # Bust event occurred, current subscription is deactivated.
+                    self._subcription_valid = False
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
                         self.reqdata()  # resubscribe
@@ -559,14 +573,17 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 msg = self.qhist.get()
                 if msg is None:  # Conn broken during historical/backfilling
                     # Situation not managed. Simply bail out
+                    self._subcription_valid = False
                     self.put_notification(self.DISCONNECTED)
                     return False  # error management cancelled the queue
 
                 elif msg == -354:  # Data not subscribed
+                    self._subcription_valid = False
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 
                 elif msg == -420:  # No permissions for the data
+                    self._subcription_valid = False
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 

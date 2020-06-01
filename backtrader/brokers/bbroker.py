@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -87,13 +87,6 @@ class BackBroker(bt.BrokerBase):
 
         - ``checksubmit`` (default: ``True``)
           check margin/cash before accepting an order into the system
-
-        - ``eosbar`` (default: ``False``):
-          With intraday bars consider a bar with the same ``time`` as the end
-          of session to be the end of the session. This is not usually the
-          case, because some bars (final auction) are produced by many
-          exchanges for many products for a couple of minutes after the end of
-          the session
 
         - ``eosbar`` (default: ``False``):
           With intraday bars consider a bar with the same ``time`` as the end

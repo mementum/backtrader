@@ -1,3 +1,21 @@
+1.9.75.123:
+  - Adding extra day before dtcmp calc, as otherwise the extradays
+    have no effect (#388)
+  - Fixing the issue with TWS API Bust events (err code 10225) (#396)
+  - Add support for ASK quotes for CASH assets (#395) plus fixes
+  - Remove duplicated note (#386)
+  - Fixing time.clock for python>=3.8 (#394)
+  - Changed file initiation for WriterFile to make it work under
+    multi-process optimization (#397) plus fixes
+  - Fixed backend loading if a backend is loaded (Google Collab) and
+    backend to use on MacOSX
+  - Fix: crumb in feeds.YahooFinanceData (#400)
+  - Fix color assignments, ticks line widths and some pep-8 improvements
+  - Fix timeframe/compression detection when plotting
+  - Fix default value for ticks display format on X-axis
+  - Sample with ta-lib SAR test
+  - Generic support of multiple "text/*" content types for Yahoo
+
 1.9.74.123:
   - Correct calculation in haDelta indicator
   - Use initial datalabel for non-overlaid volume plot

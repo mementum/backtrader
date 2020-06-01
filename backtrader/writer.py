@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,7 +43,10 @@ class WriterFile(WriterBase):
       - ``out`` (default: ``sys.stdout``): output stream to write to
 
         If a string is passed a filename with the content of the parameter will
-        be used
+        be used.
+
+        If you wish to run with ``sys.stdout`` while doing multiprocess optimization, leave it as ``None``, which will
+        automatically initiate ``sys.stdout`` on the child processes.
 
       - ``close_out``  (default: ``False``)
 
@@ -83,7 +86,7 @@ class WriterFile(WriterBase):
 
     '''
     params = (
-        ('out', sys.stdout),
+        ('out', None),
         ('close_out', False),
 
         ('csv', False),
@@ -102,15 +105,22 @@ class WriterFile(WriterBase):
         self.headers = list()
         self.values = list()
 
+    def _start_output(self):
         # open file if needed
-        if isinstance(self.p.out, string_types):
-            self.out = open(self.p.out, 'w')
-            self.close_out = True
-        else:
-            self.out = self.p.out
-            self.close_out = self.p.close_out
+        if not hasattr(self, 'out') or not self.out:
+            if self.p.out is None:
+                self.out = sys.stdout
+                self.close_out = False
+            elif isinstance(self.p.out, string_types):
+                self.out = open(self.p.out, 'w')
+                self.close_out = True
+            else:
+                self.out = self.p.out
+                self.close_out = self.p.close_out
 
     def start(self):
+        self._start_output()
+
         if self.p.csv:
             self.writelineseparator()
             self.writeiterable(self.headers, counter='Id')
@@ -208,6 +218,9 @@ class WriterStringIO(WriterFile):
 
     def __init__(self):
         super(WriterStringIO, self).__init__()
+
+    def _start_output(self):
+        super(WriterStringIO, self)._start_output()
         self.out = self.out()
 
     def stop(self):

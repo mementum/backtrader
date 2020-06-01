@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -297,6 +297,8 @@ class YahooFinanceData(YahooFinanceCSVData):
             self.f = None
             return
 
+        crumb = urlquote(crumb)
+
         # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history&crumb=crumb
 
         # Try to download
@@ -330,7 +332,8 @@ class YahooFinanceData(YahooFinanceCSVData):
                 continue
 
             ctype = resp.headers['Content-Type']
-            if 'text/csv' not in ctype:
+            # Cover as many text types as possible for Yahoo changes
+            if not ctype.startswith('text/'):
                 self.error = 'Wrong content type: %s' % ctype
                 continue  # HTML returned? wrong url?
 

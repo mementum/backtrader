@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import time
+try:
+    time_clock = time.process_time
+except:
+    time_clock = time.clock
+
 
 import testcommon
 
@@ -92,7 +97,7 @@ class TestStrategy(bt.Strategy):
             self.log('Starting portfolio value: %.2f' % self.broker.getvalue(),
                      nodate=True)
 
-        self.tstart = time.clock()
+        self.tstart = time_clock()
 
         self.buycreate = list()
         self.sellcreate = list()
@@ -101,7 +106,7 @@ class TestStrategy(bt.Strategy):
         self.tradecount = 0
 
     def stop(self):
-        tused = time.clock() - self.tstart
+        tused = time_clock() - self.tstart
         if self.p.printdata:
             self.log('Time used: %s' % str(tused))
             self.log('Final portfolio value: %.2f' % self.broker.getvalue())

@@ -1,4 +1,3 @@
-
 backtrader2 : An on going and open project
 ==========================================
 
@@ -121,15 +120,10 @@ List of built-in Indicators (122)
 Python 2/3 Support
 ==================
 
-  - Python ``2.7``
-  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5`` / ``3.6`` / ``3.7``
+  - Python >= ``3.2``
 
   - It also works with ``pypy`` and ``pypy3`` (no plotting - ``matplotlib`` is
     not supported under *pypy*)
-
-Compatibility is tested during development with ``2.7`` and ``3.5``
-
-The other versions are tested automatically with *Travis*.
 
 Installation
 ============
