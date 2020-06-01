@@ -3,8 +3,6 @@ language: python
 python:
   - "3.6"
   - "3.7"
-  - "3.8"
-  - "nightly"
   - "pypy"
   - "pypy3"
 
@@ -12,6 +10,7 @@ matrix:
   allow_failures:
     python: "3.8-dev"
     python: "nightly"
+
 
 # command to install dependencies
 # install:
