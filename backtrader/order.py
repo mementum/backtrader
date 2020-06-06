@@ -214,8 +214,8 @@ class OrderData(object):
         self.p1, self.p2 = self.p2, len(self.exbits)
 
     def clone(self):
+        self.markpending()
         obj = copy(self)
-        obj.markpending()
         return obj
 
 
