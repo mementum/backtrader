@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -595,7 +595,7 @@ class LineSeriesStub(LineSeries):
     def __init__(self, line, slave=False):
         self.lines = self.__class__.lines(initlines=[line])
         # give a change to find the line owner (for plotting at least)
-        self.owner = line._owner
+        self.owner = self._owner = line._owner
         self._minperiod = line._minperiod
         self.slave = slave
 

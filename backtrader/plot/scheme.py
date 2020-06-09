@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -122,7 +122,10 @@ class PlotScheme(object):
         self.barupfill = True
         self.bardownfill = True
 
-        # Wether the candlesticks have to be filled or be transparent
+        # Opacity for the filled candlesticks (1.0 opaque - 0.0 transparent)
+        self.baralpha = 1.0
+
+        # Alpha blending for fill areas between lines (_fill_gt and _fill_lt)
         self.fillalpha = 0.20
 
         # Wether to plot volume or not. Note: if the data in question has no
@@ -176,7 +179,7 @@ class PlotScheme(object):
         self.lcolors = tableau10
 
         # strftime Format string for the display of ticks on the x axis
-        self.fmt_x_ticks = None
+        self.fmt_x_ticks = '%Y-%m-%d %H:%M'
 
         # strftime Format string for the display of data points values
         self.fmt_x_data = None

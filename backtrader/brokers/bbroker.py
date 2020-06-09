@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -87,13 +87,6 @@ class BackBroker(bt.BrokerBase):
 
         - ``checksubmit`` (default: ``True``)
           check margin/cash before accepting an order into the system
-
-        - ``eosbar`` (default: ``False``):
-          With intraday bars consider a bar with the same ``time`` as the end
-          of session to be the end of the session. This is not usually the
-          case, because some bars (final auction) are produced by many
-          exchanges for many products for a couple of minutes after the end of
-          the session
 
         - ``eosbar`` (default: ``False``):
           With intraday bars consider a bar with the same ``time`` as the end
@@ -731,7 +724,17 @@ class BackBroker(bt.BrokerBase):
             cash = self.cash
         else:
             pnl = 0
-            price = pprice_orig = order.created.price
+            if not self.p.coo:
+                price = pprice_orig = order.created.price
+            else:
+                # When doing cheat on open, the price to be considered for a
+                # market order is the opening price and not the default closing
+                # price with which the order was created
+                if order.exectype == Order.Market:
+                    price = pprice_orig = order.data.open[0]
+                else:
+                    price = pprice_orig = order.created.price
+
             psize, pprice, opened, closed = position.update(size, price)
 
         # "Closing" totally or partially is possible. Cash may be re-injected

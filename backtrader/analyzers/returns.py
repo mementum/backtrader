@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -124,8 +124,17 @@ class Returns(TimeFrameAnalyzerBase):
             self._value_end = self.strategy.broker.fundvalue
 
         # Compound return
-        self.rets['rtot'] = rtot = (
-            math.log(self._value_end / self._value_start))
+        try:
+            nlrtot = self._value_end / self._value_start
+        except ZeroDivisionError:
+            rtot = float('-inf')
+        else:
+            if nlrtot < 0.0:
+                rtot = float('-inf')
+            else:
+                rtot = math.log(nlrtot)
+
+        self.rets['rtot'] = rtot
 
         # Average return
         self.rets['ravg'] = ravg = rtot / self._tcount
@@ -135,7 +144,11 @@ class Returns(TimeFrameAnalyzerBase):
         if tann is None:
             tann = self._TANN.get(self.data._timeframe, 1.0)  # assign default
 
-        self.rets['rnorm'] = rnorm = math.expm1(ravg * tann)
+        if ravg > float('-inf'):
+            self.rets['rnorm'] = rnorm = math.expm1(ravg * tann)
+        else:
+            self.rets['rnorm'] = rnorm = ravg
+
         self.rets['rnorm100'] = rnorm * 100.0  # human readable %
 
     def _on_dt_over(self):

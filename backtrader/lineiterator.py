@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,6 +71,11 @@ class MetaLineIterator(LineSeries.__class__):
         # main datas of the owner, easing up adding "self.data" ...
         if not _obj.datas and isinstance(_obj, (IndicatorBase, ObserverBase)):
             _obj.datas = _obj._owner.datas[0:mindatas]
+
+        # Create a dictionary to be able to check for presence
+        # lists in python use "==" operator when testing for presence with "in"
+        # which doesn't really check for presence but for equality
+        _obj.ddatas = {x: None for x in _obj.datas}
 
         # For each found data add access member -
         # for the first data 2 (data and data0)

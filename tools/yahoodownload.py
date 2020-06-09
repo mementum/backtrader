@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,74 +44,12 @@ logging.basicConfig(
     level=logging.INFO)
 
 
-class YahooDownloadLegacy(object):
-    baseurl = 'http://ichart.yahoo.com/table.csv?'
-
-    def __init__(self, ticker, fromdate, todate, period='d', reverse=True):
-
-        url = self.baseurl
-        url += 's=%s' % urlquote(ticker)
-        fromdate = fromdate
-        url += '&a=%d&b=%d&c=%d' % \
-               ((fromdate.month - 1), fromdate.day, fromdate.year)
-        todate = todate
-        url += '&d=%d&e=%d&f=%d' % \
-               ((todate.month - 1), todate.day, todate.year)
-        url += '&g=%s' % period
-        url += '&ignore=.csv'
-
-        self.datafile = urlopen(url)
-        if self.datafile.headers['Content-Type'] != 'text/csv':
-            self.datafile.close()
-            raise ValueError(
-                'Wrong Content Type in headers %s' %
-                self.datafile.headers['Content-Type'])
-
-        # skip the headers
-        self.headers = self.datafile.readline().decode('utf-8')
-
-        # buffer everything from the socket into a local buffer
-        f = io.StringIO(self.datafile.read().decode('utf-8'), newline=None)
-        self.datafile.close()
-        self.datafile = f
-
-        if reverse:
-            # Yahoo data is in reverse order - reverse it
-            dq = collections.deque()
-            for line in self.datafile:
-                dq.appendleft(line)
-
-            f = io.StringIO(newline=None)
-            f.writelines(dq)
-
-            self.datafile.close()
-            self.datafile = f
-
-    def writetofile(self, filename):
-        if not self.datafile:
-            return
-
-        if not hasattr(filename, 'read'):
-            # It's not a file - open it
-            f = io.open(filename, 'w')
-        else:
-            f = filename
-
-        f.write(self.headers)
-
-        self.datafile.seek(0)
-        for line in self.datafile:
-            f.write(line)
-
-        f.close()
-
-
 class YahooDownload(object):
     urlhist = 'https://finance.yahoo.com/quote/{}/history'
     urldown = 'https://query1.finance.yahoo.com/v7/finance/download'
     retries = 3
 
-    def __init__(self, ticker, fromdate, todate, period='d', reverse=True):
+    def __init__(self, ticker, fromdate, todate, period='d', reverse=False):
         try:
             import requests
         except ImportError:
@@ -229,8 +167,8 @@ def parse_args():
     parser.add_argument('--ticker', required=True,
                         help='Ticker to be downloaded')
 
-    parser.add_argument('--notreverse', action='store_true', default=False,
-                        help='Do not reverse the downloaded files')
+    parser.add_argument('--reverse', action='store_true', default=False,
+                        help='Do reverse the downloaded files')
 
     parser.add_argument('--timeframe', default='d',
                         help='Timeframe: d -> day, w -> week, m -> month')
@@ -269,7 +207,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     logging.info('Do Not Reverse flag status')
-    reverse = not args.notreverse
+    reverse = args.reverse
 
     logging.info('Downloading from yahoo')
     try:

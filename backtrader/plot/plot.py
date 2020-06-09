@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -271,8 +271,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         return figs
 
     def setlocators(self, ax):
-        comp = getattr(self.pinf.clock, '_compression', 1)
-        tframe = getattr(self.pinf.clock, '_timeframe', TimeFrame.Days)
+        clock = sorted(self.pinf.clock.datas,
+                       key=lambda x: (x._timeframe, x._compression))[0]
+
+        comp = getattr(clock, '_compression', 1)
+        tframe = getattr(clock, '_timeframe', TimeFrame.Days)
 
         if self.pinf.sch.fmt_x_data is None:
             if tframe == TimeFrame.Years:
@@ -393,6 +396,24 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         indlabel = ind.plotlabel()
 
+        # Scan lines quickly to find out if some lines have to be skipped for
+        # legend (because matplotlib reorders the legend)
+        toskip = 0
+        for lineidx in range(ind.size()):
+            line = ind.lines[lineidx]
+            linealias = ind.lines._getlinealias(lineidx)
+            lineplotinfo = getattr(ind.plotlines, '_%d' % lineidx, None)
+            if not lineplotinfo:
+                lineplotinfo = getattr(ind.plotlines, linealias, None)
+            if not lineplotinfo:
+                lineplotinfo = AutoInfoClass()
+            pltmethod = lineplotinfo._get('_method', 'plot')
+            if pltmethod != 'plot':
+                toskip += 1 - lineplotinfo._get('_plotskip', False)
+
+        if toskip >= ind.size():
+            toskip = 0
+
         for lineidx in range(ind.size()):
             line = ind.lines[lineidx]
             linealias = ind.lines._getlinealias(lineidx)
@@ -409,10 +430,12 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             # Legend label only when plotting 1st line
             if masterax and not ind.plotinfo.plotlinelabels:
-                label = indlabel * (lineidx == 0) or '_nolegend'
+                label = indlabel * (not toskip) or '_nolegend'
             else:
-                label = (indlabel + '\n') * (lineidx == 0)
+                label = (indlabel + '\n') * (not toskip)
                 label += lineplotinfo._get('_name', '') or linealias
+
+            toskip -= 1  # one line less until legend can be added
 
             # plot data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
@@ -633,10 +656,14 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if pmaster is data:
             pmaster = None
 
+        datalabel = ''
+        if hasattr(data, '_name') and data._name:
+            datalabel += data._name
+
         voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
         if not voloverlay:
-            vollabel += ' ({})'.format(data._dataname)
+            vollabel += ' ({})'.format(datalabel)
 
         # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
         axdatamaster = None
@@ -657,11 +684,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 axdatamaster = self.pinf.daxis[pmaster]
                 ax = axdatamaster.twinx()
                 self.pinf.vaxis.append(ax)
-
-        datalabel = ''
-        dataname = ''
-        if hasattr(data, '_name') and data._name:
-            datalabel += data._name
 
         if hasattr(data, '_compression') and \
            hasattr(data, '_timeframe'):
@@ -692,6 +714,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     colorup=self.pinf.sch.barup,
                     colordown=self.pinf.sch.bardown,
                     label=datalabel,
+                    alpha=self.pinf.sch.baralpha,
                     fillup=self.pinf.sch.barupfill,
                     filldown=self.pinf.sch.bardownfill)
 

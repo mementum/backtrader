@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -160,6 +160,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
         Time in seconds: how often the time offset has to be refreshed
 
+      - ``indcash`` (default: ``True``)
+
+        Manage IND codes as if they were cash for price retrieval
     '''
 
     # Set a base for the data requests (historical/realtime) to distinguish the
@@ -180,6 +183,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         ('timeout', 3.0),  # timeout between reconnections
         ('timeoffset', True),  # Use offset to server for timestamps if needed
         ('timerefresh', 60.0),  # How often to refresh the timeoffset
+        ('indcash', True),  # Treat IND codes as CASH elements
     )
 
     @classmethod
@@ -476,6 +480,16 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 q.put(-msg.errorCode)
                 self.cancelQueue(q)
 
+        elif msg.errorCode == 10225:
+            # 10225-Bust event occurred, current subscription is deactivated.
+            # Please resubscribe real-time bars immediately.
+            try:
+                q = self.qs[msg.id]
+            except KeyError:
+                pass  # should not happend but it can
+            else:
+                q.put(-msg.errorCode)
+
         elif msg.errorCode == 326:  # not recoverable, clientId in use
             self.dontreconnect = True
             self.conn.disconnect()
@@ -723,11 +737,14 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.histtz[tickerId] = tz
 
         if contract.m_secType in ['CASH', 'CFD']:
-            self.iscash[tickerId] = True
+            self.iscash[tickerId] = 1  # msg.field code
             if not what:
                 what = 'BID'  # default for cash unless otherwise specified
-        else:
-            what = what or 'TRADES'
+
+        elif contract.m_secType in ['IND'] and self.p.indcash:
+            self.iscash[tickerId] = 4  # msg.field code
+
+        what = what or 'TRADES'
 
         self.conn.reqHistoricalData(
             tickerId,
@@ -752,6 +769,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             self.iscash[tickerId] = True
             if not what:
                 what = 'BID'  # TRADES doesn't work
+            elif what == 'ASK':
+                self.iscash[tickerId] = 2
         else:
             what = what or 'TRADES'
 
@@ -820,7 +839,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
 
             self.cancelQueue(q, True)
 
-    def reqMktData(self, contract):
+    def reqMktData(self, contract, what=None):
         '''Creates a MarketData subscription
 
         Params:
@@ -836,6 +855,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         if contract.m_secType in ['CASH', 'CFD']:
             self.iscash[tickerId] = True
             ticks = ''  # cash markets do not get RTVOLUME
+            if what == 'ASK':
+                self.iscash[tickerId] = 2
 
         # q.put(None)  # to kickstart backfilling
         # Can request 233 also for cash ... nothing will arrive
@@ -881,8 +902,9 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         # The price field has been seen to be missing in some instances even if
         # "field" is 1
         tickerId = msg.tickerId
-        if self.iscash[tickerId]:
-            if msg.field == 1:  # Bid Price
+        fieldcode = self.iscash[tickerId]
+        if fieldcode:
+            if msg.field == fieldcode:  # Expected cash field code
                 try:
                     if msg.price == -1.0:
                         # seems to indicate the stream is halted for example in

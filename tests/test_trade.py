@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ def test_run(main=False):
     # assert tr.value == value
     assert tr.commission == commission
     assert not tr.pnl
-    assert not tr.pnlcomm
+    assert tr.pnlcomm == tr.pnl - tr.commission
 
     upsize = -5
     upprice = 12.5

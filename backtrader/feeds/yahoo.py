@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,44 +53,45 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         Whether to use the dividend/split adjusted close and adjust all
         values according to it.
 
+      - ``adjvolume`` (default: ``True``)
+
+        Do also adjust ``volume`` if ``adjclose`` is also ``True``
+
       - ``round`` (default: ``True``)
 
         Whether to round the values to a specific number of decimals after
         having adjusted the close
 
+      - ``roundvolume`` (default: ``0``)
+
+        Round the resulting volume to the given number of decimals after having
+        adjusted it
+
       - ``decimals`` (default: ``2``)
 
         Number of decimals to round to
 
-      - ``version`` (default: ``v7``)
-
-        In May-2017 Yahoo discontinued the original ``ichart`` API for
-        downloads and moved to a new API, which contains a ``v7`` string. This
-        is the default version.
-
-        Set it to the empty string to get the original behavior
-
       - ``swapcloses`` (default: ``False``)
 
-        If ``True`` the allegedly *adjusted close* and *non-adjusted close*
-        will be swapped. The downloads with the new ``v7`` API show at random
-        times the closing prices swapped. There is no known pattern
+        [2018-11-16] It would seem that the order of *close* and *adjusted
+        close* is now fixed. The parameter is retained, in case the need to
+        swap the columns again arose.
 
     '''
+    lines = ('adjclose',)
+
     params = (
         ('reverse', False),
         ('adjclose', True),
+        ('adjvolume', True),
         ('round', True),
         ('decimals', 2),
-        ('version', 'v7'),
+        ('roundvolume', False),
         ('swapcloses', False),
     )
 
     def start(self):
         super(YahooFinanceCSVData, self).start()
-
-        if self.p.version == 'v7':
-            return  # no need to reverse
 
         if not self.params.reverse:
             return
@@ -135,41 +136,28 @@ class YahooFinanceCSVData(feed.CSVDataBase):
         c = float(linetokens[next(i)])
         self.lines.openinterest[0] = 0.0
 
-        if self.p.version == 'v7':  # in v7 ohlc,adc,v, get real volume
-            # In v7, the final seq is "adj close", close, volume
-            adjustedclose = c  # c was read above
-            c = float(linetokens[next(i)])
-            try:
-                v = float(linetokens[next(i)])
-            except:  # cover the case in which volume is "null"
-                v = 0.0
-
-            if self.p.swapcloses:  # swap closing prices if requested
-                c, adjustedclose = adjustedclose, c
-
-            adjfactor = adjustedclose / c  # reversed for v7
-
-            # in v7 "adjusted prices" seem to be given, scale back for non adj
-            if not self.params.adjclose:
-                o *= adjfactor
-                h *= adjfactor
-                l *= adjfactor
-                c = adjustedclose
-                # v *= adjfactor  # except volume which is the same as in v1
-            else:
-                v /= adjfactor  # rescale vol down
-        else:
+        # 2018-11-16 ... Adjusted Close seems to always be delivered after
+        # the close and before the volume columns
+        adjustedclose = float(linetokens[next(i)])
+        try:
             v = float(linetokens[next(i)])
-            adjustedclose = float(linetokens[next(i)])
+        except:  # cover the case in which volume is "null"
+            v = 0.0
 
-            if self.params.adjclose:
-                adjfactor = c / adjustedclose
+        if self.p.swapcloses:  # swap closing prices if requested
+            c, adjustedclose = adjustedclose, c
 
-                o /= adjfactor
-                h /= adjfactor
-                l /= adjfactor
-                c = adjustedclose
-                v /= adjfactor
+        adjfactor = c / adjustedclose
+
+        # in v7 "adjusted prices" seem to be given, scale back for non adj
+        if self.params.adjclose:
+            o /= adjfactor
+            h /= adjfactor
+            l /= adjfactor
+            c = adjustedclose
+            # If the price goes down, volume must go up and viceversa
+            if self.p.adjvolume:
+                v *= adjfactor
 
         if self.p.round:
             decimals = self.p.decimals
@@ -177,13 +165,15 @@ class YahooFinanceCSVData(feed.CSVDataBase):
             h = round(h, decimals)
             l = round(l, decimals)
             c = round(c, decimals)
-            v = round(v, decimals)
+
+        v = round(v, self.p.roundvolume)
 
         self.lines.open[0] = o
         self.lines.high[0] = h
         self.lines.low[0] = l
         self.lines.close[0] = c
         self.lines.volume[0] = v
+        self.lines.adjclose[0] = adjustedclose
 
         return True
 
@@ -214,11 +204,6 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         The ticker to download ('YHOO' for Yahoo own stock quotes)
 
-      - ``baseurl``
-
-        The server url. Someone might decide to open a Yahoo compatible service
-        in the future.
-
       - ``proxies``
 
         A dict indicating which proxy to go through for the download as in
@@ -229,16 +214,11 @@ class YahooFinanceData(YahooFinanceCSVData):
         The timeframe to download data in. Pass 'w' for weekly and 'm' for
         monthly.
 
-      - ``buffered``
-
-        If True the entire socket connection wil be buffered locally before
-        parsing starts.
-
       - ``reverse``
 
-        Yahoo returns the data with last dates first (against all industry
-        standards) and it must be reversed for it to work. Should this Yahoo
-        standard change, the parameter is available.
+        [2018-11-16] The latest incarnation of Yahoo online downloads returns
+        the data in the proper order. The default value of ``reverse`` for the
+        online download is therefore set to ``False``
 
       - ``adjclose``
 
@@ -262,97 +242,13 @@ class YahooFinanceData(YahooFinanceCSVData):
       '''
 
     params = (
-        ('baseurl', 'http://ichart.yahoo.com/table.csv?'),
         ('proxies', {}),
         ('period', 'd'),
-        ('buffered', True),
-        ('reverse', True),
+        ('reverse', False),
         ('urlhist', 'https://finance.yahoo.com/quote/{}/history'),
         ('urldown', 'https://query1.finance.yahoo.com/v7/finance/download'),
         ('retries', 3),
     )
-
-    def start_v1(self):
-        self.error = None
-
-        url = self.params.baseurl
-        url += 's=%s' % urlquote(self.params.dataname)
-        fromdate = self.params.fromdate
-        url += '&a=%d&b=%d&c=%d' % \
-               ((fromdate.month - 1), fromdate.day, fromdate.year)
-        todate = self.params.todate
-        if todate is None:
-            todate = date.today()
-        url += '&d=%d&e=%d&f=%d' % \
-               ((todate.month - 1), todate.day, todate.year)
-        url += '&g=%s' % self.params.period
-        url += '&ignore=.csv'
-
-        if self.p.proxies:
-            proxy = ProxyHandler(self.p.proxies)
-            opener = build_opener(proxy)
-            install_opener(opener)
-
-        try:
-            datafile = urlopen(url)
-        except IOError as e:
-            self.error = str(e)
-            # leave us empty
-            return
-
-        if datafile.headers['Content-Type'] != 'text/csv':
-            self.error = 'Wrong content type: %s' % datafile.headers
-            return  # HTML returned? wrong url?
-
-        if self.params.buffered:
-            # buffer everything from the socket into a local buffer
-            f = io.StringIO(datafile.read().decode('utf-8'), newline=None)
-            datafile.close()
-        else:
-            f = datafile
-
-        self.f = f
-
-    def start_v1(self):
-        self.error = None
-
-        url = self.params.baseurl
-        url += 's=%s' % urlquote(self.params.dataname)
-        fromdate = self.params.fromdate
-        url += '&a=%d&b=%d&c=%d' % \
-               ((fromdate.month - 1), fromdate.day, fromdate.year)
-        todate = self.params.todate
-        if todate is None:
-            todate = date.today()
-        url += '&d=%d&e=%d&f=%d' % \
-               ((todate.month - 1), todate.day, todate.year)
-        url += '&g=%s' % self.params.period
-        url += '&ignore=.csv'
-
-        if self.p.proxies:
-            proxy = ProxyHandler(self.p.proxies)
-            opener = build_opener(proxy)
-            install_opener(opener)
-
-        try:
-            datafile = urlopen(url)
-        except IOError as e:
-            self.error = str(e)
-            # leave us empty
-            return
-
-        if datafile.headers['Content-Type'] != 'text/csv':
-            self.error = 'Wrong content type: %s' % datafile.headers
-            return  # HTML returned? wrong url?
-
-        if self.params.buffered:
-            # buffer everything from the socket into a local buffer
-            f = io.StringIO(datafile.read().decode('utf-8'), newline=None)
-            datafile.close()
-        else:
-            f = datafile
-
-        self.f = f
 
     def start_v7(self):
         try:
@@ -401,6 +297,8 @@ class YahooFinanceData(YahooFinanceCSVData):
             self.f = None
             return
 
+        crumb = urlquote(crumb)
+
         # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history&crumb=crumb
 
         # Try to download
@@ -434,7 +332,8 @@ class YahooFinanceData(YahooFinanceCSVData):
                 continue
 
             ctype = resp.headers['Content-Type']
-            if 'text/csv' not in ctype:
+            # Cover as many text types as possible for Yahoo changes
+            if not ctype.startswith('text/'):
                 self.error = 'Wrong content type: %s' % ctype
                 continue  # HTML returned? wrong url?
 
@@ -450,10 +349,7 @@ class YahooFinanceData(YahooFinanceCSVData):
         self.f = f
 
     def start(self):
-        if self.p.version == 'v7':
-            self.start_v7()
-        else:
-            self.start_v1()
+        self.start_v7()
 
         # Prepared a "path" file -  CSV Parser can take over
         super(YahooFinanceData, self).start()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,8 +65,7 @@ class haDelta(bt.Indicator):
 
     def __init__(self):
         d = bt.ind.HeikinAshi(self.data) if self.p.autoheikin else self.data
-        o, c = d.close, d.open
 
-        self.lines.haDelta = hd = c - o
+        self.lines.haDelta = hd = d.close - d.open
         self.lines.smoothed = self.p.movav(hd, period=self.p.period)
         super(haDelta, self).__init__()

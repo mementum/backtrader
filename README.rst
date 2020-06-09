@@ -1,4 +1,3 @@
-
 backtrader
 ==========
 
@@ -27,14 +26,13 @@ backtrader
 
 **Yahoo API Note**:
 
-  Don't use it. Yahoo removed the original API and the alternative methods are
-  prone to failure due to the glitches introduced by Yahoo (column swapping and
-  others)
+  [2018-11-16] After some testing it would seem that data downloads can be
+  again relied upon over the web interface (or API ``v7``)
 
 **Tickets**
 
-  If it's **NOT an issue** (i.e.: bug), don't post it as an issue. It will be
-  automatically closed.
+  The ticket system is (was, actually) more often than not abused to ask for
+  advice about samples.
 
 For **feedback/questions/...** use the `Community <https://community.backtrader.com>`_
 
@@ -54,10 +52,7 @@ different ways. Use the docs (and examples) Luke!
   cerebro = bt.Cerebro()
   cerebro.addstrategy(SmaCross)
 
-  # **NOTE**: Read the note about the Yahoo API above. This sample is kept for
-  # historical reasons. Use any other data feed.
-
-  data0 = bt.feeds.YahooFinanceData(dataname='YHOO', fromdate=datetime(2011, 1, 1),
+  data0 = bt.feeds.YahooFinanceData(dataname='MSFT', fromdate=datetime(2011, 1, 1),
                                     todate=datetime(2012, 12, 31))
   cerebro.adddata(data0)
 
@@ -93,7 +88,7 @@ Live Trading and backtesting platform written in Python.
   - *TA-Lib* indicator support (needs python *ta-lib* / check the docs)
   - Easy development of custom indicators
   - Analyzers (for example: TimeReturn, Sharpe Ratio, SQN) and ``pyfolio``
-    integration
+    integration (**deprecated**)
   - Flexible definition of commission schemes
   - Integrated broker simulation with *Market*, *Close*, *Limit*, *Stop*,
     *StopLimit*, *StopTrail*, *StopTrailLimit*and *OCO* orders, bracket order,
@@ -123,15 +118,10 @@ List of built-in Indicators (122)
 Python 2/3 Support
 ==================
 
-  - Python ``2.7``
-  - Python ``3.2`` / ``3.3``/ ``3.4`` / ``3.5`` / ``3.6``
+  - Python >= ``3.2``
 
   - It also works with ``pypy`` and ``pypy3`` (no plotting - ``matplotlib`` is
     not supported under *pypy*)
-
-Compatibility is tested during development with ``2.7`` and ``3.5``
-
-The other versions are tested automatically with *Travis*.
 
 Installation
 ============
@@ -172,45 +162,9 @@ Version numbering
 X.Y.Z.I
 
   - X: Major version number. Should stay stable unless something big is changed
-    like an overhaul to use numpy
+    like an overhaul to use ``numpy``
   - Y: Minor version number. To be changed upon adding a complete new feature or
     (god forbids) an incompatible API change.
   - Z: Revision version number. To be changed for documentation updates, small
     changes, small bug fixes
   - I: Number of Indicators already built into the platform
-
-Alternatives
-============
-
-If after seeing the docs and some samples (see the blog also) you feel this is
-not your cup of tea, you can always have a look at similar Python platforms:
-
-  - `PyAlgoTrade <https://github.com/gbeced/pyalgotrade>`_
-  - `Zipline <https://github.com/quantopian/zipline>`_
-  - `Ultra-Finance <https://code.google.com/p/ultra-finance/>`_
-  - `ProfitPy <https://code.google.com/p/profitpy/>`_
-  - `pybacktest <https://github.com/ematvey/pybacktest>`_
-  - `prophet <https://github.com/Emsu/prophet>`_
-  - `quant <https://github.com/maihde/quant>`_
-  - `AlephNull <https://github.com/CarterBain/AlephNull>`_
-  - `Trading with Python <http://www.tradingwithpython.com/>`_
-  - `visualize-wealth <https://github.com/benjaminmgross/visualize-wealth>`_
-  - `tia: Toolkit for integration and analysis
-    <https://github.com/bpsmith/tia>`_
-  - `QuantSoftware Toolkit
-    <http://wiki.quantsoftware.org/index.php?title=QuantSoftware_ToolKit>`_
-  - `Pinkfish <http://fja05680.github.io/pinkfish/>`_
-  - `bt <http://pmorissette.github.io/bt/index.html>`_
-
-     ``bt`` slightly pre-dates ``backtrader`` and has a completely different
-     approach but it is funny *bt* was also chosen as the abbreviation for
-     ``backtrader`` during imports and that some of the methods have the same
-     naming (obvious naming anyhow): ``run``, ``plot`` ...
-
-  - `PyThalesians <https://github.com/thalesians/pythalesians>`_
-
-  - `QSTrader <https://github.com/mhallsmoore/qstrader/>`_
-  - `QSForex <https://github.com/mhallsmoore/qsforex>`_
-  - `pysystemtrade <https://github.com/robcarver17/pysystemtrade>`_
-  - `QTPyLib <https://github.com/ranaroussi/qtpylib>`_
-  - `RQalpha <https://github.com/ricequant/rqalpha>`_

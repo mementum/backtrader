@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ class Trade(object):
       - ``baropen`` (``int``): bar in which this trade was opened
 
       - ``dtopen`` (``float``): float coded datetime in which the trade was
-        closed
+        opened
 
         - Use method ``open_datetime`` to get a Python datetime.datetime
           or use the platform provided ``num2date`` method
@@ -288,8 +288,8 @@ class Trade(object):
             # position reduced/closed
             pnl = comminfo.profitandloss(-size, self.price, price)
 
-            self.pnl += pnl
-            self.pnlcomm = self.pnl - self.commission
+        self.pnl += pnl
+        self.pnlcomm = self.pnl - self.commission
 
         self.value = comminfo.getvaluesize(self.size, self.price)
 

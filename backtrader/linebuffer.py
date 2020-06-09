@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -548,9 +548,8 @@ class MetaLineActions(LineBuffer.__class__):
         # Do not produce anything until the operation lines produce something
         _minperiods = [x._minperiod for x in args if isinstance(x, LineSingle)]
 
-        if not _minperiods:
-            mlines = [x.lines[0] for x in args if isinstance(x, LineMultiple)]
-            _minperiods = [x._minperiod for x in mlines]
+        mlines = [x.lines[0] for x in args if isinstance(x, LineMultiple)]
+        _minperiods += [x._minperiod for x in mlines]
 
         _minperiod = max(_minperiods or [1])
 

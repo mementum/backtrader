@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -210,6 +210,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def _getnexteos(self):
         '''Returns the next eos using a trading calendar if available'''
+        if self._clone:
+            return self.data._getnexteos()
+
         if not len(self):
             return datetime.datetime.min, 0.0
 
@@ -741,6 +744,9 @@ class DataClone(AbstractDataBase):
         self.p.todate = self.p.todate
         self.p.sessionstart = self.data.p.sessionstart
         self.p.sessionend = self.data.p.sessionend
+
+        self.p.timeframe = self.data.p.timeframe
+        self.p.compression = self.data.p.compression
 
     def _start(self):
         # redefine to copy data bits from guest data

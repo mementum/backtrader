@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ class TradingCalendarBase(with_metaclass(MetaParams, object)):
         Returns the next trading day (datetime/date instance) after ``day``
         (datetime/date instance)
         '''
-        return self._next_day(day)[0]  # 1st ret elem is next day
+        return self._nextday(day)[0]  # 1st ret elem is next day
 
     def nextday_week(self, day):
         '''

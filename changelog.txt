@@ -1,3 +1,83 @@
+1.9.75.123:
+  - Adding extra day before dtcmp calc, as otherwise the extradays
+    have no effect (#388)
+  - Fixing the issue with TWS API Bust events (err code 10225) (#396)
+  - Add support for ASK quotes for CASH assets (#395) plus fixes
+  - Remove duplicated note (#386)
+  - Fixing time.clock for python>=3.8 (#394)
+  - Changed file initiation for WriterFile to make it work under
+    multi-process optimization (#397) plus fixes
+  - Fixed backend loading if a backend is loaded (Google Collab) and
+    backend to use on MacOSX
+  - Fix: crumb in feeds.YahooFinanceData (#400)
+  - Fix color assignments, ticks line widths and some pep-8 improvements
+  - Fix timeframe/compression detection when plotting
+  - Fix default value for ticks display format on X-axis
+  - Sample with ta-lib SAR test
+  - Generic support of multiple "text/*" content types for Yahoo
+
+1.9.74.123:
+  - Correct calculation in haDelta indicator
+  - Use initial datalabel for non-overlaid volume plot
+
+1.9.73.123:
+  - Add utility NonZeroDifference indicator
+  - Redefine CrossUp, CrossDown and CrossOver indicators using
+    NonZeroDifference to cover the case in which the crossing entities
+    converge right before crossing up and down
+  - PR #382 (Travis: Python 3.7, 3.8-dev travis), PR #383 PivotPoint doc
+
+1.9.72.122:
+  - Cover case in which result in high-level overridden operations have
+    multiple lines and wer not be taken into account for minimum period
+    calculations
+  - Add "Int" variants of percentage based sizers to import
+  - Trades observer to show net profit instead of brutto, with parameter
+    to control behavior
+
+1.9.71.122:
+  - Improve on indicator legend plotting to overcome matplotlib legend
+    reordering
+  - Added PercenSizerInt and AllSizerInt which truncate the returned size
+    to an int, suited better for stocks/futures
+
+1.9.70.122:
+  - Use opening price for submission check for Market orders when
+    cheat-on-open is active
+  - Update pnlcomm on all operations and not just profit/loss locking
+  - Correct comment for fillalpha and add baralpha for candlestick opacity
+  - Merge PR 378 (doc typo) PR 378 (rollover for live feeds and tz use
+    in datetime utilities)
+  - Use internal dict for data feed presence test and update trade observer
+
+1.9.69.122:
+  - Fix offline Yahoo feed by moving the new adjclose line up to the offline
+    feed
+  - Adapt the yahoodownload tool to the current status (ex: data not reversed)
+  - Redownload all yahoo data feeds
+
+1.9.68.122
+  - [PR 376] Fix call to _nextday in TradingCalendar
+  - Clean up and rework of Yahoo Data. The data feeds seems to be reliable
+    again
+  - IBStore Support for IND prices (simplfication of PR 373)
+
+1.9.67.122
+  - Fix compression only scenarios when resampling and resampling after
+    changes in 1.9.66.122
+  - Final correction for rollover fix introduced in 1.9.66.122
+  - Cover use case for mininum period calculation when all
+    operations/indicators don't use the data feeds directly but lines of it
+
+1.9.66.122
+  - Fix regression introduced with 8f537a1c2c271eb5cfc592b373697732597d26d6
+    which voids the count of lost trades
+  - Allow rollover to distinguish between no values temporarily (with None)
+    and no values permanently (with False)
+  - Avoid math domain error for negative returns in logarithmic calculations
+  - Fix local variable declaration for compound returns
+  - Fix typo in date2num tz conversion which shows up in direct usage
+
 1.9.65.122
   - Fix commission info assigment and orderref seeking in OandaStore (PR#367)
   - Add strategy type to OptReturn (PR#364)

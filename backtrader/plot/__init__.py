@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015, 2016, 2017 Daniel Rodriguez
+# Copyright (C) 2015-2020 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,13 +21,22 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import sys
+
+
 try:
     import matplotlib
 except ImportError:
     raise ImportError(
         'Matplotlib seems to be missing. Needed for plotting support')
 else:
-    matplotlib.use('TkAgg')
+    touse = 'TKAgg' if sys.platform != 'darwin' else 'MacOSX'
+    try:
+        matplotlib.use(touse)
+    except:
+        # if another backend has already been loaded, an exception will be
+        # generated and this can be skipped
+        pass
 
 
 from .plot import Plot, Plot_OldSync
