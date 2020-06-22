@@ -71,8 +71,8 @@ class Renko(Filter):
         o = data.open[0]
         o = round(o / self.p.align, 0) * self.p.align  # aligned
         self._size = self.p.size or float(o // self.p.autosize)
-        self._top = int(o) + self._size
-        self._bot = int(o) - self._size
+        self._top = o + self._size
+        self._bot = o - self._size
 
     def next(self, data):
         c = data.close[0]
