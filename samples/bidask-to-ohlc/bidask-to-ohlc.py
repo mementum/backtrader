@@ -57,7 +57,7 @@ def runstrat():
         timeframe=bt.TimeFrame.Ticks)
 
     cerebro.resampledata(data,
-                         timeframe=bt.TimeFrame.Ticks,
+                         timeframe=bt.TimeFrame.Minutes,
                          compression=args.compression)
 
     cerebro.addstrategy(St)
