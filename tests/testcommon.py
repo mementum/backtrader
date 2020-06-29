@@ -230,8 +230,8 @@ class SampleParamsHolder(ParamsBase):
     in inherited classes
     """
     frompackages = (
-        ('numpy', ('asarray')),
+        ('math', ('factorial')),
     )
 
     def __init__(self):
-        self.range = asarray(range(0, 10))
+        self.range = factorial(10)
