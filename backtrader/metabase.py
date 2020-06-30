@@ -276,6 +276,8 @@ class MetaParams(MetaBase):
                 pmod = __import__(p, fromlist=[str(fp)])
                 pattr = getattr(pmod, fp)
                 setattr(clsmod, falias, pattr)
+                for basecls in cls.__bases__:
+                    setattr(sys.modules[basecls.__module__], falias, pattr)
 
         # Create params and set the values from the kwargs
         params = cls.params()
