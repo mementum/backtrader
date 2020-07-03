@@ -202,7 +202,7 @@ class AutoInfoClass(object):
 
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance
+        # Remove params from class definition to avoid inheritance
         # (and hence "repetition")
         newparams = dct.pop('params', ())
 
