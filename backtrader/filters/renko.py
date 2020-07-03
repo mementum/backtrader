@@ -54,6 +54,10 @@ class Renko(Filter):
           - round it and remove the decimals -> 356
           - 356 * 10.0 -> 3560
 
+      - ``roundstart`` (default: *True*)  If *True*, round the initial start
+        value to int. Else keep the original value, which should aid when
+        backtesting penny stocks
+
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:chart_analysis:renko
 
@@ -65,12 +69,16 @@ class Renko(Filter):
         ('autosize', 20.0),
         ('dynamic', False),
         ('align', 1.0),
+        ('roundstart', True),
     )
 
     def nextstart(self, data):
         o = data.open[0]
         o = round(o / self.p.align, 0) * self.p.align  # aligned
         self._size = self.p.size or float(o // self.p.autosize)
+        if self.p.roundstart:
+            o = int(o)
+
         self._top = o + self._size
         self._bot = o - self._size
 
