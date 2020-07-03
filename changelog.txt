@@ -1,3 +1,13 @@
+1.9.76.123:
+  - PR#405 Fix initial Renko bricks
+  - Add option to select fixing of initial Renko bricks
+  - PR#403 partial order execution iterpending reported incorrectly
+  - PR#402 bug fix: #5 fixing writer.py after 1.9.75.123 pull
+  - PR#406 trade.py upgraded to be able to be unpickled. (#406)
+  - PR#411 [bug fix] frompackages directive functionality seems to be
+    broken when using inheritance (#411)
+  - Typo corrections PR#409, PR#407
+
 1.9.75.123:
   - Adding extra day before dtcmp calc, as otherwise the extradays
     have no effect (#388)
