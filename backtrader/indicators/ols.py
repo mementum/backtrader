@@ -35,9 +35,6 @@ class OLS_Slope_InterceptN(PeriodN):
     squares) of data1 on data0
 
     Uses ``pandas`` and ``statsmodels``
-
-    Use ``prepend_constant`` to influence the paramter ``prepend`` of
-    sm.add_constant
     '''
     _mindatas = 2  # ensure at least 2 data feeds are passed
 
@@ -48,14 +45,13 @@ class OLS_Slope_InterceptN(PeriodN):
     lines = ('slope', 'intercept',)
     params = (
         ('period', 10),
-        ('prepend_constant', True),
     )
 
     def next(self):
         p0 = pd.Series(self.data0.get(size=self.p.period))
         p1 = pd.Series(self.data1.get(size=self.p.period))
-        p1 = sm.add_constant(p1, prepend=self.p.prepend_constant)
-        slope, intercept = sm.OLS(p0, p1).fit().params
+        p1 = sm.add_constant(p1)
+        intercept, slope = sm.OLS(p0, p1).fit().params
 
         self.lines.slope[0] = slope
         self.lines.intercept[0] = intercept
@@ -122,11 +118,11 @@ class CointN(PeriodN):
     lines = ('score', 'pvalue',)
     params = (
         ('period', 10),
-        ('regression', 'c'),  # see statsmodel.tsa.statttools
+        ('trend', 'c'),  # see statsmodel.tsa.statttools
     )
 
     def next(self):
         x, y = (pd.Series(d.get(size=self.p.period)) for d in self.datas)
-        score, pvalue, _ = coint(x, y, regression=self.p.regression)
+        score, pvalue, _ = coint(x, y, trend=self.p.trend)
         self.lines.score[0] = score
         self.lines.pvalue[0] = pvalue
