@@ -202,7 +202,7 @@ class AutoInfoClass(object):
 
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avod inheritance
+        # Remove params from class definition to avoid inheritance
         # (and hence "repetition")
         newparams = dct.pop('params', ())
 
@@ -276,6 +276,8 @@ class MetaParams(MetaBase):
                 pmod = __import__(p, fromlist=[str(fp)])
                 pattr = getattr(pmod, fp)
                 setattr(clsmod, falias, pattr)
+                for basecls in cls.__bases__:
+                    setattr(sys.modules[basecls.__module__], falias, pattr)
 
         # Create params and set the values from the kwargs
         params = cls.params()
