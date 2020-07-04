@@ -164,9 +164,9 @@ def test_run(main=False):
         strat = cerebro.run()
         if main:
             print(
-                f"Slippage {expected_result[0]}, "
-                f"Sell Executed {float(strat[0].sellexec[0]):.2f}, "
-                f"Expected price {expected_result[1]:.2f}"
+                "Slippage {}, Sell Executed {:.2f}, Expected price {:.2f}".format(
+                    expected_result[0], float(strat[0].sellexec[0]), expected_result[1]
+                )
             )
 
         assert float(strat[0].sellexec[0]) == expected_result[1]
