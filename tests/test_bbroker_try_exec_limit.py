@@ -18,7 +18,10 @@
 ###############################################################################
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import datetime
+import os
 import time
+
 
 try:
     time_clock = time.process_time
@@ -26,8 +29,6 @@ except:
     time_clock = time.clock
 
 import backtrader as bt
-import pandas as pd
-
 
 class SlipTestStrategy(bt.SignalStrategy):
     params = (
@@ -116,9 +117,7 @@ class SlipTestStrategy(bt.SignalStrategy):
         self.print_signal()
 
         if self.counter == 0:
-            self.order = self.sell(
-                exectype=bt.Order.Limit, price=self.price
-            )
+            self.order = self.sell(exectype=bt.Order.Limit, price=self.price)
             if self.p.printops:
                 self.log("SELL ISSUED @ %0.2f" % self.price)
         self.counter += 1
@@ -140,19 +139,16 @@ def test_run(main=False):
 
     cerebro.broker.setcash(10000.0)
 
-    short_data = [
-        (20190101, 1295.5, 1305.5, 1290.1, 1298.6, 235334, 319231,),
-        (20190102, 1297.5, 1303.5, 1293.1, 1296.6, 235334, 319231,),
-        (20190103, 1301.0, 1309.4, 1298.9, 1307.3, 244542, 311254,),
-        (20190104, 1309.0, 1312.9, 1285.0, 1298.3, 316063, 302111,),
-    ]
-    df = pd.DataFrame(
-        short_data,
-        columns=["dt", "open", "high", "low", "close", "volume", "openinterest"],
-    ).set_index("dt")
-    df.index = pd.to_datetime(df.index, format="%Y%m%d")
-
-    data0 = bt.feeds.PandasData(dataname=df)
+    modpath = os.path.dirname(os.path.abspath(__file__))
+    dataspath = "../datas"
+    datafile = "bbroker_try_exec_limit.txt"
+    datapath = os.path.join(modpath, dataspath, datafile)
+    data0 = bt.feeds.GenericCSVData(
+        dataname=datapath,
+        dtformat=("%Y-%m-%d"),
+        timeframe=bt.TimeFrame.Days,
+        compression=1,
+    )
     cerebro.adddata(data0)
 
     # Slippage/expected sell executed price
