@@ -911,7 +911,7 @@ class BackBroker(bt.BrokerBase):
             if plimit <= popen:
                 # open greater/equal than requested - sell more expensive
                 pmin = max(plow, plimit)
-                p = self._slip_down(plimit, popen, doslip=self.p.slip_open,
+                p = self._slip_down(pmin, popen, doslip=self.p.slip_open,
                                     lim=True)
                 self._execute(order, ago=0, price=p)
             elif plimit <= phigh:
