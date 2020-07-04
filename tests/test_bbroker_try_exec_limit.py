@@ -30,6 +30,7 @@ except:
 
 import backtrader as bt
 
+
 class SlipTestStrategy(bt.SignalStrategy):
     params = (
         ("printdata", False),
@@ -129,13 +130,11 @@ def test_run(main=False):
     cerebro = bt.Cerebro()
 
     if main == True:
-        strat_kwargs = dict(printdata=True, printops=True,)
+        strat_kwargs = dict(printdata=True, printops=True)
     else:
-        strat_kwargs = dict(printdata=False, printops=False,)
+        strat_kwargs = dict(printdata=False, printops=False)
 
-    cerebro.addstrategy(
-        SlipTestStrategy, **strat_kwargs,
-    )
+    cerebro.addstrategy(SlipTestStrategy, **strat_kwargs)
 
     cerebro.broker.setcash(10000.0)
 
