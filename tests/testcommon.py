@@ -231,7 +231,7 @@ class SampleParamsHolder(ParamsBase):
     """
 
     packages = (
-        ('datetime', 'dt'),
+        ('fractions', 'frac'),
     )
 
     frompackages = (
@@ -240,4 +240,4 @@ class SampleParamsHolder(ParamsBase):
 
     def __init__(self):
         self.range = factorial(10)
-        self.today = dt.datetime.now()
+        self.f = frac.Fraction(45, 54)
