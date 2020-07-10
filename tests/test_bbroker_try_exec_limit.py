@@ -134,7 +134,7 @@ def test_run(main=False):
         strat_kwargs = dict(printdata=False, printops=False,)
 
     cerebro.addstrategy(
-        SlipTestStrategy, **strat_kwargs,
+        SlipTestStrategy, **strat_kwargs
     )
 
     cerebro.broker.setcash(10000.0)
