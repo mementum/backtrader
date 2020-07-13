@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 
 from copy import copy
-
+from decimal import Decimal
 
 class Position(object):
     '''
@@ -31,7 +31,7 @@ class Position(object):
     relationship to any asset. It only keeps size and price.
 
     Member Attributes:
-      - size (int): current size of the position
+      - size (float): current size of the position
       - price (float): current price of the position
 
     The Position instances can be tested using len(position) to see if size
@@ -50,7 +50,7 @@ class Position(object):
         items.append('--- Position End')
         return '\n'.join(items)
 
-    def __init__(self, size=0, price=0.0):
+    def __init__(self, size=0.0, price=0.0):
         self.size = size
         if size:
             self.price = self.price_orig = price
@@ -60,7 +60,7 @@ class Position(object):
         self.adjbase = None
 
         self.upopened = size
-        self.upclosed = 0
+        self.upclosed = 0.0
         self.set(size, price)
 
         self.updt = None
@@ -74,29 +74,29 @@ class Position(object):
     def set(self, size, price):
         if self.size > 0:
             if size > self.size:
-                self.upopened = size - self.size  # new 10 - old 5 -> 5
-                self.upclosed = 0
+                self.upopened = float(Decimal(str(size)) - Decimal(str(self.size)))  # new 10 - old 5 -> 5
+                self.upclosed = 0.0
             else:
                 # same side min(0, 3) -> 0 / reversal min(0, -3) -> -3
                 self.upopened = min(0, size)
                 # same side min(10, 10 - 5) -> 5
                 # reversal min(10, 10 - -5) -> min(10, 15) -> 10
-                self.upclosed = min(self.size, self.size - size)
+                self.upclosed = min(self.size, float(Decimal(str(self.size)) - Decimal(str(size))))
 
         elif self.size < 0:
             if size < self.size:
-                self.upopened = size - self.size  # ex: -5 - -3 -> -2
+                self.upopened = float(Decimal(str(size)) - Decimal(str(self.size)))  # ex: -5 - -3 -> -2
                 self.upclosed = 0
             else:
                 # same side max(0, -5) -> 0 / reversal max(0, 5) -> 5
                 self.upopened = max(0, size)
                 # same side max(-10, -10 - -5) -> max(-10, -5) -> -5
                 # reversal max(-10, -10 - 5) -> max(-10, -15) -> -10
-                self.upclosed = max(self.size, self.size - size)
+                self.upclosed = max(self.size, float(Decimal(str(self.size)) - Decimal(str(size))))
 
         else:  # self.size == 0
             self.upopened = self.size
-            self.upclosed = 0
+            self.upclosed = 0.0
 
         self.size = size
         self.price_orig = self.price
@@ -127,7 +127,7 @@ class Position(object):
         units used to open/close a position
 
         Args:
-            size (int): amount to update the position size
+            size (float): amount to update the position size
                 size < 0: A sell operation has taken place
                 size > 0: A buy operation has taken place
 
@@ -162,24 +162,24 @@ class Position(object):
 
         self.price_orig = self.price
         oldsize = self.size
-        self.size += size
+        self.size = float(Decimal(str(self.size)) + Decimal(str(size)))
 
         if not self.size:
             # Update closed existing position
-            opened, closed = 0, size
+            opened, closed = 0.0, size
             self.price = 0.0
         elif not oldsize:
             # Update opened a position from 0
-            opened, closed = size, 0
+            opened, closed = size, 0.0
             self.price = price
-        elif oldsize > 0:  # existing "long" position updated
+        elif oldsize > 0.0:  # existing "long" position updated
 
-            if size > 0:  # increased position
-                opened, closed = size, 0
+            if size > 0.0:  # increased position
+                opened, closed = size, 0.0
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size > 0:  # reduced position
-                opened, closed = 0, size
+                opened, closed = 0.0, size
                 # self.price = self.price
 
             else:  # self.size < 0 # reversed position form plus to minus
@@ -189,11 +189,11 @@ class Position(object):
         else:  # oldsize < 0 - existing short position updated
 
             if size < 0:  # increased position
-                opened, closed = size, 0
+                opened, closed = size, 0.0
                 self.price = (self.price * oldsize + size * price) / self.size
 
             elif self.size < 0:  # reduced position
-                opened, closed = 0, size
+                opened, closed = 0.0, size
                 # self.price = self.price
 
             else:  # self.size > 0 - reversed position from minus to plus
