@@ -5,8 +5,12 @@ from __future__ import (absolute_import, division, print_function,
 
 from backtrader import DataBase, date2num
 import datetime as dt
-import urlparse
 import psycopg2
+from urllib.parse import urlparse
+
+
+# Used for fetching prices, adhering to the backtest library Database API
+
 
 class PsqlDatabase(DataBase):
     '''
@@ -14,7 +18,7 @@ class PsqlDatabase(DataBase):
     takes url connection string in form of :
         postgres://{user}:{pw}@{host}:{port [optional]}/{database}
 
-    must also pass a datestart and a table name conforming to a similar schema as following:
+    assumes a table name conforming to a schema similar to the following:
             ticker        char(5),
             date          date,
             high          numeric(10,4),
@@ -29,13 +33,15 @@ class PsqlDatabase(DataBase):
         ('url', None),
         ('dataname', None),
         ('table', None),
-        ('startdate', None),
+        ('fromdate', None),
+        ('todate', None),
         ('ticker', None),
     )
 
     def start(self):
         try:
-            cursor = self._connect_db()
+            conn = self._connect_db()
+            cursor = conn.cursor()
         except Exception as e:
             print('Failed to establish connection to PSQL: {}'.format(e))
             return
@@ -43,12 +49,15 @@ class PsqlDatabase(DataBase):
         query = ("""SELECT date, high, low, open, close, volume """
                  """FROM {table} """
                  """WHERE ticker = '{ticker}' """
-                 """AND date >= '{startdate}' """
-                 """ORDER BY date asc""".format(
-            table=self.p.table,
-            ticker=self.p.ticker,
-            startdate=dt.datetime.strftime(self.p.startdate, '%Y-%m-%d')
-        ))
+                 .format(table=self.p.table,
+                         ticker=self.p.ticker))
+
+        if self.p.fromdate is not None:
+            query += " AND date >= '{fromdate}' ".format(fromdate=dt.datetime.strftime(self.p.fromdate, '%Y-%m-%d'))
+        if self.p.todate is not None:
+            query += " AND date <= '{todate}' ".format(todate=dt.datetime.strftime(self.p.fromdate, '%Y-%m-%d'))
+
+        query += """ORDER BY date asc"""
 
         try:
             cursor.execute(query)
@@ -56,6 +65,8 @@ class PsqlDatabase(DataBase):
             print('PSQL query failed: {}'.format(e))
 
         self.price_rows = cursor.fetchall()
+        conn.close()
+
         self.price_i = 0
         super(PsqlDatabase, self).start()
 
@@ -66,21 +77,25 @@ class PsqlDatabase(DataBase):
         self.price_i += 1
 
         self.lines.datetime[0] = date2num(row[0])
-        self.lines.high[0]     = row[1]
-        self.lines.low[0]      = row[2]
-        self.lines.open[0]     = row[3]
-        self.lines.close[0]    = row[4]
-        self.lines.volume[0]   = row[5]
-        self.lines.openinterest[0] = 0.0
+        self.lines.high[0] = float(row[1])
+        self.lines.low[0] = float(row[2])
+        self.lines.open[0] = float(row[3])
+        self.lines.close[0] = float(row[4])
+        self.lines.volume[0] = row[5]
 
         return True
 
     def _connect_db(self):
-        url = urlparse.urlparse(self.p.url)
+        url = urlparse(self.p.url)
         dbname = url.path[1:]
         user = url.username
         password = url.password
         host = url.hostname
         conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
 
-        return conn.cursor()
+        return conn
+
+    def preload(self):
+        super(PsqlDatabase, self).preload()
+        # preloaded - no need to keep the price_rows as data is stored in the cerebro's Lines
+        self.price_rows = None
