@@ -35,7 +35,7 @@ class PsqlDatabase(DataBase):
 
     def start(self):
         try:
-            cursor = self.connect_db()
+            cursor = self._connect_db()
         except Exception as e:
             print('Failed to establish connection to PSQL: {}'.format(e))
             return
@@ -75,7 +75,7 @@ class PsqlDatabase(DataBase):
 
         return True
 
-    def connect_db(self):
+    def _connect_db(self):
         url = urlparse.urlparse(self.p.url)
         dbname = url.path[1:]
         user = url.username
