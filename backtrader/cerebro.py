@@ -270,6 +270,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ('preload', True),
         ('runonce', True),
         ('maxcpus', None),
+        ('maxtasksperchild', None),
         ('stdstats', True),
         ('oldbuysell', False),
         ('oldtrades', False),
@@ -1139,7 +1140,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     if self._dopreload:
                         data.preload()
 
-            pool = multiprocessing.Pool(self.p.maxcpus or None)
+            pool = multiprocessing.Pool(self.p.maxcpus or None,
+                                        maxtasksperchild=self.p.maxtasksperchild)
             for r in pool.imap(self, iterstrats):
                 self.runstrats.append(r)
                 for cb in self.optcbs:
