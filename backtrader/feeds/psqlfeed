@@ -36,6 +36,15 @@ class PsqlDatabase(DataBase):
         ('dataname', None),
         ('table', None),
         ('ticker', None),
+        
+        # parameterized column indices for ease of overwriting/re-implementing
+        ('datetime', 0),
+        ('high', 1),
+        ('low', 2),
+        ('open', 3),
+        ('close', 4),
+        ('volume', 5),
+        ('openinterest', -1),
     )
 
     def start(self):
@@ -69,12 +78,21 @@ class PsqlDatabase(DataBase):
         row = self.price_rows[self.price_i]
         self.price_i += 1
 
-        self.lines.datetime[0] = date2num(row[0])
-        self.lines.high[0] = float(row[1])
-        self.lines.low[0] = float(row[2])
-        self.lines.open[0] = float(row[3])
-        self.lines.close[0] = float(row[4])
-        self.lines.volume[0] = row[5]
+        for datafield in self.getlinealiases():
+            if datafield == 'datetime':
+                self.lines.datetime[0] = date2num(row[self.p.datetime])
+            elif datafield == 'volume':
+                self.lines.volume[0] = row[self.p.volume]
+
+            else:
+                # get the column index
+                colidx = getattr(self.params, datafield)
+                if colidx < 0:
+                    # column not present -- skip
+                    continue
+                # get the line to be set
+                line = getattr(self.lines, datafield)
+                line[0] = float(row[colidx])
 
         return True
 
