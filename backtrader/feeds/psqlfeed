@@ -4,10 +4,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from backtrader import DataBase, date2num
-import datetime as dt
-import psycopg2
-from urllib.parse import urlparse
-
 
 # Used for fetching prices, adhering to the backtest library Database API
 
@@ -18,7 +14,9 @@ class PsqlDatabase(DataBase):
     takes url connection string in form of :
         postgres://{user}:{pw}@{host}:{port [optional]}/{database}
 
-    assumes a table name conforming to a schema similar to the following:
+    this implementation assumes a single table with all prices, 
+    conforming to a schema similar to the following:
+    
             ticker        char(5),
             date          date,
             high          numeric(10,4),
@@ -27,24 +25,22 @@ class PsqlDatabase(DataBase):
             close         numeric(10,4),
             volume        integer,
             unique (ticker, date)
+    
+    if your databases are set up differently, you can override the
+    start() method.
+    
     '''
 
     params = (
         ('url', None),
         ('dataname', None),
         ('table', None),
-        ('fromdate', None),
-        ('todate', None),
         ('ticker', None),
     )
 
     def start(self):
-        try:
-            conn = self._connect_db()
-            cursor = conn.cursor()
-        except Exception as e:
-            print('Failed to establish connection to PSQL: {}'.format(e))
-            return
+       conn = self._connect_db()
+       cursor = conn.cursor()
 
         query = ("""SELECT date, high, low, open, close, volume """
                  """FROM {table} """
@@ -59,10 +55,7 @@ class PsqlDatabase(DataBase):
 
         query += """ORDER BY date asc"""
 
-        try:
-            cursor.execute(query)
-        except Exception as e:
-            print('PSQL query failed: {}'.format(e))
+        cursor.execute(query)
 
         self.price_rows = cursor.fetchall()
         conn.close()
@@ -86,6 +79,10 @@ class PsqlDatabase(DataBase):
         return True
 
     def _connect_db(self):
+        import psycopg2
+        from urllib.parse import urlparse
+        import datetime as dt
+
         url = urlparse(self.p.url)
         dbname = url.path[1:]
         user = url.username
