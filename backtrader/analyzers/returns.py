@@ -45,14 +45,6 @@ class Returns(TimeFrameAnalyzerBase):
         Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
         time constraints
 
-      - ``compression`` (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
       - ``tann`` (default: ``None``)
 
         Number of periods to use for the annualization (normalization) of the
