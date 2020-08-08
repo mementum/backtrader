@@ -496,7 +496,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 fref, fcol = lineplotinfo._get(fattr, (None, None))
                 if fref is not None:
                     y1 = np.array(lplot)
-                    if isinstance(fref, integer_types):
+                    if isinstance(fref, integer_types) or isinstance(fref, float):
                         y2 = np.full_like(y1, fref)
                     else:  # string, naming a line, nothing else is supported
                         l2 = getattr(ind, fref)
@@ -505,6 +505,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     kwargs = dict()
                     if fop is not None:
                         kwargs['where'] = fop(y1, y2)
+                    if lineplotinfo._get('drawstyle', None) == "steps-mid":
+                        kwargs['step'] = 'mid'
 
                     falpha = self.pinf.sch.fillalpha
                     if isinstance(fcol, (list, tuple)):
