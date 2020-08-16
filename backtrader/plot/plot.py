@@ -127,6 +127,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 matplotlib.use('nbagg')
 
         # this import must not happen before matplotlib.use
+        from IPython import get_ipython
+        get_ipython().run_line_magic('matplotlib', 'inline')
         import matplotlib.pyplot as mpyplot
         self.mpyplot = mpyplot
 
