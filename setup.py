@@ -29,7 +29,7 @@ with codecs.open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Package name
-pname = 'backtrader_adriano'
+pname = 'backtrader'
 
 # Get the version ... execfile is only on Py2 ... use exec + compile + open
 vname = 'version.py'
