@@ -988,6 +988,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
+                                    width=width, height=height,
                                     start=start, end=end, use=use)
                 # pfillers=pfillers2)
 
