@@ -21,8 +21,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
-
 from .utils.py3 import with_metaclass
 from .metabase import MetaParams
 
