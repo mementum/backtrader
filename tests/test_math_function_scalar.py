@@ -76,9 +76,17 @@ class SlipTestStrategy(bt.SignalStrategy):
     def next(self):
         if self.p.printdata:
             self.log(
-                f" open {self.datas[0].open[0]:.2f} close {self.datas[0].close[0]:.2f}, max {self.mx[0]:.2f}, "
-                f"log {self.lg[0]:5.3f}, ceiling {self.cl[0]:5.3f}, floor {self.fl[0]:5.3f} "
-                f"cross {self.cross[0]:2.0f} abs cross {self.cross_abs[0]:2.0f}"
+                " open {:.2f} close {:.2f}, max {:.2f}, log {:5.3f}, ceiling {:5.3f}, floor {:5.3f}, "
+                "cross {:2.0f} abs cross {:2.0f}".format(
+                    self.datas[0].open[0],
+                    self.datas[0].close[0],
+                    self.mx[0],
+                    self.lg[0],
+                    self.cl[0],
+                    self.fl[0],
+                    self.cross[0],
+                    self.cross_abs[0],
+                )
             )
 
         # Test values
