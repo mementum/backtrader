@@ -90,7 +90,7 @@ else:
             return _obj, args, kwargs  # return the object and args
 
     class _TALibIndicator(with_metaclass(_MetaTALibIndicator, bt.Indicator)):
-        CANDLEOVER = 1.02  # 2% over
+        CANDLEOVER = 0.02  # 2% over
         CANDLEREF = 1  # Open, High, Low, Close (0, 1, 2, 3)
 
         @classmethod
@@ -222,8 +222,8 @@ else:
                 self.lines[0][0] = o = out[-1]
 
                 if fsize > lsize:  # candle is present
-                    candleref = narrays[self.CANDLEREF][-1] * self.CANDLEOVER
-                    o2 = candleref * (o / 100.0)
+                    candleref = narrays[self.CANDLEREF][-1]
+                    o2 = candleref * (o / 100.0) * ((o / 100.0) + self.CANDLEOVER)
                     self.lines[1][0] = o2
 
             else:
