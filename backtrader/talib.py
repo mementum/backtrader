@@ -201,8 +201,8 @@ else:
                 self.lines[0].array = array.array(str('d'), output)
 
                 if fsize > lsize:  # candle is present
-                    candleref = narrays[self.CANDLEREF] * self.CANDLEOVER
-                    output2 = candleref * (output / 100.0)
+                    candleref = narrays[self.CANDLEREF]
+                    output2 = candleref * (output / 100.0) * ((output / 100.0) + self.CANDLEOVER)
                     self.lines[1].array = array.array(str('d'), output2)
 
             else:
