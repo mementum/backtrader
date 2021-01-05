@@ -165,7 +165,7 @@ else:
                 lines.append(lname)
                 pline['ls'] = ''
                 pline['marker'] = 'd'
-                pline['markersize'] = '7.0'
+                pline['markersize'] = 7.0
                 pline['fillstyle'] = 'full'
                 plotlines[lname] = pline
 
