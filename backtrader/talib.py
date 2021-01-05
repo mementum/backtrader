@@ -221,7 +221,7 @@ else:
             if lsize == 1:  # only 1 output, no tuple returned
                 self.lines[0][0] = o = out[-1]
 
-                if fsize > lsize:  # candle is present
+                if fsize > lsize and o != 0.0:  # candle is present and not 0
                     candleref = narrays[self.CANDLEREF][-1]
                     o2 = candleref * (o / 100.0) * ((o / 100.0) + self.CANDLEOVER)
                     self.lines[1][0] = o2
