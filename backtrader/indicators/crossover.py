@@ -117,7 +117,7 @@ class CrossOver(Indicator):
       - -1.0 if the 1st data crosses the 2nd data downwards
 
     It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1t and 2nd data
+    index (-1) of both the 1st and 2nd data
 
     Formula:
       - diff = data - data1
