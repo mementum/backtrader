@@ -25,7 +25,6 @@ import datetime
 import os
 import testcommon
 
-import backtrader as bt
 from backtrader import feeds as btfeeds
 import backtrader.indicators as btind
 import pandas
@@ -58,7 +57,7 @@ class PandasDataOptix(btfeeds.PandasData):
               ('optix_opt', -1))
 
 
-def getdata(index, noheaders=True, nocase=True):
+def getdata(index, noheaders=True):
 
     datapath = os.path.join(modpath, dataspath, datafiles[index])
 
@@ -73,20 +72,19 @@ def getdata(index, noheaders=True, nocase=True):
                                 index_col=0)
 
     # Pass it to the backtrader datafeed and add it to the cerebro
+    # Data in upper case for headers, nocase=True.
     if index:
-        data = PandasDataOptix(dataname=dataframe, nocase=nocase)
+        data = PandasDataOptix(dataname=dataframe, nocase=True)
     else:
-        data = bt.feeds.PandasData(dataname=dataframe, nocase=nocase)
+        data = btfeeds.PandasData(dataname=dataframe, nocase=True)
     return data
 
 def test_run(main=False):
     # Create list with bool possibilitys for:
     # PandasData and PandasOptix,
     # no headers,
-    # no case.
     dc = [0, 1]
-    data = [getdata(i, noheaders=nh, nocase=nc) for i in dc for nh in dc for nc in dc]
-    data = testcommon.getdata(0)
+    data = [getdata(i, noheaders=nh) for i in dc for nh in dc]
 
     for runonce in [True, False]:
         datas = data

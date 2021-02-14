@@ -170,10 +170,14 @@ class PandasData(feed.DataBase):
         self._colmapping = dict()
 
         if self.colsnumeric:
+            colsextend = [dataname for dataname in self.getlinealiases() if dataname
+            not in self.datafields]
+            ext_idx_start = len(self.datafields) - 1
             self._colmapping = dict(zip(self.datafields, [None, 0, 1, 2, 3, 4, 5]))
+            self._colmapping.update(dict(zip(colsextend, range(ext_idx_start, ext_idx_start + len(
+                colsextend)))))
         else:
             # Build the column mappings to internal fields in advance
-
             for datafield in self.getlinealiases():
                 defmapping = getattr(self.params, datafield)
 
