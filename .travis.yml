@@ -13,8 +13,8 @@ matrix:
 
 
 # command to install dependencies
-# install:
-#  - pip install your_package
+install:
+  - pip install pandas
 #    pip install git+https://github.com/blampe/IbPy.git
 
 # command to run tests
