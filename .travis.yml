@@ -13,9 +13,10 @@ matrix:
 
 
 # command to install dependencies
-# install:
-#  - pip install your_package
-#    pip install git+https://github.com/blampe/IbPy.git
+install:
+  - pip install git+https://github.com/blampe/IbPy.git
+# - pip install your_package
+
 
 # command to run tests
 script: cd tests && nosetests -v -v
