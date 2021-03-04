@@ -1541,7 +1541,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 d.do_qcheck(newqcheck, qlapse.total_seconds())
                 drets.append(d.next(ticks=False))
 
-            d0ret = any((dret for dret in drets))
+            d0ret = any((dret for i,dret in enumerate(drets) if dret and i not in rsonly))
             if not d0ret and any((dret is None for dret in drets)):
                 d0ret = None
 
