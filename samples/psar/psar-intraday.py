@@ -45,7 +45,7 @@ class St(bt.Strategy):
         txt.append('{:.2f}'.format(self.data0.close[0]))
         txt.append('PSAR')
         txt.append('{:04.2f}'.format(self.psar0[0]))
-        if len(self.data1):
+        if self.data1:
             txt.append('{:04d}'.format(len(self.data1)))
             txt.append(self.data1.datetime.datetime())
             txt.append('{:.2f}'.format(self.data1.close[0]))

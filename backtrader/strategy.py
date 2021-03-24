@@ -373,7 +373,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                     observer.next()
                 elif minperstatus == 0:
                     observer.nextstart()  # only called for the 1st value
-                elif len(observer):
+                elif observer:
                     observer.prenext()
             else:
                 observer._next()

@@ -500,7 +500,7 @@ class BackBroker(bt.BrokerBase):
         if safe:
             os = [x.clone() for x in self.pending]
         else:
-            os = [x for x in self.pending]
+            os = list(self.pending)
 
         return os
 
@@ -1130,7 +1130,7 @@ class BackBroker(bt.BrokerBase):
                 else:  # assume string
                     d = self.cerebro.datasbyname[dataidx]
 
-                if not len(d):
+                if not d:
                     break  # may start later as oter data feeds
 
                 dt = uhorder[0]  # date/datetime instance

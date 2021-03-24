@@ -213,7 +213,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         if self._clone:
             return self.data._getnexteos()
 
-        if not len(self):
+        if not self:
             return datetime.datetime.min, 0.0
 
         dt = self.lines.datetime[0]

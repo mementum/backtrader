@@ -42,7 +42,7 @@ class IQFeedTool(object):
 
         if not args.fromdate:
             self._start = str(dt.datetime.today().year)
-        elif len(args.fromdate) == 4 or len(args.fromdate == 10):
+        elif len(args.fromdate) == 4 or args.fromdate == 10:
             self._start = args.fromdate
         else:
             log.error('Starting date required in YYYY-MM-DD or YYYY format.')
@@ -50,7 +50,7 @@ class IQFeedTool(object):
 
         if not args.todate:
             self._stop = str(dt.datetime.today().year)
-        elif len(args.fromdate) == 4 or len(args.fromdate == 10):
+        elif len(args.fromdate) == 4 or args.fromdate == 10:
             self._stop = args.todate
         else:
             log.error('Starting date required in YYYY-MM-DD or YYYY format.')

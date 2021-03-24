@@ -62,8 +62,7 @@ class MyDateFormatter(mplticker.Formatter):
         if ind >= self.lendates:
             ind = self.lendates - 1
 
-        if ind < 0:
-            ind = 0
+        ind = max(ind, 0)
 
         return num2date(self.dates[ind]).strftime(self.fmt)
 

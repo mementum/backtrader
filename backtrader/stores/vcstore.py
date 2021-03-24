@@ -376,7 +376,7 @@ class VCStore(with_metaclass(MetaSingleton, object)):
     def get_notifications(self):
         '''Return the pending "store" notifications'''
         self.notifs.append(None)  # Mark current end of notifs
-        return [x for x in iter(self.notifs.popleft, None)]  # popleft til None
+        return list(iter(self.notifs.popleft, None))  # popleft til None
 
     def start(self, data=None, broker=None):
         if not self._connected:

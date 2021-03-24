@@ -35,7 +35,6 @@ from backtrader.comminfo import CommInfoBase
 from backtrader.position import Position
 from backtrader.stores import oandastore
 from backtrader.utils import AutoDict, AutoOrderedDict
-from backtrader.comminfo import CommInfoBase
 
 
 class OandaCommInfo(CommInfoBase):

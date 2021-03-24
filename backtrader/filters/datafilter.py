@@ -55,7 +55,7 @@ class DataFilter(bt.AbstractDataBase):
         super(DataFilter, self).preload()
 
     def _load(self):
-        if not len(self.p.dataname):
+        if not self.p.dataname:
             self.p.dataname.start()  # start data if not done somewhere else
 
         # Tell underlying source to get next data

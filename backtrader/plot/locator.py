@@ -52,8 +52,7 @@ def _idx2dt(idx, dates, tz):
     idx = int(round(idx))
     if idx >= ldates:
         idx = ldates - 1
-    if idx < 0:
-        idx = 0
+    idx = max(idx, 0)
 
     return num2date(dates[idx], tz)
 
@@ -240,8 +239,7 @@ class AutoDateFormatter(ADFormatter):
         if x >= ldates:
             x = ldates - 1
 
-        if x < 0:
-            x = 0
+        x = max(x, 0)
 
         ix = self._dates[x]
 

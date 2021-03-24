@@ -73,7 +73,7 @@ class SMAStrategy(bt.Strategy):
         # txt.append('{:f}'.format(self.sma_small[0]))
         print(', '.join(txt))
 
-        if len(self.datas) > 1 and len(self.data1):
+        if len(self.datas) > 1 and self.data1:
             txt = list()
             txt.append('Data1')
             txt.append('%04d' % len(self.data1))

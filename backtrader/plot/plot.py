@@ -119,7 +119,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if not strategy.datas:
             return
 
-        if not len(strategy):
+        if not strategy:
             return
 
         if iplot:

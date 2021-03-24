@@ -171,7 +171,7 @@ class PandasData(feed.DataBase):
 
         # try to autodetect if all columns are numeric
         cstrings = filter(lambda x: isinstance(x, string_types), colnames)
-        colsnumeric = not len(list(cstrings))
+        colsnumeric = not list(cstrings)
 
         # Where each datafield find its value
         self._colmapping = dict()
@@ -211,7 +211,7 @@ class PandasData(feed.DataBase):
         if self.p.nocase:
             colnames = [x.lower() for x in self.p.dataname.columns.values]
         else:
-            colnames = [x for x in self.p.dataname.columns.values]
+            colnames = list(self.p.dataname.columns.values)
 
         for k, v in self._colmapping.items():
             if v is None:

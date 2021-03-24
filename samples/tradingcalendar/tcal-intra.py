@@ -66,7 +66,7 @@ class St(bt.Strategy):
         print('Data0 len {} datetime {}'.format(
             len(self.data0), self.data0.datetime.datetime()), end=' ')
 
-        if len(self.data1):
+        if self.data1:
             print('Data1 len {} datetime {}'.format(
                 len(self.data1), self.data1.datetime.datetime()))
         else:

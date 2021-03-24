@@ -108,7 +108,7 @@ class DataFiller(AbstractDataBase):
     }
 
     def _load(self):
-        if not len(self.p.dataname):
+        if not self.p.dataname:
             self.p.dataname.start()  # start data if not done somewhere else
 
             # Copy from underlying data

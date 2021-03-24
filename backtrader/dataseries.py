@@ -204,7 +204,7 @@ class _Bar(AutoOrderedDict):
         self.openinterest = data.openinterest[0]
 
         o = self.open
-        if reopen or not o == o:
+        if reopen or o != o:
             self.open = data.open[0]
             return True  # just opened the bar
 
