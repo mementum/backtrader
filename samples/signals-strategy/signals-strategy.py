@@ -125,7 +125,7 @@ def parse_args(pargs=None):
                         help=('Period for the exit control SMA'))
 
     parser.add_argument('--signal', required=False, action='store',
-                        default=MAINSIGNALS.keys()[0], choices=MAINSIGNALS,
+                        default=list(MAINSIGNALS.keys())[0], choices=MAINSIGNALS,
                         help=('Signal type to use for the main signal'))
 
     parser.add_argument('--exitsignal', required=False, action='store',
