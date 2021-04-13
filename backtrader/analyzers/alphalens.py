@@ -141,6 +141,7 @@ class Alphalens(bt.Analyzer):
 
         indicators = indicators.replace(to_replace ='nan',
                  value =np.NaN)
+        indicators = indicators.astype('float64')
 
         # Return all together
         return rets, indicators
