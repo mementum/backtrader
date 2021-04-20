@@ -135,8 +135,8 @@ class Alphalens(bt.Analyzer):
 
         indicators = DF.from_records(ps, columns=cols)
         indicators['datetime'] = pandas.to_datetime(indicators['datetime'])
-        index = pandas.MultiIndex.from_frame(indicators[['datetime', 'ticker']])
-        indicators = indicators.drop(columns=['datetime', 'ticker']).set_index(index)
+        index = pandas.MultiIndex.from_frame(indicators[['datetime', 'dataname']])
+        indicators = indicators.drop(columns=['datetime', 'dataname']).set_index(index)
         indicators = indicators.tz_localize('UTC', level=0)
 
         indicators = indicators.replace(to_replace ='nan',

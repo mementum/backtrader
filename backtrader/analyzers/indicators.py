@@ -64,9 +64,9 @@ class Indicators(bt.Analyzer):
     )
 
     def _get_data_header(self):
-            headers = ['datetime', 'ticker', 'open', 'high', 'low', 'close', 'volume']
+            headers = ['datetime', 'dataname', 'open', 'high', 'low', 'close', 'volume']
 
-            ind_headers = [ind.aliased for ind in self.strategy.getindicators_lines()]
+            ind_headers = [ind.plotinfo.plotname.split('_')[0] for ind in self.strategy.getindicators_lines()]
 
             ind_headers = list(set(ind_headers))
 
@@ -109,15 +109,17 @@ class Indicators(bt.Analyzer):
 
     def _get_entry_line(self, data):
         #str(num2date(data.datetime[0]))
-        line = [data.ticker,
+        line = [data.dataname,
                 data.open[0],
                 data.high[0],
                 data.low[0],
                 data.close[0],
                 data.volume[0]]
         for ind in self.strategy.getindicators_lines():
-            if ind.data.ticker == data.ticker:
+            
+            if data.dataname in ind.plotinfo.plotname:
                 line.append(f"{ind+0}")
+
         return line
 
     def log_entry(self, data):
