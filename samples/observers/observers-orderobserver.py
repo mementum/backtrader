@@ -38,7 +38,7 @@ class MyStrategy(bt.Strategy):
     )
 
     def log(self, txt, dt=None):
-        ''' Logging function fot this strategy'''
+        ''' Logging function for this strategy'''
         dt = dt or self.data.datetime[0]
         if isinstance(dt, float):
             dt = bt.num2date(dt)
