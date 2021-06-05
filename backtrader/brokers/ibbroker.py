@@ -302,6 +302,8 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         self.value = self.ib.get_acc_value()
         return self.value
 
+    get_value = getvalue
+    
     def getposition(self, data, clone=True):
         return self.ib.getposition(data.tradecontract, clone=clone)
 
