@@ -312,7 +312,7 @@ class MetaLineSeries(LineMultiple.__class__):
 
       - During "new" (instance creation) the lines/plotinfo/plotlines
         classes are substituted in the instance with instances of the
-        aforementioned classes and aliases are added for the "lines" held
+        before mentioned classes and aliases are added for the "lines" held
         in the "lines" instance
 
         Additionally and for remaining kwargs, these are matched against
@@ -325,7 +325,7 @@ class MetaLineSeries(LineMultiple.__class__):
 
     def __new__(meta, name, bases, dct):
         '''
-        Intercept class creation, identifiy lines/plotinfo/plotlines class
+        Intercept class creation, identify lines/plotinfo/plotlines class
         attributes and create corresponding classes for them which take over
         the class attributes
         '''
