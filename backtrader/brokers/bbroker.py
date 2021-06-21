@@ -316,7 +316,7 @@ class BackBroker(bt.BrokerBase):
         self.p.coc = coc
 
     def set_coo(self, coo):
-        '''Configure the Cheat-On-Open method to buy the close on order bar'''
+        '''Configure the Cheat-On-Open method to buy the open on order bar'''
         self.p.coo = coo
 
     def set_shortcash(self, shortcash):
