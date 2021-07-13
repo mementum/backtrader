@@ -1,4 +1,5 @@
 testing
+testing 2
 1.9.76.123:
   - PR#405 Fix initial Renko bricks
   - Add option to select fixing of initial Renko bricks
