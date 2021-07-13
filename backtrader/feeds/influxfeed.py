@@ -52,12 +52,18 @@ class InfluxDB(feed.DataBase):
         ('database', None),
         ('timeframe', bt.TimeFrame.Days),
         ('startdate', None),
+        ('todate', None),
         ('high', 'high_p'),
         ('low', 'low_p'),
         ('open', 'open_p'),
         ('close', 'close_p'),
         ('volume', 'volume'),
         ('ointerest', 'oi'),
+        ('Interval_tag_name', None),
+        ('Interval_tag_value', None),
+        ('Ticker_tag_name', None),
+        ('Ticker_tag_value', None),
+        ('measurement_name', None)
     )
 
     def start(self):
@@ -77,18 +83,26 @@ class InfluxDB(feed.DataBase):
         else:
             st = '>= \'%s\'' % self.p.startdate
 
+        if not self.p.todate:
+            tt = '<= now()'
+        else:
+            tt = '<= \'%s\'' % self.p.todate
+
         # The query could already consider parameters like fromdate and todate
         # to have the database skip them and not the internal code
         qstr = ('SELECT mean("{open_f}") AS "open", mean("{high_f}") AS "high", '
                 'mean("{low_f}") AS "low", mean("{close_f}") AS "close", '
                 'mean("{vol_f}") AS "volume", mean("{oi_f}") AS "openinterest" '
                 'FROM "{dataname}" '
-                'WHERE time {begin} '
+                'WHERE time {begin} AND time {end} AND "{ticker_name}"=\'{ticker}\' AND "{interval_name}"=\'{interval}\' '
                 'GROUP BY time({timeframe}) fill(none)').format(
                     open_f=self.p.open, high_f=self.p.high,
                     low_f=self.p.low, close_f=self.p.close,
                     vol_f=self.p.volume, oi_f=self.p.ointerest,
-                    timeframe=tf, begin=st, dataname=self.p.dataname)
+                    timeframe=tf, begin=st, dataname=self.p.measurement_name,
+                    end=tt, ticker_name=self.p.Ticker_tag_name, ticker=self.p.Ticker_tag_value,
+                    interval_name=self.p.Interval_tag_name, interval= self.p.Interval_tag_value
+                    )
 
         try:
             dbars = list(self.ndb.query(qstr).get_points())
