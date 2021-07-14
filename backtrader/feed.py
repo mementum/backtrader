@@ -337,6 +337,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         else:
             self._filters.append((p, args, kwargs))
+        return pobj
 
     def compensate(self, other):
         '''Call it to let the broker know that actions on this asset will
