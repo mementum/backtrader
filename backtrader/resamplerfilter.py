@@ -170,12 +170,18 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return self._barover_days(data)
 
         elif tframe == TimeFrame.Weeks:
+            if data.p.timeframe < TimeFrame.Days:
+                return self._barover_days(data) and self._barover_weeks(data)
             return self._barover_weeks(data)
 
         elif tframe == TimeFrame.Months:
+            if data.p.timeframe < TimeFrame.Days:
+                return self._barover_days(data) and self._barover_months(data)
             return self._barover_months(data)
 
         elif tframe == TimeFrame.Years:
+            if data.p.timeframe < TimeFrame.Days:
+                return self._barover_days(data) and self._barover_years(data)
             return self._barover_years(data)
 
     def _eosset(self):
@@ -322,6 +328,9 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
                 ret = data._calendar.last_monthday(data.datetime.date())
             elif tframe == TimeFrame.Years:
                 ret = data._calendar.last_yearday(data.datetime.date())
+
+            if data.p.timeframe < TimeFrame.Days:
+                ret = ret and self._eoscheck(data)
 
             if ret:
                 # Data must be consumed but compression may not be met yet
