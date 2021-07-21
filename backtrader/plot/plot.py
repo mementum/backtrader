@@ -18,8 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import bisect
 import collections
@@ -30,18 +29,17 @@ import operator
 import sys
 
 import matplotlib
-import numpy as np  # guaranteed by matplotlib
 import matplotlib.dates as mdates
 import matplotlib.font_manager as mfontmgr
 import matplotlib.legend as mlegend
 import matplotlib.ticker as mticker
+import numpy as np  # guaranteed by matplotlib
 
-from ..utils.py3 import range, with_metaclass, string_types, integer_types
 from .. import AutoInfoClass, MetaParams, TimeFrame, date2num
-
-from .finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose
-from .formatters import (MyVolFormatter, MyDateFormatter, getlocator)
+from ..utils.py3 import integer_types, range, string_types, with_metaclass
 from . import locator as loc
+from .finance import plot_candlestick, plot_lineonclose, plot_ohlc, plot_volume
+from .formatters import MyDateFormatter, MyVolFormatter, getlocator
 from .multicursor import MultiCursor
 from .scheme import PlotScheme
 from .utils import tag_box_style
@@ -122,16 +120,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if not len(strategy):
             return
 
-        if iplot:
-            if 'ipykernel' in sys.modules:
-                matplotlib.use('nbagg')
-
-        try:
+        if iplot and 'ipykernel' in sys.modules:
             from IPython import get_ipython
             if get_ipython():
                 get_ipython().run_line_magic('matplotlib', 'inline')
-        except ImportError:
-            ...
 
         # this import must not happen before matplotlib.use
         import matplotlib.pyplot as mpyplot
