@@ -59,6 +59,15 @@ class YahooDownload(object):
             raise Exception(msg)
 
         url = self.urlhist.format(ticker)
+        headers = { 
+            'User-Agent'      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36', 
+            'Accept'          : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 
+            'Accept-Language' : 'en-US,en;q=0.5',
+            'DNT'             : '1', # Do Not Track Request Header 
+            'Connection'      : 'close'
+        }
+        
+        resp = requests.get(url, headers=headers, timeout=5)
 
         sesskwargs = dict()
         if False and self.p.proxies:
@@ -67,7 +76,7 @@ class YahooDownload(object):
         crumb = None
         sess = requests.Session()
         for i in range(self.retries + 1):  # at least once
-            resp = sess.get(url, **sesskwargs)
+            # resp = sess.get(url, **sesskwargs)
             if resp.status_code != requests.codes.ok:
                 continue
 
@@ -121,9 +130,20 @@ class YahooDownload(object):
         urlargs.append('crumb={}'.format(crumb))
 
         urld = '{}?{}'.format(urld, '&'.join(urlargs))
+        
         f = None
+        headers = { 
+            'User-Agent'      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36', 
+            'Accept'          : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 
+            'Accept-Language' : 'en-US,en;q=0.5',
+            'DNT'             : '1', # Do Not Track Request Header 
+            'Connection'      : 'close'
+        }
+        
+        
         for i in range(self.retries + 1):  # at least once
-            resp = sess.get(urld, **sesskwargs)
+            resp = requests.get(urld, headers=headers, timeout=5)
+            
             if resp.status_code != requests.codes.ok:
                 continue
 
