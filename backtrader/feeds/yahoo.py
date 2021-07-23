@@ -307,13 +307,18 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         urlargs = []
         posix = date(1970, 1, 1)
+
+        if self.p.fromdate is not None:
+            period1 = (self.p.fromdate.date() - posix).total_seconds()
+        else:
+            period1 = 0
+        urlargs.append('period1={}'.format(int(period1)))
         if self.p.todate is not None:
             period2 = (self.p.todate.date() - posix).total_seconds()
-            urlargs.append('period2={}'.format(int(period2)))
-
-        if self.p.todate is not None:
-            period1 = (self.p.fromdate.date() - posix).total_seconds()
-            urlargs.append('period1={}'.format(int(period1)))
+        else:
+            # use current time as todate if not provided
+            period2 = (datetime.utcnow().date() - posix).total_seconds()
+        urlargs.append('period2={}'.format(int(period2)))
 
         intervals = {
             bt.TimeFrame.Days: '1d',
