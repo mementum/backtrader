@@ -159,7 +159,7 @@ def runstrategy():
 
     # Plot if requested
     if args.plot:
-        cerebro.plot(numfigs=int(args.numfigs), volume=False, zdown=False)
+        cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 
 
 def parse_args():
