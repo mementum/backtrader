@@ -373,7 +373,7 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
 
         # Apply compression to update the point position (comp 5 -> 200 // 5)
         # point = (point // self.p.compression)
-        point = point // self.p.compression
+        point //= self.p.compression
 
         # If rightedge (end of boundary is activated) add it unless recursing
         point += self.p.rightedge

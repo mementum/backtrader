@@ -397,7 +397,7 @@ class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
             point = point * 1e6 + dt.microsecond
 
         # Apply compression to update point position (comp 5 -> 200 // 5)
-        point = point // self.compression
+        point //= self.compression
 
         # Move to next boundary
         point += 1

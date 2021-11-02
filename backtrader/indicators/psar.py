@@ -151,7 +151,7 @@ class ParabolicSAR(PeriodN):
                 ep = lo
                 af = min(af + self.p.af, self.p.afmax)
 
-        sar = sar + af * (ep - sar)  # calculate the sar for tomorrow
+        sar += af * (ep - sar)  # calculate the sar for tomorrow
 
         # make sure sar doesn't go into hi/lows
         if tr:  # long trade
