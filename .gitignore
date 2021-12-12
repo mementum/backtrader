@@ -69,3 +69,4 @@ samples2/
 datas/*.py
 
 .idea/
+/.vs
