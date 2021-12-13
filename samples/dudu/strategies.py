@@ -4,40 +4,24 @@ import datetime
 import backtrader as bt
 import backtrader.indicators as btind
 from backtrader.order import Order
+from transactionsLoader import *
 
-from enum import Enum
-class TransactionType(Enum):
-    BUY = 1
-    SELL = 2
 
-class PastTransaction:
-    transactionType: TransactionType
-    transactionDate : date
-    amount: float
-    price: float
 
-    def __init__(self, tt, td, am, pr):
-        self.transactionType = tt
-        self.transactionDate = td
-        self.amount = am
-        self.price = pr
 
 
 class OldStrategy(bt.Strategy):
     '''
     Current transactions based on our history log
     '''
-    '''
-    def name(self, name):
-        return name
-    '''
-
+    params = (('symbol', ''), ('priceSize', 1),)
     
 
-    def findTransaction(self, transactionDate):
-        for trans in self.pastTransactions:
-            if int(transactionDate) == bt.date2num(trans.transactionDate):
-                return trans
+    def findTransaction(self, transactionDate, transactionIndex):
+        #for trans in self.pastTransactions:
+        trans = self.pastTransactions[transactionIndex]
+        if int(transactionDate) == bt.date2num(trans.transactionDate):
+            return trans
         return None
 
     def log(self, txt, dt=None):
@@ -49,9 +33,10 @@ class OldStrategy(bt.Strategy):
         # Keep a reference to the "close" line in the data[0] dataseries
         self.dataclose = self.datas[0].close
         self.datadate = self.datas[0].datetime 
-        self.pastTransactions = [PastTransaction(TransactionType.BUY, date(2020,1,1), 2,584.0),
-                                 PastTransaction(TransactionType.SELL, date(2020,4,1), 2, 12.5)]
-
+        self.transactionIndex=0
+        
+        self.pastTransactions = TransactionsLoader.Load(self.p.symbol)
+        
 
         # Keep track of pending orders
         self.order = None
@@ -68,15 +53,15 @@ class OldStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log('BUY EXECUTED, Price: %.2f, Cost: %.2f, Commission: %.2f' %
-                         (order.executed.price,
-                          order.executed.value,
+                         (order.executed.price*self.p.priceSize,
+                          order.executed.value*self.p.priceSize,
                           order.executed.comm))
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
             elif order.issell():
                 self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Commission: %.2f' %
-                         (order.executed.price,
-                          order.executed.value,
+                         (order.executed.price*self.p.priceSize,
+                          order.executed.value*self.p.priceSize,
                           order.executed.comm))
 
             self.bar_executed = len(self)
@@ -91,7 +76,7 @@ class OldStrategy(bt.Strategy):
             return
 
         self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' %
-                 (trade.pnl, trade.pnlcomm))
+                 (trade.pnl*self.p.priceSize, trade.pnlcomm))
 
     def next(self):
 
@@ -99,22 +84,25 @@ class OldStrategy(bt.Strategy):
             return
         
         #dt = bt.num2date(self.datadate[0])
-        if not self.position:
-            trans = self.findTransaction(self.datadate[0])
-            # Not yet in the market... we MIGHT BUY if...
-            if trans:
-                if trans.transactionType == TransactionType.BUY:
-                    self.log('BUY CREATE, %.2f' % self.dataclose[0])
-                    self.order = self.buy(exectype=Order.Limit,price=trans.price,size=trans.amount)
-        else:
-            trans = self.findTransaction(self.datadate[0])
+        #if not self.position:
+        trans = self.findTransaction(self.datadate[0], self.transactionIndex)
+        # Not yet in the market... we MIGHT BUY if...
+        if trans:
+            if trans.transactionType == 'buy':
+                self.log('BUY CREATE, %.2f, Amount: %.2f' % (trans.price * self.p.priceSize,trans.amount))
+                self.order = self.buy(exectype=Order.Limit,price=trans.price,size=trans.amount)
+                self.transactionIndex = self.transactionIndex + 1
+
+        if self.position:
+            #trans = self.findTransaction(self.datadate[0])
             # Already in the market... we might sell
             if trans:
-                if trans.transactionType == TransactionType.SELL:
-                    self.log('SELL CREATE, %.2f' % self.dataclose[0])
+                if trans.transactionType == 'sell':
+                    self.log('SELL CREATE, %.2f, Amount: %.2f' % (trans.price * self.p.priceSize,trans.amount))
 
                     # Keep track of the created order to avoid a 2nd order
                     self.order = self.sell(exectype=Order.Limit,price=trans.price,size=trans.amount)
+                    self.transactionIndex = self.transactionIndex + 1
 
 
 class TestStrategy(bt.Strategy):

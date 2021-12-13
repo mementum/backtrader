@@ -56,12 +56,13 @@ def runstrategy():
         data = bt.feeds.YahooFinanceCSVData(
             dataname=datapath,
             fromdate=fromdate,
-            todate=todate
+            todate=todate,
+            tframes=bt.TimeFrame.Minutes
         )
 
         cerebro = bt.Cerebro(optreturn=False)
         cerebro.adddata(data, name='MyData0')
-        cerebro.addstrategy(OldStrategy)
+        cerebro.addstrategy(OldStrategy, symbol='ICCM.TA', priceSize=1)
 
         results_list = []
 
@@ -69,7 +70,7 @@ def runstrategy():
         cerebro.broker.setcash(args.cash)
         #cerebro.addsizer(MaxRiskSizer)
         comminfo = DegiroCommission()
-        cerebro.broker.addcommissioninfo(comminfo)
+        #cerebro.broker.addcommissioninfo(comminfo)
 
         tframes = dict(
             days=bt.TimeFrame.Days,
@@ -101,7 +102,7 @@ def runstrategy():
         startWorth = args.cash
         endWorth = round(st0[0].broker.get_value(), 2)
         PnL = round(st0[0].broker.get_value() - args.cash, 2)
-        compaund_annual_return = pow(endWorth / startWorth, 1/len(annual_returns))-1
+        compaund_annual_return = np.power(endWorth / startWorth, 1/len(annual_returns))-1
         annualReturn = round(compaund_annual_return*100, 2)
         volatility = st0[0].analyzers.volatility.get_analysis()['volatility']
 
@@ -133,11 +134,11 @@ def parse_args():
                         help='data to add to the system')
 
     parser.add_argument('--fromdate', '-f',
-                        default='2020-01-01',
+                        default='2018-05-06',
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--todate', '-t',
-                        default='2021-12-31',
+                        default='2021-11-30',
                         help='Starting date in YYYY-MM-DD format')
 
     parser.add_argument('--fast_period', default=13, type=int,
@@ -157,7 +158,7 @@ def parse_args():
     group.add_argument('--legacyannual', action='store_true',
                        help='Use legacy annual return analyzer')
 
-    parser.add_argument('--cash', default=1500, type=int,
+    parser.add_argument('--cash', default=50000, type=int,
                         help='Starting Cash')
 
     parser.add_argument('--plot', '-p', action='store_true',
