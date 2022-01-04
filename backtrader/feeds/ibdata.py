@@ -477,13 +477,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 if msg is None:  # Conn broken during historical/backfilling
                     self._subcription_valid = False
                     self.put_notification(self.CONNBROKEN)
-                    # Try to reconnect
-                    if not self.ib.reconnect(resub=True):
-                        self.put_notification(self.DISCONNECTED)
-                        return False  # failed
-
-                    self._statelivereconn = self.p.backfill
-                    continue
+                    self._state = self._ST_START
+                    return None
 
                 if msg == -354:
                     self.put_notification(self.NOTSUBSCRIBED)
@@ -625,10 +620,10 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 return True
 
             elif self._state == self._ST_START:
-                if not self._st_start():
+                if not self._st_start(instart=False):
                     return False
 
-    def _st_start(self):
+    def _st_start(self, instart=True):
         if self.p.historical:
             self.put_notification(self.DELAYED)
             dtend = None
@@ -654,8 +649,8 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             self._state = self._ST_OVER
             return False  # failed - was so
 
-        self._statelivereconn = self.p.backfill_start
-        if self.p.backfill_start:
+        self._statelivereconn = self.p.backfill_start if instart else self.p.backfill
+        if self._statelivereconn:
             self.put_notification(self.DELAYED)
 
         self._state = self._ST_LIVE
