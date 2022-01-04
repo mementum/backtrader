@@ -565,8 +565,17 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 continue
 
             elif self._state == self._ST_HISTORBACK:
-                msg = self.qhist.get()
+                try:
+                    msg = self.qhist.get(timeout=60)
+                except queue.Empty:
+                    # timeout raised
+                    msg = None
                 if msg is None:  # Conn broken during historical/backfilling
+                    if not self.p.historical:
+                        # connction lost temporarily from LIVE data
+                        # wait for restored code 1101/1102, instead of just game over
+                        self._state = self._ST_LIVE
+                        continue
                     # Situation not managed. Simply bail out
                     self._subcription_valid = False
                     self.put_notification(self.DISCONNECTED)
