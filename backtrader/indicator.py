@@ -141,8 +141,7 @@ class MtLinePlotterIndicator(Indicator.__class__):
         lname = kwargs.pop('name')
         name = cls.__name__
 
-        lines = getattr(cls, 'lines', Lines)
-        cls.lines = lines._derive(name, (lname,), 0, [])
+        cls.lines = Lines._derive(name, (lname,), 0, [])
 
         plotlines = AutoInfoClass
         newplotlines = dict()
