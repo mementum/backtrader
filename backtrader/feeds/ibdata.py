@@ -667,7 +667,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         # The historical data has the same data but with 'date' instead of
         # 'time' for datetime
         dt = date2num(rtbar.time if not hist else rtbar.date)
-        if dt < self.lines.datetime[-1] and not self.p.latethrough:
+        if dt <= self.lines.datetime[-1] and not self.p.latethrough:
             return False  # cannot deliver earlier than already delivered
 
         self.lines.datetime[0] = dt
@@ -687,7 +687,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         # contains open/high/low/close/volume prices
         # Datetime transformation
         dt = date2num(rtvol.datetime)
-        if dt < self.lines.datetime[-1] and not self.p.latethrough:
+        if dt <= self.lines.datetime[-1] and not self.p.latethrough:
             return False  # cannot deliver earlier than already delivered
 
         self.lines.datetime[0] = dt
