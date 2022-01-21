@@ -26,6 +26,11 @@ import collections
 import itertools
 import multiprocessing
 
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 import backtrader as bt
 from .utils.py3 import (map, range, zip, with_metaclass, string_types,
                         integer_types)
@@ -330,7 +335,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for elem in iterable:
             if isinstance(elem, string_types):
                 elem = (elem,)
-            elif not isinstance(elem, collections.Iterable):
+            elif not isinstance(elem, collectionsAbc.Iterable):
                 elem = (elem,)
 
             niterable.append(elem)
