@@ -7,6 +7,8 @@ import pandas as pd
 import datetime
 import os
 import sys
+from backtrader_plotting import Bokeh
+from backtrader_plotting.schemes import Tradimo
  
 # 创建策略
 class TestStrategy(bt.Strategy):
@@ -169,4 +171,5 @@ cerebro.addanalyzer(bt.analyzers.DrawDown, _name='_DrawDown') # 回撤
 # 启动回测
 cerebro.run()
 # 可视化回测结果
-cerebro.plot()
+b = Bokeh(style='bar', scheme=Tradimo())
+cerebro.plot(b)

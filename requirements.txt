@@ -1,5 +1,11 @@
 numpy==1.22.2
 pandas==1.4.0
 matplotlib==3.5.1
+backtrader-plotting==2.0.0
 seaborn==0.11.2
 TA-Lib==0.4.24
+
+# download data
+akshare==1.4.16
+progress==1.6
+
