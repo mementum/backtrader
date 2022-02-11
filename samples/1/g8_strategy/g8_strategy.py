@@ -180,7 +180,7 @@ if __name__ == '__main__':
       result['profit_per_week'].append(round(t.pnlcomm/t.barlen, 2))
 
   resultData = pd.DataFrame(result)
-  resultData.to_csv('./ma_test_result_trades.csv')
+  resultData.to_csv('{base_dir}/ma_test_result_trades.csv')
 
   # summary
   profit_sum = np.sum(resultData['profit'])
