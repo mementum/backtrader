@@ -70,4 +70,4 @@ datas/*.py
 
 .idea/
 
-samples/1/test_strategy/stock_data/*
+samples/1/stock_data/*

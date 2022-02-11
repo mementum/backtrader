@@ -29,7 +29,7 @@ class MAStrategy(bt.Strategy):
     self.highest = bt.indicators.Highest(self.data, period=self.params.price_period, subplot=False)
     self.isCrossUp = bt.indicators.CrossUp(self.ma1, self.ma2)
 
-    data = pd.read_csv(f'./up_stat_week.csv', index_col='id', dtype={'id': np.character})
+    data = pd.read_csv(f'{base_dir}/up_stat_week.csv', index_col='id', dtype={'id': np.character})
     self.stat = {
       'low': data.low['000001'],
       'middle': data.middle['000001'],
@@ -137,7 +137,7 @@ def test_one_stock(file):
   stock_id = file.split('.')[1]
 
   data = bt.feeds.GenericCSVData(
-      dataname=f'./stock_data/{file}',
+      dataname=f'{base_dir}/../stock_data/{file}',
       name=stock_id,
       datetime=1,
       open=2,
@@ -155,7 +155,8 @@ def test_one_stock(file):
   return result[0].trades
 
 if __name__ == '__main__':
-  files = os.listdir('./stock_data')
+  base_dir = os.path.dirname(__file__)
+  files = os.listdir(base_dir + '/../stock_data')
   i = 0
   result = dict(id=[], profit=[], weeks=[], profit_per_week=[])
   stock_count = 0
