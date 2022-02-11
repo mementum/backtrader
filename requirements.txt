@@ -2,3 +2,4 @@ numpy==1.22.2
 pandas==1.4.0
 matplotlib==3.5.1
 seaborn==0.11.2
+TA-Lib==0.4.24
