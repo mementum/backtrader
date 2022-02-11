@@ -30,8 +30,9 @@ class TestStrategy(bt.Strategy):
         self.buycomm = None
 
         # Add a MovingAverageSimple indicator
-        self.sma = bt.indicators.SimpleMovingAverage(
-            self.datas[0], period=self.params.maperiod)
+        # self.sma = bt.indicators.SimpleMovingAverage(
+        #     self.datas[0], period=self.params.maperiod)
+        self.sma = bt.talib.SMA(self.data.close, timeperiod=self.params.maperiod)
 
         # Indicators for the plotting show
         bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
