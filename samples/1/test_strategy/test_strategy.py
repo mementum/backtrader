@@ -134,7 +134,7 @@ cerebro = bt.Cerebro()
 #     cerebro.adddata(datafeed, name=stock) # 通过 name 实现数据集与股票的一一对应
 #     print(f"{stock} Done !")
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-datapath = os.path.join(modpath, '../../datas/orcl-1995-2014.txt')
+datapath = os.path.join(modpath, '../../../datas/orcl-1995-2014.txt')
 
 # Create a Data Feed
 data = bt.feeds.YahooFinanceCSVData(
