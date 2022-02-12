@@ -71,3 +71,4 @@ datas/*.py
 .idea/
 
 samples/1/stock_data/*
+datas/

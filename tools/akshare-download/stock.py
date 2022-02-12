@@ -1,6 +1,11 @@
 import os
-
+from typing import List
 import akshare as ak
+import pandas as pd
+import datetime
+import multiprocessing
+from progress.bar import IncrementalBar
+from tqdm import tqdm
 
 mainpath = os.path.dirname(os.path.dirname(__file__)) + '../../datas/stock'
 
@@ -13,83 +18,107 @@ def get_a_stock_list():
     获取A股股票清单
     沪深京三个交易所
     """
-    df = ak.stock_info_a_code_name()
+    df = eval('ak.stock_zh_a_spot_em')()
     path = os.path.join(mainpath, f'a_stock_list.csv')
-    df.to_csv(path)
+    df.to_csv(path, encoding='utf-8')
 
-def get_a_sh_stock_list(indicator: str = '主板A股'):
+def get_a_zb_stock_list():
     """
-    获取A股股票清单-上海证券交易所
-    indicator="主板A股"; choice of {"主板A股", "主板B股", "科创板"}
+    获取A股股票清单-主板：60， 00开头
     """
-    df = ak.stock_info_sh_name_code(indicator=indicator)
-    path = os.path.join(mainpath, f'a_sh_{indicator}_stock_list.csv')
-    df.to_csv(path)
+    df = ak.stock_zh_a_spot_em()
+    df = df[df.代码.str.startswith(('60', '00',))]
+    path = os.path.join(mainpath, f'a_zb_stock_list.csv')
+    df.to_csv(path, encoding='utf-8')
 
-def get_a_sz_stock_list(indicator: str = 'A股列表'):
+def get_us_stock_list():
     """
-    获取A股股票清单-深证
-    indicator="A股列表"; choice of {"A股列表", "B股列表", "CDR列表", "AB股列表"}
+    获取美股股票清单
     """
-    df = ak.stock_info_sz_name_code(indicator=indicator)
-    path = os.path.join(mainpath, f'a_sz_{indicator}_stock_list.csv')
-    df.to_csv(path)
+    df = ak.stock_us_spot_em()
 
-def get_a_bj_stock_list():
-    """
-    获取A股股票清单-北证
-    """
-    df = ak.stock_info_bj_name_code()
-    path = os.path.join(mainpath, f'a_bj_stock_list.csv')
-    df.to_csv(path)
+    path = os.path.join(mainpath, 'us_stock_list.csv')
+    df.to_csv(path, encoding='utf-8')
 
-def get_a_stock_detail(symbol: str, start_date: str, end_date: str):
+def upsert_stock_detail(type: str, symbol: str, start_date: str, end_date: str = datetime.datetime.now().strftime('%Y%m%d'), period: str = 'daily'):
     """
     获取每日后复权股票数据
+    type: us | zh_a
     symbol: 股票代码
     start_date: 开始日期
     end_date: 结束日期
+    period: daily | weekly | monthly
+    当日收盘后更新
     """
-    stock_data = ak.stock_zh_a_hist(symbol=symbol, period='daily', start_date=start_date, end_date=end_date, adjust='hfq')
-    path = os.path.join(mainpath, f'{symbol}.csv')
-    stock_data.to_csv(path, encoding='utf-8')
+    dir = os.path.join(mainpath, f'{type}')
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    path = os.path.join(dir, f'{symbol}.csv')
+    # 如果已经存在，更新数据
+    if os.path.exists(path):
+        old_df = pd.read_csv(path)
+        start_date = str(int(old_df['日期'].iloc[-1].replace('-', '')) + 1)
+        stock_data = eval('ak.stock_' + type + '_hist')(symbol=symbol, period='daily', start_date=start_date, end_date=end_date, adjust='hfq')
+        new_df = pd.concat([old_df, stock_data])
+        new_df.to_csv(path, encoding='utf-8')
+    else:
+        stock_data = eval('ak.stock_' + type + '_hist')(symbol=symbol, period='daily', start_date=start_date, end_date=end_date, adjust='hfq')
+        stock_data.to_csv(path, encoding='utf-8')
+    
 
 def name_list(csv_name):
     import csv
     csv_f = os.path.join(mainpath, f'{csv_name}')
     stock_list = []
-    with open(csv_f, 'r') as f:
+    with open(csv_f, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            if not row['name'].startswith('N'):
-                stock_list.append(row['symbol'])
+            if not row['名称'].startswith('N'):
+                stock_list.append(row['代码'])
             else:
-                print(row['name'])
+                print(row['名称'])
     return stock_list
 
-def download_all_stock(csv_name):
 
-    from progress.bar import IncrementalBar
-
-    stock_list = name_list(csv_name)
-
+def get_stock_list_task(stock_list: List[str]):
     bar = IncrementalBar('Download', max=len(stock_list))
-    new_stock_list = []
+    type = 'zh_a'
+    start_date='20220101'
+    end_date=datetime.datetime.now().strftime('%Y%m%d')
+    period = 'daily'
+    failed_num = 0
     for symbol in stock_list:
-        bar.next()
         try:
-            get_a_stock_detail(symbol)
-        except KeyError:
-            new_stock_list.append(symbol)
-
-        bar.finish()
-
-    if len(new_stock_list) > 0:
-        print(f'新股票有: {new_stock_list}')
-
+            upsert_stock_detail(type, symbol, start_date, end_date, period)
+            bar.next()
+        except Exception as e:
+            print(f'不能下载: {symbol}, error: {e}')
+            failed_num += 1
+            bar.next()
+    bar.finish()
+    return len(stock_list) - failed_num
 
 if __name__ == '__main__':
-    
-    get_a_stock_list()
+    # get_a_zb_stock_list()
 
-    # download_all_stock('a_stock_list.csv')
+    # 多进程下载或更新所有A股股票
+    cpu_count = max(int(multiprocessing.cpu_count() - 2), 1)
+    pool = multiprocessing.Pool(cpu_count)
+    
+    stock_list = name_list('a_stock_list.csv')
+    # stock_list = stock_list[500:813]
+    pbar = tqdm(total=len(stock_list))
+    # 每20支股票一组
+    n = 20
+    stock_lists = [stock_list[i:i + n] for i in range(0, len(stock_list), n)]
+    # tqdm(pool.imap(get_stock_list_task, stock_lists), total=len(stock_lists))
+    def bar_update(num):
+        pbar.update(num)
+    for stock_list in stock_lists:
+        # get_stock_detail_task(bar, type, symbol, start_date, end_date, period)
+        pool.apply_async(func=get_stock_list_task, args=(stock_list,), callback=bar_update)
+
+    pool.close()
+    pool.join()
+    pbar.close()
+    print('下载完成')
