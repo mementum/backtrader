@@ -115,10 +115,10 @@ if __name__ == '__main__':
     pool = multiprocessing.Pool(cpu_count)
     
     stock_list = name_list('a_stock_list.csv')
-    stock_list = stock_list[0:15]
+    # stock_list = stock_list[0:15]
     pbar = tqdm(total=len(stock_list))
     # 每20支股票一组
-    n = 3
+    n = 20
     stock_lists = [stock_list[i:i + n] for i in range(0, len(stock_list), n)]
     # tqdm(pool.imap(get_stock_list_task, stock_lists), total=len(stock_lists))
     def bar_update(num):
@@ -135,4 +135,4 @@ if __name__ == '__main__':
     print(f'下载完成, 成功：{pbar.n}, 失败：{pbar.total - pbar.n}')
     # start_date='20220101'
     # end_date=datetime.datetime.now().strftime('%Y%m%d')
-    # upsert_stock_detail('zh_a', '000618', start_date, end_date)
+    # upsert_stock_detail('zh_a', '000001', start_date, end_date)
