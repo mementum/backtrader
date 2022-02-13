@@ -2,7 +2,8 @@ import os
 
 import akshare as ak
 
-mainpath = os.path.dirname(os.path.dirname(__file__)) + '../../datas/fund'
+mainpath = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+mainpath = os.path.join(mainpath, 'datas/fund')
 
 '''
 获取股票数据

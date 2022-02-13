@@ -2,7 +2,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import backtrader as bt # 导入 Backtrader 
 import backtrader.indicators as btind # 导入策略分析模块
-import backtrader.feeds as btfeeds # 导入数据模块
+from backtest.feeds.datafeeds import StockCsvData
 import pandas as pd
 import datetime
 import os
@@ -137,15 +137,15 @@ cerebro = bt.Cerebro()
 #     cerebro.adddata(datafeed, name=stock) # 通过 name 实现数据集与股票的一一对应
 #     print(f"{stock} Done !")
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-datapath = os.path.join(modpath, '../../../datas/orcl-1995-2014.txt')
+datapath = os.path.join(modpath, '../../datas/stock/zh_a/000517.csv')
 
 # Create a Data Feed
-data = bt.feeds.YahooFinanceCSVData(
+data = StockCsvData(
     dataname=datapath,
     # Do not pass values before this date
-    fromdate=datetime.datetime(2000, 1, 1),
+    fromdate=datetime.datetime(2003, 1, 1),
     # Do not pass values after this date
-    todate=datetime.datetime(2000, 12, 31),
+    todate=datetime.datetime(2003, 12, 31),
     reverse=False)
 
 # Add the Data Feed to Cerebro
