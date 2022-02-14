@@ -57,6 +57,9 @@ def upsert_stock_detail(type: str, symbol: str, start_date: str, end_date: str =
             start_date = str(int(old_df['datetime'].iloc[-1].replace('-', '')) + 1)
         else: # 没有数据就删除
             os.remove(path)
+        if int(start_date) > int(end_date):
+            print(f'{symbol}没有新数据可更新')
+            return
         stock_data = eval('ak.stock_' + type + '_hist')(symbol=symbol, period='daily', start_date=start_date, end_date=end_date, adjust='hfq')
         
         if stock_data.shape[0] < 1: # 成功返回却没有数据
