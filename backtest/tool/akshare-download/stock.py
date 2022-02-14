@@ -19,6 +19,8 @@ def get_stock_list(type: str):
     获取股票清单
     type: zh_a | us
     """
+    if not os.path.exists(mainpath):
+        os.makedirs(mainpath)
     df = eval(f'ak.stock_{type}_spot_em')()
     path = os.path.join(mainpath, f'{type}_stock_list.csv')
     df.to_csv(path, encoding='utf-8')
@@ -27,6 +29,8 @@ def get_a_zb_stock_list():
     """
     获取A股股票清单-主板：60， 00开头
     """
+    if not os.path.exists(mainpath):
+        os.makedirs(mainpath)
     df = ak.stock_zh_a_spot_em()
     df = df[df.代码.str.startswith(('60', '00',))]
     path = os.path.join(mainpath, f'a_zb_stock_list.csv')
@@ -34,7 +38,7 @@ def get_a_zb_stock_list():
 
 def upsert_stock_detail(type: str, symbol: str, start_date: str, end_date: str = datetime.datetime.now().strftime('%Y%m%d'), period: str = 'daily'):
     """
-    获取每日后复权股票数据
+    获取或更新每日后复权股票数据
     type: us | zh_a
     symbol: 股票代码
     start_date: 开始日期
