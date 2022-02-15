@@ -6,15 +6,11 @@ mainpath = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 mainpath = os.path.join(mainpath, 'datas/fund')
 
 '''
-获取股票数据
-'''
-
-'''
-获取基金数据
+Get funds datas
 '''
 def get_all_fund_list():
     """
-    获取所有基金清单
+    Get all fund name list
     """
     fund_em_fund_name_df = ak.fund_em_fund_name()
     path = os.path.join(mainpath, f'all_fund.csv')
@@ -23,7 +19,7 @@ def get_all_fund_list():
 
 def get_etf_list():
     """
-    获取etf基金清单
+    Get all ETF fund name list
     """
     fund_list = ak.fund_etf_category_sina(symbol="ETF基金")
     path = os.path.join(mainpath, f'etf_list.csv')
@@ -32,7 +28,7 @@ def get_etf_list():
 
 def get_lof_list():
     """
-    获取LOF基金清单
+    Get all LOF fund name list
     """
     fund_list = ak.fund_etf_category_sina(symbol="LOF基金")
     path = os.path.join(mainpath, f'lof_list.csv')
@@ -40,7 +36,7 @@ def get_lof_list():
 
 def get_fund_detail(etf_fund_code, down_path=''):
     """
-    获取基金数据
+    Get fund data
     """
     fund_detail = ak.fund_etf_hist_sina(symbol=etf_fund_code)
     path = ''
@@ -57,7 +53,7 @@ def get_fund_detail(etf_fund_code, down_path=''):
 
 def get_open_fund_info(fund_code):
     """
-    获取开放式基金数据
+    Get open fund info
     """
     fund_data = ak.fund_em_open_fund_info(fund=fund_code, indicator="单位净值走势")
     fund_data_new = fund_data.rename(columns={

@@ -1,7 +1,6 @@
 import backtrader as bt # 导入 Backtrader 
 import backtrader.indicators as btind # 导入策略分析模块
-import backtrader.feeds as btfeeds # 导入数据模块
-import pandas as pd
+from backtest.feeds.datafeeds import StockCsvData
  
 # 创建策略
 class StrategyTemplate(bt.Strategy):
@@ -74,7 +73,7 @@ class StrategyTemplate(bt.Strategy):
 # 实例化 cerebro
 cerebro = bt.Cerebro()
 # 通过 feeds 读取数据
-data = btfeeds.BacktraderCSVData(...) 
+data = StockCsvData(...) 
 # 将数据传递给 “大脑”
 cerebro.adddata(data) 
 # 通过经纪商设置初始资金
