@@ -22,8 +22,12 @@ def get_stock_list(type: str):
     if not os.path.exists(mainpath):
         os.makedirs(mainpath)
     df = eval(f'ak.stock_{type}_spot_em')()
+    df = df.loc[~df['代码'].isin(['301229', '000748', '000508', '000748'])]
     path = os.path.join(mainpath, f'{type}_stock_list.csv')
     df.to_csv(path, encoding='utf-8')
+    # stop_df = eval(f'ak.stock_{type}_stop_em')()
+    # path = os.path.join(mainpath, f'{type}_stop_stock_list.csv')
+    # stop_df.to_csv(path, encoding='utf-8')
 
 def get_a_zb_stock_list():
     """
@@ -53,6 +57,7 @@ def upsert_stock_detail(type: str, symbol: str, start_date: str, end_date: str =
     if os.path.exists(path):
         old_df = pd.read_csv(path)
         if old_df.shape[0] > 0: # if not empty
+            del old_df[old_df.columns[0]]
             start_date = str(int(old_df['datetime'].iloc[-1].replace('-', '')) + 1)
         else: # delete the file if empty
             os.remove(path)
@@ -66,7 +71,8 @@ def upsert_stock_detail(type: str, symbol: str, start_date: str, end_date: str =
         else:
             # update column name, because backtrader can't parse 'gbk' code.
             stock_data.columns=['datetime', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude', 'change', 'changeamount', 'turnoverrate']
-            new_df = pd.concat([old_df, stock_data])
+            stock_data.index=range(old_df.shape[0], stock_data.shape[0]+old_df.shape[0])
+            new_df = old_df.append(stock_data)
             new_df.to_csv(path, encoding='utf-8')
     else:
         stock_data = eval('ak.stock_' + type + '_hist')(symbol=symbol, period='daily', start_date=start_date, end_date=end_date, adjust='hfq')
@@ -112,7 +118,7 @@ if __name__ == '__main__':
     start_date='20020101'
     
     # get stock list when you download data first time.
-    get_stock_list(type)
+    # get_stock_list(type)
 
     # downlaod with multiple progress
     cpu_count = max(int(multiprocessing.cpu_count() - 2), 1)
@@ -139,6 +145,6 @@ if __name__ == '__main__':
     print(f'download complete, success:{pbar.n}, failed:{pbar.total - pbar.n}')
 
     # download or udpate one stock
-    # start_date='20220101'
+    # start_date='20020101'
     # end_date=datetime.datetime.now().strftime('%Y%m%d')
-    # upsert_stock_detail('zh_a', '000001', start_date, end_date)
+    # upsert_stock_detail('zh_a', '000008', start_date, end_date)

@@ -1,5 +1,3 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 import backtrader as bt # 导入 Backtrader 
 import backtrader.indicators as btind # 导入策略分析模块
 from backtest.feeds.datafeeds import StockCsvData
