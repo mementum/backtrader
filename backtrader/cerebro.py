@@ -1022,7 +1022,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         threads the execution will stop as soon as possible.'''
         self._event_stop = True  # signal a stop has been requested
 
-    def run(self, **kwargs):
+    async def run(self, **kwargs):
         '''The core method to perform backtesting. Any ``kwargs`` passed to it
         will affect the value of the standard parameters ``Cerebro`` was
         instantiated with.
@@ -1124,7 +1124,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             # If no optimmization is wished ... or 1 core is to be used
             # let's skip process "spawning"
             for iterstrat in iterstrats:
-                runstrat = self.runstrategies(iterstrat)
+                runstrat = await self.runstrategies(iterstrat)
                 self.runstrats.append(runstrat)
                 if self._dooptimize:
                     for cb in self.optcbs:
@@ -1163,7 +1163,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     def _next_stid(self):
         return next(self.stcount)
 
-    def runstrategies(self, iterstrat, predata=False):
+    async def runstrategies(self, iterstrat, predata=False):
         '''
         Internal method invoked by ``run``` to run a set of strategies
         '''
@@ -1293,9 +1293,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     self._runonce(runstrats)
             else:
                 if self.p.oldsync:
-                    self._runnext_old(runstrats)
+                    await self._runnext_old(runstrats)
                 else:
-                    self._runnext(runstrats)
+                    await self._runnext(runstrats)
 
             for strat in runstrats:
                 strat._stop()
@@ -1325,7 +1325,8 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         if attrname.startswith('data'):
                             setattr(a, attrname, None)
 
-                oreturn = OptReturn(strat.params, analyzers=strat.analyzers, strategycls=type(strat))
+                oreturn = OptReturn(
+                    strat.params, analyzers=strat.analyzers, strategycls=type(strat))
                 results.append(oreturn)
 
             return results
@@ -1352,12 +1353,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
             writer.writedict(dict(Cerebro=cerebroinfo))
             writer.stop()
 
-    def _brokernotify(self):
+    async def _brokernotify(self):
         '''
         Internal method which kicks the broker and delivers any broker
         notification to the strategy
         '''
-        self._broker.next()
+        await self._broker.next()
         while True:
             order = self._broker.get_notification()
             if order is None:
@@ -1369,7 +1370,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
             owner._addnotification(order, quicknotify=self.p.quicknotify)
 
-    def _runnext_old(self, runstrats):
+    async def _runnext_old(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
@@ -1387,12 +1388,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
-            d0ret = data0.next()
+            d0ret = await data0.next()
             if d0ret:
                 for data in self.datas[1:]:
-                    if not data.next(datamaster=data0):  # no delivery
+                    if not await data.next(datamaster=data0):  # no delivery
                         data._check(forcedata=data0)  # check forcing output
-                        data.next(datamaster=data0)  # retry
+                        await data.next(datamaster=data0)  # retry
 
             elif d0ret is None:
                 # meant for things like live feeds which may not produce a bar
@@ -1415,7 +1416,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
 
-            self._brokernotify()
+            await self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
 
@@ -1435,7 +1436,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if self._event_stop:  # stop if requested
             return
 
-    def _runonce_old(self, runstrats):
+    async def _runonce_old(self, runstrats):
         '''
         Actual implementation of run in vector mode.
         Strategies are still invoked on a pseudo-event mode in which ``next``
@@ -1455,13 +1456,13 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for data in datas:
                 data.advance(datamaster=data0)
 
-            self._brokernotify()
+            await self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
 
             for strat in runstrats:
                 # data0.datetime[0] for compat. w/ new strategy's oncepost
-                strat._oncepost(data0.datetime[0])
+                await strat._oncepost(data0.datetime[0])
                 if self._event_stop:  # stop if requested
                     return
 
@@ -1490,7 +1491,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         '''API for lineiterators to disable runonce (see HeikinAshi)'''
         self._dorunonce = False
 
-    def _runnext(self, runstrats):
+    async def _runnext(self, runstrats):
         '''
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
@@ -1539,7 +1540,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for d in datas:
                 qlapse = datetime.datetime.utcnow() - qstart
                 d.do_qcheck(newqcheck, qlapse.total_seconds())
-                drets.append(d.next(ticks=False))
+                drets.append(await d.next(ticks=False))
 
             d0ret = any((dret for dret in drets))
             if not d0ret and any((dret is None for dret in drets)):
@@ -1570,7 +1571,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     # try to get a data by checking with a master
                     d = datas[i]
                     d._check(forcedata=dmaster)  # check to force output
-                    if d.next(datamaster=dmaster, ticks=False):  # retry
+                    if await d.next(datamaster=dmaster, ticks=False):  # retry
                         dts[i] = d.datetime[0]  # good -> store
                         # self._plotfillers2[i].append(slen)  # mark as fill
                     else:
@@ -1620,7 +1621,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
                         if self._event_stop:  # stop if requested
                             return
 
-            self._brokernotify()
+            await self._brokernotify()
             if self._event_stop:  # stop if requested
                 return
 
@@ -1641,7 +1642,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         if self._event_stop:  # stop if requested
             return
 
-    def _runonce(self, runstrats):
+    async def _runonce(self, runstrats):
         '''
         Actual implementation of run in vector mode.
 
@@ -1692,7 +1693,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             self._check_timers(runstrats, dt0, cheat=False)
 
             for strat in runstrats:
-                strat._oncepost(dt0)
+                await strat._oncepost(dt0)
                 if self._event_stop:  # stop if requested
                     return
 

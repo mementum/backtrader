@@ -467,7 +467,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 continue
             ff.check(self, _forcedata=forcedata, *fargs, **fkwargs)
 
-    def load(self):
+    async def load(self):
         while True:
             # move data pointer forward for new bar
             self.forward()
@@ -476,7 +476,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 return True
 
             if not self._fromstack(stash=True):
-                _loadret = self._load()
+                _loadret = await self._load()
                 if not _loadret:  # no bar use force to make sure in exactbars
                     # the pointer is undone this covers especially (but not
                     # uniquely) the case in which the last bar has been seen
@@ -534,7 +534,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # Out of the loop ... no more bars or past todate
         return False
 
-    def _load(self):
+    async def _load(self):
         return False
 
     def _add2stack(self, bar, stash=False):

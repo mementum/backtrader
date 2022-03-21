@@ -289,7 +289,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext_open()
 
-    def _oncepost(self, dt):
+    async def _oncepost(self, dt):
         for indicator in self._lineiterators[LineIterator.IndType]:
             if len(indicator._clock) > len(indicator):
                 indicator.advance()
@@ -306,7 +306,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
 
         minperstatus = self._getminperstatus()
         if minperstatus < 0:
-            self.next()
+            await self.next()
         elif minperstatus == 0:
             self.nextstart()  # only called for the 1st value
         else:

@@ -181,11 +181,11 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
         self.nextstart()
 
-    def _next(self):
+    async def _next(self):
         for child in self._children:
-            child._next()
+            await child._next()
 
-        self.next()
+        await self.next()
 
     def _start(self):
         for child in self._children:
