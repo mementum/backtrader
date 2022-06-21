@@ -1,19 +1,5 @@
 '''
-CONTINUE:
-- 
 
-
-TODO:
-- ID management system for threads - create and assign IDs for all the threads that are started in the controller module
-- Create a module to manage all asset sets and keep track which strategy is using which asset set
-- Create a module which requests ticket data for each asset set registered, processes that data into packet and sends to
-  sqlManager (for saving into DB and forwarding to GUI). Sender ID must be a list of IDs in which case the data is forwarded (OR-ed)
-  inside the sqlManager.process_block
-- The user can specify interval via GUI and they can specify multiple intervals- each new interval will combine a new asset set
-  where the symbol and exchange are the same, but interval is different. These asset sets will be registered with this testrun
-  and can be used inside the strategy 
-- Do we actually need to have account size specified ? In this type of testing user probably only cares about equity curves, win rate
-  and profit/loss margin or how quickly the account is growing/shrinking
 '''
 import threading
 import backtrader as bt
@@ -88,9 +74,7 @@ class controller(threading.Thread):
     
     def add_testrun(self, strat_name, strategy, symbol, exchange, interval, account_size):
         '''
-        Interval will come from the strategy file in __init__ because some strategies might have multiple intervals
-        
-        
+        Interval must come from the strategy file in __init__ because some strategies might have multiple intervals
         '''
         asset_id=self.data_collector.add_symbol(symbol, exchange, interval)
         start_dt_str=str(dt.now().strftime("%d-%m-%y %H:%M")) # opposite operation is datetime_obj=dt.strptime(start_dt_str,"%d-%m-%y %H:%M")
