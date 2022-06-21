@@ -19,10 +19,6 @@ care should be taken to not block indefinitely because next
 data sample will not be processed until previous call to callback 
 function has returned.
 
-TODO:
-- if chromedirver outdated then throw exception and print to user the location where he needs to put new chromdriver - or maybe autoinstall it there?
-- update documentation/commentign about the new running method
-- testing - create a test plan covering all possible scenarios
 '''
 
 from tvDatafeed import TvDatafeed
