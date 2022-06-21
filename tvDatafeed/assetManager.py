@@ -44,6 +44,9 @@ class asset(object):
     def del_queue(self, queue_id):
         return self.callback_queues.pop(queue_id, None) # remove key-value pair from dict, if not existing then None is returned otherwise the queue object itself is returned
     
+    def get_queue(self,queue_id):
+        return self.callback_queues[queue_id]
+        
     def get_callback_queues(self):
         return self.callback_queues.values()
 
@@ -155,6 +158,9 @@ class assetManager(object):
     
     def add_queue(self, asset_id, queue):
         return self.__assets[asset_id].add_queue(queue)
+    
+    def get_queue(self, asset_id, queue_id):
+        return self.__assets[asset_id].get_queue(queue_id)
         
     def del_queue(self, asset_id, queue_id):
         return self.__assets[asset_id].del_queue(queue_id)
