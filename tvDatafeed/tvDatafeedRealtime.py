@@ -199,10 +199,11 @@ class tvDatafeedRealtime():
     
         '''
         self.__am.get_lock(timeout)
+        q=self.__am.get_queue(asset_queue_pair[0], asset_queue_pair[1]) # get the actual queue instance ref before deleting it
         self.__am.del_queue(asset_queue_pair[0], asset_queue_pair[1]) # remove this queue from that assets list so no more data is sent to that queue
         self.__am.drop_lock() 
-        asset_queue_pair[1].put("EXIT") # send the exit signal to that thread
-        self.__callback_threads.pop(asset_queue_pair[1]) # remove the thread reference from the dictionary
+        q.put("EXIT") # send the exit signal to that thread
+        self.__callback_threads.pop(q) # remove the thread reference from the dictionary
         
     def __collect_data_loop(self, shutdown):
         try: 
