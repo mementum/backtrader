@@ -505,19 +505,19 @@ class TvDatafeed:
         return self.__create_df(raw_data, symbol)
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    tv = TvDatafeed(
-        # auto_login=False,
-    )
-    print(tv.get_hist("CRUDEOIL", "MCX", fut_contract=1))
-    print(tv.get_hist("NIFTY", "NSE", fut_contract=1))
-    print(
-        tv.get_hist(
-            "EICHERMOT",
-            "NSE",
-            interval=Interval.in_1_hour,
-            n_bars=500,
-            extended_session=False,
-        )
-    )
+# if __name__ == "__main__":
+#     logging.basicConfig(level=logging.DEBUG)
+#     tv = TvDatafeed(
+#         # auto_login=False,
+#     )
+#     print(tv.get_hist("CRUDEOIL", "MCX", fut_contract=1))
+#     print(tv.get_hist("NIFTY", "NSE", fut_contract=1))
+#     print(
+#         tv.get_hist(
+#             "EICHERMOT",
+#             "NSE",
+#             interval=Interval.in_1_hour,
+#             n_bars=500,
+#             extended_session=False,
+#         )
+#     )
