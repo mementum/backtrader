@@ -160,7 +160,10 @@ class assetManager(object):
         return self.__assets[asset_id].add_queue(queue)
     
     def get_queue(self, asset_id, queue_id):
-        return self.__assets[asset_id].get_queue(queue_id)
+        if asset_id not in self.__assets: # the asset might have already been removed if it was used by only one testrun (in testrun.close_testrun method)
+            return None
+        else:
+            return self.__assets[asset_id].get_queue(queue_id)
         
     def del_queue(self, asset_id, queue_id):
         return self.__assets[asset_id].del_queue(queue_id)
