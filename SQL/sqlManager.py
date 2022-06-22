@@ -1,9 +1,4 @@
 '''
-CONTINUE:
-- Need to somehow save all testruns under testrun instance so we can retrieve specific testrun using strategy_name when we wnat to close a particular testrun down.
-- Test that del_testrun() method in controller works as expected (testruns in DB are closed and related threads close down)
-- Commit to server once this functionality has been achived - close issue in github
-
 '''
 
 import sqlite3, threading, queue
