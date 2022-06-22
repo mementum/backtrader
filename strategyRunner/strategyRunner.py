@@ -30,5 +30,6 @@ class strategyRunner(threading.Thread):
             self.callback_func(e)
         
     def stop(self):
+        self.live_feed.remove_callback() # first remove callback from data_collector - then we can be sure that nothing else is calling receive_data() method
         self.live_feed.receive_data("EXIT")
-        self.live_feed.remove_callback()
+        
