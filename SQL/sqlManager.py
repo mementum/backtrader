@@ -1,14 +1,13 @@
 '''
 CONTINUE:
-- create a prototype GUI design
-- think from start (adding testrun) to finish on how the user is going to use this
-- Modify the SQL query strings and methods
-- create a method set_ticker_streamer() which is similar to set_streamer, but in it we specify (using ID number) which
-  ticker data will be propagated to output_queue together with order data 
+- Need to somehow save all testruns under testrun instance so we can retrieve specific testrun using strategy_name when we wnat to close a particular testrun down.
+- Test that del_testrun() method in controller works as expected (testruns in DB are closed and related threads close down)
+- Commit to server once this functionality has been achived - close issue in github
 
 '''
 
 import sqlite3, threading, queue
+from datetime import datetime as dt
 from enum import Enum
 
 class orders(object):
@@ -64,9 +63,50 @@ class order(object):
     def get_id(self):
         return self.TUID
 
+class testruns(object):
+    
+    def __init__(self, data_collector): # user can specify the starting value for order_id (incase we are going from backtest to forward test)
+        self.data_collector=data_collector
+        self.testruns_dict={}
+    
+    def __is_name_unique(self, name): # check that we do not have a testrun/strategy with this name in the dictionary
+        for testruns_list in self.testruns_dict.values():
+            # if name in strat_names_list:
+            #     return False
+            for testrun in testruns_list:
+                if name == testrun.strategy_name:
+                    return False
+        return True
+            
+    def remove_testrun(self, asset_id, testrun):
+        self.testruns_dict[asset_id].remove(testrun)
+        if len(self.testruns_dict[asset_id]) == 0: # no more strategies using this asset set
+            self.data_collector.del_symbol(asset_id) # remove this asset from data_collector monitor list - THIS WILL BE DONE IN STRATEGYRUNNER INSTEAD?
+            self.testruns_dict.pop(asset_id) # remove asset set from dictionary cause now such asset set under monitor anymore
+    
+    def new_testrun(self, strategy_name, symbol, exchange, interval, account_size):  
+        if self.__is_name_unique(strategy_name):
+            asset_id=self.data_collector.add_symbol(symbol, exchange, interval)
+            new_testrun=testrun(strategy_name, dt.now().strftime("%d-%m-%y %H:%M"), symbol, exchange, str(interval), asset_id, account_size, self.remove_testrun) # opposite operation is datetime_obj=dt.strptime(start_dt_str,"%d-%m-%y %H:%M")
+            if asset_id in self.testruns_dict.keys(): # if already existing then just append
+                self.testruns_dict[asset_id].append(new_testrun)
+            else: # need to create a new key-value pair and add it into new list
+                self.testruns_dict[asset_id]=[new_testrun]
+        else:
+            raise ValueError("Strategy with this name already running") 
+        
+        return new_testrun
+    
+    def get_testrun(self, strat_name):
+        for testruns_list in self.testruns_dict.values():
+            for testrun in testruns_list:
+                if strat_name == testrun.strategy_name:
+                    return testrun
+
+# TODO: move testruns, testrun, orders, order etc. into strategyRunner module
 class testrun(object):
     
-    def __init__(self, strategy_name, start_datetime, symbol, exchange, interval, asset_id, starting_account):
+    def __init__(self, strategy_name, start_datetime, symbol, exchange, interval, asset_id, starting_account, close_callback):
         self.TUID=None
         self.strategy_name=strategy_name
         self.state="OPEN"
@@ -78,18 +118,20 @@ class testrun(object):
         self.asset_id=asset_id
         self.starting_account=starting_account
         self.closing_account="NULL"
+        self.close_callback=close_callback
+        self.strat_ref=None
     
-    def close_testrun(self, close_datetime, closing_account):
+    def close_testrun(self):
         self.state="CLOSED"
-        self.close_datetime=close_datetime
-        self.closing_account=closing_account
+        self.close_datetime=dt.now().strftime("%d-%m-%y %H:%M")
+        self.close_callback(self.asset_id, self)
     
     def get_sql_params(self):
         if self.state == "OPEN":
             return (self.strategy_name, self.state, self.start_datetime, self.close_datetime, self.symbol, \
                     self.exchange, self.interval, self.starting_account, self.closing_account)
         else:
-            return (self.state, self.close_datetime, self.closing_account, self.TUID)
+            return (self.state, self.close_datetime, self.TUID)
     
     def set_TUID(self, TUID):
         self.TUID=TUID
@@ -99,6 +141,12 @@ class testrun(object):
     
     def get_asset_id(self):
         return self.asset_id
+    
+    def add_strat_ref(self, ref):
+        self.strat_ref=ref
+        
+    def get_strat_ref(self):
+        return self.strat_ref
 
 class operations(Enum):
     open_order=1
@@ -159,7 +207,7 @@ class sqlDatabase(object):
         
         self.db_cursor.execute("CREATE TABLE orders (order_id INTEGER NOT NULL, \
                                                     TUID INTEGER REFERENCES testruns, \
-                                                    state INTEGER NOT NULL, \
+                                                    state TEXT NOT NULL, \
                                                     open_datetime TEXT NOT NULL, \
                                                     close_datetime TEXT, \
                                                     order_type TEXT NOT NULL, \
@@ -187,7 +235,14 @@ class sqlDatabase(object):
         self.db_con.commit()
     
     def query_update_testrun(self, testrun_data):
-        self.db_cursor.execute("UPDATE testruns SET state = (?), close_datetime = (?), closing_account = (?) WHERE TUID = (?)",testrun_data)
+        # get the closing account size from the last closed order
+        self.db_cursor.execute("SELECT close_account_size FROM orders WHERE TUID = (?) AND state = 'CLOSED' ORDER BY order_id DESC LIMIT 1", (testrun_data[-1],)) 
+        closing_account_size=self.db_cursor.fetchall() # returns a list of tuples 
+        if len(closing_account_size) == 0: # in case there was no closed orders (testrun closed right after it opened) the closing account will be NULL; TODO: account size should be then open accoutn size instead
+            testrun_data=("NULL",) + testrun_data # create a new tuple where first element is the closing_account size
+        else: # create a new tuple which includes the account size of the last closed order
+            testrun_data=closing_account_size[0] + testrun_data
+        self.db_cursor.execute("UPDATE testruns SET closing_account = (?), state = (?), close_datetime = (?) WHERE TUID = (?)",testrun_data)
         self.db_con.commit()
     
     def query_update_order(self, order_data): # order_data must specify TUID and order_id pair to identify the correct row in orders table
@@ -208,7 +263,7 @@ class sqlManager(threading.Thread):
         '''
         Constructor
         '''
-        self.database=sqlDatabase(r"C:\Users\User\Documents\Projektid\Python\tradeTester\development materials\test_db.db") # user should be able to provide the path for this ???
+        self.database=sqlDatabase(r"C:\Users\User\Documents\Projektid\Python\tradeTester\development_materials\test_db.db") # user should be able to provide the path for this ???
         threading.Thread.__init__(self)
         self.run_mode=threading.Event()
         self.run_mode.set() # until this event is cleared we will run this thread
@@ -262,6 +317,15 @@ class sqlManager(threading.Thread):
         self.drop_lock()
         testrun.set_TUID(TUID)
         return testrun
+    
+    def close_testrun(self, testrun):
+        sql_params=testrun.get_sql_params()
+        TUID=testrun.get_TUID()
+        self.get_lock()
+        self.database.query_update_testrun(sql_params)
+        if TUID in self.active_listen: # if we were forwarding data for this testrun then stop
+            self.active_listen=None
+        self.drop_lock()
     
     # write this as a direct method called by controller
     def read_testruns(self): # this function returns all the orders which are newly added
