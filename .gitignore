@@ -68,7 +68,11 @@ samples2/
 # Ignore test files in Datas
 datas/*.py
 
-.idea/
-
 samples/1/stock_data/*
 datas/
+# Ignore nose tests temp files
+.noseids
+
+# PyCharm dirs:
+.idea
+>>>>>>> 2e949a2b6e92f4ad8f9a46ae38ece74aa151d420

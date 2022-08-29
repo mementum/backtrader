@@ -1,40 +1,42 @@
-backtrader
-==========
+backtrader2 : An on going and open project
+==========================================
 
-.. image:: https://img.shields.io/pypi/v/backtrader.svg
-   :alt: PyPi Version
+
+.. image:: https://img.shields.io/pypi/dm/backtrader.svg
+   :alt: PyPi Monthly Donwloads
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
-
-..  .. image:: https://img.shields.io/pypi/dm/backtrader.svg
-       :alt: PyPi Monthly Donwloads
-       :scale: 100%
-       :target: https://pypi.python.org/pypi/backtrader/
 
 .. image:: https://img.shields.io/pypi/l/backtrader.svg
    :alt: License
    :scale: 100%
    :target: https://github.com/backtrader/backtrader/blob/master/LICENSE
-.. image:: https://travis-ci.org/backtrader/backtrader.png?branch=master
+.. image:: https://travis-ci.org/backtrader2/backtrader.png?branch=master
    :alt: Travis-ci Build Status
    :scale: 100%
-   :target: https://travis-ci.org/backtrader/backtrader
+   :target: https://travis-ci.org/backtrader2/backtrader
 .. image:: https://img.shields.io/pypi/pyversions/backtrader.svg
    :alt: Python versions
    :scale: 100%
    :target: https://pypi.python.org/pypi/backtrader/
 
-**Yahoo API Note**:
+**Important Update**
 
-  [2018-11-16] After some testing it would seem that data downloads can be
-  again relied upon over the web interface (or API ``v7``)
+Backtrader is a flexible and powerful backtesting engine written in python.
+The original project found wide appeal due to its versatility. Over time however,
+the original code base became inaccessible to bug fixes and enhancements.
 
-**Tickets**
+Backtrader2 is a forked copy of backtrader by the community of users that seeks to make
+backtrader an ongoing project.
 
-  The ticket system is (was, actually) more often than not abused to ask for
-  advice about samples.
+Initially backtrader2 will fix bugs. Just submit an issue and pull requests.
 
-For **feedback/questions/...** use the `Community <https://community.backtrader.com>`_
+New code ideas are welcome but will not be addressed at this time. But please do enter them as an issue
+and tag it with 'enhancement' so that we can track your idea down the road.
+
+**Backtrader's back and we look forward to its future!**
+
+For feedback/questions/... use the `Community <https://community.backtrader.com>`_
 
 Here a snippet of a Simple Moving Average CrossOver. It can be done in several
 different ways. Use the docs (and examples) Luke!
@@ -129,7 +131,11 @@ Installation
 ``backtrader`` is self-contained with no external dependencies (except if you
 want to plot)
 
-From *pypi*:
+Install the latest version from the backtrader2 repository:
+
+  - ``pip install git+https://github.com/backtrader2/backtrader``
+
+Or install the original version of ``backtrader`` from *pypi*:
 
   - ``pip install backtrader``
 
