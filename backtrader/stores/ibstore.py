@@ -812,8 +812,8 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         local_tz = get_localzone()
         nytz = pytz.timezone("America/New_York")
 
-        nytime = enddate.astimezone(local_tz).astimezone(nytz)
-        #print(nytime)
+        enddate = enddate.astimezone(local_tz).astimezone(nytz)
+        #print(enddate)
 
         self.conn.reqHistoricalData(
             tickerId,
