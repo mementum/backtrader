@@ -29,6 +29,9 @@ import itertools
 import random
 import threading
 import time
+import pytz
+
+from tzlocal import get_localzone
 
 from ib.ext.Contract import Contract
 import ib.opt as ibopt
@@ -804,10 +807,18 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.histsend[tickerId] = sessionend
         self.histtz[tickerId] = tz
 
+        #print(enddate)
+        #print(enddate.strftime('%Y%m%d %H:%M:%S') + ' GMT')
+        local_tz = get_localzone()
+        nytz = pytz.timezone("America/New_York")
+
+        nytime = enddate.astimezone(local_tz).astimezone(nytz)
+        #print(nytime)
+
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + ' GMT'),
+            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + ' US/Eastern'),
             bytes(duration),
             bytes(barsize),
             bytes(what),
