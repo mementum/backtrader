@@ -31,6 +31,7 @@ from backtrader.utils.py3 import (integer_types, queue, string_types,
 from backtrader.metabase import MetaParams
 from backtrader.stores import ibstore
 
+SPECIAL_CONTRACT = ["VOL-NYSE"]
 
 class MetaIBData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
@@ -286,6 +287,12 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
         # Symbol and security type are compulsory
         symbol = next(tokens)
+
+        for special_symbol in SPECIAL_CONTRACT:
+            if special_symbol in dataname:
+                symbol = symbol + "-" + next(tokens)
+                break
+
         try:
             sectype = next(tokens)
         except StopIteration:
