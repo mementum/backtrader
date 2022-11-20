@@ -23,6 +23,10 @@ from __future__ import (absolute_import, division, print_function,
 
 import datetime
 import collections
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
 import itertools
 import multiprocessing
 
@@ -330,7 +334,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for elem in iterable:
             if isinstance(elem, string_types):
                 elem = (elem,)
-            elif not isinstance(elem, collections.Iterable):
+            elif not isinstance(elem, collectionsAbc.Iterable):
                 elem = (elem,)
 
             niterable.append(elem)

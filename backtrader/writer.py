@@ -22,6 +22,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import collections
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
 import io
 import itertools
 import sys
@@ -205,7 +209,7 @@ class WriterFile(WriterBase):
                     self.writelineseparator(level=level)
                 self.writeline(kline)
                 self.writedict(val, level=level + 1, recurse=True)
-            elif isinstance(val, (list, tuple, collections.Iterable)):
+            elif isinstance(val, (list, tuple, collectionsAbc.Iterable)):
                 line = ', '.join(map(str, val))
                 self.writeline(kline + ' ' + line)
             else:
