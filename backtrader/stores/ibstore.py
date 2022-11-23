@@ -778,7 +778,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(intdate.strftime('%Y%m%d %H:%M:%S') + ' GMT'),
+            bytes(intdate.strftime('%Y%m%d-%H:%M:%S')),
             bytes(duration),
             bytes(barsize),
             bytes(what),
@@ -807,18 +807,11 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         self.histsend[tickerId] = sessionend
         self.histtz[tickerId] = tz
 
-        #print(enddate)
-        #print(enddate.strftime('%Y%m%d %H:%M:%S') + ' GMT')
-        local_tz = get_localzone()
-        nytz = pytz.timezone("America/New_York")
-
-        enddate = enddate.astimezone(local_tz).astimezone(nytz)
-        #print(enddate)
 
         self.conn.reqHistoricalData(
             tickerId,
             contract,
-            bytes(enddate.strftime('%Y%m%d %H:%M:%S') + ' US/Eastern'),
+            bytes(enddate.strftime('%Y%m%d-%H:%M:%S')),
             bytes(duration),
             bytes(barsize),
             bytes(what),
