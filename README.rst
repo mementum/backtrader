@@ -1,5 +1,5 @@
-Why use this repo from WISEPLAT?
-================================
+Why use this BackTrader repo from WISEPLAT?
+===========================================
 
 Here is a backtrader with 2 new commits !! You can post your commits in my repository - I will apply them ASAP!
 
