@@ -1,12 +1,12 @@
 Why use this BackTrader repo from WISEPLAT?
 ===========================================
 
-Here is a backtrader with 2 new commits !! You can post your commits in my repository - I will apply them ASAP!
+Here is a backtrader with 3 new commits !! You can post your commits in my repository - I will apply them ASAP!
 
 To install backtrader from my repository::
 
       pip install git+https://github.com/WISEPLAT/backtrader.git
-
+      
 
 By this link https://github.com/WISEPLAT/backtrader you can suggest your commits, I will apply them ASAP.
 This suggestion is made here, because of no one from original project doesn't want to continue this cool project!
@@ -15,6 +15,8 @@ This suggestion is made here, because of no one from original project doesn't wa
 When you use dark theme you need to change background for plotted value tags.
 
 2nd commit: Fix: In last Python versions collections.Iterable -> collections.abc.Iterable - to work with Python 3.11+
+
+3d commit: Fix: The set_view_interval, set_data_interval ... are removed. Now you can work with matplotlib > 3.6.x
 
 backtrader
 ==========
