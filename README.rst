@@ -16,7 +16,7 @@ When you use dark theme you need to change background for plotted value tags.
 
 2nd commit: Fix: In last Python versions collections.Iterable -> collections.abc.Iterable - to work with Python 3.11+
 
-3d commit: Fix: The set_view_interval, set_data_interval ... are removed. Now you can work with matplotlib > 3.6.x
+3rd commit: Fix: The set_view_interval, set_data_interval ... are removed. Now you can work with matplotlib > 3.6.x
 
 backtrader
 ==========
