@@ -18,6 +18,16 @@ When you use dark theme you need to change background for plotted value tags.
 
 3rd commit: Fix: The set_view_interval, set_data_interval ... are removed. Now you can work with matplotlib > 3.6.x
 
+Recently I have created Binance API integration with Backtrader
+===============================================================
+With this integration you can do:
+
+- Backtesting your strategy on historical data from the exchange Binance + Backtrader // Backtesting
+- Launch trading systems for automatic trading on the exchange Binance + Backtrader // Live trading
+- Download historical data for cryptocurrencies from the exchange Binance
+To make it easier to figure out how everything works, many examples have been made.
+Here is the code: https://github.com/WISEPLAT/backtrader_binance
+
 backtrader
 ==========
 
