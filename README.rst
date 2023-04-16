@@ -1,33 +1,3 @@
-Why use this BackTrader repo from WISEPLAT?
-===========================================
-
-Here is a backtrader with 3 new commits !! You can post your commits in my repository - I will apply them ASAP!
-
-To install backtrader from my repository::
-
-      pip install git+https://github.com/WISEPLAT/backtrader.git
-      
-
-By this link https://github.com/WISEPLAT/backtrader you can suggest your commits, I will apply them ASAP.
-This suggestion is made here, because of no one from original project doesn't want to continue this cool project!
-
-1st commit: Option to change background for plotted value tags for dark theme - to get dark theme)))
-When you use dark theme you need to change background for plotted value tags.
-
-2nd commit: Fix: In last Python versions collections.Iterable -> collections.abc.Iterable - to work with Python 3.11+
-
-3rd commit: Fix: The set_view_interval, set_data_interval ... are removed. Now you can work with matplotlib > 3.6.x
-
-Recently I have created Binance API integration with Backtrader
-===============================================================
-With this integration you can do:
-
-- Backtesting your strategy on historical data from the exchange Binance + Backtrader // Backtesting
-- Launch trading systems for automatic trading on the exchange Binance + Backtrader // Live trading
-- Download historical data for cryptocurrencies from the exchange Binance
-To make it easier to figure out how everything works, many examples have been made.
-Here is the code: https://github.com/WISEPLAT/backtrader_binance
-
 backtrader
 ==========
 
