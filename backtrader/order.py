@@ -444,7 +444,7 @@ class OrderBase(with_metaclass(MetaParams, object)):
         return self.ordtype == self.Sell
 
     def setposition(self, position):
-        '''Receives the current position for the asset and stotres it'''
+        '''Receives the current position for the asset and stores it'''
         self.position = position
 
     def submit(self, broker=None):
