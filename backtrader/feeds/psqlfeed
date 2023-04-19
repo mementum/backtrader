@@ -1,0 +1,116 @@
+# !/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from backtrader import DataBase, date2num
+
+# Used for fetching prices, adhering to the backtest library Database API
+
+
+class PsqlDatabase(DataBase):
+    '''
+    Fetches data from PSQL, and wraps it into a Feed consumable by cerebro
+    takes url connection string in form of :
+        postgres://{user}:{pw}@{host}:{port [optional]}/{database}
+
+    this implementation assumes a single table with all prices, 
+    conforming to a schema similar to the following:
+    
+            ticker        char(5),
+            date          date,
+            high          numeric(10,4),
+            low           numeric(10,4),
+            open          numeric(10,4),
+            close         numeric(10,4),
+            volume        integer,
+            unique (ticker, date)
+    
+    if your databases are set up differently, you can override the
+    start() method.
+    
+    '''
+
+    params = (
+        ('url', None),
+        ('dataname', None),
+        ('table', None),
+        ('ticker', None),
+        
+        # parameterized column indices for ease of overwriting/re-implementing
+        ('datetime', 0),
+        ('high', 1),
+        ('low', 2),
+        ('open', 3),
+        ('close', 4),
+        ('volume', 5),
+        ('openinterest', -1),
+    )
+
+    def start(self):
+       conn = self._connect_db()
+       cursor = conn.cursor()
+
+        query = ("""SELECT date, high, low, open, close, volume """
+                 """FROM {table} """
+                 """WHERE ticker = '{ticker}' """
+                 .format(table=self.p.table,
+                         ticker=self.p.ticker))
+
+        if self.p.fromdate is not None:
+            query += " AND date >= '{fromdate}' ".format(fromdate=dt.datetime.strftime(self.p.fromdate, '%Y-%m-%d'))
+        if self.p.todate is not None:
+            query += " AND date <= '{todate}' ".format(todate=dt.datetime.strftime(self.p.fromdate, '%Y-%m-%d'))
+
+        query += """ORDER BY date asc"""
+
+        cursor.execute(query)
+
+        self.price_rows = cursor.fetchall()
+        conn.close()
+
+        self.price_i = 0
+        super(PsqlDatabase, self).start()
+
+    def _load(self):
+        if self.price_i >= len(self.price_rows):
+            return False
+        row = self.price_rows[self.price_i]
+        self.price_i += 1
+
+        for datafield in self.getlinealiases():
+            if datafield == 'datetime':
+                self.lines.datetime[0] = date2num(row[self.p.datetime])
+            elif datafield == 'volume':
+                self.lines.volume[0] = row[self.p.volume]
+
+            else:
+                # get the column index
+                colidx = getattr(self.params, datafield)
+                if colidx < 0:
+                    # column not present -- skip
+                    continue
+                # get the line to be set
+                line = getattr(self.lines, datafield)
+                line[0] = float(row[colidx])
+
+        return True
+
+    def _connect_db(self):
+        import psycopg2
+        from urllib.parse import urlparse
+        import datetime as dt
+
+        url = urlparse(self.p.url)
+        dbname = url.path[1:]
+        user = url.username
+        password = url.password
+        host = url.hostname
+        conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
+
+        return conn
+
+    def preload(self):
+        super(PsqlDatabase, self).preload()
+        # preloaded - no need to keep the price_rows as data is stored in the cerebro's Lines
+        self.price_rows = None
