@@ -125,9 +125,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         if not len(strategy):
             return
 
-        if iplot:
-            if 'ipykernel' in sys.modules:
-                matplotlib.use('nbagg')
+        if iplot and 'ipykernel' in sys.modules:
+            from IPython import get_ipython
+            if get_ipython():
+                get_ipython().run_line_magic('matplotlib', 'inline')
 
         # this import must not happen before matplotlib.use
         import matplotlib.pyplot as mpyplot
