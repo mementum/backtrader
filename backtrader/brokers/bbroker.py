@@ -23,6 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import collections
 import datetime
+import math
 
 import backtrader as bt
 from backtrader.comminfo import CommInfoBase
@@ -432,6 +433,9 @@ class BackBroker(bt.BrokerBase):
         for data in datas or self.positions:
             comminfo = self.getcommissioninfo(data)
             position = self.positions[data]
+            if math.isnan(data.close[0]):
+                # position inherently has no value.
+                continue
             # use valuesize:  returns raw value, rather than negative adj val
             if not self.p.shortcash:
                 dvalue = comminfo.getvalue(position, data.close[0])
