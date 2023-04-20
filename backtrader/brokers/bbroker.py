@@ -892,7 +892,7 @@ class BackBroker(bt.BrokerBase):
                 self._execute(order, ago=ago, price=execprice)
                 return
 
-        # If no exexcution has taken place ... annotate the closing price
+        # If no execution has taken place ... annotate the closing price
         order.pannotated = pclose
 
     def _try_exec_limit(self, order, popen, phigh, plow, plimit):
