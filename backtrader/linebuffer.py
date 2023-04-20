@@ -769,7 +769,10 @@ class LinesOperation(LineActions):
         op = self.operation
 
         for i in range(start, end):
-            dst[i] = op(srca[i], srcb[i])
+            try:
+                dst[i] = op(srca[i], srcb[i])
+            except ZeroDivisionError:
+                dst[i] = 0
 
     def _once_time_op(self, start, end):
         # cache python dictionary lookups
