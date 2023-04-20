@@ -196,7 +196,7 @@ class SessionFilterSimple(with_metaclass(metabase.MetaParams, object)):
     It needs no "last" method because it has nothing to deliver
 
     Bar Management will be done by the SimpleFilterWrapper class made which is
-    added durint the DataBase.addfilter_simple call
+    added during the DataBase.addfilter_simple call
     '''
     def __init__(self, data):
         pass
