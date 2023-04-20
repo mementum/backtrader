@@ -25,7 +25,7 @@ import datetime as _datetime
 from datetime import datetime
 import inspect
 
-from .utils.py3 import range, with_metaclass
+from .utils.py3 import range
 from .lineseries import LineSeries
 from .utils import AutoOrderedDict, OrderedDict, date2num
 
