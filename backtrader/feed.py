@@ -86,8 +86,8 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
         elif _obj.p.sessionend is None:
-            # remove 9 to avoid precision rounding errors
-            _obj.p.sessionend = datetime.time(23, 59, 59, 999990)
+            # remove 99 to avoid precision rounding errors
+            _obj.p.sessionend = datetime.time(23, 59, 59, 999900)
 
         if isinstance(_obj.p.fromdate, datetime.date):
             # push it to the end of the day, or else intraday
