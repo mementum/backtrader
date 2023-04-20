@@ -71,7 +71,7 @@ tableau10_light = [
     'paleturquoise',  # 9
 ]
 
-tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
+tab10_index = [3, 0, 2, 1, 4, 5, 6, 7, 8, 9]
 
 
 class PlotScheme(object):
