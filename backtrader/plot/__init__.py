@@ -22,7 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import sys
-
+import os
 
 try:
     import matplotlib
@@ -31,8 +31,16 @@ except ImportError:
         'Matplotlib seems to be missing. Needed for plotting support')
 else:
     touse = 'TKAgg' if sys.platform != 'darwin' else 'MacOSX'
+
+    #In headless mode
+    import os
+    if os.environ.get("DISPLAY") is None and os.environ.get("MPLBACKEND") is None:
+        print('no display found. Using non-interactive Agg backend')
+        touse = "Agg"
+
     try:
-        matplotlib.use(touse)
+        if os.environ.get("MPLBACKEND") is None:
+            matplotlib.use(touse)
     except:
         # if another backend has already been loaded, an exception will be
         # generated and this can be skipped

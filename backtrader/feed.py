@@ -490,6 +490,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                     # done. False means game over
                     return _loadret
 
+            #add dataname to lines to uniquely identify lines
+            self.lines.dataname = self.p.dataname
+
             # Get a reference to current loaded time
             dt = self.lines.datetime[0]
 

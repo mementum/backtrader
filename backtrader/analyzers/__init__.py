@@ -32,8 +32,10 @@ from .tradeanalyzer import *
 from .sqn import *
 from .leverage import *
 from .positions import *
+from .indicators import *
 from .transactions import *
 from .pyfolio import *
+from .alphalens import *
 from .returns import *
 from .vwr import *
 
