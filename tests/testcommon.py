@@ -229,9 +229,15 @@ class SampleParamsHolder(ParamsBase):
     handling of meta parameters like `frompackages`, `packages`, `params`, `lines`
     in inherited classes
     """
+
+    packages = (
+        ('fractions', 'frac'),
+    )
+
     frompackages = (
-        ('math', ('factorial')),
+        ('math', ('factorial',)),
     )
 
     def __init__(self):
         self.range = factorial(10)
+        self.f = frac.Fraction(45, 54)
