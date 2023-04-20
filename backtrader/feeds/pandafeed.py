@@ -171,35 +171,43 @@ class PandasData(feed.DataBase):
 
         # try to autodetect if all columns are numeric
         cstrings = filter(lambda x: isinstance(x, string_types), colnames)
-        colsnumeric = not len(list(cstrings))
+        self.colsnumeric = not len(list(cstrings))
 
         # Where each datafield find its value
         self._colmapping = dict()
 
-        # Build the column mappings to internal fields in advance
-        for datafield in self.getlinealiases():
-            defmapping = getattr(self.params, datafield)
+        if self.colsnumeric:
+            colsextend = [dataname for dataname in self.getlinealiases() if dataname
+            not in self.datafields]
+            ext_idx_start = len(self.datafields) - 1
+            self._colmapping = dict(zip(self.datafields, [None, 0, 1, 2, 3, 4, 5]))
+            self._colmapping.update(dict(zip(colsextend, range(ext_idx_start, ext_idx_start + len(
+                colsextend)))))
+        else:
+            # Build the column mappings to internal fields in advance
+            for datafield in self.getlinealiases():
+                defmapping = getattr(self.params, datafield)
 
-            if isinstance(defmapping, integer_types) and defmapping < 0:
-                # autodetection requested
-                for colname in colnames:
-                    if isinstance(colname, string_types):
-                        if self.p.nocase:
-                            found = datafield.lower() == colname.lower()
-                        else:
-                            found = datafield == colname
+                if isinstance(defmapping, integer_types) and defmapping < 0:
+                    # autodetection requested
+                    for colname in colnames:
+                        if isinstance(colname, string_types):
+                            if self.p.nocase:
+                                found = datafield.lower() == colname.lower()
+                            else:
+                                found = datafield == colname
 
-                        if found:
-                            self._colmapping[datafield] = colname
-                            break
+                            if found:
+                                self._colmapping[datafield] = colname
+                                break
 
-                if datafield not in self._colmapping:
-                    # autodetection requested and not found
-                    self._colmapping[datafield] = None
-                    continue
-            else:
-                # all other cases -- used given index
-                self._colmapping[datafield] = defmapping
+                    if datafield not in self._colmapping:
+                        # autodetection requested and not found
+                        self._colmapping[datafield] = None
+                        continue
+                else:
+                    # all other cases -- used given index
+                    self._colmapping[datafield] = defmapping
 
     def start(self):
         super(PandasData, self).start()
@@ -208,7 +216,7 @@ class PandasData(feed.DataBase):
         self._idx = -1
 
         # Transform names (valid for .ix) into indices (good for .iloc)
-        if self.p.nocase:
+        if self.p.nocase and not self.colsnumeric:
             colnames = [x.lower() for x in self.p.dataname.columns.values]
         else:
             colnames = [x for x in self.p.dataname.columns.values]

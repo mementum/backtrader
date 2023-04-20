@@ -203,6 +203,18 @@ class MultiLogic(Logic):
         for i in range(start, end):
             dst[i] = flogic([arr[i] for arr in arrays])
 
+class SingleLogic(Logic):
+    def next(self):
+        self[0] = self.flogic(self.args[0])
+
+    def once(self, start, end):
+        # cache python dictionary lookups
+        dst = self.array
+        flogic = self.flogic
+
+        for i in range(start, end):
+            dst[i] = flogic(self.args[0].array[i])
+
 
 class MultiLogicReduce(MultiLogic):
     def __init__(self, *args, **kwargs):
@@ -218,6 +230,8 @@ class Reduce(MultiLogicReduce):
     def __init__(self, flogic, *args, **kwargs):
         self.flogic = flogic
         super(Reduce, self).__init__(*args, **kwargs)
+
+
 
 
 # The _xxxlogic functions are defined at module scope to make them
@@ -256,3 +270,19 @@ class Any(MultiLogic):
 
 class All(MultiLogic):
     flogic = all
+
+
+class Log(SingleLogic):
+    flogic = math.log10
+
+
+class Ceiling(SingleLogic):
+    flogic = math.ceil
+
+
+class Floor(SingleLogic):
+    flogic = math.floor
+
+
+class Abs(SingleLogic):
+    flogic = math.fabs

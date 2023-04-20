@@ -80,14 +80,15 @@ class OLS_TransformationN(PeriodN):
 
 class OLS_BetaN(PeriodN):
     '''
-    Calculates a regression of data1 on data0 using ``pandas.ols``
+    Calculates a regression of data1 on data0 using ``statsmodels.api.ols``
 
-    Uses ``pandas``
+    Uses ``pandas`` and ``statsmodels``
     '''
     _mindatas = 2  # ensure at least 2 data feeds are passed
 
     packages = (
         ('pandas', 'pd'),
+        ('statsmodels.api', 'smapi'),
     )
 
     lines = ('beta',)
@@ -95,9 +96,10 @@ class OLS_BetaN(PeriodN):
 
     def next(self):
         y, x = (pd.Series(d.get(size=self.p.period)) for d in self.datas)
-        r_beta = pd.ols(y=y, x=x, window_type='full_sample')
-        self.lines.beta[0] = r_beta.beta['x']
-
+        x = smapi.add_constant(x, prepend = True)
+        x.columns=('const', 'x')
+        r_beta = smapi.OLS(y,x).fit()
+        self.lines.beta[0] = r_beta.params['x']
 
 class CointN(PeriodN):
     '''

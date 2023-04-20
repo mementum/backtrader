@@ -1187,7 +1187,7 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         if dim == 'M':
             month = dt.month - 1 + size  # -1 to make it 0 based, readd below
             years, month = divmod(month, 12)
-            return dt.replace(year=dt.year + years, month=month + 1)
+            return dt.replace(year=dt.year + years, month=month + 1, day=1) + timedelta(dt.day - 1)
 
         if dim == 'Y':
             return dt.replace(year=dt.year + size)

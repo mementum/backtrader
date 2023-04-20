@@ -68,4 +68,8 @@ samples2/
 # Ignore test files in Datas
 datas/*.py
 
-.idea/
+# Ignore nose tests temp files
+.noseids
+
+# PyCharm dirs:
+.idea
