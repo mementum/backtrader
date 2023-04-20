@@ -43,7 +43,7 @@ class MetaBroker(MetaParams):
 
         for attr, trans in translations.items():
             if not hasattr(cls, attr):
-                setattr(cls, name, getattr(cls, trans))
+                setattr(cls, attr, getattr(cls, trans))
 
 
 class BrokerBase(with_metaclass(MetaBroker, object)):
