@@ -32,7 +32,7 @@ from backtrader.analyzers import SQN
 
 
 class LongShortStrategy(bt.Strategy):
-    '''This strategy buys/sells upong the close price crossing
+    '''This strategy buys/sells upon the close price crossing
     upwards/downwards a Simple Moving Average.
 
     It can be a long-only strategy by setting the param "onlylong" to True
@@ -207,7 +207,7 @@ def parse_args():
     parser.add_argument('--plot', '-p', action='store_true',
                         help='Plot the read data')
 
-    parser.add_argument('--numfigs', '-n', default=1,
+    parser.add_argument('--numfigs', '-n', default=1, type=int,
                         help='Plot using numfigs figures')
 
     return parser.parse_args()

@@ -61,7 +61,7 @@ class TheStrategy(bt.Strategy):
             self.order = None  # indicate no order is pending
 
     def start(self):
-        self.order = None  # sentinel to avoid operrations on pending order
+        self.order = None  # sentinel to avoid operations on pending order
 
     def next(self):
         dt = self.data.datetime.date()
