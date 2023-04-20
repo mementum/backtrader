@@ -23,7 +23,7 @@ from __future__ import (absolute_import, division, print_function,
 
 
 from copy import copy
-
+from decimal import Decimal
 
 class Position(object):
     '''
@@ -162,8 +162,7 @@ class Position(object):
 
         self.price_orig = self.price
         oldsize = self.size
-        self.size += size
-
+        self.size = float(Decimal(str(self.size)) + Decimal(str(size)))
         if not self.size:
             # Update closed existing position
             opened, closed = 0, size
