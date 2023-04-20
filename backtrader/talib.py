@@ -90,7 +90,7 @@ else:
             return _obj, args, kwargs  # return the object and args
 
     class _TALibIndicator(with_metaclass(_MetaTALibIndicator, bt.Indicator)):
-        CANDLEOVER = 1.02  # 2% over
+        CANDLEOVER = 0.02  # 2% over
         CANDLEREF = 1  # Open, High, Low, Close (0, 1, 2, 3)
 
         @classmethod
@@ -165,7 +165,7 @@ else:
                 lines.append(lname)
                 pline['ls'] = ''
                 pline['marker'] = 'd'
-                pline['markersize'] = '7.0'
+                pline['markersize'] = 7.0
                 pline['fillstyle'] = 'full'
                 plotlines[lname] = pline
 
@@ -201,8 +201,8 @@ else:
                 self.lines[0].array = array.array(str('d'), output)
 
                 if fsize > lsize:  # candle is present
-                    candleref = narrays[self.CANDLEREF] * self.CANDLEOVER
-                    output2 = candleref * (output / 100.0)
+                    candleref = narrays[self.CANDLEREF]
+                    output2 = candleref * (output / 100.0) * ((output / 100.0) + self.CANDLEOVER)
                     self.lines[1].array = array.array(str('d'), output2)
 
             else:
@@ -221,9 +221,9 @@ else:
             if lsize == 1:  # only 1 output, no tuple returned
                 self.lines[0][0] = o = out[-1]
 
-                if fsize > lsize:  # candle is present
-                    candleref = narrays[self.CANDLEREF][-1] * self.CANDLEOVER
-                    o2 = candleref * (o / 100.0)
+                if fsize > lsize and o != 0.0:  # candle is present and not 0
+                    candleref = narrays[self.CANDLEREF][-1]
+                    o2 = candleref * (o / 100.0) * ((o / 100.0) + self.CANDLEOVER)
                     self.lines[1][0] = o2
 
             else:
