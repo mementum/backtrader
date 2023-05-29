@@ -34,7 +34,7 @@ import backtrader.indicators as btind
 from backtrader.utils.py3 import PY2
 
 
-class TestStrategy(bt.Strategy):
+class SampleStrategy(bt.Strategy):
     params = (
         ('period', 15),
         ('printdata', True),
@@ -147,7 +147,7 @@ chkdatas = 1
 def test_run(main=False):
     datas = [testcommon.getdata(i) for i in range(chkdatas)]
     cerebros = testcommon.runtest(datas,
-                                  TestStrategy,
+                                  SampleStrategy,
                                   printdata=main,
                                   stocklike=False,
                                   printops=main,
