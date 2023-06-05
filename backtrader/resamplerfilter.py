@@ -46,6 +46,7 @@ class DTFaker(object):
 
     def __init__(self, data, forcedata=None):
         self.data = data
+        self._tz = data._tz
 
         # Aliases
         self.datetime = self
@@ -271,8 +272,8 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
             return False
 
         # Get time objects for the comparisons - in utc-like format
-        tm = num2date(self.bar.datetime).time()
-        bartm = num2date(data.datetime[0]).time()
+        tm = num2date(self.bar.datetime, tz=data._tz).time()
+        bartm = num2date(data.datetime[0], tz=data._tz).time()
 
         point, _ = self._gettmpoint(tm)
         barpoint, _ = self._gettmpoint(bartm)
