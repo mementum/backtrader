@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,6 +100,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
     def __init__(self, **kwargs):
         for pname, pvalue in kwargs.items():
             setattr(self.p.scheme, pname, pvalue)
+        if not hasattr(self.p.scheme, 'locbg'):
+            setattr(self.p.scheme, 'locbg', 'white')
+            setattr(self.p.scheme, 'locbgother', 'white')
 
     def drawtag(self, ax, x, y, facecolor, edgecolor, alpha=0.9, **kwargs):
 
@@ -487,7 +490,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 if linetag and not math.isnan(lplot[-1]):
                     # line has valid values, plot a tag for the last value
                     self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
-                                 facecolor='white',
+                                 facecolor=self.pinf.sch.locbgother,
                                  edgecolor=self.pinf.color(ax))
 
             farts = (('_gt', operator.gt), ('_lt', operator.lt), ('', None),)
@@ -732,7 +735,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         vtags = data.plotinfo._get('plotvaluetags', True)
         if self.pinf.sch.valuetags and vtags:
             self.drawtag(ax, len(self.pinf.xreal), closes[-1],
-                         facecolor='white', edgecolor=self.pinf.sch.loc)
+                         facecolor=self.pinf.sch.locbg,
+                         edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
         # make sure "over" indicators do not change our scale

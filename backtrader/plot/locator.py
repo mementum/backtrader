@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -223,8 +223,19 @@ class AutoDateLocator(ADLocator):
 
         locator.set_axis(self.axis)
 
-        locator.set_view_interval(*self.axis.get_view_interval())
-        locator.set_data_interval(*self.axis.get_data_interval())
+        try:
+            # try for matplotlib < 3.6.0
+            locator.set_view_interval(*self.axis.get_view_interval())
+            locator.set_data_interval(*self.axis.get_data_interval())
+        except Exception as e:
+            try:
+                # try for matplotlib >= 3.6.0
+                self.axis.set_view_interval(*self.axis.get_view_interval())
+                self.axis.set_data_interval(*self.axis.get_data_interval())
+                locator.set_axis(self.axis)
+            except Exception as e:
+                print("Error:", e)
+
         return locator
 
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -423,6 +423,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
                 # can't deliver new bar, too early, go back
                 self.rewind()
+                return False
             else:
                 if ticks:
                     self._tick_fill()

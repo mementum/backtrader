@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ def checkdate(dt, d):
 
     YCode = int(d._dataname[-1])
     Y = decade + YCode
-    if Y < dt.year:  # Example: year 2019 ... YCode is 0 for 2020
+    if Y < dt.year:  # Example: year 2019 ... YCode is 0 for 2023
         Y += 10
 
     exp_day = 21 - (calendar.weekday(Y, M, 1) + 2) % 7

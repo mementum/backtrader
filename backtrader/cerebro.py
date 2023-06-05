@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,11 @@ import datetime
 import collections
 import itertools
 import multiprocessing
+
+try:  # For new Python versions
+    collectionsAbc = collections.abc  # collections.Iterable -> collections.abc.Iterable
+except AttributeError:  # For old Python versions
+    collectionsAbc = collections  # Используем collections.Iterable
 
 import backtrader as bt
 from .utils.py3 import (map, range, zip, with_metaclass, string_types,
@@ -330,7 +335,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
         for elem in iterable:
             if isinstance(elem, string_types):
                 elem = (elem,)
-            elif not isinstance(elem, collections.Iterable):
+            elif not isinstance(elem, collectionsAbc.Iterable):  # Different functions will be called for different Python versions
                 elem = (elem,)
 
             niterable.append(elem)

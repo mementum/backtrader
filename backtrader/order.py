@@ -2,7 +2,7 @@
 # -*- coding: utf-8; py-indent-offset:4 -*-
 ###############################################################################
 #
-# Copyright (C) 2015-2020 Daniel Rodriguez
+# Copyright (C) 2015-2023 Daniel Rodriguez
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -319,11 +319,8 @@ class OrderBase(with_metaclass(MetaParams, object)):
 
         # Set a reference price if price is not set using
         # the close price
-        pclose = self.data.close[0] if not self.simulated else self.price
-        if not self.price and not self.pricelimit:
-            price = pclose
-        else:
-            price = self.price
+        pclose = self.data.close[0] if not self.p.simulated else self.price
+        price = pclose if not self.price and not self.pricelimit else self.price
 
         dcreated = self.data.datetime[0] if not self.p.simulated else 0.0
         self.created = OrderData(dt=dcreated,
@@ -477,19 +474,22 @@ class OrderBase(with_metaclass(MetaParams, object)):
             return False
 
         self.status = Order.Rejected
-        self.executed.dt = self.data.datetime[0]
         self.broker = broker
+        if not self.p.simulated:
+            self.executed.dt = self.data.datetime[0]
         return True
 
     def cancel(self):
         '''Marks an order as cancelled'''
         self.status = Order.Canceled
-        self.executed.dt = self.data.datetime[0]
+        if not self.p.simulated:
+            self.executed.dt = self.data.datetime[0]
 
     def margin(self):
         '''Marks an order as having met a margin call'''
         self.status = Order.Margin
-        self.executed.dt = self.data.datetime[0]
+        if not self.p.simulated:
+            self.executed.dt = self.data.datetime[0]
 
     def completed(self):
         '''Marks an order as completely filled'''
