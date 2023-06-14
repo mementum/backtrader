@@ -68,8 +68,8 @@ class PInfo(object):
 
         self.prop = mfontmgr.FontProperties(size=self.sch.subtxtsize)
 
-    def newfig(self, figid, numfig, mpyplot):
-        fig = mpyplot.figure(figid + numfig)
+    def newfig(self, figid, numfig, mpyplot, height, width, dpi):
+        fig = mpyplot.figure(figid + numfig, figsize = (height, width), dpi = dpi)
         self.figs.append(fig)
         self.daxis = collections.OrderedDict()
         self.vaxis = list()
@@ -133,6 +133,10 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         import matplotlib.pyplot as mpyplot
         self.mpyplot = mpyplot
 
+        width = kwargs.get('width', mpyplot.rcParams["figure.figsize"][0])
+        height = kwargs.get('height', mpyplot.rcParams["figure.figsize"][1])
+        dpi = kwargs.get('dpi', mpyplot.rcParams["figure.dpi"])
+
         self.pinf = PInfo(self.p.scheme)
         self.sortdataindicators(strategy)
         self.calcrows(strategy)
@@ -167,7 +171,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         for numfig in range(numfigs):
             # prepare a figure
-            fig = self.pinf.newfig(figid, numfig, self.mpyplot)
+            fig = self.pinf.newfig(figid, numfig, self.mpyplot, height, width, dpi)
             figs.append(fig)
 
             self.pinf.pstart, self.pinf.pend, self.pinf.psize = pranges[numfig]
@@ -252,7 +256,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 lastax = laxis[i]
                 if lastax not in self.pinf.vaxis:
                     break
-
                 i -= 1
 
             self.setlocators(lastax)  # place the locators/fmts

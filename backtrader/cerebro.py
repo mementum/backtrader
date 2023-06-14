@@ -939,7 +939,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
     broker = property(getbroker, setbroker)
 
     def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
-             width=16, height=9, dpi=300, tight=True, use=None,
+             width=None, height=None, dpi=None, tight=True, use=None,
              **kwargs):
         '''
         Plots the strategies inside cerebro
@@ -964,11 +964,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         ``datetime.date``, ``datetime.datetime`` instance indicating the end
         of the plot
 
-        ``width``: in inches of the saved figure
+        ``width``: in inches of the saved figure and inline display
 
-        ``height``: in inches of the saved figure
+        ``height``: in inches of the saved figure and inline display
 
-        ``dpi``: quality in dots per inches of the saved figure
+        ``dpi``: quality in dots per inches of the saved figure and inline display
 
         ``tight``: only save actual content and not the frame of the figure
         '''
@@ -977,6 +977,14 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         if not plotter:
             from . import plot
+            
+            if height is not None:
+                kwargs['height'] = height
+            if width is not None:
+                kwargs['width'] = width
+            if dpi is not None:
+                kwargs['dpi'] = dpi
+
             if self.p.oldsync:
                 plotter = plot.Plot_OldSync(**kwargs)
             else:
@@ -993,7 +1001,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             for si, strat in enumerate(stratlist):
                 rfig = plotter.plot(strat, figid=si * 100,
                                     numfigs=numfigs, iplot=iplot,
-                                    start=start, end=end, use=use)
+                                    start=start, end=end, use=use, **kwargs)
                 # pfillers=pfillers2)
 
                 figs.append(rfig)
