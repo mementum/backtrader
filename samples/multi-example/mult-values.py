@@ -187,7 +187,7 @@ def parse_args(pargs=None):
                         required=False, help='Data1 to read in')
 
     parser.add_argument('--data2', default='../../datas/orcl-1995-2014.txt',
-                        required=False, help='Data1 to read in')
+                        required=False, help='Data2 to read in')
 
     # Defaults for dates
     parser.add_argument('--fromdate', required=False, default='2001-01-01',
