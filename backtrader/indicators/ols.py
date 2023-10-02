@@ -68,7 +68,7 @@ class OLS_TransformationN(PeriodN):
     params = (('period', 10),)
 
     def __init__(self):
-        slint = OLS_Slope_InterceptN(*self.datas)
+        slint = OLS_Slope_InterceptN(*self.datas, period=self.p.period)
 
         spread = self.data0 - (slint.slope * self.data1 + slint.intercept)
         self.l.spread = spread
