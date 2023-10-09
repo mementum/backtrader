@@ -51,10 +51,15 @@ class OLS_Slope_InterceptN(PeriodN):
         p0 = pd.Series(self.data0.get(size=self.p.period))
         p1 = pd.Series(self.data1.get(size=self.p.period))
         p1 = sm.add_constant(p1)
-        intercept, slope = sm.OLS(p0, p1).fit().params
-
-        self.lines.slope[0] = slope
-        self.lines.intercept[0] = intercept
+        res = sm.OLS(p0, p1).fit().params
+      
+        if len(res)==2:
+            intercept, slope = res
+            self.lines.slope[0] = slope
+            self.lines.intercept[0] = intercept
+        if len(res)==1:
+            self.lines.slope[0] = res
+            self.lines.intercept[0] =  0
 
 
 class OLS_TransformationN(PeriodN):
