@@ -253,7 +253,6 @@ class YahooFinanceData(YahooFinanceCSVData):
             raise Exception(msg)
 
         self.error = None
-        url = self.p.urlhist.format(self.p.dataname)
 
         sesskwargs = dict()
         if self.p.proxies:
