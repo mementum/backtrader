@@ -284,6 +284,7 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         urld = '{}?{}'.format(urld, '&'.join(urlargs))
         f = None
+        sess = requests.Session()
         for i in range(self.p.retries + 1):  # at least once
             resp = sess.get(urld, **sesskwargs)
             if resp.status_code != requests.codes.ok:
