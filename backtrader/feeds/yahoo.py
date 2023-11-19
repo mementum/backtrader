@@ -225,19 +225,13 @@ class YahooFinanceData(YahooFinanceCSVData):
         Whether to use the dividend/split adjusted close and adjust all values
         according to it.
 
-      - ``urlhist``
-
-        The url of the historical quotes in Yahoo Finance used to gather a
-        ``crumb`` authorization cookie for the download
-
       - ``urldown``
 
         The url of the actual download server
 
       - ``retries``
 
-        Number of times (each) to try to get a ``crumb`` cookie and download
-        the data
+        Number of times (each) to try to download the data
 
       '''
 
@@ -245,7 +239,6 @@ class YahooFinanceData(YahooFinanceCSVData):
         ('proxies', {}),
         ('period', 'd'),
         ('reverse', False),
-        ('urlhist', 'https://finance.yahoo.com/quote/{}/history'),
         ('urldown', 'https://query1.finance.yahoo.com/v7/finance/download'),
         ('retries', 3),
     )
@@ -260,47 +253,12 @@ class YahooFinanceData(YahooFinanceCSVData):
             raise Exception(msg)
 
         self.error = None
-        url = self.p.urlhist.format(self.p.dataname)
 
         sesskwargs = dict()
         if self.p.proxies:
             sesskwargs['proxies'] = self.p.proxies
 
-        crumb = None
-        sess = requests.Session()
-        sess.headers['User-Agent'] = 'backtrader'
-        for i in range(self.p.retries + 1):  # at least once
-            resp = sess.get(url, **sesskwargs)
-            if resp.status_code != requests.codes.ok:
-                continue
-
-            txt = resp.text
-            i = txt.find('CrumbStore')
-            if i == -1:
-                continue
-            i = txt.find('crumb', i)
-            if i == -1:
-                continue
-            istart = txt.find('"', i + len('crumb') + 1)
-            if istart == -1:
-                continue
-            istart += 1
-            iend = txt.find('"', istart)
-            if iend == -1:
-                continue
-
-            crumb = txt[istart:iend]
-            crumb = crumb.encode('ascii').decode('unicode-escape')
-            break
-
-        if crumb is None:
-            self.error = 'Crumb not found'
-            self.f = None
-            return
-
-        crumb = urlquote(crumb)
-
-        # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history&crumb=crumb
+        # urldown/ticker?period1=posix1&period2=posix2&interval=1d&events=history
 
         # Try to download
         urld = '{}/{}'.format(self.p.urldown, self.p.dataname)
@@ -323,10 +281,11 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         urlargs.append('interval={}'.format(intervals[self.p.timeframe]))
         urlargs.append('events=history')
-        urlargs.append('crumb={}'.format(crumb))
 
         urld = '{}?{}'.format(urld, '&'.join(urlargs))
         f = None
+        sess = requests.Session()
+        sess.headers['User-Agent'] = 'backtrader'
         for i in range(self.p.retries + 1):  # at least once
             resp = sess.get(urld, **sesskwargs)
             if resp.status_code != requests.codes.ok:
