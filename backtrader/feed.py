@@ -811,3 +811,7 @@ class DataClone(AbstractDataBase):
     def advance(self, size=1, datamaster=None, ticks=True):
         self._dlen += size
         super(DataClone, self).advance(size, datamaster, ticks=ticks)
+
+    def rewind(self, size=1):
+        self._dlen -= size
+        super(DataClone, self).rewind(size)
