@@ -57,7 +57,7 @@ different ways. Use the docs (and examples) Luke!
   cerebro.adddata(data0)
 
   cerebro.run()
-  cerebro.plot()
+  cerebro.plot(iplot=False)
 
 Including a full featured chart. Give it a try! This is included in the samples
 as ``sigsmacross/sigsmacross2.py``. Along it is ``sigsmacross.py`` which can be
