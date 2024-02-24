@@ -938,9 +938,12 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
     broker = property(getbroker, setbroker)
 
-    def get_figures(self, **kwargs):
+    def get_figures(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
+             width=16, height=9, dpi=300, tight=True, use=None, **kwargs):
         
-        return self.plot(show_plots=False, **kwargs)
+        return self.plot(plotter=None, numfigs=1, iplot=True, start=None, end=None,
+             width=16, height=9, dpi=300, tight=True, use=None, show_plots=False,
+             **kwargs)
 
     def plot(self, plotter=None, numfigs=1, iplot=True, start=None, end=None,
              width=16, height=9, dpi=300, tight=True, use=None, show_plots=True,
