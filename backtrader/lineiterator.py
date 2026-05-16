@@ -25,6 +25,11 @@ import collections
 import operator
 import sys
 
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 from .utils.py3 import map, range, zip, with_metaclass, string_types
 from .utils import DotDict
 
@@ -226,7 +231,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
         if isinstance(owner, string_types):
             owner = [owner]
-        elif not isinstance(owner, collections.Iterable):
+        elif not isinstance(owner, collectionsAbc.Iterable):
             owner = [owner]
 
         if not own:
@@ -234,7 +239,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
         if isinstance(own, string_types):
             own = [own]
-        elif not isinstance(own, collections.Iterable):
+        elif not isinstance(own, collectionsAbc.Iterable):
             own = [own]
 
         for lineowner, lineown in zip(owner, own):
