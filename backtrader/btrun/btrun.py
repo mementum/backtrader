@@ -22,6 +22,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import argparse
+import ast
 import datetime
 import inspect
 import itertools
@@ -79,7 +80,7 @@ def btrun(pargs=''):
     stdstats = not args.nostdstats
 
     cer_kwargs_str = args.cerebro
-    cer_kwargs = eval('dict(' + cer_kwargs_str + ')')
+    cer_kwargs = parse_kwargs(cer_kwargs_str)
     if 'stdstats' not in cer_kwargs:
         cer_kwargs.update(stdstats=stdstats)
 
@@ -134,7 +135,7 @@ def btrun(pargs=''):
     setbroker(args, cerebro)
 
     for wrkwargs_str in args.writers or []:
-        wrkwargs = eval('dict(' + wrkwargs_str + ')')
+        wrkwargs = parse_kwargs(wrkwargs_str)
         cerebro.addwriter(bt.WriterFile, **wrkwargs)
 
     ans = getfunctions(args.hooks, bt.Cerebro)
@@ -161,7 +162,7 @@ def btrun(pargs=''):
         pkwargs = dict(style='bar')
         if args.plot is not True:
             # evaluates to True but is not "True" - args were passed
-            ekwargs = eval('dict(' + args.plot + ')')
+            ekwargs = parse_kwargs(args.plot)
             pkwargs.update(ekwargs)
 
         # cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
@@ -276,6 +277,41 @@ def getmodfunctions(mod, funcname=None):
     return funclist
 
 
+def parse_kwargs(kwargs):
+    if not kwargs:
+        return dict()
+
+    try:
+        tree = ast.parse('dict(' + kwargs + ')', mode='eval')
+    except SyntaxError as e:
+        raise ValueError('Invalid kwargs syntax: %s' % e)
+
+    call = tree.body
+    if not isinstance(call, ast.Call):
+        raise ValueError('Invalid kwargs syntax')
+
+    if not isinstance(call.func, ast.Name) or call.func.id != 'dict':
+        raise ValueError('Invalid kwargs syntax')
+
+    if call.args:
+        raise ValueError('Only keyword arguments are supported')
+
+    if getattr(call, 'starargs', None) is not None:
+        raise ValueError('Only keyword arguments are supported')
+
+    if getattr(call, 'kwargs', None) is not None:
+        raise ValueError('Only keyword arguments are supported')
+
+    parsed = dict()
+    for keyword in call.keywords:
+        if keyword.arg is None:
+            raise ValueError('Only keyword arguments are supported')
+
+        parsed[keyword.arg] = ast.literal_eval(keyword.value)
+
+    return parsed
+
+
 def loadmodule(modpath, modname=''):
     # generate a random name for the module
 
@@ -344,8 +380,7 @@ def getobjects(iterable, clsbase, modbase, issignal=False):
                 kwargs = dict()
             else:
                 name = kwtokens[0]
-                kwtext = 'dict(' + kwtokens[1] + ')'
-                kwargs = eval(kwtext)
+                kwargs = parse_kwargs(kwtokens[1])
 
         if modpath:
             mod, e = loadmodule(modpath)
@@ -388,8 +423,7 @@ def getfunctions(iterable, modbase):
                 kwargs = dict()
             else:
                 name = kwtokens[0]
-                kwtext = 'dict(' + kwtokens[1] + ')'
-                kwargs = eval(kwtext)
+                kwargs = parse_kwargs(kwtokens[1])
 
         if modpath:
             mod, e = loadmodule(modpath)
