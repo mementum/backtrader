@@ -281,13 +281,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         pass
 
     def _oncepost_open(self):
-        minperstatus = self._minperstatus
-        if minperstatus < 0:
-            self.next_open()
-        elif minperstatus == 0:
-            self.nextstart_open()  # only called for the 1st value
-        else:
-            self.prenext_open()
+        self._next_open()
 
     def _oncepost(self, dt):
         for indicator in self._lineiterators[LineIterator.IndType]:
