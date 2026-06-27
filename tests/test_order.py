@@ -57,7 +57,7 @@ class FakeData(object):
 
 
 def _execute(position, order, size, price, partial):
-    # Find position and do a real update - accounting happens here
+    # 找到 position 并执行真实更新；accounting 在这里发生
     pprice_orig = position.price
     psize, pprice, opened, closed = position.update(size, price)
 
@@ -97,7 +97,7 @@ def test_run(main=False):
     ### (Orders are cloned for each notification. The pending bits should be reported
     ###  related to the previous notification (clone))
 
-    # Add two bits and validate we have two pending bits
+    # 添加两个 bits，并验证存在两个 pending bits
     _execute(position, order, 10, 1.0, True)
     _execute(position, order, 20, 1.1, True)
 
@@ -109,7 +109,7 @@ def test_run(main=False):
     assert pending[1].size == 20
     assert pending[1].price == 1.1
 
-    # Add additional two bits and validate we still have two pending bits after clone
+    # 再添加两个 bits，并验证 clone 后仍有两个 pending bits
     _execute(position, order, 30, 1.2, True)
     _execute(position, order, 40, 1.3, False)
 

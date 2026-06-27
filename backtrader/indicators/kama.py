@@ -26,19 +26,24 @@ from . import (SumN, MovingAverageBase, ExponentialSmoothingDynamic)
 
 class AdaptiveMovingAverage(MovingAverageBase):
     '''
-    Defined by Perry Kaufman in his book `"Smarter Trading"`.
+    Perry Kaufman 在 *"Smarter Trading"* 中定义的 Adaptive Moving Average。
 
-    It is A Moving Average with a continuously scaled smoothing factor by
-    taking into account market direction and volatility. The smoothing factor
-    is calculated from 2 ExponetialMovingAverage smoothing factors, a fast one
-    and slow one.
+    该 Moving Average 会结合市场方向与波动性，持续缩放 smoothing factor。
+    smoothing factor 来自两个 ExponentialMovingAverage 平滑因子：一个快周期，
+    一个慢周期。
 
-    If the market trends the value will tend to the fast ema smoothing
-    period. If the market doesn't trend it will move towards the slow EMA
-    smoothing period.
+    当市场呈趋势状态时，数值会更接近快速 EMA 平滑周期；当市场缺乏趋势时，
+    它会向慢速 EMA 平滑周期移动。
 
-    It is a subclass of SmoothingMovingAverage, overriding once to account for
-    the live nature of the smoothing factor
+    它是 SmoothingMovingAverage 的子类，通过动态 smoothing factor 处理实时变化。
+
+    Args:
+        period: 计算方向与波动性的周期。
+        fast: 快速 EMA 平滑周期。
+        slow: 慢速 EMA 平滑周期。
+
+    Returns:
+        AdaptiveMovingAverage: 输出 ``kama`` line 的 Moving Average indicator。
 
     Formula:
       - direction = close - close_period
@@ -50,29 +55,35 @@ class AdaptiveMovingAverage(MovingAverageBase):
       - smfactor = squared(efficienty_ratio * (fast - slow) + slow)
       - smfactor1 = 1.0  - smfactor
 
-      - The initial seed value is a SimpleMovingAverage
+      - 初始种子值为 SimpleMovingAverage
 
     See also:
       - http://fxcodebase.com/wiki/index.php/Kaufman's_Adaptive_Moving_Average_(KAMA)
       - http://www.metatrader5.com/en/terminal/help/analytics/indicators/trend_indicators/ama
       - http://help.cqg.com/cqgic/default.htm#!Documents/adaptivemovingaverag2.htm
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AdaptiveMovingAverage, period=30)
     '''
     alias = ('KAMA', 'MovingAverageAdaptive',)
     lines = ('kama',)
     params = (('fast', 2), ('slow', 30))
 
     def __init__(self):
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
+        # 放在 super 之前，确保 mixin（子类化时右侧基类）能看到赋值并处理该 line
         direction = self.data - self.data(-self.p.period)
         volatility = SumN(abs(self.data - self.data(-1)), period=self.p.period)
 
         er = abs(direction / volatility)  # efficiency ratio
 
-        fast = 2.0 / (self.p.fast + 1.0)  # fast ema smoothing factor
-        slow = 2.0 / (self.p.slow + 1.0)  # slow ema smoothing factor
+        fast = 2.0 / (self.p.fast + 1.0)  # fast EMA smoothing factor
+        slow = 2.0 / (self.p.slow + 1.0)  # slow EMA smoothing factor
 
-        sc = pow((er * (fast - slow)) + slow, 2)  # scalable constant
+        sc = pow((er * (fast - slow)) + slow, 2)  # 可缩放常量
 
         self.lines[0] = ExponentialSmoothingDynamic(self.data,
                                                     period=self.p.period,

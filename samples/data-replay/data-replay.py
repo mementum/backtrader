@@ -52,7 +52,7 @@ class SMAStrategy(bt.Strategy):
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(stdstats=False)
 
     cerebro.addstrategy(
@@ -61,7 +61,7 @@ def runstrat():
         period=args.period,
     )
 
-    # Load the Data
+    # 加载 Data
     datapath = args.dataname or '../../datas//2006-day-001.txt'
     data = btfeeds.BacktraderCSVData(
         dataname=datapath)
@@ -71,8 +71,8 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Handy dictionary for the argument timeframe conversion
-    # Resample the data
+    # 用于参数 timeframe 转换的便捷字典
+    # resample data
     if args.oldrp:
         data = bt.DataReplayer(
             dataname=data,
@@ -83,13 +83,13 @@ def runstrat():
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-    # First add the original data - smaller timeframe
+    # 先添加原始 data，即较小 timeframe
     cerebro.adddata(data)
 
-    # Run over everything
+    # 运行全部流程
     cerebro.run(preload=False)
 
-    # Plot the result
+    # 绘制结果
     cerebro.plot(style='bar')
 
 

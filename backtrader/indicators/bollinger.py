@@ -26,8 +26,17 @@ from . import Indicator, MovAv, StdDev
 
 class BollingerBands(Indicator):
     '''
-    Defined by John Bollinger in the 80s. It measures volatility by defining
-    upper and lower bands at distance x standard deviations
+    John Bollinger 在 20 世纪 80 年代定义的 Bollinger Bands 指标。
+
+    通过在若干倍 standard deviation 距离上定义上下轨来衡量 volatility。
+
+    Args:
+        period: Moving Average 和 Standard Deviation 的周期。
+        devfactor: standard deviation 乘数。
+        movav: 使用的 Moving Average 类型。
+
+    Returns:
+        BollingerBands: 输出 ``mid``、``top``、``bot`` line 的 indicator。
 
     Formula:
       - midband = SimpleMovingAverage(close, period)
@@ -36,6 +45,13 @@ class BollingerBands(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Bollinger_Bands
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(BollingerBands, period=20, devfactor=2.0)
     '''
     alias = ('BBands',)
 
@@ -66,10 +82,25 @@ class BollingerBands(Indicator):
 
 class BollingerBandsPct(BollingerBands):
     '''
-    Extends the Bollinger Bands with a Percentage line
+    扩展 ``BollingerBands``，增加 Percentage line。
+
+    Args:
+        period: Moving Average 和 Standard Deviation 的周期。
+        devfactor: standard deviation 乘数。
+        movav: 使用的 Moving Average 类型。
+
+    Returns:
+        BollingerBandsPct: 在 Bollinger Bands 基础上额外输出 ``pctb`` line。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(BollingerBandsPct)
     '''
     lines = ('pctb',)
-    plotlines = dict(pctb=dict(_name='%B'))  # display the line as %B on chart
+    plotlines = dict(pctb=dict(_name='%B'))  # 图上把该 line 显示为 %B
 
     def __init__(self):
         super(BollingerBandsPct, self).__init__()

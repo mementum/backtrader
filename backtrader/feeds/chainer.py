@@ -30,13 +30,13 @@ from backtrader.utils.py3 import range
 
 class MetaChainer(bt.DataBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，随后进行初始化注册。'''
+        # 初始化类对象
         super(MetaChainer, cls).__init__(name, bases, dct)
 
     def donew(cls, *args, **kwargs):
-        '''Intercept const. to copy timeframe/compression from 1st data'''
-        # Create the object and set the params in place
+        '''拦截构造过程，从第一个 data 复制 timeframe/compression。'''
+        # 创建对象并设置参数
         _obj, args, kwargs = super(MetaChainer, cls).donew(*args, **kwargs)
 
         if args:
@@ -47,11 +47,25 @@ class MetaChainer(bt.DataBase.__class__):
 
 
 class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
-    '''Class that chains datas'''
+    '''把多个 data feed 按时间顺序串接成一个连续数据源。
+
+    Args:
+        *args: 按顺序传入的多个 data feed。前一个耗尽后，会切到后一个；已经输出过
+            的时间不会重复输出。
+
+    Returns:
+        Chainer: 可加入 Cerebro 的串接数据源实例。
+
+    ---
+    交互界面使用示范:
+
+    >>> data = Chainer()
+    >>> data._args
+    ()
+    '''
 
     def islive(self):
-        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
-        should be deactivated'''
+        '''返回 ``True``，通知 ``Cerebro`` 关闭 preload 和 runonce。'''
         return True
 
     def __init__(self, *args):
@@ -63,7 +77,7 @@ class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
             d.setenvironment(self._env)
             d._start()
 
-        # put the references in a separate list to have pops
+        # 把引用放到单独列表中，便于按顺序 pop
         self._ds = list(self._args)
         self._d = self._ds.pop(0) if self._ds else None
         self._lastdt = datetime.min
@@ -77,19 +91,18 @@ class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
         return [] if self._d is None else self._d.get_notifications()
 
     def _gettz(self):
-        '''To be overriden by subclasses which may auto-calculate the
-        timezone'''
+        '''供子类覆写，用于自动计算 timezone。'''
         if self._args:
             return self._args[0]._gettz()
         return bt.utils.date.Localizer(self.p.tz)
 
     def _load(self):
         while self._d is not None:
-            if not self._d.next():  # no values from current data source
+            if not self._d.next():  # 当前数据源已经没有值
                 self._d = self._ds.pop(0) if self._ds else None
                 continue
 
-            # Cannot deliver a date equal or less than an alredy delivered
+            # 不能输出早于或等于已输出时间的 bar
             dt = self._d.datetime.datetime()
             if dt <= self._lastdt:
                 continue
@@ -101,5 +114,5 @@ class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
 
             return True
 
-        # Out of the loop -> self._d is None, no data feed to return from
+        # 退出循环表示 self._d 为 None，没有 data feed 可继续返回
         return False

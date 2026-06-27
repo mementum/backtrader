@@ -21,22 +21,21 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the objects wishes
-# or prepend an "_" (underscore) to private classes/variables
+# 下列模块应在 __all__ 中定义要导出的对象，私有类/变量则使用 "_" 前缀
 
 from .bbroker import BackBroker, BrokerBack
 
 try:
     from .ibbroker import IBBroker
 except ImportError:
-    pass  # The user may not have ibpy installed
+    pass  # 用户可能未安装 ibpy
 
 try:
     from .vcbroker import VCBroker
 except ImportError:
-    pass  # The user may not have something installed
+    pass  # 用户可能未安装相关模块
 
 try:
     from .oandabroker import OandaBroker
 except ImportError as e:
-    pass  # The user may not have something installed
+    pass  # 用户可能未安装相关模块

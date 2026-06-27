@@ -40,36 +40,42 @@ from backtrader.comminfo import CommInfoBase
 
 class OandaCommInfo(CommInfoBase):
     def getvaluesize(self, size, price):
-        # In real life the margin approaches the price
+        # 实盘中 margin 接近 price
         return abs(size) * price
 
     def getoperationcost(self, size, price):
-        '''Returns the needed amount of cash an operation would cost'''
-        # Same reasoning as above
+        '''返回一次操作需要占用的 cash 数量。'''
+        # 与上方逻辑相同
         return abs(size) * price
 
 
 class MetaOandaBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，执行 broker 注册。'''
+        # 初始化类
         super(MetaOandaBroker, cls).__init__(name, bases, dct)
         oandastore.OandaStore.BrokerCls = cls
 
 
 class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
-    '''Broker implementation for Oanda.
+    '''Oanda 的 broker 实现。
 
-    This class maps the orders/positions from Oanda to the
-    internal API of ``backtrader``.
+    该类将 Oanda 的 order/position 映射到 ``backtrader`` 内部 API。
 
-    Params:
+    Args:
+        use_positions: 连接 broker provider 时，是否使用已有 position 初始化 broker。
+            设为 ``False`` 可忽略已有 position。
+        commission: Oanda 使用的 commission info。
 
-      - ``use_positions`` (default:``True``): When connecting to the broker
-        provider use the existing positions to kickstart the broker.
+    Returns:
+        OandaBroker: 用于连接 Oanda store 并处理 order/position 的 broker。
 
-        Set to ``False`` during instantiation to disregard any existing
-        position
+    ---
+    交互界面使用示范:
+
+    >>> broker = OandaBroker(use_positions=False)
+    >>> broker.p.use_positions
+    False
     '''
     params = (
         ('use_positions', True),
@@ -81,11 +87,11 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
 
         self.o = oandastore.OandaStore(**kwargs)
 
-        self.orders = collections.OrderedDict()  # orders by order id
-        self.notifs = collections.deque()  # holds orders which are notified
+        self.orders = collections.OrderedDict()  # 按 order id 保存 order
+        self.notifs = collections.deque()  # 保存需要通知的 order
 
-        self.opending = collections.defaultdict(list)  # pending transmission
-        self.brackets = dict()  # confirmed brackets
+        self.opending = collections.defaultdict(list)  # 待传输 order
+        self.brackets = dict()  # 已确认 bracket
 
         self.startingcash = self.cash = 0.0
         self.startingvalue = self.value = 0.0
@@ -147,7 +153,7 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         self.o.stop()
 
     def getcash(self):
-        # This call cannot block if no answer is available from oanda
+        # 如果 Oanda 暂无响应，此调用不能阻塞
         self.cash = cash = self.o.get_cash()
         return cash
 
@@ -202,28 +208,28 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         self._bracketize(order, cancel=True)
 
     def _bracketnotif(self, order):
-        pref = getattr(order.parent, 'ref', order.ref)  # parent ref or self
-        br = self.brackets.get(pref, None)  # to avoid recursion
+        pref = getattr(order.parent, 'ref', order.ref)  # parent ref 或自身
+        br = self.brackets.get(pref, None)  # 避免递归
         return br[-2:] if br is not None else []
 
     def _bracketize(self, order, cancel=False):
-        pref = getattr(order.parent, 'ref', order.ref)  # parent ref or self
-        br = self.brackets.pop(pref, None)  # to avoid recursion
+        pref = getattr(order.parent, 'ref', order.ref)  # parent ref 或自身
+        br = self.brackets.pop(pref, None)  # 避免递归
         if br is None:
             return
 
         if not cancel:
-            if len(br) == 3:  # all 3 orders in place, parent was filled
-                br = br[1:]  # discard index 0, parent
+            if len(br) == 3:  # 3 个 order 均已就位，parent 已成交
+                br = br[1:]  # 丢弃索引 0，即 parent
                 for o in br:
-                    o.activate()  # simulate activate for children
-                self.brackets[pref] = br  # not done - reinsert children
+                    o.activate()  # 模拟激活子 order
+                self.brackets[pref] = br  # 尚未完成，重新放入子 order
 
-            elif len(br) == 2:  # filling a children
-                oidx = br.index(order)  # find index to filled (0 or 1)
-                self._cancel(br[1 - oidx].ref)  # cancel remaining (1 - 0 -> 1)
+            elif len(br) == 2:  # 成交的是子 order
+                oidx = br.index(order)  # 找到已成交索引（0 或 1）
+                self._cancel(br[1 - oidx].ref)  # 取消剩余 order（1 - 0 -> 1）
         else:
-            # Any cancellation cancel the others
+            # 任一取消都会取消其他关联 order
             for o in br:
                 if o.alive():
                     self._cancel(o.ref)
@@ -241,7 +247,7 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
                 self.put_notification(msg, order, price, size)
                 return
 
-            # [main, stopside, takeside], neg idx to array are -3, -2, -1
+            # [main, stopside, takeside]，负索引分别为 -3、-2、-1
             if ttype == 'STOP_LOSS_FILLED':
                 order = self.brackets[pref][-2]
             elif ttype == 'TAKE_PROFIT_FILLED':
@@ -280,26 +286,26 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
 
     def _transmit(self, order):
         oref = order.ref
-        pref = getattr(order.parent, 'ref', oref)  # parent ref or self
+        pref = getattr(order.parent, 'ref', oref)  # parent ref 或自身
 
         if order.transmit:
-            if oref != pref:  # children order
-                # Put parent in orders dict, but add stopside and takeside
-                # to order creation. Return the takeside order, to have 3s
-                takeside = order  # alias for clarity
+            if oref != pref:  # 子 order
+                # 将 parent 放入 orders dict，同时将 stopside 和 takeside 加入 order 创建。
+                # 返回 takeside order，确保调用方得到完整 3 个 order 结构。
+                takeside = order  # 为可读性设置别名
                 parent, stopside = self.opending.pop(pref)
                 for o in parent, stopside, takeside:
-                    self.orders[o.ref] = o  # write them down
+                    self.orders[o.ref] = o  # 记录 order
 
                 self.brackets[pref] = [parent, stopside, takeside]
                 self.o.order_create(parent, stopside, takeside)
-                return takeside  # parent was already returned
+                return takeside  # parent 已经返回过
 
-            else:  # Parent order, which is not being transmitted
+            else:  # 将要传输的 parent order
                 self.orders[order.ref] = order
                 return self.o.order_create(order)
 
-        # Not transmitting
+        # 暂不传输
         self.opending[pref].append(order)
         return order
 
@@ -339,7 +345,7 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
 
     def cancel(self, order):
         o = self.orders[order.ref]
-        if order.status == Order.Cancelled:  # already cancelled
+        if order.status == Order.Cancelled:  # 已经取消
             return
 
         return self.o.order_cancel(order)
@@ -354,4 +360,4 @@ class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
         return self.notifs.popleft()
 
     def next(self):
-        self.notifs.append(None)  # mark notification boundary
+        self.notifs.append(None)  # 标记通知边界

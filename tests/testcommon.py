@@ -26,7 +26,7 @@ import os
 import os.path
 import sys
 
-# append module root directory to sys.path
+# 将 module 根目录加入 sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import backtrader as bt
@@ -224,10 +224,9 @@ class TestStrategy(bt.Strategy):
 
 
 class SampleParamsHolder(ParamsBase):
-    """
-    This class is used as base for tests that check the proper
-    handling of meta parameters like `frompackages`, `packages`, `params`, `lines`
-    in inherited classes
+    """测试基类，用于检查继承类能否正确处理 meta parameters。
+
+    涵盖 ``frompackages``、``packages``、``params`` 和 ``lines``。
     """
     frompackages = (
         ('math', ('factorial')),

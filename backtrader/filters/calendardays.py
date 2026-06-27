@@ -29,24 +29,22 @@ from .. import metabase
 
 
 class CalendarDays(with_metaclass(metabase.MetaParams, object)):
-    '''
-    Bar Filler to add missing calendar days to trading days
+    '''为交易日之间缺失的自然日补 bar 的 Bar Filler。
 
-    Params:
+    Args:
+        fill_price: 缺失 bar 使用的价格，默认 ``None``。
+            大于 0 时使用给定值；为 0 或 ``None`` 时使用上一根已知 close；
+            为 ``-1`` 时使用上一根 bar 的 midpoint（High-Low average）。
+        fill_vol: 缺失 bar 使用的 volume，默认 ``NaN``。
+        fill_oi: 缺失 bar 使用的 open interest，默认 ``NaN``。
 
-      - fill_price (def: None):
+    Returns:
+        None: filter 会把补出的 bar 加入 data stack。
 
-        > 0: The given value to fill
-        0 or None: Use the last known closing price
-        -1: Use the midpoint of the last bar (High-Low average)
-
-      - fill_vol (def: float('NaN')):
-
-        Value to use to fill the missing volume
-
-      - fill_oi (def: float('NaN')):
-
-        Value to use to fill the missing Open Interest
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='daily.csv')
+    >>> data.addfilter(CalendarDays, fill_price=None)
     '''
     params = (('fill_price', None),
               ('fill_vol', float('NaN')),
@@ -59,33 +57,36 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
         pass
 
     def __call__(self, data):
-        '''
-        If the data has a gap larger than 1 day amongst bars, the missing bars
-        are added to the stream.
+        '''处理一根 data bar，并在自然日 gap 大于 1 天时补 bar。
 
-        Params:
-          - data: the data source to filter/process
+        Args:
+            data: 要过滤/处理的 data source。
 
         Returns:
-          - False (always): this filter does not remove bars from the stream
+            bool: 始终返回 ``False``，表示该 filter 不从 stream 中移除 bar。
 
         '''
         dt = data.datetime.date()
-        if (dt - self.lastdt) > self.ONEDAY:  # gap in place
+        if (dt - self.lastdt) > self.ONEDAY:  # 存在 gap
             self._fillbars(data, dt, self.lastdt)
 
         self.lastdt = dt
-        return False  # no bar has been removed from the stream
+        return False  # 未从 stream 中移除 bar
 
     def _fillbars(self, data, dt, lastdt):
-        '''
-        Fills one by one bars as needed from time_start to time_end
+        '''按需逐根填补从 ``lastdt`` 到 ``dt`` 之间的 bar。
 
-        Invalidates the control dtime_prev if requested
-        '''
-        tm = data.datetime.time(0)  # get time part
+        Args:
+            data: 要补 bar 的 data source。
+            dt: 当前 bar 的日期。
+            lastdt: 上一根 bar 的日期。
 
-        # Same price for all bars
+        Returns:
+            None: 补出的 bar 会加入 data stack。
+        '''
+        tm = data.datetime.time(0)  # 获取 time 部分
+
+        # 所有补 bar 使用同一价格
         if self.p.fill_price > 0:
             price = self.p.fill_price
         elif not self.p.fill_price:
@@ -96,25 +97,25 @@ class CalendarDays(with_metaclass(metabase.MetaParams, object)):
         while lastdt < dt:
             lastdt += self.ONEDAY
 
-            # Prepare an array of the needed size
+            # 准备所需大小的数组
             bar = [float('Nan')] * data.size()
-            # Fill the datetime
+            # 填充 datetime
             bar[data.DateTime] = data.date2num(datetime.combine(lastdt, tm))
 
-            # Fill price fields
+            # 填充 price 字段
             for pricetype in [data.Open, data.High, data.Low, data.Close]:
                 bar[pricetype] = price
 
-            # Fill volume and open interest
+            # 填充 volume 和 open interest
             bar[data.Volume] = self.p.fill_vol
             bar[data.OpenInterest] = self.p.fill_oi
 
-            # Fill extra lines the data feed may have defined beyond DateTime
+            # 填充 data feed 可能在 DateTime 之后定义的额外 lines
             for i in range(data.DateTime + 1, data.size()):
                 bar[i] = data.lines[i][0]
 
-            # Add this constructed bar to the stack of the stream
+            # 将构造出的 bar 加入 stream stack
             data._add2stack(bar)
 
-        # Save to stack the bar that signaled the gap
+        # 将触发 gap 的 bar 保存到 stack
         data._save2stack(erase=True)

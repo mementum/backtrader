@@ -92,11 +92,11 @@ class TestStrategy(bt.Strategy):
             if self.p.printops:
                 self.log('%s ,' % order.Status[order.status])
 
-        # Allow new orders
+        # 允许新 orders
         self.orderid = None
 
     def __init__(self):
-        # Flag to allow new orders in the system or not
+        # 标记系统是否允许新 orders
         self.orderid = None
 
         self.sma = btind.SMA(self.data, period=self.p.period)
@@ -159,7 +159,7 @@ class TestStrategy(bt.Strategy):
                      (self.data.close[0], self.sma[0]))
 
         if self.orderid:
-            # if an order is active, no new orders are allowed
+            # 如果有 active order，则不允许新 orders
             return
 
         if not self.position.size:

@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import argparse
 import datetime
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
@@ -33,10 +33,9 @@ from backtrader.analyzers import (SQN, AnnualReturn, TimeReturn, SharpeRatio,
 
 
 class LongShortStrategy(bt.Strategy):
-    '''This strategy buys/sells upong the close price crossing
-    upwards/downwards a Simple Moving Average.
+    '''根据 close price 与 Simple Moving Average 的上下交叉执行买卖。
 
-    It can be a long-only strategy by setting the param "onlylong" to True
+    将 ``onlylong`` 参数设为 ``True`` 时，可作为 long-only strategy 使用。
     '''
     params = dict(
         period=15,
@@ -59,18 +58,18 @@ class LongShortStrategy(bt.Strategy):
             print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # To control operation entries
+        # 用于控制操作入口
         self.orderid = None
 
-        # Create SMA on 2nd data
+        # 在第 2 个 data 上创建 SMA
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
-        # Create a CrossOver Signal from close an moving average
+        # 从 close 和 moving average 创建 CrossOver Signal
         self.signal = btind.CrossOver(self.data.close, sma)
         self.signal.csv = self.p.csvcross
 
     def next(self):
         if self.orderid:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果有 active order，则不允许新 orders
 
         if self.signal > 0.0:  # cross upwards
             if self.position:
@@ -105,7 +104,7 @@ class LongShortStrategy(bt.Strategy):
             self.log('%s ,' % order.Status[order.status])
             pass  # Simply log
 
-        # Allow new orders
+        # 允许新 orders
         self.orderid = None
 
     def notify_trade(self, trade):
@@ -120,33 +119,33 @@ class LongShortStrategy(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data)
 
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(LongShortStrategy,
                         period=args.period,
                         onlylong=args.onlylong,
                         csvcross=args.csvcross,
                         stake=args.stake)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcash(args.cash)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcommission(commission=args.comm,
                                  mult=args.mult,
                                  margin=args.margin)
@@ -157,7 +156,7 @@ def runstrategy():
         months=bt.TimeFrame.Months,
         years=bt.TimeFrame.Years)
 
-    # Add the Analyzers
+    # 添加 Analyzers
     cerebro.addanalyzer(SQN)
     if args.legacyannual:
         cerebro.addanalyzer(AnnualReturn)
@@ -170,10 +169,10 @@ def runstrategy():
 
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
 
-    # And run it
+    # 然后运行
     cerebro.run()
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 

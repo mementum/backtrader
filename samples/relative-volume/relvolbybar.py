@@ -47,18 +47,18 @@ class RelativeVolumeByBar(bt.Indicator):
         return plabels
 
     def __init__(self):
-        # Inform the platform about the minimum period needs
+        # 通知平台所需的 minimum period
         minbuffer = self._calcbuffer()
         self.addminperiod(minbuffer)
 
-        # Structures/variable to keep synchronization
+        # 用于保持同步的结构/变量
         self.pvol = dict()
         self.vcount = collections.defaultdict(int)
 
         self.days = 0
         self.dtlast = datetime.date.min
 
-        # Done after calc to ensure coop inheritance and composition work
+        # 在计算后完成，以确保协作继承和组合正常工作
         super(RelativeVolumeByBar, self).__init__()
 
     def _barisvalid(self, tm):
@@ -85,27 +85,27 @@ class RelativeVolumeByBar(bt.Indicator):
         if not self._barisvalid(tm):
             return
 
-        # Record the "minute/second" of this day has been seen
+        # 记录当天已出现的 "minute/second"
         self.vcount[tm] += 1
 
-        # Get the bar's volume
+        # 获取 bar 的 volume
         vol = self.data.volume[0]
 
-        # If number of days is right, we saw the same "minute/second" last day
+        # 如果天数正确，说明上一天见过相同 "minute/second"
         if self.vcount[tm] == self.days:
             self.lines.rvbb[0] = vol / self.pvol[tm]
 
-        # Synchronize the days and volume count for next cycle
+        # 同步 days 和 volume count，供下一轮使用
         self.vcount[tm] = self.days
 
-        # Record the volume for this bar for next cycle
+        # 记录当前 bar 的 volume，供下一轮使用
         self.pvol[tm] = vol
 
     def _calcbuffer(self):
-        # Period calculation
+        # period 计算
         minend = self.p.end.hour * 60 + self.p.end.minute
         # minstart = session_start.hour * 60 + session_start.minute
-        # use prestart to account for market_data
+        # 使用 prestart 以考虑 market_data
         minstart = self.p.prestart.hour * 60 + self.p.prestart.minute
 
         minbuffer = minend - minstart

@@ -46,7 +46,7 @@ class MyStrategy(bt.Strategy):
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
-            # Buy/Sell order submitted/accepted to/by broker - Nothing to do
+            # Buy/Sell order 已提交/被 broker 接受，无需处理
             self.log('ORDER ACCEPTED/SUBMITTED', dt=order.created.dt)
             self.order = order
             return
@@ -68,26 +68,26 @@ class MyStrategy(bt.Strategy):
                           order.executed.value,
                           order.executed.comm))
 
-        # Sentinel to None: new orders allowed
+        # sentinel 设为 None，允许新 orders
         self.order = None
 
     def __init__(self):
-        # SimpleMovingAverage on main data
-        # Equivalent to -> sma = btind.SMA(self.data, period=self.p.smaperiod)
+        # 主 data 上的 SimpleMovingAverage
+        # 等价于 -> sma = btind.SMA(self.data, period=self.p.smaperiod)
         sma = btind.SMA(period=self.p.smaperiod)
 
-        # CrossOver (1: up, -1: down) close / sma
+        # close / sma 的 CrossOver（1: 向上，-1: 向下）
         self.buysell = btind.CrossOver(self.data.close, sma, plot=True)
 
-        # Sentinel to None: new ordersa allowed
+        # sentinel 设为 None，允许新 orders
         self.order = None
 
     def next(self):
         if self.order:
-            # pending order ... do nothing
+            # 有 pending order，什么也不做
             return
 
-        # Check if we are in the market
+        # 检查是否在市场中
         if self.position:
             if self.buysell < 0:
                 self.log('SELL CREATE, %.2f' % self.data.close[0])

@@ -40,12 +40,11 @@ class MetaLineIterator(LineSeries.__class__):
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).donew(*args, **kwargs)
 
-        # Prepare to hold children that need to be calculated and
-        # influence minperiod - Moved here to support LineNum below
+        # 准备用于保存需要计算、且会影响 minperiod 的子对象
+        # 放在这里是为了支持下面的 LineNum
         _obj._lineiterators = collections.defaultdict(list)
 
-        # Scan args for datas ... if none are found,
-        # use the _owner (to have a clock)
+        # 扫描 args 中的 data；如果没有找到，则使用 _owner 作为 clock
         mindatas = _obj._mindatas
         lastarg = 0
         _obj.datas = []
@@ -54,12 +53,12 @@ class MetaLineIterator(LineSeries.__class__):
                 _obj.datas.append(LineSeriesMaker(arg))
 
             elif not mindatas:
-                break  # found not data and must not be collected
+                break  # 找到非 data，且不需要继续收集
             else:
                 try:
                     _obj.datas.append(LineSeriesMaker(LineNum(arg)))
                 except:
-                    # Not a LineNum and is not a LineSeries - bail out
+                    # 既不是 LineNum，也不是 LineSeries，退出扫描
                     break
 
             mindatas = max(0, mindatas - 1)
@@ -67,18 +66,15 @@ class MetaLineIterator(LineSeries.__class__):
 
         newargs = args[lastarg:]
 
-        # If no datas have been passed to an indicator ... use the
-        # main datas of the owner, easing up adding "self.data" ...
+        # 如果 indicator 没有传入 data，则使用 owner 的主 data，方便直接写 self.data
         if not _obj.datas and isinstance(_obj, (IndicatorBase, ObserverBase)):
             _obj.datas = _obj._owner.datas[0:mindatas]
 
-        # Create a dictionary to be able to check for presence
-        # lists in python use "==" operator when testing for presence with "in"
-        # which doesn't really check for presence but for equality
+        # 创建字典以便检查对象是否存在。Python list 的 in 会使用 "==" 判断，
+        # 实际检查的是相等而不是对象存在性。
         _obj.ddatas = {x: None for x in _obj.datas}
 
-        # For each found data add access member -
-        # for the first data 2 (data and data0)
+        # 为每个找到的 data 添加访问成员；第一个 data 同时拥有 data 和 data0
         if _obj.datas:
             _obj.data = data = _obj.datas[0]
 
@@ -97,7 +93,7 @@ class MetaLineIterator(LineSeries.__class__):
                         setattr(_obj, 'data%d_%s' % (d, linealias), line)
                     setattr(_obj, 'data%d_%d' % (d, l), line)
 
-        # Parameter values have now been set before __init__
+        # 参数值此时已经在 __init__ 前设置完毕
         _obj.dnames = DotDict([(d._name, d)
                                for d in _obj.datas if getattr(d, '_name', '')])
 
@@ -107,21 +103,18 @@ class MetaLineIterator(LineSeries.__class__):
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
-        # if no datas were found use, use the _owner (to have a clock)
+        # 如果没有找到 data，则使用 _owner 作为 clock
         _obj.datas = _obj.datas or [_obj._owner]
 
-        # 1st data source is our ticking clock
+        # 第一个 data source 是当前对象的 ticking clock
         _obj._clock = _obj.datas[0]
 
-        # To automatically set the period Start by scanning the found datas
-        # No calculation can take place until all datas have yielded "data"
-        # A data could be an indicator and it could take x bars until
-        # something is produced
+        # 通过扫描找到的 data 自动设置 period 起点。所有 data 都产出值之前不能计算。
+        # data 本身也可能是 indicator，并且可能需要若干 bar 才能产出值。
         _obj._minperiod = \
             max([x._minperiod for x in _obj.datas] or [_obj._minperiod])
 
-        # The lines carry at least the same minperiod as
-        # that provided by the datas
+        # line 至少要携带与 data 相同的 minperiod
         for line in _obj.lines:
             line.addminperiod(_obj._minperiod)
 
@@ -131,14 +124,13 @@ class MetaLineIterator(LineSeries.__class__):
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopostinit(_obj, *args, **kwargs)
 
-        # my minperiod is as large as the minperiod of my lines
+        # 自身 minperiod 至少等于所有 line 的最大 minperiod
         _obj._minperiod = max([x._minperiod for x in _obj.lines])
 
-        # Recalc the period
+        # 重新计算 period
         _obj._periodrecalc()
 
-        # Register (my)self as indicator to owner once
-        # _minperiod has been calculated
+        # _minperiod 计算完成后，把自身注册到 owner
         if _obj._owner is not None:
             _obj._owner.addindicator(_obj)
 
@@ -146,7 +138,9 @@ class MetaLineIterator(LineSeries.__class__):
 
 
 class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
-    _nextforce = False  # force cerebro to run in next mode (runonce=False)
+    '''line iterator 的基类，用于调度 data、indicator、observer 的 next/once 生命周期。'''
+
+    _nextforce = False  # 强制 cerebro 使用 next 模式（runonce=False）
 
     _mindatas = 1
     _ltype = LineSeries.IndType
@@ -167,9 +161,8 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                     plotmaster=None,)
 
     def _periodrecalc(self):
-        # last check in case not all lineiterators were assigned to
-        # lines (directly or indirectly after some operations)
-        # An example is Kaufman's Adaptive Moving Average
+        # 最后检查一次，防止部分 lineiterator 没有被直接或间接分配到 line
+        # 典型例子是 Kaufman's Adaptive Moving Average
         indicators = self._lineiterators[LineIterator.IndType]
         indperiods = [ind._minperiod for ind in indicators]
         indminperiod = max(indperiods or [self._minperiod])
@@ -206,19 +199,19 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         return self._lineiterators[LineIterator.ObsType]
 
     def addindicator(self, indicator):
-        # store in right queue
+        # 存入对应队列
         self._lineiterators[indicator._ltype].append(indicator)
 
-        # use getattr because line buffers don't have this attribute
+        # 使用 getattr，因为 line buffer 没有该属性
         if getattr(indicator, '_nextforce', False):
-            # the indicator needs runonce=False
+            # 该 indicator 需要 runonce=False
             o = self
             while o is not None:
                 if o._ltype == LineIterator.StratType:
                     o.cerebro._disable_runonce()
                     break
 
-                o = o._owner  # move up the hierarchy
+                o = o._owner  # 沿层级向上移动
 
     def bindlines(self, owner=None, own=None):
         if not owner:
@@ -252,7 +245,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
         return self
 
-    # Alias which may be more readable
+    # 可读性更好的别名
     bind2lines = bindlines
     bind2line = bind2lines
 
@@ -265,21 +258,20 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         self._notify()
 
         if self._ltype == LineIterator.StratType:
-            # supporting datas with different lengths
+            # 支持不同长度的 data
             minperstatus = self._getminperstatus()
             if minperstatus < 0:
                 self.next()
             elif minperstatus == 0:
-                self.nextstart()  # only called for the 1st value
+                self.nextstart()  # 只在第 1 个完整值时调用
             else:
                 self.prenext()
         else:
-            # assume indicators and others operate on same length datas
-            # although the above operation can be generalized
+            # 假定 indicator 等对象运行在同长度 data 上；上面的逻辑也可以泛化到这里
             if clock_len > self._minperiod:
                 self.next()
             elif clock_len == self._minperiod:
-                self.nextstart()  # only called for the 1st value
+                self.nextstart()  # 只在第 1 个完整值时调用
             elif clock_len:
                 self.prenext()
 
@@ -310,9 +302,8 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
         self.home()
 
-        # These 3 remain empty for a strategy and therefore play no role
-        # because a strategy will always be executed on a next basis
-        # indicators are each called with its min period
+        # 对 strategy 而言这 3 个方法保持为空，因此不起作用；strategy 总是按 next 执行。
+        # indicator 则会按各自 minperiod 调用。
         self.preonce(0, self._minperiod - 1)
         self.oncestart(self._minperiod - 1, self._minperiod)
         self.once(self._minperiod, self.buflen())
@@ -331,25 +322,32 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
     def prenext(self):
         '''
-        This method will be called before the minimum period of all
-        datas/indicators have been meet for the strategy to start executing
+        在所有 data/indicator 都满足最小 period 前调用。
+
+        Returns:
+            None
         '''
         pass
 
     def nextstart(self):
         '''
-        This method will be called once, exactly when the minimum period for
-        all datas/indicators have been meet. The default behavior is to call
-        next
+        在所有 data/indicator 刚好满足最小 period 时调用一次。
+
+        Returns:
+            None
+
+        默认行为是调用 ``next``。
         '''
 
-        # Called once for 1st full calculation - defaults to regular next
+        # 第一次完整计算时调用一次，默认转到普通 next
         self.next()
 
     def next(self):
         '''
-        This method will be called for all remaining data points when the
-        minimum period for all datas/indicators have been meet.
+        所有 data/indicator 满足最小 period 后，对剩余数据点调用。
+
+        Returns:
+            None
         '''
         pass
 
@@ -367,20 +365,21 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
             for line in self.lines:
                 line.qbuffer()
 
-        # If called, anything under it, must save
+        # 如果调用到这里，下层对象都必须节省内存
         for obj in self._lineiterators[self.IndType]:
             obj.qbuffer(savemem=1)
 
-        # Tell datas to adjust buffer to minimum period
+        # 通知 data 按最小 period 调整 buffer
         for data in self.datas:
             data.minbuffer(self._minperiod)
 
 
-# This 3 subclasses can be used for identification purposes within LineIterator
-# or even outside (like in LineObservers)
-# for the 3 subbranches without generating circular import references
+# 这 3 个子类用于在 LineIterator 内部或外部（例如 LineObservers）识别 3 个分支，
+# 同时避免产生循环 import
 
 class DataAccessor(LineIterator):
+    '''数据访问基类，用于统一暴露 price line 的枚举别名。'''
+
     PriceClose = DataSeries.Close
     PriceLow = DataSeries.Low
     PriceHigh = DataSeries.High
@@ -391,21 +390,29 @@ class DataAccessor(LineIterator):
 
 
 class IndicatorBase(DataAccessor):
+    '''indicator 的基类，用于标识 indicator 分支。'''
+
     pass
 
 
 class ObserverBase(DataAccessor):
+    '''observer 的基类，用于标识 observer 分支。'''
+
     pass
 
 
 class StrategyBase(DataAccessor):
+    '''strategy 的基类，用于标识 strategy 分支。'''
+
     pass
 
 
-# Utility class to couple lines/lineiterators which may have different lengths
-# Will only work when runonce=False is passed to Cerebro
+# 用于耦合不同长度 line/lineiterator 的工具类
+# 只有向 Cerebro 传入 runonce=False 时才可用
 
 class SingleCoupler(LineActions):
+    '''单线 coupler，用于在不同长度的 line 之间保持最近一个可用值。'''
+
     def __init__(self, cdata, clock=None):
         super(SingleCoupler, self).__init__()
         self._clock = clock if clock is not None else self._owner
@@ -423,12 +430,14 @@ class SingleCoupler(LineActions):
 
 
 class MultiCoupler(LineIterator):
+    '''多线 coupler，用于在不同长度的 multiline 对象之间保持最近一组可用值。'''
+
     _ltype = LineIterator.IndType
 
     def __init__(self):
         super(MultiCoupler, self).__init__()
         self.dlen = 0
-        self.dsize = self.fullsize()  # shorcut for number of lines
+        self.dsize = self.fullsize()  # line 数量的快捷缓存
         self.dvals = [float('NaN')] * self.dsize
 
     def next(self):
@@ -444,28 +453,27 @@ class MultiCoupler(LineIterator):
 
 def LinesCoupler(cdata, clock=None, **kwargs):
     if isinstance(cdata, LineSingle):
-        return SingleCoupler(cdata, clock)  # return for single line
+        return SingleCoupler(cdata, clock)  # 单线对象直接返回 SingleCoupler
 
-    cdatacls = cdata.__class__  # copy important structures before creation
+    cdatacls = cdata.__class__  # 创建前复制重要结构
     try:
-        LinesCoupler.counter += 1  # counter for unique class name
+        LinesCoupler.counter += 1  # 用于唯一类名的计数器
     except AttributeError:
         LinesCoupler.counter = 0
 
-    # Prepare a MultiCoupler subclass
+    # 准备 MultiCoupler 子类
     nclsname = str('LinesCoupler_%d' % LinesCoupler.counter)
     ncls = type(nclsname, (MultiCoupler,), {})
     thismod = sys.modules[LinesCoupler.__module__]
     setattr(thismod, ncls.__name__, ncls)
-    # Replace lines et al., to get a sensible clone
+    # 替换 lines 等结构，得到语义合理的 clone
     ncls.lines = cdatacls.lines
     ncls.params = cdatacls.params
     ncls.plotinfo = cdatacls.plotinfo
     ncls.plotlines = cdatacls.plotlines
 
-    obj = ncls(cdata, **kwargs)  # instantiate
-    # The clock is set here to avoid it being interpreted as a data by the
-    # LineIterator background scanning code
+    obj = ncls(cdata, **kwargs)  # 实例化
+    # 在这里设置 clock，避免它被 LineIterator 的后台扫描逻辑解释为 data
     if clock is None:
         clock = getattr(cdata, '_clock', None)
         if clock is not None:
@@ -484,5 +492,5 @@ def LinesCoupler(cdata, clock=None, **kwargs):
     return obj
 
 
-# Add an alias (which seems a lot more sensible for "Single Line" lines
+# 添加一个别名；对 “Single Line” 来说这个名字更自然
 LineCoupler = LinesCoupler

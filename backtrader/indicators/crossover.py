@@ -26,19 +26,32 @@ from . import Indicator, And
 
 class NonZeroDifference(Indicator):
     '''
-    Keeps track of the difference between two data inputs skipping, memorizing
-    the last non zero value if the current difference is zero
+    跟踪两个输入 data 的差值；当前差值为 0 时，沿用上一个非 0 差值。
+
+    Args:
+        data0: 第一个 data。
+        data1: 第二个 data。
+
+    Returns:
+        NonZeroDifference: 输出 ``nzd`` line 的 indicator。
 
     Formula:
       - diff = data - data1
       - nzd = diff if diff else diff(-1)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(NonZeroDifference)
     '''
-    _mindatas = 2  # requires two (2) data sources
+    _mindatas = 2  # 需要两个 data source
     alias = ('NZD',)
     lines = ('nzd',)
 
     def nextstart(self):
-        self.l.nzd[0] = self.data0[0] - self.data1[0]  # seed value
+        self.l.nzd[0] = self.data0[0] - self.data1[0]  # 种子值
 
     def next(self):
         d = self.data0[0] - self.data1[0]
@@ -60,6 +73,8 @@ class NonZeroDifference(Indicator):
 
 
 class _CrossBase(Indicator):
+    '''交叉判断的基类，用于实现向上/向下穿越的共同逻辑。'''
+
     _mindatas = 2
 
     lines = ('cross',)
@@ -70,10 +85,10 @@ class _CrossBase(Indicator):
         nzd = NonZeroDifference(self.data0, self.data1)
 
         if self._crossup:
-            before = nzd(-1) < 0.0  # data0 was below or at 0
+            before = nzd(-1) < 0.0  # data0 之前在下方或等于 0
             after = self.data0 > self.data1
         else:
-            before = nzd(-1) > 0.0  # data0 was above or at 0
+            before = nzd(-1) > 0.0  # data0 之前在上方或等于 0
             after = self.data0 < self.data1
 
         self.lines.cross = And(before, after)
@@ -81,49 +96,87 @@ class _CrossBase(Indicator):
 
 class CrossUp(_CrossBase):
     '''
-    This indicator gives a signal if the 1st provided data crosses over the 2nd
-    indicator upwards
+    当第一个 data 向上穿越第二个 data 时给出信号。
 
-    It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1st and 2nd data
+    Args:
+        data0: 第一个 data。
+        data1: 第二个 data。
+
+    Returns:
+        CrossUp: 输出 ``cross`` line 的向上穿越 indicator。
+
+    会查看两个 data 的当前索引 ``0`` 和前一索引 ``-1``。
 
     Formula:
       - diff = data - data1
       - upcross =  last_non_zero_diff < 0 and data0(0) > data1(0)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(CrossUp)
     '''
     _crossup = True
 
 
 class CrossDown(_CrossBase):
     '''
-    This indicator gives a signal if the 1st provided data crosses over the 2nd
-    indicator upwards
+    当第一个 data 向下穿越第二个 data 时给出信号。
 
-    It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1st and 2nd data
+    Args:
+        data0: 第一个 data。
+        data1: 第二个 data。
+
+    Returns:
+        CrossDown: 输出 ``cross`` line 的向下穿越 indicator。
+
+    会查看两个 data 的当前索引 ``0`` 和前一索引 ``-1``。
 
     Formula:
       - diff = data - data1
       - downcross = last_non_zero_diff > 0 and data0(0) < data1(0)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(CrossDown)
     '''
     _crossup = False
 
 
 class CrossOver(Indicator):
     '''
-    This indicator gives a signal if the provided datas (2) cross up or down.
+    当两个 data 向上或向下穿越时给出信号。
 
       - 1.0 if the 1st data crosses the 2nd data upwards
       - -1.0 if the 1st data crosses the 2nd data downwards
 
-    It does need to look into the current time index (0) and the previous time
-    index (-1) of both the 1t and 2nd data
+    Args:
+        data0: 第一个 data。
+        data1: 第二个 data。
+
+    Returns:
+        CrossOver: 输出 ``crossover`` line 的 indicator；向上穿越为 ``1.0``，
+        向下穿越为 ``-1.0``。
+
+    会查看两个 data 的当前索引 ``0`` 和前一索引 ``-1``。
 
     Formula:
       - diff = data - data1
       - upcross =  last_non_zero_diff < 0 and data0(0) > data1(0)
       - downcross = last_non_zero_diff > 0 and data0(0) < data1(0)
       - crossover = upcross - downcross
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(CrossOver)
     '''
     _mindatas = 2
 

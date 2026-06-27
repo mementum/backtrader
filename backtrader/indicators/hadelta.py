@@ -30,21 +30,33 @@ __all__ = ['haDelta', 'haD']
 
 
 class haDelta(bt.Indicator):
-    '''Heikin Ashi Delta. Defined by Dan Valcu in his book "Heikin-Ashi: How to
-    Trade Without Candlestick Patterns ".
+    '''Dan Valcu 在 *"Heikin-Ashi: How to Trade Without Candlestick Patterns"*
+    中定义的 Heikin Ashi Delta。
 
-    This indicator measures difference between Heikin Ashi close and open of
-    Heikin Ashi candles, the body of the candle.
+    该 indicator 衡量 Heikin Ashi candle 的 close 与 open 之差，也就是 candle body。
 
-    To get signals add haDelta smoothed by 3 period moving average.
+    信号通常来自 3 周期 Moving Average 平滑后的 haDelta。
 
-    For correct use, the data for the indicator must have been previously
-    passed by the Heikin Ahsi filter.
+    若 ``autoheikin`` 为 False，传入数据应已经通过 Heikin Ashi filter 处理。
+
+    Args:
+        period: 平滑 haDelta 的 Moving Average 周期。
+        movav: 用于平滑的 Moving Average 类型。
+        autoheikin: 是否自动先计算 HeikinAshi 数据。
+
+    Returns:
+        haDelta: 输出 ``haDelta`` 与 ``smoothed`` line 的 indicator。
 
     Formula:
       - haDelta = Heikin Ashi close - Heikin Ashi open
       - smoothed = movav(haDelta, period)
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(haDelta, period=3)
     '''
     alias = ('haD',)
 

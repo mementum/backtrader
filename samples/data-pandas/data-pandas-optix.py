@@ -37,7 +37,7 @@ class PandasDataOptix(btfeeds.PandasData):
               ('optix_opt', -1))
 
     if False:
-        # No longer needed with version 1.9.62.122
+        # 1.9.62.122 版本后不再需要
         datafields = btfeeds.PandasData.datafields + (
             ['optix_close', 'optix_pess', 'optix_opt'])
 
@@ -55,16 +55,16 @@ class StrategyOptix(bt.Strategy):
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(stdstats=False)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.addstrategy(StrategyOptix)
 
-    # Get a pandas dataframe
+    # 获取 pandas dataframe
     datapath = ('../../datas/2006-day-001-optix.txt')
 
-    # Simulate the header row isn't there if noheaders requested
+    # 如果请求 noheaders，则模拟不存在 header row
     skiprows = 1 if args.noheaders else 0
     header = None if args.noheaders else 0
 
@@ -79,15 +79,15 @@ def runstrat():
         print(dataframe)
         print('--------------------------------------------------')
 
-    # Pass it to the backtrader datafeed and add it to the cerebro
+    # 传给 backtrader datafeed 并添加到 cerebro
     data = PandasDataOptix(dataname=dataframe)
 
     cerebro.adddata(data)
 
-    # Run over everything
+    # 运行全部流程
     cerebro.run()
 
-    # Plot the result
+    # 绘制结果
     if not args.noplot:
         cerebro.plot(style='bar')
 

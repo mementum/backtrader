@@ -25,6 +25,11 @@ import sys
 
 
 class flushfile(object):
+    '''自动 flush 的文件包装器，用于在写入后立即刷新输出。
+
+    Args:
+      - ``f``: 被包装的文件对象。
+    '''
 
     def __init__(self, f):
         self.f = f
@@ -42,6 +47,10 @@ if sys.platform == 'win32':
 
 
 class StdOutDevNull(object):
+    '''临时吞掉 ``sys.stdout`` 输出的辅助类。
+
+    创建实例时会保存当前 ``sys.stdout`` 并替换为自身；调用 ``stop`` 后恢复原输出。
+    '''
 
     def __init__(self):
         self.stdout = sys.stdout

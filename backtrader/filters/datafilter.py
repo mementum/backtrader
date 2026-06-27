@@ -25,30 +25,36 @@ import backtrader as bt
 
 
 class DataFilter(bt.AbstractDataBase):
-    '''
-    This class filters out bars from a given data source. In addition to the
-    standard parameters of a DataBase it takes a ``funcfilter`` parameter which
-    can be any callable
+    '''包装 data source，并按 callable 条件过滤 bar 的 data feed。
 
-    Logic:
+    除 ``DataBase`` 标准参数外，该类接收 ``funcfilter`` 参数。``funcfilter``
+    会以底层 data source 为参数被调用。
 
-      - ``funcfilter`` will be called with the underlying data source
+    Args:
+        funcfilter: 任意 callable。返回 ``True`` 时保留当前 data source bar；
+            返回 ``False`` 时丢弃当前 bar。
 
-        It can be any callable
+    Returns:
+        bool: ``_load`` 在成功加载一个通过过滤的 bar 时返回 ``True``；底层
+        data source 耗尽时返回 ``False``。
 
-        - Return value ``True``: current data source bar values will used
-        - Return value ``False``: current data source bar values will discarded
+    ---
+    >>> import backtrader as bt
+    >>> def keep_positive_close(data):
+    ...     return data.close[0] > 0
+    >>> data = bt.feeds.GenericCSVData(dataname='prices.csv')
+    >>> filtered = DataFilter(dataname=data, funcfilter=keep_positive_close)
     '''
     params = (('funcfilter', None),)
 
     def preload(self):
         if len(self.p.dataname) == self.p.dataname.buflen():
-            # if data is not preloaded .... do it
+            # 如果 data 尚未 preload，则执行 preload
             self.p.dataname.start()
             self.p.dataname.preload()
             self.p.dataname.home()
 
-        # Copy timeframe from data after start (some sources do autodetection)
+        # start 后从 data 复制 timeframe（部分 source 会自动检测）
         self.p.timeframe = self._timeframe = self.p.dataname._timeframe
         self.p.compression = self._compression = self.p.dataname._compression
 
@@ -56,18 +62,18 @@ class DataFilter(bt.AbstractDataBase):
 
     def _load(self):
         if not len(self.p.dataname):
-            self.p.dataname.start()  # start data if not done somewhere else
+            self.p.dataname.start()  # 如果其他地方尚未 start data，则 start
 
-        # Tell underlying source to get next data
+        # 通知底层 source 获取下一条 data
         while self.p.dataname.next():
-            # Try to load the data from the underlying source
+            # 尝试从底层 source 加载 data
             if not self.p.funcfilter(self.p.dataname):
                 continue
 
-            # Data is allowed - Copy size which is "number of lines"
+            # data 被允许通过，复制 line 数量对应的数据
             for i in range(self.p.dataname.size()):
                 self.lines[i][0] = self.p.dataname.lines[i][0]
 
             return True
 
-        return False  # no more data from underlying source
+        return False  # 底层 source 没有更多 data

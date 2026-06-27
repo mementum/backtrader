@@ -29,8 +29,9 @@ from backtrader.utils.py3 import MAXINT
 
 
 class TradeAnalyzer(Analyzer):
-    '''
-    Provides statistics on closed trades (keeps also the count of open ones)
+    '''统计 closed trades，并同时保留 open trades 数量的 analyzer。
+
+    统计内容包括:
 
       - Total Open/Closed Trades
 
@@ -38,13 +39,13 @@ class TradeAnalyzer(Analyzer):
 
       - ProfitAndLoss Total/Average
 
-      - Won/Lost Count/ Total PNL/ Average PNL / Max PNL
+      - Won/Lost Count / Total PNL / Average PNL / Max PNL
 
-      - Long/Short Count/ Total PNL / Average PNL / Max PNL
+      - Long/Short Count / Total PNL / Average PNL / Max PNL
 
-          - Won/Lost Count/ Total PNL/ Average PNL / Max PNL
+          - Won/Lost Count / Total PNL / Average PNL / Max PNL
 
-      - Length (bars in the market)
+      - Length（持仓 bar 数）
 
         - Total/Average/Max/Min
 
@@ -54,16 +55,20 @@ class TradeAnalyzer(Analyzer):
 
           - Won/Lost Total/Average/Max/Min
 
+    Args:
+        无。
+
+    Returns:
+        AutoOrderedDict: ``get_analysis`` 返回支持 ``.`` 访问的统计对象。
+
     Note:
+        该 analyzer 使用 "auto" dict 存放字段。如果没有执行任何 trade，就不会
+        生成完整统计项；此时返回字典中只有 ``total.total``，其值为 ``0``。
 
-      The analyzer uses an "auto"dict for the fields, which means that if no
-      trades are executed, no statistics will be generated.
-
-      In that case there will be a single field/subfield in the dictionary
-      returned by ``get_analysis``, namely:
-
-        - dictname['total']['total'] which will have a value of 0 (the field is
-          also reachable with dot notation dictname.total.total
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(TradeAnalyzer, _name='trades')
     '''
     def create_analysis(self):
         self.rets = AutoOrderedDict()
@@ -75,7 +80,7 @@ class TradeAnalyzer(Analyzer):
 
     def notify_trade(self, trade):
         if trade.justopened:
-            # Trade just opened
+            # trade 刚刚打开
             self.rets.total.total += 1
             self.rets.total.open += 1
 
@@ -83,7 +88,7 @@ class TradeAnalyzer(Analyzer):
             trades = self.rets
 
             res = AutoDict()
-            # Trade just closed
+            # trade 刚刚关闭
 
             won = res.won = int(trade.pnlcomm >= 0.0)
             lost = res.lost = int(not won)
@@ -93,7 +98,7 @@ class TradeAnalyzer(Analyzer):
             trades.total.open -= 1
             trades.total.closed += 1
 
-            # Streak
+            # 连胜/连败 streak
             for wlname in ['won', 'lost']:
                 wl = res[wlname]
 
@@ -110,7 +115,7 @@ class TradeAnalyzer(Analyzer):
             trpnl.net.total += trade.pnlcomm
             trpnl.net.average = trades.pnl.net.total / trades.total.closed
 
-            # Won/Lost statistics
+            # Won/Lost 统计
             for wlname in ['won', 'lost']:
                 wl = res[wlname]
                 trwl = trades[wlname]
@@ -127,7 +132,7 @@ class TradeAnalyzer(Analyzer):
                 func = max if wlname == 'won' else min
                 trwlpnl.max = func(wm, pnlcomm)
 
-            # Long/Short statistics
+            # Long/Short 统计
             for tname in ['long', 'short']:
                 trls = trades[tname]
                 ls = res['t' + tname]

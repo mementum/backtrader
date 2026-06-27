@@ -26,39 +26,28 @@ import backtrader as bt
 
 
 class PositionsValue(bt.Analyzer):
-    '''This analyzer reports the value of the positions of the current set of
-    datas
+    '''报告当前所有 data position value 的 analyzer。
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``None``。如果为 ``None``，
+            使用系统中第 1 个 data 的 timeframe。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。如果为 ``None``，使用系统中第 1 个 data 的
+            compression。
+        headers (bool): 是否在结果字典中添加一条初始 header，默认
+            ``False``。header 使用 data 名称，key 为 ``Datetime``。
+        cash (bool): 是否把当前 cash 作为额外 position 加入结果，默认
+            ``False``。启用 header 时该列名为 ``cash``。
 
-      - timeframe (default: ``None``)
-        If ``None`` then the timeframe of the 1st data of the system will be
-        used
+    Returns:
+        dict: ``get_analysis`` 返回以 date/datetime 为 key、各 data position
+        value 列表为 value 的字典。
 
-      - compression (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
-      - headers (default: ``False``)
-
-        Add an initial key to the dictionary holding the results with the names
-        of the datas ('Datetime' as key
-
-      - cash (default: ``False``)
-
-        Include the actual cash as an extra position (for the header 'cash'
-        will be used as name)
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(PositionsValue, headers=True, cash=True,
+    ...                     _name='positions')
     '''
     params = (
         ('headers',  False),

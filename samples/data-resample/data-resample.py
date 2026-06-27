@@ -30,44 +30,44 @@ import backtrader.feeds as btfeeds
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(stdstats=False)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.addstrategy(bt.Strategy)
 
-    # Load the Data
+    # 加载 Data
     datapath = args.dataname or '../../datas/2006-day-001.txt'
     data = btfeeds.BacktraderCSVData(
         dataname=datapath)
 
-    # Handy dictionary for the argument timeframe conversion
+    # 用于参数 timeframe 转换的便捷字典
     tframes = dict(
         daily=bt.TimeFrame.Days,
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Resample the data
+    # resample data
     if args.oldrs:
-        # Old resampler, fully deprecated
+        # 旧 resampler，已完全废弃
         data = bt.DataResampler(
             dataname=data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-        # Add the resample data instead of the original
+        # 添加 resample data，而不是原始 data
         cerebro.adddata(data)
     else:
-        # New resampler
+        # 新 resampler
         cerebro.resampledata(
             data,
             timeframe=tframes[args.timeframe],
             compression=args.compression)
 
-    # Run over everything
+    # 运行全部流程
     cerebro.run()
 
-    # Plot the result
+    # 绘制结果
     cerebro.plot(style='bar')
 
 

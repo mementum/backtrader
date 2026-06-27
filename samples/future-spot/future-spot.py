@@ -26,7 +26,7 @@ import random
 import backtrader as bt
 
 
-# The filter which changes the close price
+# 修改 close price 的 filter
 def close_changer(data, *args, **kwargs):
     data.close[0] += 50.0 * random.randint(-1, 1)
     return False  # length of stream is unchanged

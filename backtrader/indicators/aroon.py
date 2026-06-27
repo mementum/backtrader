@@ -26,15 +26,11 @@ from . import Indicator, FindFirstIndexHighest, FindFirstIndexLowest
 
 class _AroonBase(Indicator):
     '''
-    Base class which does the calculation of the AroonUp/AroonDown values and
-    defines the common parameters.
+    Aroon 的基类，用于计算 AroonUp/AroonDown 值并定义公共参数。
 
-    It uses the class attributes _up and _down (boolean flags) to decide which
-    value has to be calculated.
+    它使用类属性 ``_up`` 与 ``_down``（布尔标志）决定要计算哪个值。
 
-    Values are not assigned to lines but rather stored in the "up" and "down"
-    instance variables, which can be used by subclasses to for assignment or
-    further calculations
+    计算值不会直接赋给 line，而是存入实例变量 ``up`` 与 ``down``，供子类赋值或继续计算。
     '''
     _up = False
     _down = False
@@ -50,9 +46,8 @@ class _AroonBase(Indicator):
         self.plotinfo.plotyhlines += [self.p.lowerband, self.p.upperband]
 
     def __init__(self):
-        # Look backwards period + 1 for current data because the formula mus
-        # produce values between 0 and 100 and can only do that if the
-        # calculated hhidx/llidx go from 0 to period (hence period + 1 values)
+        # 当前 data 向后看 period + 1。公式需要产出 0 到 100 之间的值，
+        # 只有 hhidx/llidx 能覆盖 0 到 period 时才成立，因此需要 period + 1 个值。
         idxperiod = self.p.period + 1
 
         if self._up:
@@ -68,23 +63,34 @@ class _AroonBase(Indicator):
 
 class AroonUp(_AroonBase):
     '''
-    This is the AroonUp from the indicator AroonUpDown developed by Tushar
-    Chande in 1995.
+    Tushar Chande 于 1995 年开发的 AroonUpDown indicator 中的 AroonUp。
+
+    Args:
+        period: 回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        AroonUp: 输出 ``aroonup`` line 的 indicator。
 
     Formula:
       - up = 100 * (period - distance to highest high) / period
 
     Note:
-      The lines oscillate between 0 and 100. That means that the "distance" to
-      the last highest or lowest must go from 0 to period so that the formula
-      can yield 0 and 100.
+      line 在 0 到 100 之间 oscillate。这意味着距离最近 highest 或 lowest 的
+      "distance" 必须从 0 到 period，公式才能产出 0 与 100。
 
-      Hence the lookback period is period + 1, because the current bar is also
-      taken into account. And therefore this indicator needs an effective
-      lookback period of period + 1.
+      因此 lookback period 是 period + 1，因为当前 bar 也参与计算。
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AroonUp, period=14)
     '''
     _up = True
 
@@ -98,23 +104,34 @@ class AroonUp(_AroonBase):
 
 class AroonDown(_AroonBase):
     '''
-    This is the AroonDown from the indicator AroonUpDown developed by Tushar
-    Chande in 1995.
+    Tushar Chande 于 1995 年开发的 AroonUpDown indicator 中的 AroonDown。
+
+    Args:
+        period: 回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        AroonDown: 输出 ``aroondown`` line 的 indicator。
 
     Formula:
       - down = 100 * (period - distance to lowest low) / period
 
     Note:
-      The lines oscillate between 0 and 100. That means that the "distance" to
-      the last highest or lowest must go from 0 to period so that the formula
-      can yield 0 and 100.
+      line 在 0 到 100 之间 oscillate。这意味着距离最近 highest 或 lowest 的
+      "distance" 必须从 0 到 period，公式才能产出 0 与 100。
 
-      Hence the lookback period is period + 1, because the current bar is also
-      taken into account. And therefore this indicator needs an effective
-      lookback period of period + 1.
+      因此 lookback period 是 period + 1，因为当前 bar 也参与计算。
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AroonDown, period=14)
     '''
     _down = True
 
@@ -128,42 +145,66 @@ class AroonDown(_AroonBase):
 
 class AroonUpDown(AroonUp, AroonDown):
     '''
-    Developed by Tushar Chande in 1995.
+    Tushar Chande 于 1995 年开发的 AroonUpDown。
 
-    It tries to determine if a trend exists or not by calculating how far away
-    within a given period the last highs/lows are (AroonUp/AroonDown)
+    它通过计算给定周期内最近 high/low 的距离（AroonUp/AroonDown），尝试判断趋势是否存在。
+
+    Args:
+        period: 回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        AroonUpDown: 输出 ``aroonup`` 与 ``aroondown`` line 的 indicator。
 
     Formula:
       - up = 100 * (period - distance to highest high) / period
       - down = 100 * (period - distance to lowest low) / period
 
     Note:
-      The lines oscillate between 0 and 100. That means that the "distance" to
-      the last highest or lowest must go from 0 to period so that the formula
-      can yield 0 and 100.
+      line 在 0 到 100 之间 oscillate。这意味着距离最近 highest 或 lowest 的
+      "distance" 必须从 0 到 period，公式才能产出 0 与 100。
 
-      Hence the lookback period is period + 1, because the current bar is also
-      taken into account. And therefore this indicator needs an effective
-      lookback period of period + 1.
+      因此 lookback period 是 period + 1，因为当前 bar 也参与计算。
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AroonUpDown, period=14)
     '''
     alias = ('AroonIndicator',)
 
 
 class AroonOscillator(_AroonBase):
     '''
-    It is a variation of the AroonUpDown indicator which shows the current
-    difference between the AroonUp and AroonDown value, trying to present a
-    visualization which indicates which is stronger (greater than 0 -> AroonUp
-    and less than 0 -> AroonDown)
+    AroonUpDown 的变体，显示 AroonUp 与 AroonDown 当前差值，用于直观看出哪一侧更强
+    （大于 0 表示 AroonUp 更强，小于 0 表示 AroonDown 更强）。
+
+    Args:
+        period: 回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        AroonOscillator: 输出 ``aroonosc`` line 的 indicator。
 
     Formula:
       - aroonosc = aroonup - aroondown
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AroonOscillator, period=14)
     '''
     _up = True
     _down = True
@@ -186,12 +227,28 @@ class AroonOscillator(_AroonBase):
 
 class AroonUpDownOscillator(AroonUpDown, AroonOscillator):
     '''
-    Presents together the indicators AroonUpDown and AroonOsc
+    同时呈现 AroonUpDown 与 AroonOsc 的 indicator。
+
+    Args:
+        period: 回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        AroonUpDownOscillator: 输出 AroonUpDown 与 AroonOsc 相关 line 的
+        indicator。
 
     Formula:
       (None, uses the aforementioned indicators)
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AroonUpDownOscillator, period=14)
     '''
     alias = ('AroonUpDownOsc',)

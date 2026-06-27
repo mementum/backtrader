@@ -30,18 +30,22 @@ from ..trade import Trade
 
 
 class Trades(Observer):
-    '''This observer keeps track of full trades and plot the PnL level achieved
-    when a trade is closed.
+    '''跟踪完整 trade，并在 trade 关闭时绘制对应 PnL 的 observer。
 
-    A trade is open when a position goes from 0 (or crossing over 0) to X and
-    is then closed when it goes back to 0 (or crosses over 0 in the opposite
-    direction)
+    当 position 从 0（或穿越 0）变为 X 时，trade 被视为打开；当它回到 0
+    （或反方向穿越 0）时，trade 被视为关闭。
 
-    Params:
-      - ``pnlcomm`` (def: ``True``)
+    Args:
+        pnlcomm (bool): 是否显示扣除 commission 后的 net profit/loss，默认
+            ``True``。设为 ``False`` 时显示扣除 commission 前的 trade 结果。
 
-        Show net/profit and loss, i.e.: after commission. If set to ``False``
-        if will show the result of trades before commission
+    Returns:
+        None: observer 通过 ``pnlplus`` 和 ``pnlminus`` lines 暴露当前值。
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(Trades)
     '''
     _stclock = True
 
@@ -108,19 +112,19 @@ class MetaDataTrades(Observer.__class__):
     def donew(cls, *args, **kwargs):
         _obj, args, kwargs = super(MetaDataTrades, cls).donew(*args, **kwargs)
 
-        # Recreate the lines dynamically
+        # 动态重新创建 lines
         if _obj.params.usenames:
             lnames = tuple(x._name for x in _obj.datas)
         else:
             lnames = tuple('data{}'.format(x) for x in range(len(_obj.datas)))
 
-        # Generate a new lines class
+        # 生成新的 lines class
         linescls = cls.lines._derive(uuid.uuid4().hex, lnames, 0, ())
 
-        # Instantiate lines
+        # 实例化 lines
         _obj.lines = linescls()
 
-        # Generate plotlines info
+        # 生成 plotlines 信息
         markers = ['o', 'v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p',
                    '*', 'h', 'H', '+', 'x', 'D', 'd']
 
@@ -138,10 +142,23 @@ class MetaDataTrades(Observer.__class__):
             uuid.uuid4().hex, plines, [], recurse=True)
         _obj.plotlines = plotlines()
 
-        return _obj, args, kwargs  # return the instantiated object and args
+        return _obj, args, kwargs  # 返回已实例化对象和 args
 
 
 class DataTrades(with_metaclass(MetaDataTrades, Observer)):
+    '''按 data 分别绘制 closed trade PnL 的 observer。
+
+    Args:
+        usenames (bool): 是否使用 data 名称作为 line 名称，默认 ``True``。
+
+    Returns:
+        None: observer 通过动态生成的 data lines 暴露当前值。
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(DataTrades)
+    '''
     _stclock = True
 
     params = (('usenames', True),)

@@ -26,14 +26,22 @@ __all__ = ['HeikinAshi']
 
 
 class HeikinAshi(object):
-    '''
-    The filter remodels the open, high, low, close to make HeikinAshi
-    candlesticks
+    '''将 open、high、low、close 重塑为 Heikin Ashi K 线的 filter。
+
+    Args:
+        无。
+
+    Returns:
+        bool: 始终返回 ``False``，表示 data stream 长度不变。
 
     See:
       - https://en.wikipedia.org/wiki/Candlestick_chart#Heikin_Ashi_candlesticks
       - http://stockcharts.com/school/doku.php?id=chart_school:chart_analysis:heikin_ashi
 
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='daily.csv')
+    >>> data.addfilter(HeikinAshi)
     '''
     def __init__(self, data):
         pass
@@ -48,7 +56,7 @@ class HeikinAshi(object):
             data.high[0] = max(ha_open0, ha_close0, h)
             data.low[0] = min(ha_open0, ha_close0, l)
 
-        else:  # len is 1, no lookback is possible
+        else:  # len 为 1，无法 lookback
             data.open[0] = ha_open0 = (o + c) / 2.0
 
-        return False  # length of data stream is unaltered
+        return False  # data stream 长度不变

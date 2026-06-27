@@ -41,7 +41,7 @@ class MyVolFormatter(mplticker.Formatter):
         self.suffix = self.Suffixes[magnitude]
 
     def __call__(self, y, pos=0):
-        '''Return the label for time x at position pos'''
+        '''返回 ``pos`` 位置上 volume ``y`` 的 label。'''
 
         if y > self.volmax * 1.20:
             return ''
@@ -57,7 +57,7 @@ class MyDateFormatter(mplticker.Formatter):
         self.fmt = fmt
 
     def __call__(self, x, pos=0):
-        '''Return the label for time x at position pos'''
+        '''返回 ``pos`` 位置上 time ``x`` 的 label。'''
         ind = int(round(x))
         if ind >= self.lendates:
             ind = self.lendates - 1
@@ -72,7 +72,7 @@ def patch_locator(locator, xdates):
     def _patched_datalim_to_dt(self):
         dmin, dmax = self.axis.get_data_interval()
 
-        # proxy access to xdates
+        # 代理访问 xdates
         dmin, dmax = xdates[int(dmin)], xdates[min(int(dmax), len(xdates) - 1)]
 
         a, b = num2date(dmin, self.tz), num2date(dmax, self.tz)
@@ -81,12 +81,12 @@ def patch_locator(locator, xdates):
     def _patched_viewlim_to_dt(self):
         vmin, vmax = self.axis.get_view_interval()
 
-        # proxy access to xdates
+        # 代理访问 xdates
         vmin, vmax = xdates[int(vmin)], xdates[min(int(vmax), len(xdates) - 1)]
         a, b = num2date(vmin, self.tz), num2date(vmax, self.tz)
         return a, b
 
-    # patch the instance with a bound method
+    # 用 bound method patch 实例
     bound_datalim = _patched_datalim_to_dt.__get__(locator, locator.__class__)
     locator.datalim_to_dt = bound_datalim
 

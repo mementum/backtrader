@@ -38,54 +38,62 @@ else:
 
 DSTDIFF = DSTOFFSET - STDOFFSET
 
-# To avoid rounding errors taking dates to next day
+# 避免 rounding error 把日期推到下一天
 TIME_MAX = datetime.time(23, 59, 59, 999990)
 
-# To avoid rounding errors taking dates to next day
+# 避免 rounding error 把日期推到下一天
 TIME_MIN = datetime.time.min
 
 
 def tzparse(tz):
-    # If no object has been provided by the user and a timezone can be
-    # found via contractdtails, then try to get it from pytz, which may or
-    # may not be available.
+    '''解析 timezone 参数。
+
+    Args:
+        tz: ``None``、timezone 对象或 timezone 名称。
+
+    Returns:
+        timezone: 可用的 timezone/localizer 对象，或原值的 localizer 包装。
+    '''
+    # 如果用户未提供对象，但可通过 contract details 找到 timezone，
+    # 则尝试从 pytz 获取；pytz 可能可用也可能不可用。
     tzstr = isinstance(tz, string_types)
     if tz is None or not tzstr:
         return Localizer(tz)
 
     try:
-        import pytz  # keep the import very local
+        import pytz  # 保持 import 非常局部
     except ImportError:
-        return Localizer(tz)    # nothing can be done
+        return Localizer(tz)    # 无法进一步处理
 
     tzs = tz
-    if tzs == 'CST':  # usual alias
+    if tzs == 'CST':  # 常见别名
         tzs = 'CST6CDT'
 
     try:
         tz = pytz.timezone(tzs)
     except pytz.UnknownTimeZoneError:
-        return Localizer(tz)    # nothing can be done
+        return Localizer(tz)    # 无法进一步处理
 
     return tz
 
 
 def Localizer(tz):
+    '''确保 timezone 对象拥有 ``localize`` 方法。'''
     import types
 
     def localize(self, dt):
         return dt.replace(tzinfo=self)
 
     if tz is not None and not hasattr(tz, 'localize'):
-        # patch the tz instance with a bound method
+        # 用 bound method patch tz 实例
         tz.localize = types.MethodType(localize, tz)
 
     return tz
 
 
-# A UTC class, same as the one in the Python Docs
+# UTC 类，与 Python Docs 中的实现一致
 class _UTC(datetime.tzinfo):
-    """UTC"""
+    """UTC timezone 实现。"""
 
     def utcoffset(self, dt):
         return ZERO
@@ -101,6 +109,7 @@ class _UTC(datetime.tzinfo):
 
 
 class _LocalTimezone(datetime.tzinfo):
+    '''本地 timezone 实现，用于根据系统 DST 规则计算 offset。'''
 
     def utcoffset(self, dt):
         if self._isdst(dt):
@@ -124,7 +133,7 @@ class _LocalTimezone(datetime.tzinfo):
         try:
             stamp = _time.mktime(tt)
         except (ValueError, OverflowError):
-            return False  # Too far in the future, not relevant
+            return False  # 距离未来太远，不相关
 
         tt = _time.localtime(stamp)
         return tt.tm_isdst > 0
@@ -147,19 +156,25 @@ MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY
 
 
 def num2date(x, tz=None, naive=True):
-    # Same as matplotlib except if tz is None a naive datetime object
-    # will be returned.
-    """
-    *x* is a float value which gives the number of days
-    (fraction part represents hours, minutes, seconds) since
-    0001-01-01 00:00:00 UTC *plus* *one*.
-    The addition of one here is a historical artifact.  Also, note
-    that the Gregorian calendar is assumed; this is not universal
-    practice.  For details, see the module docstring.
-    Return value is a :class:`datetime` instance in timezone *tz* (default to
-    rcparams TZ value).
-    If *x* is a sequence, a sequence of :class:`datetime` objects will
-    be returned.
+    # 与 matplotlib 类似，但 tz 为 None 时返回 naive datetime object。
+    """将 float 日期数转换为 ``datetime``。
+
+    ``x`` 是从 ``0001-01-01 00:00:00 UTC`` 加一天后开始计算的天数；
+    小数部分表示 hours、minutes、seconds。这里额外加一天是历史遗留行为。
+    该函数假设使用 Gregorian calendar。
+
+    Args:
+        x: float 日期数。
+        tz: 可选 timezone。
+        naive: 指定 tz 时是否移除返回值上的 ``tzinfo``。
+
+    Returns:
+        datetime.datetime: 转换后的 datetime。
+
+    ---
+    交互示例：
+        >>> num2date(date2num(datetime.datetime(2024, 1, 2, 3, 4, 5)))
+        datetime.datetime(2024, 1, 2, 3, 4, 5)
     """
 
     ix = int(x)
@@ -180,7 +195,7 @@ def num2date(x, tz=None, naive=True):
         if naive:
             dt = dt.replace(tzinfo=None)
     else:
-        # If not tz has been passed return a non-timezoned dt
+        # 未传入 tz 时返回不带 timezone 的 dt
         dt = datetime.datetime(
             dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
             microsecond)
@@ -192,18 +207,31 @@ def num2date(x, tz=None, naive=True):
 
 
 def num2dt(num, tz=None, naive=True):
+    '''将 numeric 日期转换为 ``datetime.date``。'''
     return num2date(num, tz=tz, naive=naive).date()
 
 
 def num2time(num, tz=None, naive=True):
+    '''将 numeric 日期转换为 ``datetime.time``。'''
     return num2date(num, tz=tz, naive=naive).time()
 
 
 def date2num(dt, tz=None):
-    """
-    Convert :mod:`datetime` to the Gregorian date as UTC float days,
-    preserving hours, minutes, seconds and microseconds.  Return value
-    is a :func:`float`.
+    """将 ``datetime`` 转换为 Gregorian UTC float days。
+
+    会保留 hours、minutes、seconds 和 microseconds。
+
+    Args:
+        dt: ``datetime.datetime`` 或 ``datetime.date``。
+        tz: 可选 timezone；传入时先 localize。
+
+    Returns:
+        float: 转换后的日期数。
+
+    ---
+    交互示例：
+        >>> date2num(datetime.datetime(2024, 1, 1))
+        738886.0
     """
     if tz is not None:
         dt = tz.localize(dt)
@@ -228,9 +256,18 @@ def date2num(dt, tz=None):
 
 
 def time2num(tm):
-    """
-    Converts the hour/minute/second/microsecond part of tm (datetime.datetime
-    or time) to a num
+    """将 time 或 datetime 的日内部分转换为 numeric fraction。
+
+    Args:
+        tm: ``datetime.datetime`` 或 ``datetime.time``。
+
+    Returns:
+        float: 日内时间对应的一天内比例。
+
+    ---
+    交互示例：
+        >>> time2num(datetime.time(12, 0))
+        0.5
     """
     num = (tm.hour / HOURS_PER_DAY +
            tm.minute / MINUTES_PER_DAY +

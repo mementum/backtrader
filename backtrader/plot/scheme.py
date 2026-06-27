@@ -75,113 +75,109 @@ tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
 
 
 class PlotScheme(object):
+    '''绘图 scheme 配置容器，用于集中保存 plot 样式默认值。'''
+
     def __init__(self):
-        # to have a tight packing on the chart wether only the x axis or also
-        # the y axis have (see matplotlib)
+        # 控制 chart 是否紧凑排列，可只作用于 x 轴，也可同时作用于 y 轴（见 matplotlib）
         self.ytight = False
 
-        # y-margin (top/bottom) for the subcharts. This will not overrule the
-        # option plotinfo.plotymargin
+        # subchart 的 y-margin（top/bottom）。不会覆盖 plotinfo.plotymargin 选项
         self.yadjust = 0.0
-        # Each new line is in z-order below the previous one. change it False
-        # to have lines paint above the previous line
+        # 每条新 line 的 z-order 低于上一条。设为 False 时新 line 会绘制在上一条之上
         self.zdown = True
-        # Rotation of the date labes on the x axis
+        # x 轴 date label 的旋转角度
         self.tickrotation = 15
 
-        # How many "subparts" takes a major chart (datas) in the overall chart
-        # This is proportional to the total number of subcharts
+        # major chart（datas）在整体 chart 中占多少“subparts”
+        # 该值相对 subchart 总数成比例
         self.rowsmajor = 5
 
-        # How many "subparts" takes a minor chart (indicators/observers) in the
-        # overall chart. This is proportional to the total number of subcharts
-        # Together with rowsmajor, this defines a proportion ratio betwen data
-        # charts and indicators/observers charts
+        # minor chart（indicators/observers）在整体 chart 中占多少“subparts”
+        # 该值相对 subchart 总数成比例。
+        # 它与 rowsmajor 一起定义 data chart 与 indicator/observer chart 的比例关系
         self.rowsminor = 1
 
-        # Distance in between subcharts
+        # subchart 之间的距离
         self.plotdist = 0.0
 
-        # Have a grid in the background of all charts
+        # 是否在所有 chart 背景中显示 grid
         self.grid = True
 
-        # Default plotstyle for the OHLC bars which (line -> line on close)
-        # Other options: 'bar' and 'candle'
+        # OHLC bar 的默认 plotstyle（line -> line on close）
+        # 其它选项：'bar' 和 'candle'
         self.style = 'line'
 
-        # Default color for the 'line on close' plot
+        # 'line on close' plot 的默认颜色
         self.loc = 'black'
-        # Default color for a bullish bar/candle (0.75 -> intensity of gray)
+        # bullish bar/candle 的默认颜色（0.75 -> gray intensity）
         self.barup = '0.75'
-        # Default color for a bearish bar/candle
+        # bearish bar/candle 的默认颜色
         self.bardown = 'red'
-        # Level of transparency to apply to bars/cancles (NOT USED)
+        # 应用于 bars/candles 的透明度级别（未使用）
         self.bartrans = 1.0
 
-        # Wether the candlesticks have to be filled or be transparent
+        # candlestick 是否填充，还是保持透明
         self.barupfill = True
         self.bardownfill = True
 
-        # Opacity for the filled candlesticks (1.0 opaque - 0.0 transparent)
+        # filled candlestick 的不透明度（1.0 opaque - 0.0 transparent）
         self.baralpha = 1.0
 
-        # Alpha blending for fill areas between lines (_fill_gt and _fill_lt)
+        # line 之间填充区域的 alpha blending（_fill_gt 和 _fill_lt）
         self.fillalpha = 0.20
 
-        # Wether to plot volume or not. Note: if the data in question has no
-        # volume values, volume plotting will be skipped even if this is True
+        # 是否绘制 volume。注意：如果对应 data 没有 volume 值，即使这里为 True 也会跳过
         self.volume = True
 
-        # Wether to overlay the volume on the data or use a separate subchart
+        # volume 是叠加到 data 上，还是使用独立 subchart
         self.voloverlay = True
-        # Scaling of the volume to the data when plotting as overlay
+        # overlay 绘制时 volume 相对 data 的缩放
         self.volscaling = 0.33
-        # Pushing overlay volume up for better visibiliy. Experimentation
-        # needed if the volume and data overlap too much
+        # 将 overlay volume 上推以提升可见性。如果 volume 与 data 重叠过多，需要实验调整
         self.volpushup = 0.00
 
-        # Default colour for the volume of a bullish day
+        # bullish day volume 的默认颜色
         self.volup = '#aaaaaa'  # 0.66 of gray
-        # Default colour for the volume of a bearish day
+        # bearish day volume 的默认颜色
         self.voldown = '#cc6073'  # (204, 96, 115)
-        # Transparency to apply to the volume when overlaying
+        # overlay volume 时应用的透明度
         self.voltrans = 0.50
 
-        # Transparency for text labels (NOT USED CURRENTLY)
+        # text label 的透明度（当前未使用）
         self.subtxttrans = 0.66
-        # Default font text size for labels on the chart
+        # chart label 的默认 font size
         self.subtxtsize = 9
 
-        # Transparency for the legend (NOT USED CURRENTLY)
+        # legend 的透明度（当前未使用）
         self.legendtrans = 0.25
-        # Wether indicators have a leged displaey in their charts
+        # indicator 是否在其 chart 中显示 legend
         self.legendind = True
-        # Location of the legend for indicators (see matplotlib)
+        # indicator legend 的位置（见 matplotlib）
         self.legendindloc = 'upper left'
 
-        # Location of the legend for datafeeds (see matplotlib)
+        # datafeed legend 的位置（见 matplotlib）
         self.legenddataloc = 'upper left'
 
-        # Plot the last value of a line after the Object name
+        # 在 Object 名称后绘制 line 的最后一个 value
         self.linevalues = True
 
-        # Plot a tag at the end of each line with the last value
+        # 在每条 line 末尾绘制带最后 value 的 tag
         self.valuetags = True
 
-        # Default color for horizontal lines (see plotinfo.plothlines)
+        # horizontal line 的默认颜色（见 plotinfo.plothlines）
         self.hlinescolor = '0.66'  # shade of gray
-        # Default style for horizontal lines
+        # horizontal line 的默认样式
         self.hlinesstyle = '--'
-        # Default width for horizontal lines
+        # horizontal line 的默认宽度
         self.hlineswidth = 1.0
 
-        # Default color scheme: Tableau 10
+        # 默认 color scheme: Tableau 10
         self.lcolors = tableau10
 
-        # strftime Format string for the display of ticks on the x axis
+        # x 轴 tick 显示使用的 strftime format string
         self.fmt_x_ticks = '%Y-%m-%d %H:%M'
 
-        # strftime Format string for the display of data points values
+        # data point value 显示使用的 strftime format string
         self.fmt_x_data = None
 
     def color(self, idx):

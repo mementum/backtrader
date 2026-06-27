@@ -28,27 +28,32 @@ from .linebuffer import LineActions
 from .utils.py3 import cmp, range
 
 
-# Generate a List equivalent which uses "is" for contains
+# 生成一个在 contains 判断中使用 hash 等价性的 List
 class List(list):
+    '''List 的轻量变体，用于按对象 hash 判断包含关系。'''
+
     def __contains__(self, other):
         return any(x.__hash__() == other.__hash__() for x in self)
 
 
 class Logic(LineActions):
+    '''line operation 的基类，用于把参数转换为可按 bar 访问的 array。'''
+
     def __init__(self, *args):
         super(Logic, self).__init__()
         self.args = [self.arrayize(arg) for arg in args]
 
 
 class DivByZero(Logic):
-    '''This operation is a Lines object and fills it values by executing a
-    division on the numerator / denominator arguments and avoiding a division
-    by zero exception by checking the denominator
+    '''除法 line operation，遇到分母为 0 时返回指定 fallback。
 
-    Params:
-      - a: numerator (numeric or iterable object ... mostly a Lines object)
-      - b: denominator (numeric or iterable object ... mostly a Lines object)
-      - zero (def: 0.0): value to apply if division by zero would be raised
+    Args:
+      a: 分子，numeric 或 iterable 对象，通常是 Lines object。
+      b: 分母，numeric 或 iterable 对象，通常是 Lines object。
+      zero: 分母为 0 时写入的值，默认 ``0.0``。
+
+    Returns:
+      DivByZero: 输出 ``a / b`` 或 fallback 的 Lines object。
 
     '''
     def __init__(self, a, b, zero=0.0):
@@ -62,7 +67,7 @@ class DivByZero(Logic):
         self[0] = self.a[0] / b if b else self.zero
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # 缓存 Python dictionary lookup
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -74,16 +79,16 @@ class DivByZero(Logic):
 
 
 class DivZeroByZero(Logic):
-    '''This operation is a Lines object and fills it values by executing a
-    division on the numerator / denominator arguments and avoiding a division
-    by zero exception or an indetermination by checking the
-    denominator/numerator pair
+    '''除法 line operation，区分 ``x / 0`` 与 ``0 / 0`` 两种 fallback。
 
-    Params:
-      - a: numerator (numeric or iterable object ... mostly a Lines object)
-      - b: denominator (numeric or iterable object ... mostly a Lines object)
-      - single (def: +inf): value to apply if division is x / 0
-      - dual (def: 0.0): value to apply if division is 0 / 0
+    Args:
+      a: 分子，numeric 或 iterable 对象，通常是 Lines object。
+      b: 分母，numeric 或 iterable 对象，通常是 Lines object。
+      single: ``x / 0`` 时写入的值，默认 ``+inf``。
+      dual: ``0 / 0`` 时写入的值，默认 ``0.0``。
+
+    Returns:
+      DivZeroByZero: 输出除法结果或对应 fallback 的 Lines object。
     '''
     def __init__(self, a, b, single=float('inf'), dual=0.0):
         super(DivZeroByZero, self).__init__(a, b)
@@ -101,7 +106,7 @@ class DivZeroByZero(Logic):
             self[0] = self.a[0] / b
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # 缓存 Python dictionary lookup
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -118,6 +123,8 @@ class DivZeroByZero(Logic):
 
 
 class Cmp(Logic):
+    '''比较两个输入并输出 ``cmp(a, b)`` 的 line operation。'''
+
     def __init__(self, a, b):
         super(Cmp, self).__init__(a, b)
         self.a = self.args[0]
@@ -127,7 +134,7 @@ class Cmp(Logic):
         self[0] = cmp(self.a[0], self.b[0])
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # 缓存 Python dictionary lookup
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -137,6 +144,8 @@ class Cmp(Logic):
 
 
 class CmpEx(Logic):
+    '''扩展比较 operation，根据 ``a`` 与 ``b`` 的关系输出三个备选结果之一。'''
+
     def __init__(self, a, b, r1, r2, r3):
         super(CmpEx, self).__init__(a, b, r1, r2, r3)
         self.a = self.args[0]
@@ -149,7 +158,7 @@ class CmpEx(Logic):
         self[0] = cmp(self.a[0], self.b[0])
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # 缓存 Python dictionary lookup
         dst = self.array
         srca = self.a.array
         srcb = self.b.array

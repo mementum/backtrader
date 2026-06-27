@@ -27,23 +27,27 @@ from backtrader.utils.py3 import with_metaclass
 
 
 class MetaObserver(ObserverBase.__class__):
+    '''Observer metaclass 的基类，用于完成 observer 初始化挂接。'''
+
     def donew(cls, *args, **kwargs):
         _obj, args, kwargs = super(MetaObserver, cls).donew(*args, **kwargs)
-        _obj._analyzers = list()  # keep children analyzers
+        _obj._analyzers = list()  # 保存子 analyzer
 
-        return _obj, args, kwargs  # return the instantiated object and args
+        return _obj, args, kwargs  # 返回实例化对象和参数
 
     def dopreinit(cls, _obj, *args, **kwargs):
         _obj, args, kwargs = \
             super(MetaObserver, cls).dopreinit(_obj, *args, **kwargs)
 
-        if _obj._stclock:  # Change clock if strategy wide observer
+        if _obj._stclock:  # strategy-wide observer 使用 strategy clock
             _obj._clock = _obj._owner
 
         return _obj, args, kwargs
 
 
 class Observer(with_metaclass(MetaObserver, ObserverBase)):
+    '''Observer 的基类，用于在 strategy 运行时观察并记录状态。'''
+
     _stclock = False
 
     _OwnerCls = StrategyBase
@@ -53,8 +57,8 @@ class Observer(with_metaclass(MetaObserver, ObserverBase)):
 
     plotinfo = dict(plot=False, subplot=True)
 
-    # An Observer is ideally always observing and that' why prenext calls
-    # next. The behaviour can be overriden by subclasses
+    # Observer 理想情况下应始终观察，因此 prenext 调用 next。
+    # 子类可以覆盖该行为。
     def prenext(self):
         self.next()
 

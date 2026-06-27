@@ -25,9 +25,17 @@ from .. import Observer
 
 
 class Cash(Observer):
-    '''This observer keeps track of the current amount of cash in the broker
+    '''该 observer 跟踪 broker 中当前的 cash 数量
 
-    Params: None
+    Args:
+        无。
+
+    ---
+    交互示例:
+
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(Cash)
     '''
     _stclock = True
 
@@ -40,20 +48,20 @@ class Cash(Observer):
 
 
 class Value(Observer):
-    '''This observer keeps track of the current portfolio value in the broker
-    including the cash
+    '''该 observer 跟踪 broker 中当前的 portfolio value，包括 cash
 
-    Params:
+    Args:
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 value 是基于总净资产 value 还是 fund value。
+            参见 broker 文档中的 ``set_fundmode``。将其设为 ``True`` 或
+            ``False`` 可指定具体行为。
 
-      - ``fund`` (default: ``None``)
+    ---
+    交互示例:
 
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(Value, fund=False)
     '''
     _stclock = True
 
@@ -79,10 +87,20 @@ class Value(Observer):
 
 
 class Broker(Observer):
-    '''This observer keeps track of the current cash amount and portfolio value in
-    the broker (including the cash)
+    '''该 observer 跟踪 broker 中当前的 cash 数量和 portfolio value
+    （包括 cash）
 
-    Params: None
+    Args:
+        fund: 如果为 ``None``，会自动检测 broker 的实际 fundmode。设为
+            ``True`` 时按 fund value 展示，设为 ``False`` 时按普通 broker
+            value/cash 展示。
+
+    ---
+    交互示例:
+
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(Broker)
     '''
     _stclock = True
 
@@ -114,9 +132,17 @@ class Broker(Observer):
 
 
 class FundValue(Observer):
-    '''This observer keeps track of the current fund-like value
+    '''该 observer 跟踪当前类 fund value
 
-    Params: None
+    Args:
+        无。
+
+    ---
+    交互示例:
+
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(FundValue)
     '''
     _stclock = True
 
@@ -130,9 +156,17 @@ class FundValue(Observer):
 
 
 class FundShares(Observer):
-    '''This observer keeps track of the current fund-like shares
+    '''该 observer 跟踪当前类 fund shares
 
-    Params: None
+    Args:
+        无。
+
+    ---
+    交互示例:
+
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(FundShares)
     '''
     _stclock = True
 

@@ -120,12 +120,11 @@ else:
     import queue as queue
 
 
-# This is from Armin Ronacher from Flash simplified later by six
+# 来源：Armin Ronacher 的 Flask 实现，后来由 six 简化
 def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
-    # This requires a bit of explanation: the basic idea is to make a dummy
-    # metaclass for one level of class instantiation that replaces itself with
-    # the actual metaclass.
+    """创建带 metaclass 的基类。"""
+    # 基本思路：创建一个临时 dummy metaclass，用于一次 class 实例化，
+    # 然后用实际 metaclass 替换自身。
     class metaclass(meta):
 
         def __new__(cls, name, this_bases, d):

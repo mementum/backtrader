@@ -27,10 +27,17 @@ from . import (Indicator, Highest, Lowest, If, UpDay, DownDay, Accum, TrueLow,
 
 class WilliamsR(Indicator):
     '''
-    Developed by Larry Williams to show the relation of closing prices to
-    the highest-lowest range of a given period.
+    Larry Williams 开发的 Williams %R，用于显示 close 与指定周期最高-最低区间的关系。
 
-    Known as Williams %R (but % is not allowed in Python identifiers)
+    该指标通常称为 Williams %R，但 Python 标识符中不能使用 ``%``。
+
+    Args:
+        period: 最高价与最低价的回看周期。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        WilliamsR: 输出 ``percR`` line 的 indicator。
 
     Formula:
       - num = highest_period - close
@@ -39,6 +46,13 @@ class WilliamsR(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Williams_%25R
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(WilliamsR, period=14)
     '''
     lines = ('percR',)
     params = (('period', 14),
@@ -63,17 +77,29 @@ class WilliamsR(Indicator):
 
 class WilliamsAD(Indicator):
     '''
-    By Larry Williams. It does cumulatively measure if the price is
-    accumulating (upwards) or distributing (downwards) by using the concept of
-    UpDays and DownDays.
+    Larry Williams 提出的 Williams Accumulation/Distribution。它使用 UpDays 与
+    DownDays 的概念，累计衡量价格是在 accumulation（向上）还是
+    distribution（向下）。
 
-    Prices can go upwards but do so in a fashion that no longer shows
-    accumulation because updays and downdays are canceling out each other,
-    creating a divergence.
+    价格可能继续上涨，但若 upday 与 downday 相互抵消，accumulation 不再同步增强，
+    就可能形成 divergence。
+
+    Args:
+        data: 含有 close/high/low line 的数据源。
+
+    Returns:
+        WilliamsAD: 输出 ``ad`` line 的 indicator。
 
     See:
     - http://www.metastock.com/Customer/Resources/TAAZ/?p=125
     - http://ta.mql4.com/indicators/trends/williams_accumulation_distribution
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(WilliamsAD)
     '''
     lines = ('ad',)
 

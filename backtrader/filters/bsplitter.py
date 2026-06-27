@@ -27,36 +27,36 @@ import backtrader as bt
 
 
 class DaySplitter_Close(bt.with_metaclass(bt.MetaParams, object)):
-    '''
-    Splits a daily bar in two parts simulating 2 ticks which will be used to
-    replay the data:
+    '''将日线 bar 拆成两部分，用两个 tick 模拟 replay data 的 filter。
 
-      - First tick: ``OHLX``
+    拆分结果:
 
-        The ``Close`` will be replaced by the *average* of ``Open``, ``High``
-        and ``Low``
+      - 第 1 个 tick: ``OHLX``
 
-        The session opening time is used for this tick
+        ``Close`` 会被替换为 ``Open``、``High`` 和 ``Low`` 的平均值，并使用
+        session opening time。
 
-      and
+      - 第 2 个 tick: ``CCCC``
 
-      - Second tick: ``CCCC``
+        使用 ``Close`` 价格填充四个 price 组件，并使用 session closing time。
 
-        The ``Close`` price will be used for the four components of the price
+    Args:
+        closevol (float): 分配给 closing tick 的 volume 比例，默认 ``0.5``。
+            取值按 0.0 到 1.0 的绝对比例理解，剩余 volume 分配给 ``OHLX`` tick。
 
-        The session closing time is used for this tick
+    Returns:
+        bool: ``__call__`` 返回 ``False``，让初始 tick 可继续从 stack 中处理。
 
-    The volume will be split amongst the 2 ticks using the parameters:
+    **该 filter 设计为配合** ``cerebro.replaydata`` **使用**。
 
-      - ``closevol`` (default: ``0.5``) The value indicate which percentage, in
-        absolute terms from 0.0 to 1.0, has to be assigned to the *closing*
-        tick. The rest will be assigned to the ``OHLX`` tick.
-
-    **This filter is meant to be used together with** ``cerebro.replaydata``
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='daily.csv')
+    >>> data.addfilter(DaySplitter_Close, closevol=0.5)
 
     '''
     params = (
-        ('closevol', 0.5),  # 0 -> 1 amount of volume to keep for close
+        ('closevol', 0.5),  # 保留给 close 的 volume 比例，范围 0 -> 1
     )
 
     # replaying = True
@@ -65,47 +65,47 @@ class DaySplitter_Close(bt.with_metaclass(bt.MetaParams, object)):
         self.lastdt = None
 
     def __call__(self, data):
-        # Make a copy of the new bar and remove it from stream
-        datadt = data.datetime.date()  # keep the date
+        # 复制新 bar，并从 stream 中移除
+        datadt = data.datetime.date()  # 保留日期
 
         if self.lastdt == datadt:
-            return False  # skip bars that come again in the filter
+            return False  # 跳过 filter 中再次出现的 bar
 
-        self.lastdt = datadt  # keep ref to last seen bar
+        self.lastdt = datadt  # 保留最近见到的 bar 引用
 
-        # Make a copy of current data for ohlbar
+        # 复制当前 data，生成 ohlbar
         ohlbar = [data.lines[i][0] for i in range(data.size())]
-        closebar = ohlbar[:]  # Make a copy for the close
+        closebar = ohlbar[:]  # 为 close 生成副本
 
-        # replace close price with o-h-l average
+        # 用 o-h-l 平均值替换 close price
         ohlprice = ohlbar[data.Open] + ohlbar[data.High] + ohlbar[data.Low]
         ohlbar[data.Close] = ohlprice / 3.0
 
-        vol = ohlbar[data.Volume]  # adjust volume
+        vol = ohlbar[data.Volume]  # 调整 volume
         ohlbar[data.Volume] = vohl = int(vol * (1.0 - self.p.closevol))
 
-        oi = ohlbar[data.OpenInterest]  # adjust open interst
+        oi = ohlbar[data.OpenInterest]  # 调整 open interest
         ohlbar[data.OpenInterest] = 0
 
-        # Adjust times
+        # 调整时间
         dt = datetime.datetime.combine(datadt, data.p.sessionstart)
         ohlbar[data.DateTime] = data.date2num(dt)
 
-        # Ajust closebar to generate a single tick -> close price
+        # 调整 closebar，生成单 tick -> close price
         closebar[data.Open] = cprice = closebar[data.Close]
         closebar[data.High] = cprice
         closebar[data.Low] = cprice
         closebar[data.Volume] = vol - vohl
         ohlbar[data.OpenInterest] = oi
 
-        # Adjust times
+        # 调整时间
         dt = datetime.datetime.combine(datadt, data.p.sessionend)
         closebar[data.DateTime] = data.date2num(dt)
 
-        # Update stream
-        data.backwards(force=True)  # remove the copied bar from stream
-        data._add2stack(ohlbar)  # add ohlbar to stack
-        # Add 2nd part to stash to delay processing to next round
+        # 更新 stream
+        data.backwards(force=True)  # 从 stream 移除已复制的 bar
+        data._add2stack(ohlbar)  # 将 ohlbar 加入 stack
+        # 将第 2 部分加入 stash，延后到下一轮处理
         data._add2stack(closebar, stash=True)
 
-        return False  # initial tick can be further processed from stack
+        return False  # 初始 tick 可继续从 stack 处理

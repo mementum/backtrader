@@ -31,33 +31,26 @@ from backtrader.utils.py3 import MAXINT
 
 
 class TimeReturn(Observer):
-    '''This observer stores the *returns* of the strategy.
+    '''存储 strategy *returns* 的 observer。
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``None``。如果为 ``None``，
+            报告整个 backtest period 的完整 return。传入
+            ``TimeFrame.NoTimeFrame`` 可在不受时间约束的情况下考虑整个
+            dataset。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 基于总净资产 value 还是 fund value。
+            将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``timeframe`` (default: ``None``)
-        If ``None`` then the complete return over the entire backtested period
-        will be reported
+    Returns:
+        None: observer 通过 ``timereturn`` line 暴露当前值。
 
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
-
-      - ``compression`` (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Remember that at any moment of a ``run`` the current values can be checked
-    by looking at the *lines* by name at index ``0``.
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(TimeReturn)
 
     '''
     _stclock = True
@@ -74,7 +67,7 @@ class TimeReturn(Observer):
 
     def _plotlabel(self):
         return [
-            # Use the final tf/comp values calculated by the return analyzer
+            # 使用 return analyzer 计算出的最终 tf/comp 值
             TimeFrame.getname(self.treturn.timeframe,
                               self.treturn.compression),
             str(self.treturn.compression)

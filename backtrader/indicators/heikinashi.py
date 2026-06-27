@@ -31,7 +31,14 @@ __all__ = ['HeikinAshi']
 
 class HeikinAshi(bt.Indicator):
     '''
-    Heikin Ashi candlesticks in the forms of lines
+    以 line 形式输出 Heikin Ashi candlestick 数据。
+
+    Args:
+        data: 含有 open/high/low/close line 的数据源。
+
+    Returns:
+        HeikinAshi: 输出 ``ha_open``、``ha_high``、``ha_low`` 与 ``ha_close``
+        line 的 indicator。
 
     Formula:
         ha_open = (ha_open(-1) + ha_close(-1)) / 2
@@ -42,6 +49,13 @@ class HeikinAshi(bt.Indicator):
     See also:
         https://en.wikipedia.org/wiki/Candlestick_chart#Heikin_Ashi_candlesticks
         http://stockcharts.com/school/doku.php?id=chart_school:chart_analysis:heikin_ashi
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(HeikinAshi)
     '''
     lines = ('ha_open', 'ha_high', 'ha_low', 'ha_close',)
 
@@ -70,5 +84,5 @@ class HeikinAshi(bt.Indicator):
         super(HeikinAshi, self).__init__()
 
     def prenext(self):
-        # seed recursive value
+        # 为递归值设置初始种子
         self.lines.ha_open[0] = (self.data.open[0] + self.data.close[0]) / 2.0

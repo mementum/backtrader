@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-# Python 2/3 compatibility imports
+# Python 2/3 兼容导入
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
@@ -27,10 +27,16 @@ from . import Indicator, MovAv
 
 class DetrendedPriceOscillator(Indicator):
     '''
-    Defined by Joe DiNapoli in his book *"Trading with DiNapoli levels"*
+    Joe DiNapoli 在 *"Trading with DiNapoli levels"* 中定义的 DPO 指标。
 
-    It measures the price variations against a Moving Average (the trend)
-    and therefore removes the "trend" factor from the price.
+    它衡量价格相对 Moving Average（趋势）的变化，从而从价格中移除“趋势”因素。
+
+    Args:
+        period: Moving Average 周期。
+        movav: 使用的 Moving Average 类型。
+
+    Returns:
+        DetrendedPriceOscillator: 输出 ``dpo`` line 的 indicator。
 
     Formula:
       - movav = MovingAverage(close, period)
@@ -38,31 +44,37 @@ class DetrendedPriceOscillator(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Detrended_price_oscillator
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DetrendedPriceOscillator, period=20)
     '''
-    # Named alias for invocation
+    # 用于调用的命名别名
     alias = ('DPO',)
 
-    # Named output lines
+    # 命名输出 line
     lines = ('dpo',)
 
-    # Accepted parameters (and defaults) -
-    # MovAvg also parameter to allow experimentation
+    # 可接受参数及默认值；movav 也作为参数，便于实验
     params = (('period', 20), ('movav', MovAv.Simple))
 
-    # Emphasize central 0.0 line in plot
+    # 绘图时强调中心 0.0 线
     plotinfo = dict(plothlines=[0.0])
 
-    # Indicator information after the name (in brackets)
+    # indicator 名称后的信息（括号中）
     def _plotlabel(self):
         plabels = [self.p.period]
         plabels += [self.p.movav] * self.p.notdefault('movav')
         return plabels
 
     def __init__(self):
-        # Create the Moving Average
+        # 创建 Moving Average
         ma = self.p.movav(self.data, period=self.p.period)
 
-        # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
+        # 计算值（在 MA 中回看 period/2 + 1），并绑定到 dpo line
         self.lines.dpo = self.data - ma(-self.p.period // 2 + 1)
 
         super(DetrendedPriceOscillator, self).__init__()

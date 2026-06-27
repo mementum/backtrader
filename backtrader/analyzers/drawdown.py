@@ -29,35 +29,31 @@ __all__ = ['DrawDown', 'TimeDrawDown']
 
 
 class DrawDown(bt.Analyzer):
-    '''This analyzer calculates trading system drawdowns stats such as drawdown
-    values in %s and in dollars, max drawdown in %s and in dollars, drawdown
-    length and drawdown max length
+    '''计算交易系统 drawdown 统计信息的 analyzer。
 
-    Params:
+    统计内容包括当前 drawdown、金额回撤、最大 drawdown、最大金额回撤、
+    当前 drawdown 持续长度和最大持续长度。
 
-      - ``fund`` (default: ``None``)
+    Args:
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 drawdown 基于总净资产 value 还是 fund
+            value。将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
+    Returns:
+        AutoOrderedDict: ``get_analysis`` 返回支持 ``.`` 访问的 dict-like
+        对象，包含以下 key:
 
-        Set it to ``True`` or ``False`` for a specific behavior
+      - ``drawdown``: 当前 drawdown，单位为 0.xx %
+      - ``moneydown``: 当前金额回撤
+      - ``len``: 当前 drawdown 持续长度
+      - ``max.drawdown``: 最大 drawdown，单位为 0.xx %
+      - ``max.moneydown``: 最大金额回撤
+      - ``max.len``: 最大 drawdown 持续长度
 
-    Methods:
-
-      - ``get_analysis``
-
-        Returns a dictionary (with . notation support and subdctionaries) with
-        drawdown stats as values, the following keys/attributes are available:
-
-        - ``drawdown`` - drawdown value in 0.xx %
-        - ``moneydown`` - drawdown value in monetary units
-        - ``len`` - drawdown length
-
-        - ``max.drawdown`` - max drawdown value in 0.xx %
-        - ``max.moneydown`` - max drawdown value in monetary units
-        - ``max.len`` - max drawdown length
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(DrawDown, _name='drawdown')
     '''
 
     params = (
@@ -72,7 +68,7 @@ class DrawDown(bt.Analyzer):
             self._fundmode = self.p.fund
 
     def create_analysis(self):
-        self.rets = AutoOrderedDict()  # dict with . notation
+        self.rets = AutoOrderedDict()  # 支持 . notation 的 dict
 
         self.rets.len = 0
         self.rets.drawdown = 0.0
@@ -82,27 +78,27 @@ class DrawDown(bt.Analyzer):
         self.rets.max.drawdown = 0.0
         self.rets.max.moneydown = 0.0
 
-        self._maxvalue = float('-inf')  # any value will outdo it
+        self._maxvalue = float('-inf')  # 任意 value 都会高于它
 
     def stop(self):
-        self.rets._close()  # . notation cannot create more keys
+        self.rets._close()  # . notation 不能再创建更多 key
 
     def notify_fund(self, cash, value, fundvalue, shares):
         if not self._fundmode:
-            self._value = value  # record current value
-            self._maxvalue = max(self._maxvalue, value)  # update peak value
+            self._value = value  # 记录当前 value
+            self._maxvalue = max(self._maxvalue, value)  # 更新峰值 value
         else:
-            self._value = fundvalue  # record current value
-            self._maxvalue = max(self._maxvalue, fundvalue)  # update peak
+            self._value = fundvalue  # 记录当前 value
+            self._maxvalue = max(self._maxvalue, fundvalue)  # 更新峰值
 
     def next(self):
         r = self.rets
 
-        # calculate current drawdown values
+        # 计算当前 drawdown 值
         r.moneydown = moneydown = self._maxvalue - self._value
         r.drawdown = drawdown = 100.0 * moneydown / self._maxvalue
 
-        # maxximum drawdown values
+        # 最大 drawdown 值
         r.max.moneydown = max(r.max.moneydown, moneydown)
         r.max.drawdown = maxdrawdown = max(r.max.drawdown, drawdown)
 
@@ -111,50 +107,39 @@ class DrawDown(bt.Analyzer):
 
 
 class TimeDrawDown(bt.TimeFrameAnalyzerBase):
-    '''This analyzer calculates trading system drawdowns on the chosen
-    timeframe which can be different from the one used in the underlying data
-    Params:
+    '''按指定 timeframe 计算交易系统 drawdown 的 analyzer。
 
-      - ``timeframe`` (default: ``None``)
-        If ``None`` the ``timeframe`` of the 1st data in the system will be
-        used
+    该 timeframe 可以不同于底层 data 使用的 timeframe。
 
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``None``。如果为 ``None``，
+            使用系统中第 1 个 data 的 timeframe。传入
+            ``TimeFrame.NoTimeFrame`` 可在不受时间约束的情况下考虑整个
+            dataset。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。如果为 ``None``，使用系统中第 1 个 data 的
+            compression。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 drawdown 基于总净资产 value 还是 fund
+            value。将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``compression`` (default: ``None``)
+    Returns:
+        dict: ``get_analysis`` 返回包含以下 key 的字典:
 
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
+      - ``maxdrawdown``: 最大 drawdown
+      - ``maxdrawdownperiod``: 最大 drawdown 持续 period
 
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-      - *None*
+    运行过程中也可以直接读取以下属性:
 
-      - ``fund`` (default: ``None``)
+      - ``dd``
+      - ``maxdd``
+      - ``maxddlen``
 
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Methods:
-
-      - ``get_analysis``
-
-        Returns a dictionary (with . notation support and subdctionaries) with
-        drawdown stats as values, the following keys/attributes are available:
-
-        - ``drawdown`` - drawdown value in 0.xx %
-        - ``maxdrawdown`` - drawdown value in monetary units
-        - ``maxdrawdownperiod`` - drawdown length
-
-      - Those are available during runs as attributes
-        - ``dd``
-        - ``maxdd``
-        - ``maxddlen``
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(TimeDrawDown, timeframe=bt.TimeFrame.Months,
+    ...                     _name='timedrawdown')
     '''
 
     params = (
@@ -179,16 +164,16 @@ class TimeDrawDown(bt.TimeFrameAnalyzerBase):
         else:
             value = self.strategy.broker.fundvalue
 
-        # update the maximum seen peak
+        # 更新已见到的最大峰值
         if value > self.peak:
             self.peak = value
-            self.ddlen = 0  # start of streak
+            self.ddlen = 0  # streak 起点
 
-        # calculate the current drawdown
+        # 计算当前 drawdown
         self.dd = dd = 100.0 * (self.peak - value) / self.peak
-        self.ddlen += bool(dd)  # if peak == value -> dd = 0
+        self.ddlen += bool(dd)  # 如果 peak == value，则 dd = 0
 
-        # update the maxdrawdown if needed
+        # 按需更新 maxdrawdown
         self.maxdd = max(self.maxdd, dd)
         self.maxddlen = max(self.maxddlen, self.ddlen)
 

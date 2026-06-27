@@ -173,7 +173,7 @@ def parse_args(pargs=None):
                         help=('Use next (step by step) '
                               'instead of once (batch)'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

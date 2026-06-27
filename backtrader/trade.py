@@ -29,35 +29,57 @@ from .utils.py3 import range
 
 
 class TradeHistory(AutoOrderedDict):
-    '''Represents the status and update event for each update a Trade has
+    '''表示 Trade 每次 update 后的状态和事件信息。
 
-    This object is a dictionary which allows '.' notation
+    该对象是一个支持 ``.`` 访问语法的 dictionary。
 
     Attributes:
-      - ``status`` (``dict`` with '.' notation): Holds the resulting status of
-        an update event and has the following sub-attributes
+      - ``status`` (支持 ``.`` 访问的 ``dict``): 保存 update 事件后的状态，
+        包含以下子属性
 
         - ``status`` (``int``): Trade status
-        - ``dt`` (``float``): float coded datetime
-        - ``barlen`` (``int``): number of bars the trade has been active
-        - ``size`` (``int``): current size of the Trade
-        - ``price`` (``float``): current price of the Trade
-        - ``value`` (``float``): current monetary value of the Trade
-        - ``pnl`` (``float``): current profit and loss of the Trade
-        - ``pnlcomm`` (``float``): current profit and loss minus commission
+        - ``dt`` (``float``): float 编码的 datetime
+        - ``barlen`` (``int``): trade 已活跃的 bar 数量
+        - ``size`` (``int``): Trade 当前 size
+        - ``price`` (``float``): Trade 当前 price
+        - ``value`` (``float``): Trade 当前货币 value
+        - ``pnl`` (``float``): Trade 当前 profit and loss
+        - ``pnlcomm`` (``float``): 扣除 commission 后的 profit and loss
 
-      - ``event`` (``dict`` with '.' notation): Holds the event update
-        - parameters
+      - ``event`` (支持 ``.`` 访问的 ``dict``): 保存事件 update 参数
 
-        - ``order`` (``object``): the order which initiated the``update``
-        - ``size`` (``int``): size of the update
-        - ``price`` (``float``):price of the update
-        - ``commission`` (``float``): price of the update
+        - ``order`` (``object``): 触发 ``update`` 的 order
+        - ``size`` (``int``): update 的 size
+        - ``price`` (``float``): update 的 price
+        - ``commission`` (``float``): update 的 commission
+
+    ---
+    交互示例:
+
+    >>> hist = TradeHistory(Trade.Open, 0.0, 3, 10, 100.0, 1000.0, 5.0, 4.0, None)
+    >>> hist.status.size
+    10
+    >>> hist.doupdate(order=None, size=10, price=100.0, commission=1.0)
+    >>> hist.event.commission
+    1.0
     '''
 
     def __init__(self,
                  status, dt, barlen, size, price, value, pnl, pnlcomm, tz, event=None):
-        '''Initializes the object to the current status of the Trade'''
+        '''初始化为 Trade 的当前状态。
+
+        Args:
+            status (int): Trade status。
+            dt (float): float 编码的 datetime。
+            barlen (int): trade 已活跃的 bar 数量。
+            size (int): Trade 当前 size。
+            price (float): Trade 当前 price。
+            value (float): Trade 当前 value。
+            pnl (float): 当前 gross pnl。
+            pnlcomm (float): 扣除 commission 后的 net pnl。
+            tz: 与 ``dt`` 配套使用的 timezone。
+            event: 可选的 event 数据，会保存到 ``self.event``。
+        '''
         super(TradeHistory, self).__init__()
         self.status.status = status
         self.status.dt = dt
@@ -77,72 +99,91 @@ class TradeHistory(AutoOrderedDict):
                                  self.status.tz, self.event, ))
 
     def doupdate(self, order, size, price, commission):
-        '''Used to fill the ``update`` part of the history entry'''
+        '''填充 history entry 中的 ``update`` 事件部分。
+
+        Args:
+            order: 触发本次 update 的 order。
+            size (int): 本次 update 的 size。
+            price (float): 本次 update 的 price。
+            commission (float): 本次 update 产生的 commission。
+        '''
         self.event.order = order
         self.event.size = size
         self.event.price = price
         self.event.commission = commission
 
-        # Do not allow updates (avoids typing errors)
+        # 不再允许继续更新，避免误写字段
         self._close()
 
     def datetime(self, tz=None, naive=True):
-        '''Returns a datetime for the time the update event happened'''
+        '''返回本次 update 事件发生时的 datetime。
+
+        Args:
+            tz: 可选 timezone。未提供时使用 history 中保存的 timezone。
+            naive (bool): 是否返回 naive datetime。
+
+        Returns:
+            datetime.datetime: update 事件发生时间。
+        '''
         return num2date(self.status.dt, tz or self.status.tz, naive)
 
 
 class Trade(object):
-    '''Keeps track of the life of an trade: size, price,
-    commission (and value?)
+    '''跟踪一个 trade 的生命周期：size、price、commission 和 value。
 
-    An trade starts at 0 can be increased and reduced and can
-    be considered closed if it goes back to 0.
+    trade 从 0 开始，可以增加和减少；当 size 回到 0 时视为 closed。
 
-    The trade can be long (positive size) or short (negative size)
+    trade 可以是 long（正 size）或 short（负 size）。
 
-    An trade is not meant to be reversed (no support in the logic for it)
+    Trade 不用于表达反转，内部逻辑也不支持反转。
 
-    Member Attributes:
+    成员属性:
 
-      - ``ref``: unique trade identifier
-      - ``status`` (``int``): one of Created, Open, Closed
-      - ``tradeid``: grouping tradeid passed to orders during creation
-        The default in orders is 0
-      - ``size`` (``int``): current size of the trade
-      - ``price`` (``float``): current price of the trade
-      - ``value`` (``float``): current value of the trade
-      - ``commission`` (``float``): current accumulated commission
-      - ``pnl`` (``float``): current profit and loss of the trade (gross pnl)
-      - ``pnlcomm`` (``float``): current profit and loss of the trade minus
-        commission (net pnl)
-      - ``isclosed`` (``bool``): records if the last update closed (set size to
-        null the trade
-      - ``isopen`` (``bool``): records if any update has opened the trade
-      - ``justopened`` (``bool``): if the trade was just opened
-      - ``baropen`` (``int``): bar in which this trade was opened
+      - ``ref``: 唯一 trade 标识符
+      - ``status`` (``int``): Created、Open、Closed 之一
+      - ``tradeid``: 创建 order 时传入的分组 tradeid。order 中默认值为 0
+      - ``size`` (``int``): trade 当前 size
+      - ``price`` (``float``): trade 当前 price
+      - ``value`` (``float``): trade 当前 value
+      - ``commission`` (``float``): 当前累计 commission
+      - ``pnl`` (``float``): trade 当前 profit and loss（gross pnl）
+      - ``pnlcomm`` (``float``): trade 当前扣除 commission 后的 profit and loss
+        （net pnl）
+      - ``isclosed`` (``bool``): 记录最后一次 update 是否关闭了 trade
+        （将 size 设为 0）
+      - ``isopen`` (``bool``): 记录是否有任何 update 打开了 trade
+      - ``justopened`` (``bool``): trade 是否刚刚打开
+      - ``baropen`` (``int``): 该 trade 打开时所在的 bar
 
-      - ``dtopen`` (``float``): float coded datetime in which the trade was
-        opened
+      - ``dtopen`` (``float``): trade 打开时的 float 编码 datetime
 
-        - Use method ``open_datetime`` to get a Python datetime.datetime
-          or use the platform provided ``num2date`` method
+        - 使用 ``open_datetime`` 获取 Python ``datetime.datetime``，或使用平台
+          提供的 ``num2date`` 方法
 
-      - ``barclose`` (``int``): bar in which this trade was closed
+      - ``barclose`` (``int``): 该 trade 关闭时所在的 bar
 
-      - ``dtclose`` (``float``): float coded datetime in which the trade was
-        closed
+      - ``dtclose`` (``float``): trade 关闭时的 float 编码 datetime
 
-        - Use method ``close_datetime`` to get a Python datetime.datetime
-          or use the platform provided ``num2date`` method
+        - 使用 ``close_datetime`` 获取 Python ``datetime.datetime``，或使用平台
+          提供的 ``num2date`` 方法
 
-      - ``barlen`` (``int``): number of bars this trade was open
-      - ``historyon`` (``bool``): whether history has to be recorded
-      - ``history`` (``list``): holds a list updated with each "update" event
-        containing the resulting status and parameters used in the update
+      - ``barlen`` (``int``): 该 trade 保持 open 的 bar 数量
+      - ``historyon`` (``bool``): 是否记录 history
+      - ``history`` (``list``): 随每次 "update" 事件更新的列表，包含 update 后的
+        状态和 update 使用的参数
 
-        The first entry in the history is the Opening Event
-        The last entry in the history is the Closing Event
+        history 中第一个 entry 是 Opening Event，最后一个 entry 是 Closing Event
 
+    ---
+    交互示例:
+
+    >>> trade = Trade(size=10, price=100.0, value=1000.0, commission=1.5)
+    >>> trade.size, trade.price, trade.commission
+    (10, 100.0, 1.5)
+    >>> len(trade)
+    10
+    >>> bool(trade)
+    True
     '''
     refbasis = itertools.count(1)
 
@@ -164,6 +205,18 @@ class Trade(object):
 
     def __init__(self, data=None, tradeid=0, historyon=False,
                  size=0, price=0.0, value=0.0, commission=0.0):
+        '''
+        创建一个 Trade 实例。
+
+        Args:
+            data: 与 trade 关联的 data feed。
+            tradeid (int): 用于分组 order/trade 的标识符。
+            historyon (bool): 是否记录每次 update 的 history。
+            size (int): 初始 trade size。
+            price (float): 初始 trade price。
+            value (float): 初始 trade value。
+            commission (float): 初始累计 commission。
+        '''
 
         self.ref = next(self.refbasis)
         self.data = data
@@ -192,73 +245,92 @@ class Trade(object):
         self.status = self.Created
 
     def __len__(self):
-        '''Absolute size of the trade'''
+        '''返回 trade 的绝对 size。
+
+        Returns:
+            int: ``abs(self.size)``。
+        '''
         return abs(self.size)
 
     def __bool__(self):
-        '''Trade size is not 0'''
+        '''判断 trade size 是否非零。
+
+        Returns:
+            bool: 如果 ``size != 0`` 则返回 ``True``。
+        '''
         return self.size != 0
 
     __nonzero__ = __bool__
 
     def getdataname(self):
-        '''Shortcut to retrieve the name of the data this trade references'''
+        '''获取该 trade 引用的 data 名称。
+
+        Returns:
+            str: ``self.data._name``。
+        '''
         return self.data._name
 
     def open_datetime(self, tz=None, naive=True):
-        '''Returns a datetime.datetime object with the datetime in which
-        the trade was opened
+        '''返回 trade 打开时间对应的 ``datetime.datetime``。
+
+        Args:
+            tz: 可选 timezone。
+            naive (bool): 是否返回 naive datetime。
+
+        Returns:
+            datetime.datetime: trade 打开时间。
         '''
         return self.data.num2date(self.dtopen, tz=tz, naive=naive)
 
     def close_datetime(self, tz=None, naive=True):
-        '''Returns a datetime.datetime object with the datetime in which
-        the trade was closed
+        '''返回 trade 关闭时间对应的 ``datetime.datetime``。
+
+        Args:
+            tz: 可选 timezone。
+            naive (bool): 是否返回 naive datetime。
+
+        Returns:
+            datetime.datetime: trade 关闭时间。
         '''
         return self.data.num2date(self.dtclose, tz=tz, naive=naive)
 
     def update(self, order, size, price, value, commission, pnl,
                comminfo):
         '''
-        Updates the current trade. The logic does not check if the
-        trade is reversed, which is not conceptually supported by the
-        object.
+        更新当前 trade。该逻辑不会检查 trade 是否反转，因为 Trade 在概念上
+        不支持反转。
 
-        If an update sets the size attribute to 0, "closed" will be
-        set to true
+        如果一次 update 将 size 设为 0，``closed`` 会被置为 true。
 
-        Updates may be received twice for each order, once for the existing
-        size which has been closed (sell undoing a buy) and a second time for
-        the the opening part (sell reversing a buy)
+        每个 order 可能收到两次 update：一次对应已关闭的现有 size（sell 抵消
+        buy），另一次对应打开的新部分（sell 反转 buy）。
 
         Args:
-            order: the order object which has (completely or partially)
-                generated this update
-            size (int): amount to update the order
-                if size has the same sign as the current trade a
-                position increase will happen
-                if size has the opposite sign as current op size a
-                reduction/close will happen
+            order: 完全或部分生成本次 update 的 order 对象。
+            size (int): 用于更新 trade 的数量。如果 size 与当前 trade 同号，
+                会增加 position；如果与当前 open size 异号，会减少或关闭
+                position。
+            price (float): 执行 price，必须为正以保持一致性。
+            value (float): 未使用。新 size/price 操作产生的成本，trade 会自行
+                计算 value。
+            commission (float): 新 size/price 操作产生的 commission。
+            pnl (float): 未使用。执行部分产生的 pnl，trade 会独立计算 pnl。
+            comminfo: 用于计算 value 和 profit/loss 的 CommissionInfo 对象。
 
-            price (float): always be positive to ensure consistency
-            value (float): (unused) cost incurred in new size/price op
-                           Not used because the value is calculated for the
-                           trade
-            commission (float): incurred commission in the new size/price op
-            pnl (float): (unused) generated by the executed part
-                         Not used because the trade has an independent pnl
+        Returns:
+            None: 直接更新当前 Trade 实例。
         '''
         if not size:
-            return  # empty update, skip all other calculations
+            return  # 空 update，跳过后续计算
 
-        # Commission can only increase
+        # Commission 只能增加
         self.commission += commission
 
-        # Update size and keep a reference for logic an calculations
+        # 更新 size，并保留旧 size 供逻辑和计算使用
         oldsize = self.size
-        self.size += size  # size will carry the opposite sign if reducing
+        self.size += size  # 减仓时 size 会携带相反符号
 
-        # Check if it has been currently opened
+        # 检查本次是否刚刚打开
         self.justopened = bool(not oldsize and size)
 
         if self.justopened:
@@ -266,16 +338,16 @@ class Trade(object):
             self.dtopen = 0.0 if order.p.simulated else self.data.datetime[0]
             self.long = self.size > 0
 
-        # Any size means the trade was opened
+        # 任何非零 size 都表示 trade 已打开
         self.isopen = bool(self.size)
 
-        # Update current trade length
+        # 更新当前 trade 长度
         self.barlen = len(self.data) - self.baropen
 
-        # record if the position was closed (set to null)
+        # 记录 position 是否被关闭（归零）
         self.isclosed = bool(oldsize and not self.size)
 
-        # record last bar for the trade
+        # 记录 trade 的最后一个 bar
         if self.isclosed:
             self.isopen = False
             self.barclose = len(self.data)
@@ -286,13 +358,12 @@ class Trade(object):
             self.status = self.Open
 
         if abs(self.size) > abs(oldsize):
-            # position increased (be it positive or negative)
-            # update the average price
+            # position 增加（无论正负），更新平均 price
             self.price = (oldsize * self.price + size * price) / self.size
             pnl = 0.0
 
         else:  # abs(self.size) < abs(oldsize)
-            # position reduced/closed
+            # position 减少或关闭
             pnl = comminfo.profitandloss(-size, self.price, price)
 
         self.pnl += pnl
@@ -300,7 +371,7 @@ class Trade(object):
 
         self.value = comminfo.getvaluesize(self.size, self.price)
 
-        # Update the history if needed
+        # 如果需要，更新 history
         if self.historyon:
             dt0 = self.data.datetime[0] if not order.p.simulated else 0.0
             histentry = TradeHistory(

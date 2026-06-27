@@ -28,10 +28,25 @@ __all__ = ['Vortex']
 
 
 class Vortex(bt.Indicator):
-    '''
+    '''Vortex 指标。
+
+    该指标计算 ``vi_plus`` 与 ``vi_minus`` 两条线，用于衡量正向/反向趋势运动。
+
+    Args:
+      - ``period`` (default: ``14``): 计算 vortex movement 和 true range 求和时
+        使用的周期。
+
+    Returns:
+      Vortex: 输出 ``vi_plus`` 和 ``vi_minus`` 两条 indicator lines。
+
+    ---
+    交互界面使用示范例子：
+
+      - 在 strategy 中调用 ``bt.ind.Vortex(self.data, period=14)``，即可得到
+        ``vi_plus`` / ``vi_minus`` 两条线用于判断趋势方向。
+
     See:
       - http://www.vortexindicator.com/VFX_VORTEX.PDF
-
     '''
     lines = ('vi_plus', 'vi_minus',)
 

@@ -26,16 +26,22 @@ from . import Indicator, MovAv
 
 class StandardDeviation(Indicator):
     '''
-    Calculates the standard deviation of the passed data for a given period
+    计算传入 data 在指定周期内的 standard deviation。
+
+    Args:
+        period: 计算周期。
+        movav: 用于均值计算的 Moving Average 类型。
+        safepow: 是否对平方根入参取绝对值，以规避浮点表示导致的负值。
+
+    Returns:
+        StandardDeviation: 输出 ``stddev`` line 的 indicator。
 
     Note:
-      - If 2 datas are provided as parameters, the 2nd is considered to be the
-        mean of the first
+      - 如果传入 2 个 data，第 2 个会被视为第 1 个 data 的均值。
 
-      - ``safepow`` (default: False) If this parameter is True, the standard
-        deviation will be calculated as pow(abs(meansq - sqmean), 0.5) to safe
-        guard for possible negative results of ``meansq - sqmean`` caused by
-        the floating point representation.
+      - ``safepow`` 为 True 时，standard deviation 会以
+        ``pow(abs(meansq - sqmean), 0.5)`` 计算，以防浮点表示使
+        ``meansq - sqmean`` 出现微小负值。
 
     Formula:
       - meansquared = SimpleMovingAverage(pow(data, 2), period)
@@ -44,6 +50,13 @@ class StandardDeviation(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/Standard_deviation
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(StandardDeviation, period=20)
     '''
     alias = ('StdDev',)
 
@@ -71,13 +84,19 @@ class StandardDeviation(Indicator):
 
 
 class MeanDeviation(Indicator):
-    '''MeanDeviation (alias MeanDev)
+    '''MeanDeviation（别名 MeanDev）。
 
-    Calculates the Mean Deviation of the passed data for a given period
+    计算传入 data 在指定周期内的 Mean Deviation。
+
+    Args:
+        period: 计算周期。
+        movav: 用于均值与平均偏差计算的 Moving Average 类型。
+
+    Returns:
+        MeanDeviation: 输出 ``meandev`` line 的 indicator。
 
     Note:
-      - If 2 datas are provided as parameters, the 2nd is considered to be the
-        mean of the first
+      - 如果传入 2 个 data，第 2 个会被视为第 1 个 data 的均值。
 
     Formula:
       - mean = MovingAverage(data, period) (or provided mean)
@@ -86,6 +105,13 @@ class MeanDeviation(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Average_absolute_deviation
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MeanDeviation, period=20)
     '''
     alias = ('MeanDev',)
 

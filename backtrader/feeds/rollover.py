@@ -29,13 +29,13 @@ import backtrader as bt
 
 class MetaRollOver(bt.DataBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，随后进行初始化注册。'''
+        # 初始化类对象
         super(MetaRollOver, cls).__init__(name, bases, dct)
 
     def donew(cls, *args, **kwargs):
-        '''Intercept const. to copy timeframe/compression from 1st data'''
-        # Create the object and set the params in place
+        '''拦截构造过程，从第一个 data 复制 timeframe/compression。'''
+        # 创建对象并设置参数
         _obj, args, kwargs = super(MetaRollOver, cls).donew(*args, **kwargs)
 
         if args:
@@ -46,69 +46,36 @@ class MetaRollOver(bt.DataBase.__class__):
 
 
 class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
-    '''Class that rolls over to the next future when a condition is met
+    '''在满足条件时切换到下一份期货合约的数据源。
 
-    Params:
+    Args:
+        *args: 按合约顺序传入的多个 data feed，当前合约满足切换规则后会切到下一个。
+        checkdate: 可调用对象，签名为 ``checkdate(dt, d)``。``dt`` 是当前 active
+            data 的 ``datetime.datetime``，``d`` 是当前 active data feed。只要返回
+            ``True``，就允许进入切换判断窗口。
+        checkcondition: 可调用对象，签名为 ``checkcondition(d0, d1)``。只有
+            ``checkdate`` 返回 ``True`` 时才会调用。``d0`` 是当前 active data，
+            ``d1`` 是下一份到期合约 data。返回 ``True`` 时执行 roll-over。
 
-        - ``checkdate`` (default: ``None``)
+    Returns:
+        RollOver: 可加入 Cerebro 的连续期货 roll-over 数据源实例。
 
-          This must be a *callable* with the following signature::
+    ---
+    交互界面使用示范:
 
-            checkdate(dt, d):
-
-          Where:
-
-            - ``dt`` is a ``datetime.datetime`` object
-            - ``d`` is the current data feed for the active future
-
-          Expected Return Values:
-
-            - ``True``: as long as the callable returns this, a switchover can
-              happen to the next future
-
-        If a commodity expires on the 3rd Friday of March, ``checkdate`` could
-        return ``True`` for the entire week in which the expiration takes
-        place.
-
-            - ``False``: the expiration cannot take place
-
-        - ``checkcondition`` (default: ``None``)
-
-          **Note**: This will only be called if ``checkdate`` has returned
-          ``True``
-
-          If ``None`` this will evaluate to ``True`` (execute roll over)
-          internally
-
-          Else this must be a *callable* with this signature::
-
-            checkcondition(d0, d1)
-
-          Where:
-
-            - ``d0`` is the current data feed for the active future
-            - ``d1`` is the data feed for the next expiration
-
-          Expected Return Values:
-
-            - ``True``: roll-over to the next future
-
-        Following with the example from ``checkdate``, this could say that the
-        roll-over can only happend if the *volume* from ``d0`` is already less
-        than the volume from ``d1``
-
-            - ``False``: the expiration cannot take place
+    >>> data = RollOver(checkdate=lambda dt, d: False)
+    >>> data.p.checkdate is not None
+    True
     '''
 
     params = (
-        # ('rolls', []),  # array of futures to roll over
+        # ('rolls', []),  # 待 roll-over 的期货数据数组
         ('checkdate', None),  # callable
         ('checkcondition', None),  # callable
     )
 
     def islive(self):
-        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
-        should be deactivated'''
+        '''返回 ``True``，通知 ``Cerebro`` 关闭 preload 和 runonce。'''
         return True
 
     def __init__(self, *args):
@@ -120,7 +87,7 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
             d.setenvironment(self._env)
             d._start()
 
-        # put the references in a separate list to have pops
+        # 把引用放到单独列表中，便于按顺序 pop
         self._ds = list(self._rolls)
         self._d = self._ds.pop(0) if self._ds else None
         self._dexp = None
@@ -132,8 +99,7 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
             d.stop()
 
     def _gettz(self):
-        '''To be overriden by subclasses which may auto-calculate the
-        timezone'''
+        '''供子类覆写，用于自动计算 timezone。'''
         if self._rolls:
             return self._rolls[0]._gettz()
         return bt.utils.date.Localizer(self.p.tz)
@@ -153,9 +119,9 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
     def _load(self):
         while self._d is not None:
             _next = self._d.next()
-            if _next is None:  # no values yet, more will come
+            if _next is None:  # 暂时没有值，后续还会有
                 continue
-            if _next is False:  # no values from current data src
+            if _next is False:  # 当前数据源已经没有值
                 if self._ds:
                     self._d = self._ds.pop(0)
                     self._dts.pop(0)
@@ -163,9 +129,9 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
                     self._d = None
                 continue
 
-            dt0 = self._d.datetime.datetime()  # current dt for active data
+            dt0 = self._d.datetime.datetime()  # 当前 active data 的时间
 
-            # Synchronize other datas using dt0
+            # 使用 dt0 同步其他 data
             for i, d_dt in enumerate(zip(self._ds, self._dts)):
                 d, dt = d_dt
                 while dt < dt0:
@@ -173,7 +139,7 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
                         continue
                     self._dts[i] = dt = d.datetime.datetime()
 
-            # Move expired future as much as needed
+            # 推进已经过期的合约，直到追上当前时间或耗尽
             while self._dexp is not None:
                 if not self._dexp.next():
                     self._dexp = None
@@ -183,15 +149,14 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
                     continue
 
             if self._dexp is None and self._checkdate(dt0, self._d):
-                # rule has been met ... check other factors only if 2 datas
-                # still there
+                # 日期规则已满足；只有还有下一份 data 时才检查其他条件
                 if self._ds and self._checkcondition(self._d, self._ds[0]):
-                    # Time to switch to next data
+                    # 可以切换到下一份 data
                     self._dexp = self._d
                     self._d = self._ds.pop(0)
                     self._dts.pop(0)
 
-            # Fill the line and tell we die
+            # 填充当前 line，并返回已加载
             self.lines.datetime[0] = self._d.lines.datetime[0]
             self.lines.open[0] = self._d.lines.open[0]
             self.lines.high[0] = self._d.lines.high[0]
@@ -201,5 +166,5 @@ class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
             self.lines.openinterest[0] = self._d.lines.openinterest[0]
             return True
 
-        # Out of the loop -> self._d is None, no data feed to return from
+        # 退出循环表示 self._d 为 None，没有 data feed 可继续返回
         return False

@@ -85,6 +85,6 @@ from . import timer as timer
 
 from . import talib as talib
 
-# Load contributed indicators and studies
+# 加载 contributed indicators 和 studies
 import backtrader.indicators.contrib
 import backtrader.studies.contrib

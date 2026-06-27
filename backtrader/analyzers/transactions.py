@@ -29,33 +29,24 @@ from backtrader import Order, Position
 
 
 class Transactions(bt.Analyzer):
-    '''This analyzer reports the transactions occurred with each an every data in
-    the system
+    '''报告系统中每个 data 发生的 transaction。
 
-    It looks at the order execution bits to create a ``Position`` starting from
-    0 during each ``next`` cycle.
+    该 analyzer 会读取 order execution bits，并在每个 ``next`` cycle 中从 0
+    开始构造临时 ``Position``，用来汇总该 cycle 内发生的 transaction。
 
-    The result is used during next to record the transactions
+    Args:
+        headers (bool): 是否在结果字典中添加初始 header，默认 ``False``。
+        _pfheaders (tuple): pyfolio 风格的 header 名称，默认包含
+            ``date``、``amount``、``price``、``sid``、``symbol``、``value``。
 
-    Params:
+    Returns:
+        dict: ``get_analysis`` 返回以 datetime 为 key、transaction 列表为
+        value 的字典。
 
-      - headers (default: ``True``)
-
-        Add an initial key to the dictionary holding the results with the names
-        of the datas
-
-        This analyzer was modeled to facilitate the integration with
-        ``pyfolio`` and the header names are taken from the samples used for
-        it::
-
-          'date', 'amount', 'price', 'sid', 'symbol', 'value'
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(Transactions, headers=True, _name='transactions')
     '''
     params = (
         ('headers', False),
@@ -71,24 +62,22 @@ class Transactions(bt.Analyzer):
         self._idnames = list(enumerate(self.strategy.getdatanames()))
 
     def notify_order(self, order):
-        # An order could have several partial executions per cycle (unlikely
-        # but possible) and therefore: collect each new execution notification
-        # and let the work for next
+        # 一个 order 在单个 cycle 中可能有多次 partial execution（少见但可能）
+        # 因此先收集每个新的 execution notification，把汇总留给 next
 
-        # We use a fresh Position object for each round to get summary of what
-        # the execution bits have done in that round
+        # 每轮使用新的 Position 对象，汇总本轮 execution bits 的效果
         if order.status not in [Order.Partial, Order.Completed]:
-            return  # It's not an execution
+            return  # 不是 execution
 
         pos = self._positions[order.data._name]
         for exbit in order.executed.iterpending():
             if exbit is None:
-                break  # end of pending reached
+                break  # 已到达 pending 末尾
 
             pos.update(exbit.size, exbit.price)
 
     def next(self):
-        # super(Transactions, self).next()  # let dtkey update
+        # super(Transactions, self).next()  # 让 dtkey 更新
         entries = []
         for i, dname in self._idnames:
             pos = self._positions.get(dname, None)

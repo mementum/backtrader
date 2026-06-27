@@ -25,14 +25,19 @@ from __future__ import (absolute_import, division, print_function,
 from . import MovingAverageBase, MovAv
 
 
-# Inherits from MovingAverageBase to auto-register as MovingAverage type
+# 继承 MovingAverageBase，以自动注册为 MovingAverage 类型
 class HullMovingAverage(MovingAverageBase):
-    '''By Alan Hull
+    '''Alan Hull 提出的 Hull Moving Average。
 
-    The Hull Moving Average solves the age old dilemma of making a moving
-    average more responsive to current price activity whilst maintaining curve
-    smoothness. In fact the HMA almost eliminates lag altogether and manages to
-    improve smoothing at the same time.
+    HMA 尝试解决 Moving Average 既要更快响应当前价格活动、又要保持曲线平滑的难题。
+    它几乎消除了 lag，同时提升了平滑效果。
+
+    Args:
+        period: 计算周期。
+        _movav: 内部使用的 Moving Average 类型。
+
+    Returns:
+        HullMovingAverage: 输出 ``hma`` line 的 indicator。
 
     Formula:
       - hma = wma(2 * wma(data, period // 2) - wma(data, period), sqrt(period))
@@ -42,17 +47,23 @@ class HullMovingAverage(MovingAverageBase):
 
     Note:
 
-      - Please note that the final minimum period is not the period passed with
-        the parameter ``period``. A final moving average on moving average is
-        done in which the period is the *square root* of the original.
+      - 最终 minimum period 并不是参数 ``period`` 本身。最后还会对 moving average
+        再做一次 moving average，其周期是原始周期的 *square root*。
 
-        In the default case of ``30`` the final minimum period before the
-        moving average produces a non-NAN value is ``34``
+        默认 ``30`` 的情况下，在 moving average 产出非 NAN 值前，最终 minimum
+        period 为 ``34``。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(HullMovingAverage, period=30)
     '''
     alias = ('HMA', 'HullMA',)
     lines = ('hma',)
 
-    # param 'period' is inherited from MovingAverageBase
+    # period 参数继承自 MovingAverageBase
     params = (('_movav', MovAv.WMA),)
 
     def __init__(self):
@@ -62,5 +73,5 @@ class HullMovingAverage(MovingAverageBase):
         sqrtperiod = pow(self.params.period, 0.5)
         self.lines.hma = self.p._movav(wma2 - wma, period=int(sqrtperiod))
 
-        # Done after calc to ensure coop inheritance and composition work
+        # 计算后再调用，确保协作继承和组合可用
         super(HullMovingAverage, self).__init__()

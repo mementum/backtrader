@@ -24,16 +24,14 @@ from __future__ import (absolute_import, division, print_function,
 import argparse
 import datetime
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
 
 
 class PlotStrategy(bt.Strategy):
-    '''
-    The strategy does nothing but create indicators for plotting purposes
-    '''
+    '''仅创建用于绘图的 indicators，不执行交易。'''
     params = dict(
         smasubplot=False,  # default for Moving averages
         nomacdplot=False,
@@ -66,23 +64,23 @@ class PlotStrategy(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data)
 
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(PlotStrategy,
                         smasubplot=args.smasubplot,
                         nomacdplot=args.nomacdplot,
@@ -91,7 +89,7 @@ def runstrategy():
                         stocrsi=args.stocrsi,
                         stocrsilabels=args.stocrsilabels)
 
-    # And run it
+    # 然后运行
     cerebro.run(stdstats=args.stdstats)
 
     # Plot

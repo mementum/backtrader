@@ -30,11 +30,20 @@ from ..utils import date2num
 
 class VChartCSVData(feed.CSVDataBase):
     '''
-    Parses a `VisualChart <http://www.visualchart.com>`_ CSV exported file.
+    解析 `VisualChart <http://www.visualchart.com>`_ 导出的 CSV 文件。
 
-    Specific parameters (or specific meaning):
+    Args:
+        dataname: 要解析的文件名，或已经打开的类文件对象。
 
-      - ``dataname``: The filename to parse or a file-like object
+    Returns:
+        VChartCSVData: 可加入 Cerebro 的 VisualChart CSV 数据源实例。
+
+    ---
+    交互界面使用示范:
+
+    >>> data = VChartCSVData(dataname='visualchart.csv')
+    >>> data.p.dataname
+    'visualchart.csv'
     '''
 
     vctframes = dict(
@@ -46,11 +55,11 @@ class VChartCSVData(feed.CSVDataBase):
     def _loadline(self, linetokens):
         itokens = iter(linetokens)
 
-        ticker = next(itokens)  # skip ticker name
+        ticker = next(itokens)  # 跳过 ticker 名称
         if not self._name:
             self._name = ticker
 
-        # day/intraday indication
+        # 日线/日内数据标记
         timeframe = next(itokens)
 
         self._timeframe = self.vctframes[timeframe]
@@ -60,11 +69,11 @@ class VChartCSVData(feed.CSVDataBase):
 
         tmtxt = next(itokens)
         if timeframe == 'I':
-            # use the provided time
+            # 日内数据使用文件提供的时间
             hh, mmss = divmod(int(tmtxt), 10000)
             mm, ss = divmod(mmss, 100)
         else:
-            # put it at the end of the session parameter
+            # 日线及以上周期放到 sessionend 指定的收盘时间
             hh = self.p.sessionend.hour
             mm = self.p.sessionend.minute
             ss = self.p.sessionend.second

@@ -26,15 +26,26 @@ from . import Indicator
 
 class Momentum(Indicator):
     '''
-    Measures the change in price by calculating the difference between the
-    current price and the price from a given period ago
+    通过计算当前价格与指定周期前价格的差值，衡量价格变化。
 
+    Args:
+        period: 回看周期。
+
+    Returns:
+        Momentum: 输出 ``momentum`` line 的 indicator。
 
     Formula:
       - momentum = data - data_period
 
     See:
       - http://en.wikipedia.org/wiki/Momentum_(technical_analysis)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Momentum, period=12)
     '''
     lines = ('momentum',)
     params = (('period', 12),)
@@ -47,20 +58,34 @@ class Momentum(Indicator):
 
 class MomentumOscillator(Indicator):
     '''
-    Measures the ratio of change in prices over a period
+    衡量指定周期内价格变化的比率。
+
+    Args:
+        period: 回看周期。
+        band: 绘图时的参考线。
+
+    Returns:
+        MomentumOscillator: 输出 ``momosc`` line 的 indicator。
 
     Formula:
       - mosc = 100 * (data / data_period)
 
     See:
       - http://ta.mql4.com/indicators/oscillators/momentum
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MomentumOscillator, period=12)
     '''
     alias = ('MomentumOsc',)
 
-    # Named output lines
+    # 命名输出 line
     lines = ('momosc',)
 
-    # Accepted parameters (and defaults) -
+    # 可接受参数及默认值
     params = (('period', 12),
               ('band', 100.0))
 
@@ -78,20 +103,33 @@ class MomentumOscillator(Indicator):
 
 class RateOfChange(Indicator):
     '''
-    Measures the ratio of change in prices over a period
+    衡量指定周期内价格变化的相对比率。
+
+    Args:
+        period: 回看周期。
+
+    Returns:
+        RateOfChange: 输出 ``roc`` line 的 indicator。
 
     Formula:
       - roc = (data - data_period) / data_period
 
     See:
       - http://en.wikipedia.org/wiki/Momentum_(technical_analysis)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RateOfChange, period=12)
     '''
     alias = ('ROC',)
 
-    # Named output lines
+    # 命名输出 line
     lines = ('roc',)
 
-    # Accepted parameters (and defaults) -
+    # 可接受参数及默认值
     params = (('period', 12),)
 
     def __init__(self):
@@ -102,9 +140,15 @@ class RateOfChange(Indicator):
 
 class RateOfChange100(Indicator):
     '''
-    Measures the ratio of change in prices over a period with base 100
+    以 100 为基准衡量指定周期内价格变化的相对比率。
 
-    This is for example how ROC is defined in stockcharts
+    例如 stockcharts 中的 ROC 即采用这种定义。
+
+    Args:
+        period: 回看周期。
+
+    Returns:
+        RateOfChange100: 输出 ``roc100`` line 的 indicator。
 
     Formula:
       - roc = 100 * (data - data_period) / data_period
@@ -112,13 +156,19 @@ class RateOfChange100(Indicator):
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:rate_of_change_roc_and_momentum
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RateOfChange100, period=12)
     '''
     alias = ('ROC100',)
 
-    # Named output lines
+    # 命名输出 line
     lines = ('roc100',)
 
-    # Accepted parameters (and defaults)
+    # 可接受参数及默认值
     params = (('period', 12),)
 
     def __init__(self):

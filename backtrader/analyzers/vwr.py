@@ -30,71 +30,42 @@ from ..mathsupport import standarddev
 
 
 class VWR(TimeFrameAnalyzerBase):
-    '''Variability-Weighted Return: Better SharpeRatio with Log Returns
+    '''计算 VWR（Variability-Weighted Return）的 analyzer。
+
+    VWR 可以理解为使用 Log Returns 的改进型 SharpeRatio。
 
     Alias:
 
       - VariabilityWeightedReturn
 
-    See:
+    参考:
 
       - https://www.crystalbull.com/sharpe-ratio-better-with-log-returns/
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``None``。如果为 ``None``，
+            报告整个 backtest period 的完整 return。传入
+            ``TimeFrame.NoTimeFrame`` 可在不受时间约束的情况下考虑整个
+            dataset。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。如果为 ``None``，使用系统中第 1 个 data 的
+            compression。
+        tann: 年化（normalization）平均 return 使用的 period 数量，默认
+            ``None``。如果为 ``None``，会使用标准值:
+            days=252、weeks=52、months=12、years=1。
+        tau (float): 计算使用的 factor，默认 ``0.20``。
+        sdev_max (float): 最大 standard deviation，默认 ``2.0``。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 基于总净资产 value 还是 fund value。
+            将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``timeframe`` (default: ``None``)
-        If ``None`` then the complete return over the entire backtested period
-        will be reported
+    Returns:
+        dict: ``get_analysis`` 返回包含 ``vwr`` key 的字典。
 
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
-
-      - ``compression`` (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
-      - ``tann`` (default: ``None``)
-
-        Number of periods to use for the annualization (normalization) of the
-        average returns. If ``None``, then standard ``t`` values will be used,
-        namely:
-
-          - ``days: 252``
-          - ``weeks: 52``
-          - ``months: 12``
-          - ``years: 1``
-
-      - ``tau`` (default: ``2.0``)
-
-        factor for the calculation (see the literature)
-
-      - ``sdev_max`` (default: ``0.20``)
-
-        max standard deviation (see the literature)
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
-
-        The returned dict contains the following keys:
-
-          - ``vwr``: Variability-Weighted Return
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(VWR, _name='vwr')
     '''
 
     params = (
@@ -112,41 +83,41 @@ class VWR(TimeFrameAnalyzerBase):
     }
 
     def __init__(self):
-        # Children log return analyzer
+        # 子 log return analyzer
         self._returns = Returns(timeframe=self.p.timeframe,
                                 compression=self.p.compression,
                                 tann=self.p.tann)
 
     def start(self):
         super(VWR, self).start()
-        # Add an initial placeholder for [-1] operation
+        # 为 [-1] 操作添加初始占位
         if self.p.fund is None:
             self._fundmode = self.strategy.broker.fundmode
         else:
             self._fundmode = self.p.fund
 
         if not self._fundmode:
-            self._pis = [self.strategy.broker.getvalue()]  # keep initial value
+            self._pis = [self.strategy.broker.getvalue()]  # 保留初始 value
         else:
-            self._pis = [self.strategy.broker.fundvalue]  # keep initial value
+            self._pis = [self.strategy.broker.fundvalue]  # 保留初始 value
 
-        self._pns = [None]  # keep final prices (value)
+        self._pns = [None]  # 保留最终 price/value
 
     def stop(self):
         super(VWR, self).stop()
-        # Check if no value has been seen after the last 'dt_over'
-        # If so, there is one 'pi' out of place and a None 'pn'. Purge
+        # 检查最后一次 dt_over 之后是否没有看到 value
+        # 如果是，则会多出一个错位的 pi 和一个 None pn，需要清理
         if self._pns[-1] is None:
             self._pis.pop()
             self._pns.pop()
 
-        # Get results from children
+        # 从子 analyzer 获取结果
         rs = self._returns.get_analysis()
         ravg = rs['ravg']
         rnorm100 = rs['rnorm100']
 
-        # make n 1 based in enumerate (number of periods and not index)
-        # skip initial placeholders for synchronization
+        # 让 enumerate 中的 n 从 1 开始（表示 period 数量而不是 index）
+        # 跳过用于同步的初始占位
         dts = []
         for n, pipn in enumerate(zip(self._pis, self._pns), 1):
             pi, pn = pipn
@@ -161,13 +132,13 @@ class VWR(TimeFrameAnalyzerBase):
 
     def notify_fund(self, cash, value, fundvalue, shares):
         if not self._fundmode:
-            self._pns[-1] = value  # annotate last seen pn for current period
+            self._pns[-1] = value  # 标注当前 period 最后看到的 pn
         else:
-            self._pns[-1] = fundvalue  # annotate last pn for current period
+            self._pns[-1] = fundvalue  # 标注当前 period 的最后 pn
 
     def _on_dt_over(self):
-        self._pis.append(self._pns[-1])  # last pn is pi in next period
-        self._pns.append(None)  # placeholder for [-1] operation
+        self._pis.append(self._pns[-1])  # 上一个 pn 是下一个 period 的 pi
+        self._pns.append(None)  # [-1] 操作用占位
 
 
 VariabilityWeightedReturn = VWR

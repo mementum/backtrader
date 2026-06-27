@@ -44,15 +44,14 @@ class MetaIndicator(IndicatorBase.__class__):
     def usecache(cls, onoff):
         cls._icacheuse = onoff
 
-    # Object cache deactivated on 2016-08-17. If the object is being used
-    # inside another object, the minperiod information carried over
-    # influences the first usage when being modified during the 2nd usage
+    # object cache 于 2016-08-17 停用。如果对象被另一个对象内部使用，
+    # 传递过来的 minperiod 信息会在第 2 次使用时被修改，并影响第 1 次使用
 
     def __call__(cls, *args, **kwargs):
         if not cls._icacheuse:
             return super(MetaIndicator, cls).__call__(*args, **kwargs)
 
-        # implement a cache to avoid duplicating lines actions
+        # 实现 cache，避免重复创建 lines actions
         ckey = (cls, tuple(args), tuple(kwargs.items()))  # tuples hashable
         try:
             return cls._icache[ckey]
@@ -65,10 +64,8 @@ class MetaIndicator(IndicatorBase.__class__):
         return cls._icache.setdefault(ckey, _obj)
 
     def __init__(cls, name, bases, dct):
-        '''
-        Class has already been created ... register subclasses
-        '''
-        # Initialize the class
+        '''类已经创建完成，注册其 subclasses。'''
+        # 初始化 class
         super(MetaIndicator, cls).__init__(name, bases, dct)
 
         if not cls.aliased and \
@@ -76,12 +73,12 @@ class MetaIndicator(IndicatorBase.__class__):
             refattr = getattr(cls, cls._refname)
             refattr[name] = cls
 
-        # Check if next and once have both been overridden
+        # 检查 next 和 once 是否都被覆盖
         next_over = cls.next != IndicatorBase.next
         once_over = cls.once != IndicatorBase.once
 
         if next_over and not once_over:
-            # No -> need pointer movement to once simulation via next
+            # 未覆盖 once 时，需要移动指针并通过 next 模拟 once
             cls.once = cls.once_via_next
             cls.preonce = cls.preonce_via_prenext
             cls.oncestart = cls.oncestart_via_nextstart
@@ -93,13 +90,12 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     csv = False
 
     def advance(self, size=1):
-        # Need intercepting this call to support datas with
-        # different lengths (timeframes)
+        # 需要拦截该调用，以支持不同长度/timeframe 的 datas
         if len(self) < len(self._clock):
             self.lines.advance(size=size)
 
     def preonce_via_prenext(self, start, end):
-        # generic implementation if prenext is overridden but preonce is not
+        # 当覆盖了 prenext 但未覆盖 preonce 时使用的通用实现
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -111,8 +107,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
             self.prenext()
 
     def oncestart_via_nextstart(self, start, end):
-        # nextstart has been overriden, but oncestart has not and the code is
-        # here. call the overriden nextstart
+        # nextstart 已被覆盖但 oncestart 未被覆盖时，调用覆盖后的 nextstart
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -124,7 +119,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
             self.nextstart()
 
     def once_via_next(self, start, end):
-        # Not overridden, next must be there ...
+        # once 未被覆盖时，必须通过 next 执行
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -149,14 +144,14 @@ class MtLinePlotterIndicator(Indicator.__class__):
         newplotlines.setdefault(lname, dict())
         cls.plotlines = plotlines._derive(name, newplotlines, [], recurse=True)
 
-        # Create the object and set the params in place
+        # 创建对象并设置 params
         _obj, args, kwargs =  \
             super(MtLinePlotterIndicator, cls).donew(*args, **kwargs)
 
         _obj.owner = _obj.data.owner._clock
         _obj.data.lines[0].addbinding(_obj.lines[0])
 
-        # Return the object and arguments to the chain
+        # 将对象和参数返回给调用链
         return _obj, args, kwargs
 
 

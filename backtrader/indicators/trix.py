@@ -26,8 +26,16 @@ from . import Indicator, MovAv
 
 class Trix(Indicator):
     '''
-    Defined by Jack Hutson in the 80s and shows the Rate of Change (%) or slope
-    of a triple exponentially smoothed moving average
+    Jack Hutson 在 20 世纪 80 年代定义，用于显示三重指数平滑 Moving Average 的
+    Rate of Change (%) 或斜率。
+
+    Args:
+        period: EMA 平滑周期。
+        _rocperiod: 计算 Rate of Change 的回看周期。
+        _movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        Trix: 输出 ``trix`` line 的 indicator。
 
     Formula:
       - ema1 = EMA(data, period)
@@ -35,14 +43,20 @@ class Trix(Indicator):
       - ema3 = EMA(ema2, period)
       - trix = 100 * (ema3 - ema3(-1)) / ema3(-1)
 
-      The final formula can be simplified to: 100 * (ema3 / ema3(-1) - 1)
+      最终公式可简化为：100 * (ema3 / ema3(-1) - 1)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认使用 EMA 作为 Moving Average。
 
     See:
       - https://en.wikipedia.org/wiki/Trix_(technical_analysis)
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:trix
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Trix, period=15)
     '''
     alias = ('TRIX',)
     lines = ('trix',)
@@ -62,7 +76,7 @@ class Trix(Indicator):
         ema2 = self.p._movav(ema1, period=self.p.period)
         ema3 = self.p._movav(ema2, period=self.p.period)
 
-        # 1 period Percentage Rate of Change
+        # 1 周期 Percentage Rate of Change
         self.lines.trix = 100.0 * (ema3 / ema3(-self.p._rocperiod) - 1.0)
 
         super(Trix, self).__init__()
@@ -70,7 +84,16 @@ class Trix(Indicator):
 
 class TrixSignal(Trix):
     '''
-    Extension of Trix with a signal line (ala MACD)
+    Trix 的扩展版本，额外添加类似 MACD 的 signal line。
+
+    Args:
+        period: EMA 平滑周期。
+        sigperiod: signal line 的平滑周期。
+        _rocperiod: 计算 Rate of Change 的回看周期。
+        _movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        TrixSignal: 输出 ``trix`` 与 ``signal`` line 的 indicator。
 
     Formula:
       - trix = Trix(data, period)
@@ -78,6 +101,13 @@ class TrixSignal(Trix):
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:trix
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(TrixSignal, period=15, sigperiod=9)
     '''
     lines = ('signal',)
     params = (('sigperiod', 9),)

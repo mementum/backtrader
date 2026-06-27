@@ -24,15 +24,14 @@ from __future__ import (absolute_import, division, print_function,
 from backtrader import Indicator
 from backtrader.functions import *
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+# 下列模块应在 __all__ 中定义 Indicator 对象，私有类/变量则使用 "_" 前缀
 
 from .basicops import *
 
-# base for moving averages
+# moving average 基础
 from .mabase import *
 
-# moving averages (so envelope and oscillators can be auto-generated)
+# moving average（用于自动生成 envelope 和 oscillator）
 from .sma import *
 from .ema import *
 from .smma import *
@@ -44,10 +43,10 @@ from .hma import *
 from .zlind import *
 from .dma import *
 
-# depends on moving averages
+# 依赖 moving average
 from .deviation import *
 
-# depend on basicops, moving averages and deviations
+# 依赖 basicops、moving average 和 deviation
 from .atr import *
 from .aroon import *
 from .bollinger import *
@@ -80,7 +79,7 @@ from .accdecoscillator import *
 
 from .dv2 import *  # depends on percentrank
 
-# Depends on Momentum
+# 依赖 Momentum
 from .kst import *
 
 from .ichimoku import *

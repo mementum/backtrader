@@ -27,26 +27,43 @@ from . import Highest, Lowest
 
 class Ichimoku(bt.Indicator):
     '''
-    Developed and published in his book in 1969 by journalist Goichi Hosoda
+    记者 Goichi Hosoda 开发，并于 1969 年在其书中发表的一目均衡表。
+
+    Args:
+        tenkan: tenkan_sen 的计算周期。
+        kijun: kijun_sen 的计算周期。
+        senkou: senkou_span_b 的计算周期。
+        senkou_lead: senkou span 向未来平移的 bar 数。
+        chikou: chikou span 向过去平移的 bar 数。
+
+    Returns:
+        Ichimoku: 输出 ``tenkan_sen``、``kijun_sen``、``senkou_span_a``、
+        ``senkou_span_b`` 与 ``chikou_span`` line 的 indicator。
 
     Formula:
       - tenkan_sen = (Highest(High, tenkan) + Lowest(Low, tenkan)) / 2.0
       - kijun_sen = (Highest(High, kijun) + Lowest(Low, kijun)) / 2.0
 
-      The next 2 are pushed 26 bars into the future
+      以下 2 个 line 会向未来推进 26 个 bar：
 
       - senkou_span_a = (tenkan_sen + kijun_sen) / 2.0
       - senkou_span_b = ((Highest(High, senkou) + Lowest(Low, senkou)) / 2.0
 
-      This is pushed 26 bars into the past
+      以下 line 会向过去推进 26 个 bar：
 
       - chikou = close
 
-    The cloud (Kumo) is formed by the area between the senkou_spans
+    云图（Kumo）由两个 senkou span 之间的区域形成。
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:ichimoku_cloud
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Ichimoku)
     '''
     lines = ('tenkan_sen', 'kijun_sen',
              'senkou_span_a', 'senkou_span_b', 'chikou_span',)
@@ -54,8 +71,8 @@ class Ichimoku(bt.Indicator):
         ('tenkan', 9),
         ('kijun', 26),
         ('senkou', 52),
-        ('senkou_lead', 26),  # forward push
-        ('chikou', 26),  # backwards push
+        ('senkou_lead', 26),  # 向未来推进
+        ('chikou', 26),  # 向过去推进
     )
 
     plotinfo = dict(subplot=False)

@@ -24,22 +24,19 @@ from __future__ import (absolute_import, division, print_function,
 import argparse
 import datetime
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
 
 
 class MultiDataStrategy(bt.Strategy):
-    '''
-    This strategy operates on 2 datas. The expectation is that the 2 datas are
-    correlated and the 2nd data is used to generate signals on the 1st
+    '''在两个相关 datas 上运行，并使用第 2 个 data 为第 1 个 data 生成信号。
 
-      - Buy/Sell Operationss will be executed on the 1st data
-      - The signals are generated using a Simple Moving Average on the 2nd data
-        when the close price crosses upwwards/downwards
+      - Buy/Sell 操作在第 1 个 data 上执行。
+      - 当 close price 上下穿过第 2 个 data 的 Simple Moving Average 时生成信号。
 
-    The strategy is a long-only strategy
+    这是一个 long-only strategy。
     '''
     params = dict(
         period=15,
@@ -69,21 +66,21 @@ class MultiDataStrategy(bt.Strategy):
             self.log('%s ,' % order.Status[order.status])
             pass  # Simply log
 
-        # Allow new orders
+        # 允许新 orders
         self.orderid = None
 
     def __init__(self):
-        # To control operation entries
+        # 用于控制操作入口
         self.orderid = None
 
-        # Create SMA on 2nd data
+        # 在第 2 个 data 上创建 SMA
         sma = btind.MovAv.SMA(self.data1, period=self.p.period)
-        # Create a CrossOver Signal from close an moving average
+        # 从 close 和 moving average 创建 CrossOver Signal
         self.signal = btind.CrossOver(self.data1.close, sma)
 
     def next(self):
         if self.orderid:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果有 active order，则不允许新 orders
 
         if self.p.printout:
             print('Self  len:', len(self))
@@ -115,48 +112,48 @@ class MultiDataStrategy(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data0 = btfeeds.YahooFinanceCSVData(
         dataname=args.data0,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data0)
 
-    # Create the 2nd data
+    # 创建第 2 个 data
     data1 = btfeeds.YahooFinanceCSVData(
         dataname=args.data1,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 2nd data to cerebro
+    # 添加第 2 个 data 到 cerebro
     cerebro.adddata(data1)
 
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(MultiDataStrategy,
                         period=args.period,
                         stake=args.stake)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcash(args.cash)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcommission(commission=args.commperc)
 
-    # And run it
+    # 然后运行
     cerebro.run(runonce=not args.runnext,
                 preload=not args.nopreload,
                 oldsync=args.oldsync)
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 

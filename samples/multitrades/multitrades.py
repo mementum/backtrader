@@ -25,7 +25,7 @@ import argparse
 import datetime
 import itertools
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.indicators as btind
@@ -34,10 +34,9 @@ import mtradeobserver
 
 
 class MultiTradeStrategy(bt.Strategy):
-    '''This strategy buys/sells upong the close price crossing
-    upwards/downwards a Simple Moving Average.
+    '''根据 close price 与 Simple Moving Average 的上下交叉执行买卖。
 
-    It can be a long-only strategy by setting the param "onlylong" to True
+    将 ``onlylong`` 参数设为 ``True`` 时，可作为 long-only strategy 使用。
     '''
     params = dict(
         period=15,
@@ -54,15 +53,15 @@ class MultiTradeStrategy(bt.Strategy):
             print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # To control operation entries
+        # 用于控制操作入口
         self.order = None
 
-        # Create SMA on 2nd data
+        # 在第 2 个 data 上创建 SMA
         sma = btind.MovAv.SMA(self.data, period=self.p.period)
-        # Create a CrossOver Signal from close an moving average
+        # 从 close 和 moving average 创建 CrossOver Signal
         self.signal = btind.CrossOver(self.data.close, sma)
 
-        # To alternate amongst different tradeids
+        # 用于在不同 tradeids 之间轮换
         if self.p.mtrade:
             self.tradeid = itertools.cycle([0, 1, 2])
         else:
@@ -70,7 +69,7 @@ class MultiTradeStrategy(bt.Strategy):
 
     def next(self):
         if self.order:
-            return  # if an order is active, no new orders are allowed
+            return  # 如果有 active order，则不允许新 orders
 
         if self.signal > 0.0:  # cross upwards
             if self.position:
@@ -107,7 +106,7 @@ class MultiTradeStrategy(bt.Strategy):
             self.log('%s ,' % order.Status[order.status])
             pass  # Simply log
 
-        # Allow new orders
+        # 允许新 orders
         self.order = None
 
     def notify_trade(self, trade):
@@ -122,23 +121,23 @@ class MultiTradeStrategy(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data)
 
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(MultiTradeStrategy,
                         period=args.period,
                         onlylong=args.onlylong,
@@ -146,21 +145,21 @@ def runstrategy():
                         printout=args.printout,
                         mtrade=args.mtrade)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcash(args.cash)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcommission(commission=args.comm,
                                  mult=args.mult,
                                  margin=args.margin)
 
-    # Add the MultiTradeObserver
+    # 添加 MultiTradeObserver
     cerebro.addobserver(mtradeobserver.MTradeObserver)
 
-    # And run it
+    # 然后运行
     cerebro.run()
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=False, zdown=False)
 

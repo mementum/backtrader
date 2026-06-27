@@ -32,36 +32,25 @@ __all__ = ['PeriodStats']
 
 
 class PeriodStats(bt.Analyzer):
-    '''Calculates basic statistics for given timeframe
+    '''计算给定 timeframe 的基础统计信息
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``Years``。如果为 ``None``，
+            将使用系统中第 1 个 data 的 ``timeframe``。传入
+            ``TimeFrame.NoTimeFrame`` 可在不受时间约束的情况下考虑整个
+            dataset。
+        compression (int): timeframe 压缩倍数，默认 ``1``。仅用于日内
+            timeframe。例如指定 ``TimeFrame.Minutes`` 并将 compression 设为
+            60，即可按小时 timeframe 工作。如果为 ``None``，将使用系统中第
+            1 个 data 的 compression。
+        zeroispos (bool): 如果设为 ``True``，无变化的 period 会被计为正数。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 是基于总净资产 value 还是 fund
+            value。参见 broker 文档中的 ``set_fundmode``。将其设为 ``True``
+            或 ``False`` 可指定具体行为。
 
-      - ``timeframe`` (default: ``Years``)
-        If ``None`` the ``timeframe`` of the 1st data in the system will be
-        used
-
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
-
-      - ``compression`` (default: ``1``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-
-    ``get_analysis`` returns a dictionary containing the keys:
+    Returns:
+        dict: ``get_analysis`` 返回一个包含以下 key 的字典:
 
       - ``average``
       - ``stddev``
@@ -71,8 +60,12 @@ class PeriodStats(bt.Analyzer):
       - ``best``
       - ``worst``
 
-    If the parameter ``zeroispos`` is set to ``True``, periods with no change
-    will be counted as positive
+    ---
+    交互示例:
+
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(PeriodStats, timeframe=bt.TimeFrame.Years)
+    >>> # 运行后可通过 strategy.analyzers 中的 analyzer 调用 get_analysis()
     '''
 
     params = (

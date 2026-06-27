@@ -26,20 +26,32 @@ from . import MovingAverageBase, Average
 
 class MovingAverageSimple(MovingAverageBase):
     '''
-    Non-weighted average of the last n periods
+    最近 n 个周期的非加权平均值。
+
+    Args:
+        period: 平均周期。
+
+    Returns:
+        MovingAverageSimple: 输出 ``sma`` line 的 indicator。
 
     Formula:
       - movav = Sum(data, period) / period
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MovingAverageSimple, period=20)
     '''
     alias = ('SMA', 'SimpleMovingAverage',)
     lines = ('sma',)
 
     def __init__(self):
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
+        # 放在 super 之前，确保 mixin（子类化时右侧基类）能看到赋值操作并处理该 line
         self.lines[0] = Average(self.data, period=self.p.period)
 
         super(MovingAverageSimple, self).__init__()

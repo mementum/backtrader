@@ -31,82 +31,40 @@ from backtrader.analyzers import TimeReturn, AnnualReturn
 
 
 class SharpeRatio(Analyzer):
-    '''This analyzer calculates the SharpeRatio of a strategy using a risk free
-    asset which is simply an interest rate
+    '''使用 risk-free rate 计算 strategy Sharpe Ratio 的 analyzer。
 
     See also:
 
       - https://en.wikipedia.org/wiki/Sharpe_ratio
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``TimeFrame.Years``。
+        compression (int): timeframe 压缩倍数，默认 ``1``。仅用于日内
+            timeframe。
+        riskfreerate (float): 年化 risk-free rate，默认 ``0.01``（1%）。
+        factor: annual risk-free rate 到所选 timeframe 的转换因子，默认
+            ``None``。如果为 ``None``，会从预设表中选择:
+            Days=252、Weeks=52、Months=12、Years=1。
+        convertrate (bool): 是否将 ``riskfreerate`` 从年化转换为月/周/日
+            rate，默认 ``True``。不支持日内转换。
+        annualize (bool): 是否返回年化 Sharpe Ratio，默认 ``False``。
+        stddev_sample (bool): 是否使用样本标准差，默认 ``False``。设为
+            ``True`` 时使用 Bessel's correction。
+        daysfactor: ``factor`` 的旧名称，默认 ``None``。如果 timeframe 是
+            ``TimeFrame.Days`` 且该参数不为 ``None``，会按旧代码行为使用它。
+        legacyannual (bool): 是否使用 ``AnnualReturn`` analyzer，默认
+            ``False``。该 analyzer 只按年份工作。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 基于总净资产 value 还是 fund value。
+            将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``timeframe``: (default: ``TimeFrame.Years``)
+    Returns:
+        dict: ``get_analysis`` 返回包含 ``sharperatio`` key 的字典。
 
-      - ``compression`` (default: ``1``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-      - ``riskfreerate`` (default: 0.01 -> 1%)
-
-        Expressed in annual terms (see ``convertrate`` below)
-
-      - ``convertrate`` (default: ``True``)
-
-        Convert the ``riskfreerate`` from annual to monthly, weekly or daily
-        rate. Sub-day conversions are not supported
-
-      - ``factor`` (default: ``None``)
-
-        If ``None``, the conversion factor for the riskfree rate from *annual*
-        to the chosen timeframe will be chosen from a predefined table
-
-          Days: 252, Weeks: 52, Months: 12, Years: 1
-
-        Else the specified value will be used
-
-      - ``annualize`` (default: ``False``)
-
-        If ``convertrate`` is ``True``, the *SharpeRatio* will be delivered in
-        the ``timeframe`` of choice.
-
-        In most occasions the SharpeRatio is delivered in annualized form.
-        Convert the ``riskfreerate`` from annual to monthly, weekly or daily
-        rate. Sub-day conversions are not supported
-
-      - ``stddev_sample`` (default: ``False``)
-
-        If this is set to ``True`` the *standard deviation* will be calculated
-        decreasing the denominator in the mean by ``1``. This is used when
-        calculating the *standard deviation* if it's considered that not all
-        samples are used for the calculation. This is known as the *Bessels'
-        correction*
-
-      - ``daysfactor`` (default: ``None``)
-
-        Old naming for ``factor``. If set to anything else than ``None`` and
-        the ``timeframe`` is ``TimeFrame.Days`` it will be assumed this is old
-        code and the value will be used
-
-      - ``legacyannual`` (default: ``False``)
-
-        Use the ``AnnualReturn`` return analyzer, which as the name implies
-        only works on years
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with key "sharperatio" holding the ratio
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(SharpeRatio, _name='sharpe')
 
     '''
     params = (
@@ -118,7 +76,7 @@ class SharpeRatio(Analyzer):
         ('annualize', False),
         ('stddev_sample', False),
 
-        # old behavior
+        # 旧行为
         ('daysfactor', None),
         ('legacyannual', False),
         ('fund', None),
@@ -149,14 +107,14 @@ class SharpeRatio(Analyzer):
 
             self.ratio = retavg / retdev
         else:
-            # Get the returns from the subanalyzer
+            # 从子 analyzer 获取 returns
             returns = list(itervalues(self.timereturn.get_analysis()))
 
             rate = self.p.riskfreerate  #
 
             factor = None
 
-            # Hack to identify old code
+            # 用于识别旧代码的兼容逻辑
             if self.p.timeframe == TimeFrame.Days and \
                self.p.daysfactor is not None:
 
@@ -164,25 +122,25 @@ class SharpeRatio(Analyzer):
 
             else:
                 if self.p.factor is not None:
-                    factor = self.p.factor  # user specified factor
+                    factor = self.p.factor  # 用户指定的 factor
                 elif self.p.timeframe in self.RATEFACTORS:
-                    # Get the conversion factor from the default table
+                    # 从默认表中获取转换 factor
                     factor = self.RATEFACTORS[self.p.timeframe]
 
             if factor is not None:
-                # A factor was found
+                # 找到 factor
 
                 if self.p.convertrate:
-                    # Standard: downgrade annual returns to timeframe factor
+                    # 标准做法：将年化 return 降频到 timeframe factor
                     rate = pow(1.0 + rate, 1.0 / factor) - 1.0
                 else:
-                    # Else upgrade returns to yearly returns
+                    # 否则将 returns 升频到年度 returns
                     returns = [pow(1.0 + x, factor) - 1.0 for x in returns]
 
             lrets = len(returns) - self.p.stddev_sample
-            # Check if the ratio can be calculated
+            # 检查 ratio 是否可计算
             if lrets:
-                # Get the excess returns - arithmetic mean - original sharpe
+                # 计算 excess returns、算术平均和原始 sharpe
                 ret_free = [r - rate for r in returns]
                 ret_free_avg = average(ret_free)
                 retdev = standarddev(ret_free, avgx=ret_free_avg,
@@ -198,7 +156,7 @@ class SharpeRatio(Analyzer):
                 except (ValueError, TypeError, ZeroDivisionError):
                     ratio = None
             else:
-                # no returns or stddev_sample was active and 1 return
+                # 无 returns，或 stddev_sample 启用且只有 1 个 return
                 ratio = None
 
             self.ratio = ratio
@@ -207,12 +165,18 @@ class SharpeRatio(Analyzer):
 
 
 class SharpeRatio_A(SharpeRatio):
-    '''Extension of the SharpeRatio which returns the Sharpe Ratio directly in
-    annualized form
+    '''直接返回年化 Sharpe Ratio 的 ``SharpeRatio`` 扩展类。
 
-    The following param has been changed from ``SharpeRatio``
+    Args:
+        annualize (bool): 默认改为 ``True``。
 
-      - ``annualize`` (default: ``True``)
+    Returns:
+        dict: ``get_analysis`` 返回包含 ``sharperatio`` key 的字典。
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(SharpeRatio_A, _name='sharpe_annual')
 
     '''
 

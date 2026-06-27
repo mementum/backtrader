@@ -39,7 +39,7 @@ from backtrader.utils import AutoDict
 
 
 class _SymInfo(object):
-    # Replica of the SymbolInfo COM object to pass it over thread boundaries
+    # SymbolInfo COM 对象副本，用于跨线程传递
     _fields = ['Type', 'Description', 'Decimals', 'TimeOffset',
                'PointValue', 'MinMovement']
 
@@ -47,42 +47,40 @@ class _SymInfo(object):
         for f in self._fields:
             setattr(self, f, getattr(syminfo, f))
 
-# This type is used inside 'PumpEvents', but if we create the type
-# afresh each time 'PumpEvents' is called we end up creating cyclic
-# garbage for each call.  So we define it here instead.
+# 该类型在 'PumpEvents' 内使用；如果每次调用都重新创建，会为每次调用制造循环垃圾。
+# 因此在这里统一定义。
 _handles_type = ctypes.c_void_p * 1
 
 
 def PumpEvents(timeout=-1, hevt=None, cb=None):
-    """This following code waits for 'timeout' seconds in the way
-    required for COM, internally doing the correct things depending
-    on the COM appartment of the current thread.  It is possible to
-    terminate the message loop by pressing CTRL+C, which will raise
-    a KeyboardInterrupt.
+    """按 COM 需要的方式等待 ``timeout`` 秒。
+
+    内部会根据当前线程所属 COM apartment 执行相应处理。按 CTRL+C 可终止 message
+    loop，并抛出 KeyboardInterrupt。
+
+    Args:
+        timeout: 等待秒数，或返回等待秒数的 callable；``-1`` 表示无限等待。
+        hevt: 可选的 Windows event handle。
+        cb: timeout 后可调用的 callback。
     """
-    # XXX Should there be a way to pass additional event handles which
-    # can terminate this function?
+    # XXX 是否应支持传入额外 event handle 来终止该函数？
 
     # XXX XXX XXX
     #
-    # It may be that I misunderstood the CoWaitForMultipleHandles
-    # function.  Is a message loop required in a STA?  Seems so...
+    # 可能存在对 CoWaitForMultipleHandles 的理解偏差。STA 是否需要 message loop？
+    # 看起来是需要的。
     #
-    # MSDN says:
+    # MSDN 说明：
     #
-    # If the caller resides in a single-thread apartment,
-    # CoWaitForMultipleHandles enters the COM modal loop, and the
-    # thread's message loop will continue to dispatch messages using
-    # the thread's message filter. If no message filter is registered
-    # for the thread, the default COM message processing is used.
+    # 如果调用方位于 single-thread apartment，CoWaitForMultipleHandles 会进入 COM
+    # modal loop，线程的 message loop 会继续通过 thread message filter 分发消息。
+    # 如果线程未注册 message filter，则使用默认 COM message processing。
     #
-    # If the calling thread resides in a multithread apartment (MTA),
-    # CoWaitForMultipleHandles calls the Win32 function
-    # MsgWaitForMultipleObjects.
+    # 如果调用线程位于 multithread apartment (MTA)，CoWaitForMultipleHandles 会调用
+    # Win32 函数 MsgWaitForMultipleObjects。
 
-    # Timeout expected as float in seconds - *1000 to miliseconds
-    # timeout = -1 -> INFINITE 0xFFFFFFFF;
-    # It can also be a callable which should return an amount in seconds
+    # Timeout 预期为秒数 float，需要 *1000 转为毫秒。
+    # timeout = -1 -> INFINITE 0xFFFFFFFF；也可以是返回秒数的 callable。
 
     if hevt is None:
         hevt = ctypes.windll.kernel32.CreateEventA(None, True, False, None)
@@ -118,7 +116,7 @@ def PumpEvents(timeout=-1, hevt=None, cb=None):
                 int(tmout),  # dwtimeout
                 len(handles),  # number of handles in handles
                 handles,  # handles array
-                # pointer to indicate which handle was signaled
+                # 指示哪个 handle 被触发的指针
                 ctypes.byref(ctypes.c_ulong())
             )
 
@@ -158,20 +156,20 @@ class RTEventSink(object):
         self.store._vcrt_connection(self.store._RT_SHUTDOWN)
 
     def OnInternalEvent(self, p1, p2, p3):
-        if p1 != 1:  # Apparently "Connection Event"
+        if p1 != 1:  # 看起来是 "Connection Event"
             return
 
         if p2 == self.lastconn:
-            return  # do not notify twice
+            return  # 不重复通知
 
-        self.lastconn = p2  # keep new notification code
+        self.lastconn = p2  # 保存新的通知代码
 
-        # p2 should be 0 (disconn), 1 (conn)
+        # p2 应为 0（disconn）或 1（conn）
         self.store._vcrt_connection(self.store._RT_BASEMSG - p2)
 
 
 class MetaSingleton(MetaParams):
-    '''Metaclass to make a metaclassed class a singleton'''
+    '''让带 metaclass 的类成为 singleton 的 metaclass。'''
     def __init__(cls, name, bases, dct):
         super(MetaSingleton, cls).__init__(name, bases, dct)
         cls._singleton = None
@@ -185,19 +183,18 @@ class MetaSingleton(MetaParams):
 
 
 class VCStore(with_metaclass(MetaSingleton, object)):
-    '''Singleton class wrapping an ibpy ibConnection instance.
+    '''封装 VisualChart COM 连接的 singleton store。
 
-    The parameters can also be specified in the classes which use this store,
-    like ``VCData`` and ``VCBroker``
+    参数也可在使用该 store 的类中指定，例如 ``VCData`` 和 ``VCBroker``。
 
     '''
-    BrokerCls = None  # broker class will autoregister
-    DataCls = None  # data class will auto register
+    BrokerCls = None  # broker class 会自动注册
+    DataCls = None  # data class 会自动注册
 
-    # 32 bit max unsigned int for openinterest correction
+    # 用于 openinterest 校正的 32 bit 最大无符号整数
     MAXUINT = 0xffffffff // 2
 
-    # to remove at least 1 sec or else there seem to be internal conv problems
+    # 至少减去 1 秒，否则内部转换可能有问题
     MAXDATE1 = datetime.max - timedelta(days=1, seconds=1)
     MAXDATE2 = datetime.max - timedelta(seconds=1)
 
@@ -213,22 +210,22 @@ class VCStore(with_metaclass(MetaSingleton, object)):
 
     @classmethod
     def getdata(cls, *args, **kwargs):
-        '''Returns ``DataCls`` with args, kwargs'''
+        '''使用 args/kwargs 返回 ``DataCls`` 实例。'''
         return cls.DataCls(*args, **kwargs)
 
     @classmethod
     def getbroker(cls, *args, **kwargs):
-        '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
+        '''使用注册的 ``BrokerCls`` 与 args/kwargs 返回 broker。'''
         return cls.BrokerCls(*args, **kwargs)
 
-    # DLLs to parse if found for TypeLibs
+    # 找到时用于解析 TypeLibs 的 DLL
     VC64_DLLS = ('VCDataSource64.dll', 'VCRealTimeLib64.dll',
                  'COMTraderInterfaces64.dll',)
 
     VC_DLLS = ('VCDataSource.dll', 'VCRealTimeLib.dll',
                'COMTraderInterfaces.dll',)
 
-    # Well known CLSDI
+    # 已知 CLSID
     VC_TLIBS = (
         ['{EB2A77DC-A317-4160-8833-DECF16275A05}', 1, 0],  # vcdatasource64
         ['{86F1DB04-2591-4866-A361-BB053D77FA18}', 1, 0],  # vcrealtime64
@@ -240,37 +237,34 @@ class VCStore(with_metaclass(MetaSingleton, object)):
     VC_BINPATH = 'bin'
 
     def find_vchart(self):
-        # Tries to locate VisualChart in the registry to get the installation
-        # directory
-        # If not found returns well-known typelibs clsid
-        # Else it will scan the directory to locate the 64/32 bit dlls and
-        # return the paths
+        # 尝试在注册表中定位 VisualChart 安装目录。
+        # 找不到时返回已知 typelibs clsid；找到时扫描目录定位 64/32 bit DLL 并返回路径。
         import _winreg  # keep import local to avoid breaking test cases
 
         vcdir = None
 
-        # Search for Directory in the usual root keys
+        # 在常见根键中搜索 Directory
         for rkey in (_winreg.HKEY_CURRENT_USER, _winreg.HKEY_LOCAL_MACHINE,):
             try:
                 vckey = _winreg.OpenKey(rkey, self.VC_KEYNAME)
             except WindowsError as e:
                 continue
 
-            # Try to get the key value
+            # 尝试读取键值
             try:
                 vcdir, _ = _winreg.QueryValueEx(vckey, self.VC_KEYVAL)
             except WindowsError as e:
                 continue
             else:
-                break  # found vcdir
+                break  # 找到 vcdir
 
         if vcdir is None:
-            return self.VC_TLIBS  # no dir found, last resort
+            return self.VC_TLIBS  # 未找到目录，最后回退
 
-        # DLLs are in the bin directory
+        # DLL 位于 bin 目录
         vcbin = os.path.join(vcdir, self.VC_BINPATH)
 
-        # Search for the 3 libraries (64/32 bits) in the found dir
+        # 在找到的目录中搜索 3 个库（64/32 bit）
         for dlls in (self.VC64_DLLS, self.VC_DLLS,):
             dfound = []
             for dll in dlls:
@@ -282,11 +276,11 @@ class VCStore(with_metaclass(MetaSingleton, object)):
             if len(dfound) == len(dlls):
                 return dfound
 
-        # not all dlls were found, last resort
+        # 未找到全部 DLL，最后回退
         return self.VC_TLIBS
 
     def _load_comtypes(self):
-        # Keep comtypes imports local to avoid breaking testcases
+        # 将 comtypes import 保持为局部操作，避免破坏测试用例
         try:
             import comtypes
             self.comtypes = comtypes
@@ -298,16 +292,16 @@ class VCStore(with_metaclass(MetaSingleton, object)):
         except ImportError:
             return False
 
-        return True  # notifiy comtypes was loaded
+        return True  # 通知 comtypes 已加载
 
     def __init__(self):
-        self._connected = False  # modules/objects created
+        self._connected = False  # module/object 是否已创建
 
-        self.notifs = collections.deque()  # hold notifications to deliver
+        self.notifs = collections.deque()  # 保存待发送通知
 
-        self.t_vcconn = None  # control connection status
+        self.t_vcconn = None  # 控制连接状态
 
-        # hold deques to market data symbols
+        # 保存 market data symbol 对应的队列
         self._dqs = collections.deque()
         self._qdatas = dict()
         self._tftable = dict()
@@ -319,7 +313,7 @@ class VCStore(with_metaclass(MetaSingleton, object)):
             return
 
         vctypelibs = self.find_vchart()
-        # Try to load the modules
+        # 尝试加载模块
         try:
             self.vcdsmod = self.GetModule(vctypelibs[0])
             self.vcrtmod = self.GetModule(vctypelibs[1])
@@ -333,7 +327,7 @@ class VCStore(with_metaclass(MetaSingleton, object)):
             self.put_notification(msg, *msg)
             return
 
-        # Try to load the main objects
+        # 尝试加载主对象
         try:
             self.vcds = self.CreateObject(self.vcdsmod.DataSourceManager)
             # self.vcrt = self.CreateObject(self.vcrtmod.RealTime)
@@ -352,13 +346,13 @@ class VCStore(with_metaclass(MetaSingleton, object)):
 
         self._connected = True
 
-        # Build a table of VCRT Field_XX mappings for debugging purposes
+        # 为调试目的构建 VCRT Field_XX 映射表
         self.vcrtfields = dict()
         for name in dir(self.vcrtmod):
             if name.startswith('Field'):
                 self.vcrtfields[getattr(self.vcrtmod, name)] = name
 
-        # Modules and objects can be created
+        # module 和 object 已可创建
         self._tftable = {
             TimeFrame.Ticks: (self.vcdsmod.CT_Ticks, 1),
             TimeFrame.MicroSeconds: (self.vcdsmod.CT_Ticks, 1),  # To Resample
@@ -374,18 +368,18 @@ class VCStore(with_metaclass(MetaSingleton, object)):
         self.notifs.append((msg, args, kwargs))
 
     def get_notifications(self):
-        '''Return the pending "store" notifications'''
-        self.notifs.append(None)  # Mark current end of notifs
-        return [x for x in iter(self.notifs.popleft, None)]  # popleft til None
+        '''返回待处理的 "store" 通知。'''
+        self.notifs.append(None)  # 标记当前通知结尾
+        return [x for x in iter(self.notifs.popleft, None)]  # popleft 直到 None
 
     def start(self, data=None, broker=None):
         if not self._connected:
             return
 
         if self.t_vcconn is None:
-            # Kickstart connection thread check
+            # 启动连接状态检查线程
             self.t_vcconn = t = threading.Thread(target=self._start_vcrt)
-            t.daemon = True  # Do not stop a general exit
+            t.daemon = True  # 不阻止整体退出
             t.start()
 
         if broker is not None:
@@ -394,14 +388,14 @@ class VCStore(with_metaclass(MetaSingleton, object)):
             t.start()
 
     def stop(self):
-        pass  # nothing to do
+        pass  # 无需操作
 
     def connected(self):
         return self._connected
 
     def _start_vcrt(self):
-        # Use VCRealTime to monitor the connection status
-        self.comtypes.CoInitialize()  # running in another thread
+        # 使用 VCRealTime 监控连接状态
+        self.comtypes.CoInitialize()  # 在另一个线程中运行
         vcrt = self.CreateObject(self.vcrtmod.RealTime)
         sink = RTEventSink(self)
         conn = self.GetEvents(vcrt, sink)
@@ -411,7 +405,7 @@ class VCStore(with_metaclass(MetaSingleton, object)):
     def _vcrt_connection(self, status):
         if status == -0xffff:
             txt = 'VisualChart shutting down',
-        # p2: 0 -> Disconnected /  p2: 1 -> Reconnected
+        # p2: 0 -> Disconnected / p2: 1 -> Reconnected
         elif status == -0xfff0:
             txt = 'VisualChart is Disconnected'
         elif status == -0xfff1:
@@ -426,12 +420,12 @@ class VCStore(with_metaclass(MetaSingleton, object)):
             q.put(status)
 
     def _tf2ct(self, timeframe, compression):
-        # Translates timeframes to known compression types in VisualChart
+        # 将 timeframe 转换为 VisualChart 已知 compression type
         timeframe, extracomp = self._tftable[timeframe]
         return timeframe, compression * extracomp
 
     def _ticking(self, timeframe):
-        # Translates timeframes to known compression types in VisualChart
+        # 将 timeframe 转换为 VisualChart 已知 compression type
         vctimeframe, _ = self._tftable[timeframe]
         return vctimeframe == self.vcdsmod.CT_Ticks
 
@@ -451,20 +445,20 @@ class VCStore(with_metaclass(MetaSingleton, object)):
         t.daemon = True
         t.start()
 
-    # Broker functions
+    # Broker 函数
     def _t_rtdata(self, data, symbol):
-        self.comtypes.CoInitialize()  # running in another thread
+        self.comtypes.CoInitialize()  # 在另一个线程中运行
         vcrt = self.CreateObject(self.vcrtmod.RealTime)
         conn = self.GetEvents(vcrt, data)
         data._vcrt = vcrt
-        vcrt.RequestSymbolFeed(symbol, False)  # no limits
+        vcrt.RequestSymbolFeed(symbol, False)  # 不设限制
         PumpEvents()
-        del conn  # ensure events go away
+        del conn  # 确保事件连接释放
         self.comtypes.CoUninitialize()
 
     def _symboldata(self, symbol):
 
-        # Assumption -> we are connected and the symbol has been found
+        # 假设已连接且 symbol 已找到
         self.vcds.ActiveEvents = 0
         # self.vcds.EventsType = self.vcdsmod.EF_Always
 
@@ -483,9 +477,9 @@ class VCStore(with_metaclass(MetaSingleton, object)):
                     symbol, timeframe, compression, d1, d2=None,
                     historical=False):
 
-        # Assume the data has checked the existence of the symbol
+        # 假设 data 已经检查 symbol 存在
         timeframe, compression = self._tf2ct(timeframe, compression)
-        kwargs = locals().copy()  # make a copy of the args
+        kwargs = locals().copy()  # 复制参数
         kwargs.pop('self')
         kwargs['q'] = q = self._getq(data)
 
@@ -493,14 +487,14 @@ class VCStore(with_metaclass(MetaSingleton, object)):
         t.daemon = True
         t.start()
 
-        # use the queue to synchronize until symbolinfo has been gotten
-        return q  # tell the caller where to expect the hist data
+        # 使用 queue 同步，直到 symbolinfo 已获取
+        return q  # 告诉调用方从哪里接收历史数据
 
     def _t_directdata(self, data,
                       symbol, timeframe, compression, d1, d2, q,
                       historical):
 
-        self.comtypes.CoInitialize()  # start com threading
+        self.comtypes.CoInitialize()  # 启动 COM 线程
         vcds = self.CreateObject(self.vcdsmod.DataSourceManager)
 
         historical = historical or d2 is not None
@@ -517,29 +511,29 @@ class VCStore(with_metaclass(MetaSingleton, object)):
 
         data._setserie(serie)
 
-        # processing of bars can continue
+        # bar 处理可以继续
         data.OnNewDataSerieBar(serie, forcepush=historical)
         if historical:  # push the last bar
-            q.put(None)        # Signal end of transmission
+            q.put(None)        # 标记传输结束
             dsconn = None
         else:
-            dsconn = self.GetEvents(vcds, data)  # finally connect the events
+            dsconn = self.GetEvents(vcds, data)  # 最后连接事件
             pass
 
-        # pump events in this thread - call ping
+        # 在该线程中 pump events，并调用 ping
         PumpEvents(timeout=data._getpingtmout, cb=data.ping)
         if dsconn is not None:
-            del dsconn  # Docs recommend deleting the connection
+            del dsconn  # 文档建议删除连接
 
-        # Delete the series before coming out of the thread
+        # 退出线程前删除 series
         vcds.DeleteDataSource(serie)
-        self.comtypes.CoUninitialize()  # Terminate com threading
+        self.comtypes.CoUninitialize()  # 终止 COM 线程
 
-    # Broker functions
+    # Broker 函数
     def _t_broker(self, broker):
-        self.comtypes.CoInitialize()  # running in another thread
+        self.comtypes.CoInitialize()  # 在另一个线程中运行
         trader = self.CreateObject(self.vcctmod.Trader)
         conn = self.GetEvents(trader, broker(trader))
         PumpEvents()
-        del conn  # ensure events go away
+        del conn  # 确保事件连接释放
         self.comtypes.CoUninitialize()

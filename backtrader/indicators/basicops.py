@@ -32,10 +32,9 @@ from . import Indicator
 
 class PeriodN(Indicator):
     '''
-    Base class for indicators which take a period (__init__ has to be called
-    either via super or explicitly)
+    接受 ``period`` 参数的 indicator 基类，用于统一最小周期设置。
 
-    This class has no defined lines
+    该类不定义 line；子类需要通过 ``super`` 或显式调用其 ``__init__``。
     '''
     params = (('period', 1),)
 
@@ -46,13 +45,10 @@ class PeriodN(Indicator):
 
 class OperationN(PeriodN):
     '''
-    Calculates "func" for a given period
-
-    Serves as a base for classes that work with a period and can express the
-    logic in a callable object
+    按给定周期计算 ``func`` 的基类，用于逻辑可由 callable 表达的周期型 indicator。
 
     Note:
-      Base classes must provide a "func" attribute which is a callable
+      子类必须提供可调用的 ``func`` 属性。
 
     Formula:
       - line = func(data, period)
@@ -72,16 +68,14 @@ class OperationN(PeriodN):
 
 class BaseApplyN(OperationN):
     '''
-    Base class for ApplyN and others which may take a ``func`` as a parameter
-    but want to define the lines in the indicator.
+    ApplyN 及类似类的基类，用于接收 ``func`` 参数并由 indicator 自身定义 line。
 
-    Calculates ``func`` for a given period where func is given as a parameter,
-    aka named argument or ``kwarg``
+    ``func`` 通过具名参数（``kwarg``）传入，并按给定周期计算。
 
     Formula:
       - lines[0] = func(data, period)
 
-    Any extra lines defined beyond the first (index 0) are not calculated
+    第 1 条 line（索引 0）之外的额外 line 不会自动计算。
     '''
     params = (('func', None),)
 
@@ -92,22 +86,49 @@ class BaseApplyN(OperationN):
 
 class ApplyN(BaseApplyN):
     '''
-    Calculates ``func`` for a given period
+    按给定周期计算 ``func``。
+
+    Args:
+        period: 计算窗口长度。
+        func: 接收窗口数据并返回结果的 callable。
+
+    Returns:
+        ApplyN: 输出 ``apply`` line 的 indicator。
 
     Formula:
       - line = func(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ApplyN, period=5, func=max)
     '''
     lines = ('apply',)
 
 
 class Highest(OperationN):
     '''
-    Calculates the highest value for the data in a given period
+    计算给定周期内 data 的最高值。
 
-    Uses the built-in ``max`` for the calculation
+    使用内置 ``max`` 计算。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        Highest: 输出 ``highest`` line 的 indicator。
 
     Formula:
       - highest = max(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Highest, period=14)
     '''
     alias = ('MaxN',)
     lines = ('highest',)
@@ -116,12 +137,25 @@ class Highest(OperationN):
 
 class Lowest(OperationN):
     '''
-    Calculates the lowest value for the data in a given period
+    计算给定周期内 data 的最低值。
 
-    Uses the built-in ``min`` for the calculation
+    使用内置 ``min`` 计算。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        Lowest: 输出 ``lowest`` line 的 indicator。
 
     Formula:
       - lowest = min(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Lowest, period=14)
     '''
     alias = ('MinN',)
     lines = ('lowest',)
@@ -130,20 +164,33 @@ class Lowest(OperationN):
 
 class ReduceN(OperationN):
     '''
-    Calculates the Reduced value of the ``period`` data points applying
-    ``function``
+    对 ``period`` 个 data 点应用 ``function``，计算 reduce 结果。
 
-    Uses the built-in ``reduce`` for the calculation plus the ``func`` that
-    subclassess define
+    使用内置 ``reduce`` 以及子类定义的 ``func`` 完成计算。
+
+    Args:
+        function: 传给 ``functools.reduce`` 的二元 callable。
+        period: 计算窗口长度。
+        initializer: 可选的 reduce 初始值。
+
+    Returns:
+        ReduceN: 输出 ``reduced`` line 的 indicator。
 
     Formula:
       - reduced = reduce(function(data, period)), initializer=initializer)
 
     Notes:
 
-      - In order to mimic the python ``reduce``, this indicator takes a
-        ``function`` non-named argument as the 1st argument, unlike other
-        Indicators which take only named arguments
+      - 为模拟 Python ``reduce``，该 indicator 将 ``function`` 作为第 1 个非具名参数，
+        不同于大多数只接受具名参数的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> import operator
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ReduceN, operator.add, period=5)
     '''
     lines = ('reduced',)
     func = functools.reduce
@@ -160,13 +207,25 @@ class ReduceN(OperationN):
 
 class SumN(OperationN):
     '''
-    Calculates the Sum of the data values over a given period
+    计算给定周期内 data 值的总和。
 
-    Uses ``math.fsum`` for the calculation rather than the built-in ``sum`` to
-    avoid precision errors
+    使用 ``math.fsum`` 而不是内置 ``sum``，以降低精度误差。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        SumN: 输出 ``sumn`` line 的 indicator。
 
     Formula:
       - sumn = sum(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(SumN, period=10)
     '''
     lines = ('sumn',)
     func = math.fsum
@@ -174,13 +233,25 @@ class SumN(OperationN):
 
 class AnyN(OperationN):
     '''
-    Has a value of ``True`` (stored as ``1.0`` in the lines) if *any* of the
-    values in the ``period`` evaluates to non-zero (ie: ``True``)
+    如果 ``period`` 内任意值为非零（即 ``True``），line 值为 ``True``（存为 ``1.0``）。
 
-    Uses the built-in ``any`` for the calculation
+    使用内置 ``any`` 计算。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        AnyN: 输出 ``anyn`` line 的 indicator。
 
     Formula:
       - anyn = any(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AnyN, period=3)
     '''
     lines = ('anyn',)
     func = any
@@ -188,13 +259,25 @@ class AnyN(OperationN):
 
 class AllN(OperationN):
     '''
-    Has a value of ``True`` (stored as ``1.0`` in the lines) if *all* of the
-    values in the ``period`` evaluates to non-zero (ie: ``True``)
+    如果 ``period`` 内所有值都为非零（即 ``True``），line 值为 ``True``（存为 ``1.0``）。
 
-    Uses the built-in ``all`` for the calculation
+    使用内置 ``all`` 计算。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        AllN: 输出 ``alln`` line 的 indicator。
 
     Formula:
       - alln = all(data, period)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AllN, period=3)
     '''
     lines = ('alln',)
     func = all
@@ -202,12 +285,17 @@ class AllN(OperationN):
 
 class FindFirstIndex(OperationN):
     '''
-    Returns the index of the last data that satisfies equality with the
-    condition generated by the parameter _evalfunc
+    返回与 ``_evalfunc`` 生成条件相等的第一个 data 的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+        _evalfunc: 用于从窗口数据中生成目标值的 callable。
+
+    Returns:
+        FindFirstIndex: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = first for which data[index] == _evalfunc(data)
@@ -222,40 +310,69 @@ class FindFirstIndex(OperationN):
 
 class FindFirstIndexHighest(FindFirstIndex):
     '''
-    Returns the index of the first data that is the highest in the period
+    返回周期内第一个最高值的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+
+    Returns:
+        FindFirstIndexHighest: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = index of first data which is the highest
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(FindFirstIndexHighest, period=10)
     '''
     params = (('_evalfunc', max),)
 
 
 class FindFirstIndexLowest(FindFirstIndex):
     '''
-    Returns the index of the first data that is the lowest in the period
+    返回周期内第一个最低值的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+
+    Returns:
+        FindFirstIndexLowest: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = index of first data which is the lowest
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(FindFirstIndexLowest, period=10)
     '''
     params = (('_evalfunc', min),)
 
 
 class FindLastIndex(OperationN):
     '''
-    Returns the index of the last data that satisfies equality with the
-    condition generated by the parameter _evalfunc
+    返回与 ``_evalfunc`` 生成条件相等的最后一个 data 的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+        _evalfunc: 用于从窗口数据中生成目标值的 callable。
+
+    Returns:
+        FindLastIndex: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = last for which data[index] == _evalfunc(data)
@@ -266,54 +383,89 @@ class FindLastIndex(OperationN):
     def func(self, iterable):
         m = self.p._evalfunc(iterable)
         index = next(i for i, v in enumerate(iterable) if v == m)
-        # The iterable goes from 0 -> period - 1. If the last element
-        # which is the current bar is returned and without the -1 then
-        # period - index = 1 ... and must be zero!
+        # iterable 范围为 0 -> period - 1。如果返回最后一个元素（当前 bar）
+        # 且不减 1，则 period - index = 1；这里必须为 0。
         return self.p.period - index - 1
 
 
 class FindLastIndexHighest(FindLastIndex):
     '''
-    Returns the index of the last data that is the highest in the period
+    返回周期内最后一个最高值的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+
+    Returns:
+        FindLastIndexHighest: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = index of last data which is the highest
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(FindLastIndexHighest, period=10)
     '''
     params = (('_evalfunc', max),)
 
 
 class FindLastIndexLowest(FindLastIndex):
     '''
-    Returns the index of the last data that is the lowest in the period
+    返回周期内最后一个最低值的回看索引。
+
+    Args:
+        period: 搜索窗口长度。
+
+    Returns:
+        FindLastIndexLowest: 输出 ``index`` line 的 indicator。
 
     Note:
-      Returned indexes look backwards. 0 is the current index and 1 is
-      the previous bar.
+      返回索引按回看方向计算。0 表示当前 bar，1 表示前一根 bar。
 
     Formula:
       - index = index of last data which is the lowest
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(FindLastIndexLowest, period=10)
     '''
     params = (('_evalfunc', min),)
 
 
 class Accum(Indicator):
     '''
-    Cummulative sum of the data values
+    计算 data 值的累计和。
+
+    Args:
+        seed: 累计初始值。
+
+    Returns:
+        Accum: 输出 ``accum`` line 的 indicator。
 
     Formula:
       - accum += data
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Accum, seed=0.0)
     '''
     alias = ('CumSum', 'CumulativeSum',)
     lines = ('accum',)
     params = (('seed', 0.0),)
 
-    # xxxstart methods use the seed (starting value) and passed data to
-    # construct the first value keeping the minperiod to 1 since no
-    # initial look-back value is needed
+    # xxxstart 方法使用 seed（起始值）和传入 data 构造第一个值。
+    # 因为不需要初始回看值，所以 minperiod 保持为 1。
 
     def nextstart(self):
         self.line[0] = self.p.seed + self.data[0]
@@ -340,13 +492,26 @@ class Accum(Indicator):
 
 class Average(PeriodN):
     '''
-    Averages a given data arithmetically over a period
+    计算给定 data 在指定周期内的算术平均值。
+
+    Args:
+        period: 计算窗口长度。
+
+    Returns:
+        Average: 输出 ``av`` line 的 indicator。
 
     Formula:
       - av = data(period) / period
 
     See also:
       - https://en.wikipedia.org/wiki/Arithmetic_mean
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Average, period=10)
     '''
     alias = ('ArithmeticMean', 'Mean',)
     lines = ('av',)
@@ -366,16 +531,29 @@ class Average(PeriodN):
 
 class ExponentialSmoothing(Average):
     '''
-    Averages a given data over a period using exponential smoothing
+    使用 exponential smoothing 计算给定 data 在指定周期内的平均值。
 
-    A regular ArithmeticMean (Average) is used as the seed value considering
-    the first period values of data
+    初始种子值使用前 ``period`` 个 data 的普通 ArithmeticMean（Average）。
+
+    Args:
+        period: 计算窗口长度。
+        alpha: 平滑因子；未提供时使用 EMA 默认值。
+
+    Returns:
+        ExponentialSmoothing: 输出 ``av`` line 的 indicator。
 
     Formula:
       - av = prev * (1 - alpha) + data * alpha
 
     See also:
       - https://en.wikipedia.org/wiki/Exponential_smoothing
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ExponentialSmoothing, period=10)
     '''
     alias = ('ExpSmoothing',)
     params = (('alpha', None),)
@@ -383,21 +561,21 @@ class ExponentialSmoothing(Average):
     def __init__(self):
         self.alpha = self.p.alpha
         if self.alpha is None:
-            self.alpha = 2.0 / (1.0 + self.p.period)  # def EMA value
+            self.alpha = 2.0 / (1.0 + self.p.period)  # 默认 EMA 值
 
         self.alpha1 = 1.0 - self.alpha
 
         super(ExponentialSmoothing, self).__init__()
 
     def nextstart(self):
-        # Fetch the seed value from the base class calculation
+        # 从基类计算中获取种子值
         super(ExponentialSmoothing, self).next()
 
     def next(self):
         self.line[0] = self.line[-1] * self.alpha1 + self.data[0] * self.alpha
 
     def oncestart(self, start, end):
-        # Fetch the seed value from the base class calculation
+        # 从基类计算中获取种子值
         super(ExponentialSmoothing, self).once(start, end)
 
     def once(self, start, end):
@@ -406,7 +584,7 @@ class ExponentialSmoothing(Average):
         alpha = self.alpha
         alpha1 = self.alpha1
 
-        # Seed value from SMA calculated with the call to oncestart
+        # 种子值来自 oncestart 调用计算出的 SMA
         prev = larray[start - 1]
         for i in range(start, end):
             larray[i] = prev = prev * alpha1 + darray[i] * alpha
@@ -414,28 +592,40 @@ class ExponentialSmoothing(Average):
 
 class ExponentialSmoothingDynamic(ExponentialSmoothing):
     '''
-    Averages a given data over a period using exponential smoothing
+    使用动态 alpha 的 exponential smoothing 计算给定 data 的平均值。
 
-    A regular ArithmeticMean (Average) is used as the seed value considering
-    the first period values of data
+    初始种子值使用前 ``period`` 个 data 的普通 ArithmeticMean（Average）。
+
+    Args:
+        period: 计算窗口长度。
+        alpha: 可动态变化的 alpha line。
+
+    Returns:
+        ExponentialSmoothingDynamic: 输出 ``av`` line 的 indicator。
 
     Note:
-      - alpha is an array of values which can be calculated dynamically
+      - alpha 是一个可动态计算的值数组。
 
     Formula:
       - av = prev * (1 - alpha) + data * alpha
 
     See also:
       - https://en.wikipedia.org/wiki/Exponential_smoothing
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ExponentialSmoothingDynamic, period=10)
     '''
     alias = ('ExpSmoothingDynamic',)
 
     def __init__(self):
         super(ExponentialSmoothingDynamic, self).__init__()
 
-        # Hack: alpha is a "line" and carries a minperiod which is not being
-        # considered because this indicator makes no line assignment. It has
-        # therefore to be considered manually
+        # Hack: alpha 是一个 "line"，带有 minperiod；由于该 indicator 不进行 line
+        # 赋值，minperiod 不会被自动纳入，因此需要手动处理。
         minperioddiff = max(0, self.alpha._minperiod - self.p.period)
         self.lines[0].incminperiod(minperioddiff)
 
@@ -449,7 +639,7 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
         alpha = self.alpha.array
         alpha1 = self.alpha1.array
 
-        # Seed value from SMA calculated with the call to oncestart
+        # 种子值来自 oncestart 调用计算出的 SMA
         prev = larray[start - 1]
         for i in range(start, end):
             larray[i] = prev = prev * alpha1[i] + darray[i] * alpha[i]
@@ -457,18 +647,32 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
 
 class WeightedAverage(PeriodN):
     '''
-    Calculates the weighted average of the given data over a period
+    计算给定 data 在指定周期内的加权平均值。
 
-    The default weights (if none are provided) are linear to assigne more
-    weight to the most recent data
+    如未提供 weights，默认权重通常由具体子类设置，用于给近期数据更高权重。
 
-    The result will be multiplied by a given "coef"
+    结果会乘以给定 ``coef``。
+
+    Args:
+        period: 计算窗口长度。
+        coef: 结果缩放系数。
+        weights: 应用于窗口数据的权重序列。
+
+    Returns:
+        WeightedAverage: 输出 ``av`` line 的 indicator。
 
     Formula:
       - av = coef * sum(mul(data, period), weights)
 
     See:
       - https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(WeightedAverage, period=3, weights=(1.0, 2.0, 3.0))
     '''
     alias = ('AverageWeighted',)
     lines = ('av',)

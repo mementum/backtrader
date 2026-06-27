@@ -33,85 +33,40 @@ from backtrader.stores import oandastore
 
 class MetaOandaData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，随后把它注册到对应 store。'''
+        # 初始化类对象
         super(MetaOandaData, cls).__init__(name, bases, dct)
 
-        # Register with the store
+        # 注册到 store，供 OandaStore 找到实际 DataCls
         oandastore.OandaStore.DataCls = cls
 
 
 class OandaData(with_metaclass(MetaOandaData, DataBase)):
-    '''Oanda Data Feed.
+    '''Oanda 数据源。
 
-    Params:
+    Args:
+        dataname: Oanda instrument 名称，例如 ``EUR_USD``。
+        qcheck: 没有收到数据时的唤醒间隔（秒），用于给 resample/replay 和 notification
+            传播留出处理机会。
+        historical: 为 ``True`` 时，完成首次历史数据下载后停止。会使用标准 data feed
+            参数 ``fromdate`` 和 ``todate`` 作为时间范围。
+        backfill_start: 启动时是否执行 backfill。会在单次请求中尽可能获取最大历史数据。
+        backfill: 断线/重连后是否执行 backfill。会按缺口时长下载尽量小的数据范围。
+        backfill_from: 额外的初始 backfill 数据源。该数据源耗尽后，如有需要，再从
+            Oanda 拉取 backfill 数据。
+        bidask: 历史/backfill 请求是否向服务器请求 bid/ask 价格；为 ``False`` 时请求
+            midpoint。
+        useask: 使用 bid/ask 数据时，是否使用 ask 侧价格；默认使用 bid。
+        includeFirst: 直接传给 Oanda API，控制历史/backfill 请求的第一个 bar 是否返回。
+        reconnect: 网络断开时是否重连。
+        reconnections: 最大重连次数，``-1`` 表示无限重连。
+        reconntimeout: 两次重连尝试之间等待的秒数。
 
-      - ``qcheck`` (default: ``0.5``)
+    Returns:
+        OandaData: 可加入 Cerebro 的 Oanda 数据源实例。
 
-        Time in seconds to wake up if no data is received to give a chance to
-        resample/replay packets properly and pass notifications up the chain
-
-      - ``historical`` (default: ``False``)
-
-        If set to ``True`` the data feed will stop after doing the first
-        download of data.
-
-        The standard data feed parameters ``fromdate`` and ``todate`` will be
-        used as reference.
-
-        The data feed will make multiple requests if the requested duration is
-        larger than the one allowed by IB given the timeframe/compression
-        chosen for the data.
-
-      - ``backfill_start`` (default: ``True``)
-
-        Perform backfilling at the start. The maximum possible historical data
-        will be fetched in a single request.
-
-      - ``backfill`` (default: ``True``)
-
-        Perform backfilling after a disconnection/reconnection cycle. The gap
-        duration will be used to download the smallest possible amount of data
-
-      - ``backfill_from`` (default: ``None``)
-
-        An additional data source can be passed to do an initial layer of
-        backfilling. Once the data source is depleted and if requested,
-        backfilling from IB will take place. This is ideally meant to backfill
-        from already stored sources like a file on disk, but not limited to.
-
-      - ``bidask`` (default: ``True``)
-
-        If ``True``, then the historical/backfilling requests will request
-        bid/ask prices from the server
-
-        If ``False``, then *midpoint* will be requested
-
-      - ``useask`` (default: ``False``)
-
-        If ``True`` the *ask* part of the *bidask* prices will be used instead
-        of the default use of *bid*
-
-      - ``includeFirst`` (default: ``True``)
-
-        Influence the delivery of the 1st bar of a historical/backfilling
-        request by setting the parameter directly to the Oanda API calls
-
-      - ``reconnect`` (default: ``True``)
-
-        Reconnect when network connection is down
-
-      - ``reconnections`` (default: ``-1``)
-
-        Number of times to attempt reconnections: ``-1`` means forever
-
-      - ``reconntimeout`` (default: ``5.0``)
-
-        Time in seconds to wait in between reconnection attemps
-
-    This data feed supports only this mapping of ``timeframe`` and
-    ``compression``, which comply with the definitions in the OANDA API
-    Developer's Guid::
+    支持的 ``timeframe`` / ``compression`` 组合如下，需符合 OANDA API Developer's
+    Guide 的 granularity 定义::
 
         (TimeFrame.Seconds, 5): 'S5',
         (TimeFrame.Seconds, 10): 'S10',
@@ -135,36 +90,42 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         (TimeFrame.Weeks, 1): 'W',
         (TimeFrame.Months, 1): 'M',
 
-    Any other combination will be rejected
+    其他组合会被拒绝。
+
+    ---
+    交互界面使用示范:
+
+    >>> data = OandaData(dataname='EUR_USD')  # doctest: +SKIP
+    >>> data.p.dataname  # doctest: +SKIP
+    'EUR_USD'
     '''
     params = (
         ('qcheck', 0.5),
-        ('historical', False),  # do backfilling at the start
-        ('backfill_start', True),  # do backfilling at the start
-        ('backfill', True),  # do backfilling when reconnecting
-        ('backfill_from', None),  # additional data source to do backfill from
+        ('historical', False),  # 仅下载历史数据
+        ('backfill_start', True),  # 启动时执行 backfill
+        ('backfill', True),  # 重连时执行 backfill
+        ('backfill_from', None),  # 用于 backfill 的额外数据源
         ('bidask', True),
         ('useask', False),
         ('includeFirst', True),
         ('reconnect', True),
-        ('reconnections', -1),  # forever
+        ('reconnections', -1),  # 无限重连
         ('reconntimeout', 5.0),
     )
 
     _store = oandastore.OandaStore
 
-    # States for the Finite State Machine in _load
+    # _load 中有限状态机的状态
     _ST_FROM, _ST_START, _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(5)
 
     _TOFFSET = timedelta()
 
     def _timeoffset(self):
-        # Effective way to overcome the non-notification?
+        # 用于弥补未发送 notification 的时间偏移
         return self._TOFFSET
 
     def islive(self):
-        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
-        should be deactivated'''
+        '''返回 ``True``，通知 ``Cerebro`` 关闭 preload 和 runonce。'''
         return True
 
     def __init__(self, **kwargs):
@@ -172,26 +133,24 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         self._candleFormat = 'bidask' if self.p.bidask else 'midpoint'
 
     def setenvironment(self, env):
-        '''Receives an environment (cerebro) and passes it over to the store it
-        belongs to'''
+        '''接收 Cerebro 环境，并把它传给所属 store。'''
         super(OandaData, self).setenvironment(env)
         env.addstore(self.o)
 
     def start(self):
-        '''Starts the Oanda connecction and gets the real contract and
-        contractdetails if it exists'''
+        '''启动 Oanda 连接，并在存在时获取真实 instrument 信息。'''
         super(OandaData, self).start()
 
-        # Create attributes as soon as possible
-        self._statelivereconn = False  # if reconnecting in live state
-        self._storedmsg = dict()  # keep pending live message (under None)
+        # 尽早创建运行期属性
+        self._statelivereconn = False  # 是否在 live 状态下重连
+        self._storedmsg = dict()  # 保存待处理的 live 消息（键为 None）
         self.qlive = queue.Queue()
         self._state = self._ST_OVER
 
-        # Kickstart store and get queue to wait on
+        # 启动 store，并获取后续等待的数据队列
         self.o.start(data=self)
 
-        # check if the granularity is supported
+        # 检查 granularity 是否支持
         otf = self.o.get_granularity(self._timeframe, self._compression)
         if otf is None:
             self.put_notification(self.NOTSUPPORTED_TF)
@@ -209,7 +168,7 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
             self.p.backfill_from._start()
         else:
             self._start_finish()
-            self._state = self._ST_START  # initial state for _load
+            self._state = self._ST_START  # _load 的初始状态
             self._st_start()
 
         self._reconns = 0
@@ -247,15 +206,15 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         if instart:
             self._reconns = self.p.reconnections
 
-        return True  # no return before - implicit continue
+        return True  # 前面没有返回时，隐式继续
 
     def stop(self):
-        '''Stops and tells the store to stop'''
+        '''停止数据源，并通知 store 停止。'''
         super(OandaData, self).stop()
         self.o.stop()
 
     def haslivedata(self):
-        return bool(self._storedmsg or self.qlive)  # do not return the objs
+        return bool(self._storedmsg or self.qlive)  # 不直接返回对象本身
 
     def _load(self):
         if self._state == self._ST_OVER:
@@ -267,16 +226,16 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
                     msg = (self._storedmsg.pop(None, None) or
                            self.qlive.get(timeout=self._qcheck))
                 except queue.Empty:
-                    return None  # indicate timeout situation
+                    return None  # 表示超时
 
-                if msg is None:  # Conn broken during historical/backfilling
+                if msg is None:  # historical/backfill 期间连接断开
                     self.put_notification(self.CONNBROKEN)
-                    # Try to reconnect
+                    # 尝试重连
                     if not self.p.reconnect or self._reconns == 0:
-                        # Can no longer reconnect
+                        # 已无法继续重连
                         self.put_notification(self.DISCONNECTED)
                         self._state = self._ST_OVER
-                        return False  # failed
+                        return False  # 失败
 
                     self._reconns -= 1
                     self._st_start(instart=False, tmout=self.p.reconntimeout)
@@ -288,49 +247,49 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
                     if code not in [599, 598, 596]:
                         self.put_notification(self.DISCONNECTED)
                         self._state = self._ST_OVER
-                        return False  # failed
+                        return False  # 失败
 
                     if not self.p.reconnect or self._reconns == 0:
-                        # Can no longer reconnect
+                        # 已无法继续重连
                         self.put_notification(self.DISCONNECTED)
                         self._state = self._ST_OVER
-                        return False  # failed
+                        return False  # 失败
 
-                    # Can reconnect
+                    # 可以继续重连
                     self._reconns -= 1
                     self._st_start(instart=False, tmout=self.p.reconntimeout)
                     continue
 
                 self._reconns = self.p.reconnections
 
-                # Process the message according to expected return type
+                # 按预期返回类型处理消息
                 if not self._statelivereconn:
                     if self._laststatus != self.LIVE:
-                        if self.qlive.qsize() <= 1:  # very short live queue
+                        if self.qlive.qsize() <= 1:  # live 队列很短
                             self.put_notification(self.LIVE)
 
                     ret = self._load_tick(msg)
                     if ret:
                         return True
 
-                    # could not load bar ... go and get new one
+                    # 当前消息无法形成 bar，继续取下一条
                     continue
 
-                # Fall through to processing reconnect - try to backfill
-                self._storedmsg[None] = msg  # keep the msg
+                # 进入重连处理流程，尝试 backfill
+                self._storedmsg[None] = msg  # 保存当前消息
 
-                # else do a backfill
+                # 否则执行 backfill
                 if self._laststatus != self.DELAYED:
                     self.put_notification(self.DELAYED)
 
                 dtend = None
                 if len(self) > 1:
-                    # len == 1 ... forwarded for the 1st time
+                    # len == 1 表示第一次转发
                     dtbegin = self.datetime.datetime(-1)
                 elif self.fromdate > float('-inf'):
                     dtbegin = num2date(self.fromdate)
                 else:  # 1st bar and no begin set
-                    # passing None to fetch max possible in 1 request
+                    # 传 None 表示单次请求尽可能获取最大范围
                     dtbegin = None
 
                 dtend = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
@@ -342,18 +301,18 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
                     includeFirst=self.p.includeFirst)
 
                 self._state = self._ST_HISTORBACK
-                self._statelivereconn = False  # no longer in live
+                self._statelivereconn = False  # 不再处于 live 重连状态
                 continue
 
             elif self._state == self._ST_HISTORBACK:
                 msg = self.qhist.get()
-                if msg is None:  # Conn broken during historical/backfilling
-                    # Situation not managed. Simply bail out
+                if msg is None:  # historical/backfill 期间连接断开
+                    # 未处理该情况，直接退出
                     self.put_notification(self.DISCONNECTED)
                     self._state = self._ST_OVER
-                    return False  # error management cancelled the queue
+                    return False  # 错误处理取消了队列
 
-                elif 'code' in msg:  # Error
+                elif 'code' in msg:  # 错误
                     self.put_notification(self.NOTSUBSCRIBED)
                     self.put_notification(self.DISCONNECTED)
                     self._state = self._ST_OVER
@@ -361,27 +320,27 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
 
                 if msg:
                     if self._load_history(msg):
-                        return True  # loading worked
+                        return True  # 加载成功
 
-                    continue  # not loaded ... date may have been seen
+                    continue  # 未加载，日期可能已经见过
                 else:
-                    # End of histdata
-                    if self.p.historical:  # only historical
+                    # 历史数据结束
+                    if self.p.historical:  # 仅历史模式
                         self.put_notification(self.DISCONNECTED)
                         self._state = self._ST_OVER
-                        return False  # end of historical
+                        return False  # 历史数据结束
 
-                # Live is also wished - go for it
+                # 还需要进入 live 模式
                 self._state = self._ST_LIVE
                 continue
 
             elif self._state == self._ST_FROM:
                 if not self.p.backfill_from.next():
-                    # additional data source is consumed
+                    # 额外 backfill 数据源已经耗尽
                     self._state = self._ST_START
                     continue
 
-                # copy lines of the same name
+                # 复制同名 line
                 for alias in self.lines.getlinealiases():
                     lsrc = getattr(self.p.backfill_from.lines, alias)
                     ldst = getattr(self.lines, alias)
@@ -399,14 +358,14 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         dtobj = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
         dt = date2num(dtobj)
         if dt <= self.lines.datetime[-1]:
-            return False  # time already seen
+            return False  # 时间已经处理过
 
-        # Common fields
+        # 通用字段
         self.lines.datetime[0] = dt
         self.lines.volume[0] = 0.0
         self.lines.openinterest[0] = 0.0
 
-        # Put the prices into the bar
+        # 把价格写入 bar
         tick = float(msg['ask']) if self.p.useask else float(msg['bid'])
         self.lines.open[0] = tick
         self.lines.high[0] = tick
@@ -421,14 +380,14 @@ class OandaData(with_metaclass(MetaOandaData, DataBase)):
         dtobj = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
         dt = date2num(dtobj)
         if dt <= self.lines.datetime[-1]:
-            return False  # time already seen
+            return False  # 时间已经处理过
 
-        # Common fields
+        # 通用字段
         self.lines.datetime[0] = dt
         self.lines.volume[0] = float(msg['volume'])
         self.lines.openinterest[0] = 0.0
 
-        # Put the prices into the bar
+        # 把价格写入 bar
         if self.p.bidask:
             if not self.p.useask:
                 self.lines.open[0] = float(msg['openBid'])

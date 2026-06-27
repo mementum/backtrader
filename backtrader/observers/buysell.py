@@ -27,20 +27,22 @@ from ..observer import Observer
 
 
 class BuySell(Observer):
-    '''
-    This observer keeps track of the individual buy/sell orders (individual
-    executions) and will plot them on the chart along the data around the
-    execution price level
+    '''跟踪单笔 buy/sell execution，并在图上标出执行价附近位置的 observer。
 
-    Params:
-      - ``barplot`` (default: ``False``) Plot buy signals below the minimum and
-        sell signals above the maximum.
+    Args:
+        barplot (bool): 是否把 buy 信号画在 bar 最低价下方、sell 信号画在最高价
+            上方，默认 ``False``。如果为 ``False``，会画在该 bar 内 execution
+            的平均价上。
+        bardist (float): ``barplot`` 为 ``True`` 时，距离最高/最低价的比例，
+            默认 ``0.015``（1.5%）。
 
-        If ``False`` it will plot on the average price of executions during a
-        bar
+    Returns:
+        None: observer 通过 ``buy`` 和 ``sell`` lines 暴露当前值。
 
-      - ``bardist`` (default: ``0.015`` 1.5%) Distance to max/min when
-        ``barplot`` is ``True``
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(BuySell, barplot=True)
     '''
     lines = ('buy', 'sell',)
 
@@ -53,8 +55,8 @@ class BuySell(Observer):
     )
 
     params = (
-        ('barplot', False),  # plot above/below max/min for clarity in bar plot
-        ('bardist', 0.015),  # distance to max/min in absolute perc
+        ('barplot', False),  # bar plot 中画在最高/最低价之外以增强可读性
+        ('bardist', 0.015),  # 到最高/最低价的绝对比例距离
     )
 
     def next(self):
@@ -70,8 +72,8 @@ class BuySell(Observer):
             else:
                 sell.append(order.executed.price)
 
-        # Take into account replay ... something could already be in there
-        # Write down the average buy/sell price
+        # 考虑 replay 场景：line 中可能已有值
+        # 写入平均 buy/sell price
 
         # BUY
         curbuy = self.lines.buy[0]
@@ -87,11 +89,11 @@ class BuySell(Observer):
         value = buyops / float(buylen or 'NaN')
         if not self.p.barplot:
             self.lines.buy[0] = value
-        elif value == value:  # Not NaN
+        elif value == value:  # 不是 NaN
             pbuy = self.data.low[0] * (1 - self.p.bardist)
             self.lines.buy[0] = pbuy
 
-        # Update buylen values
+        # 更新 buylen 值
         curbuy = buyops
         self.curbuylen = buylen
 
@@ -109,10 +111,10 @@ class BuySell(Observer):
         value = sellops / float(selllen or 'NaN')
         if not self.p.barplot:
             self.lines.sell[0] = value
-        elif value == value:  # Not NaN
+        elif value == value:  # 不是 NaN
             psell = self.data.high[0] * (1 + self.p.bardist)
             self.lines.sell[0] = psell
 
-        # Update selllen values
+        # 更新 selllen 值
         cursell = sellops
         self.curselllen = selllen

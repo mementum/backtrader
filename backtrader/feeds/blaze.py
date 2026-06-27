@@ -27,23 +27,35 @@ import backtrader.feed as feed
 
 class BlazeData(feed.DataBase):
     '''
-    Support for `Blaze <blaze.pydata.org>`_ ``Data`` objects.
+    支持 `Blaze <blaze.pydata.org>`_ 的 ``Data`` 对象。
 
-    Only numeric indices to columns are supported.
+    这里只支持使用数字索引定位列。
 
-    Note:
+    Args:
+        dataname: Blaze ``Data`` 对象。
+        datetime: datetime 字段的数字列索引，必须存在。
+        open: open 字段的数字列索引，传入负数表示不存在。
+        high: high 字段的数字列索引，传入负数表示不存在。
+        low: low 字段的数字列索引，传入负数表示不存在。
+        close: close 字段的数字列索引，传入负数表示不存在。
+        volume: volume 字段的数字列索引，传入负数表示不存在。
+        openinterest: openinterest 字段的数字列索引，传入负数表示不存在。
 
-      - The ``dataname`` parameter is a blaze ``Data`` object
+    Returns:
+        BlazeData: 可加入 Cerebro 的 Blaze 数据源实例。
 
-      - A negative value in any of the parameters for the Data lines
-        indicates it's not present in the DataFrame
-        it is
+    ---
+    交互界面使用示范:
+
+    >>> data = BlazeData(dataname=[])
+    >>> data.p.datetime
+    0
     '''
 
     params = (
-        # datetime must be present
+        # datetime 必须存在
         ('datetime', 0),
-        # pass -1 for any of the following to indicate absence
+        # 下列字段传 -1 表示不存在
         ('open', 1),
         ('high', 2),
         ('low', 3),
@@ -59,7 +71,7 @@ class BlazeData(feed.DataBase):
     def start(self):
         super(BlazeData, self).start()
 
-        # reset the iterator on each start
+        # 每次 start 时重置迭代器
         self._rows = iter(self.p.dataname)
 
     def _load(self):
@@ -68,27 +80,27 @@ class BlazeData(feed.DataBase):
         except StopIteration:
             return False
 
-        # Set the standard datafields - except for datetime
+        # 设置标准 datafield，datetime 单独处理
         for datafield in self.datafields[1:]:
-            # get the column index
+            # 获取字段所在的列索引
             colidx = getattr(self.params, datafield)
 
             if colidx < 0:
-                # column not present -- skip
+                # 数据源中没有该列，跳过
                 continue
 
-            # get the line to be set
+            # 获取要写入的 line
             line = getattr(self.lines, datafield)
             line[0] = row[colidx]
 
-        # datetime - assumed blaze always serves a native datetime.datetime
+        # datetime：假定 blaze 总是提供原生 datetime.datetime
         colidx = getattr(self.params, self.datafields[0])
         dt = row[colidx]
         dtnum = date2num(dt)
 
-        # get the line to be set
+        # 获取要写入的 line
         line = getattr(self.lines, self.datafields[0])
         line[0] = dtnum
 
-        # Done ... return
+        # 当前 bar 加载完成
         return True

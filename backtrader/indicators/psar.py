@@ -28,6 +28,7 @@ __all__ = ['ParabolicSAR', 'PSAR']
 
 
 class _SarStatus(object):
+    '''ParabolicSAR 的内部状态对象，用于保存当前/上一轮趋势状态。'''
     sar = None
     tr = None
     af = 0.0
@@ -44,23 +45,36 @@ class _SarStatus(object):
 
 class ParabolicSAR(PeriodN):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* for the RSI
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中定义的 Parabolic SAR。
 
-    SAR stands for *Stop and Reverse* and the indicator was meant as a signal
-    for entry (and reverse)
+    SAR 表示 *Stop and Reverse*，该 indicator 设计为入场与反转信号。
 
-    How to select the 1st signal is left unspecified in the book and the
-    increase/decrease of bars
+    原书未明确说明如何选择第一个信号以及 bar 增减的处理细节。
+
+    Args:
+        period: 开始显示数值前的最小周期。
+        af: acceleration factor 初始增量。
+        afmax: acceleration factor 最大值。
+
+    Returns:
+        ParabolicSAR: 输出 ``psar`` line 的 indicator。
 
     See:
       - https://en.wikipedia.org/wiki/Parabolic_SAR
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:parabolic_sar
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ParabolicSAR)
     '''
     alias = ('PSAR',)
     lines = ('psar',)
     params = (
-        ('period', 2),  # when to start showing values
+        ('period', 2),  # 何时开始显示数值
         ('af', 0.02),
         ('afmax', 0.20),
     )
@@ -74,97 +88,92 @@ class ParabolicSAR(PeriodN):
 
     def prenext(self):
         if len(self) == 1:
-            self._status = []  # empty status
-            return  # not enough data to do anything
+            self._status = []  # 空状态
+            return  # 数据不足，无法计算
 
         elif len(self) == 2:
-            self.nextstart()  # kickstart calculation
+            self.nextstart()  # 启动计算
         else:
-            self.next()  # regular calc
+            self.next()  # 常规计算
 
-        self.lines.psar[0] = float('NaN')  # no return yet still prenext
+        self.lines.psar[0] = float('NaN')  # 仍处于 prenext，暂不返回有效值
 
     def nextstart(self):
-        if self._status:  # some states have been calculated
-            self.next()  # delegate
+        if self._status:  # 已经计算出部分状态
+            self.next()  # 委托给 next
             return
 
-        # Prepare a status holding array, for current and previous lengths
+        # 准备状态数组，分别保存当前长度和上一长度的状态
         self._status = [_SarStatus(), _SarStatus()]
 
-        # Start by looking if price has gone up/down (close) in the 2nd day to
-        # get an *entry* signal and configure the values as they would have
-        # been in the previous trend, including a sar value which is
-        # immediately invalidated in next, which reverses and sets the trend to
-        # the actual up/down value calculated with the close
-        # Put the 4 status variables in a Status holder
-        plenidx = (len(self) - 1) % 2  # previous length index (0 or 1)
+        # 先观察第 2 天 close 的涨跌来获得 entry 信号，并按“上一趋势”的形态设置值。
+        # 其中 sar 会在 next 中立即失效，随后反转并根据 close 计算出的实际涨跌设置趋势。
+        # 4 个状态变量放入状态持有对象。
+        plenidx = (len(self) - 1) % 2  # 上一长度索引（0 或 1）
         status = self._status[plenidx]
 
-        # Calculate the status for previous length
+        # 计算上一长度的状态
         status.sar = (self.data.high[0] + self.data.low[0]) / 2.0
 
         status.af = self.p.af
-        if self.data.close[0] >= self.data.close[-1]:  # uptrend
-            status.tr = not True  # uptrend when reversed
-            status.ep = self.data.low[-1]  # ep from prev trend
+        if self.data.close[0] >= self.data.close[-1]:  # 上升趋势
+            status.tr = not True  # 反转后为上升趋势
+            status.ep = self.data.low[-1]  # 来自上一趋势的 ep
         else:
-            status.tr = not False  # downtrend when reversed
-            status.ep = self.data.high[-1]  # ep from prev trend
+            status.tr = not False  # 反转后为下降趋势
+            status.ep = self.data.high[-1]  # 来自上一趋势的 ep
 
-        # With the fake prev trend in place and a sar which will be invalidated
-        # go to next to get the calculation done
+        # 带着伪造的上一趋势和即将失效的 sar 进入 next，完成正式计算
         self.next()
 
     def next(self):
         hi = self.data.high[0]
         lo = self.data.low[0]
 
-        plenidx = (len(self) - 1) % 2  # previous length index (0 or 1)
-        status = self._status[plenidx]  # use prev status for calculations
+        plenidx = (len(self) - 1) % 2  # 上一长度索引（0 或 1）
+        status = self._status[plenidx]  # 使用上一状态进行计算
 
         tr = status.tr
         sar = status.sar
 
-        # Check if the sar penetrated the price to switch the trend
+        # 检查 sar 是否穿透价格以切换趋势
         if (tr and sar >= lo) or (not tr and sar <= hi):
-            tr = not tr  # reverse the trend
-            sar = status.ep  # new sar is prev SIP (Significant price)
-            ep = hi if tr else lo  # select new SIP / Extreme Price
-            af = self.p.af  # reset acceleration factor
+            tr = not tr  # 反转趋势
+            sar = status.ep  # 新 sar 使用上一 SIP（Significant price）
+            ep = hi if tr else lo  # 选择新的 SIP / Extreme Price
+            af = self.p.af  # 重置 acceleration factor
 
-        else:  # use the precalculated values
+        else:  # 使用预计算值
             ep = status.ep
             af = status.af
 
-        # Update sar value for today
+        # 更新今日 sar 值
         self.lines.psar[0] = sar
 
-        # Update ep and af if needed
-        if tr:  # long trade
+        # 按需更新 ep 和 af
+        if tr:  # 多头趋势
             if hi > ep:
                 ep = hi
                 af = min(af + self.p.af, self.p.afmax)
 
-        else:  # downtrend
+        else:  # 下降趋势
             if lo < ep:
                 ep = lo
                 af = min(af + self.p.af, self.p.afmax)
 
-        sar = sar + af * (ep - sar)  # calculate the sar for tomorrow
+        sar = sar + af * (ep - sar)  # 计算明日 sar
 
-        # make sure sar doesn't go into hi/lows
-        if tr:  # long trade
+        # 确保 sar 不进入 high/low 区间
+        if tr:  # 多头趋势
             lo1 = self.data.low[-1]
             if sar > lo or sar > lo1:
-                sar = min(lo, lo1)  # sar not above last 2 lows -> lower
+                sar = min(lo, lo1)  # sar 不高于最近 2 个 low -> 取较低值
         else:
             hi1 = self.data.high[-1]
             if sar < hi or sar < hi1:
-                sar = max(hi, hi1)  # sar not below last 2 highs -> highest
+                sar = max(hi, hi1)  # sar 不低于最近 2 个 high -> 取较高值
 
-        # new status has been calculated, keep it in current length
-        # will be used when length moves forward
+        # 新状态已经计算完成，保存在当前长度中，供下一次长度推进时使用
         newstatus = self._status[not plenidx]
         newstatus.tr = tr
         newstatus.sar = sar

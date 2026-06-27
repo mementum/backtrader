@@ -23,18 +23,28 @@ from __future__ import (absolute_import, division, print_function,
 
 
 class BarReplayer_Open(object):
-    '''
-    This filters splits a bar in two parts:
+    '''将一根 bar 拆成 open bar 和完整 OHLC bar 的 filter。
 
-      - ``Open``: the opening price of the bar will be used to deliver an
-        initial price bar in which the four components (OHLC) are equal
+    拆分结果:
 
-        The volume/openinterest fields are 0 for this initial bar
+      - ``Open``: 使用原 bar 的 opening price 生成初始 price bar，四个 OHLC
+        组件相等。该初始 bar 的 volume/openinterest 为 0。
 
-      - ``OHLC``: the original bar is delivered complete with the original
-        ``volume``/``openinterest``
+      - ``OHLC``: 输出完整原始 bar，并保留原始 ``volume``/``openinterest``。
 
-    The split simulates a replay without the need to use the *replay* filter.
+    该拆分可模拟 replay，而无需使用 *replay* filter。
+
+    Args:
+        无。
+
+    Returns:
+        bool: stream 长度未变化时返回 ``True``；输出 pending bar 时返回
+        ``False``。
+
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='daily.csv')
+    >>> data.addfilter(BarReplayer_Open)
     '''
     def __init__(self, data):
         self.pendingbar = None
@@ -44,40 +54,48 @@ class BarReplayer_Open(object):
     def __call__(self, data):
         ret = True
 
-        # Make a copy of the new bar and remove it from stream
+        # 复制新 bar，并从 stream 中移除
         newbar = [data.lines[i][0] for i in range(data.size())]
-        data.backwards()  # remove the copied bar from stream
+        data.backwards()  # 从 stream 中移除已复制的 bar
 
-        openbar = newbar[:]  # Make an open only bar
+        openbar = newbar[:]  # 生成只有 open 的 bar
         o = newbar[data.Open]
         for field_idx in [data.High, data.Low, data.Close]:
             openbar[field_idx] = o
 
-        # Nullify Volume/OpenInteres at the open
+        # 将 open 阶段的 Volume/OpenInterest 置零
         openbar[data.Volume] = 0.0
         openbar[data.OpenInterest] = 0.0
 
-        # Overwrite the new data bar with our pending data - except start point
+        # 用 pending data 覆盖新的 data bar，起点除外
         if self.pendingbar is not None:
             data._updatebar(self.pendingbar)
             ret = False
 
-        self.pendingbar = newbar  # update the pending bar to the new bar
-        data._add2stack(openbar)  # Add the openbar to the stack for processing
+        self.pendingbar = newbar  # 将 pending bar 更新为新 bar
+        data._add2stack(openbar)  # 将 openbar 加入 stack 等待处理
 
-        return ret  # the length of the stream was not changed
+        return ret  # stream 长度未变化
 
     def last(self, data):
-        '''Called when the data is no longer producing bars
-        Can be called multiple times. It has the chance to (for example)
-        produce extra bars'''
-        if self.pendingbar is not None:
-            data.backwards()  # remove delivered open bar
-            data._add2stack(self.pendingbar)  # add remaining
-            self.pendingbar = None  # No further action
-            return True  # something delivered
+        '''当 data 不再产生 bar 时调用。
 
-        return False  # nothing delivered here
+        该方法可以被多次调用，可用于输出额外 bar。
+
+        Args:
+            data: 要处理的 data source。
+
+        Returns:
+            bool: 输出 pending bar 时返回 ``True``；没有可输出内容时返回
+            ``False``。
+        '''
+        if self.pendingbar is not None:
+            data.backwards()  # 移除已交付的 open bar
+            data._add2stack(self.pendingbar)  # 加入剩余 bar
+            self.pendingbar = None  # 无需进一步动作
+            return True  # 已交付内容
+
+        return False  # 此处没有交付内容
 
 
 # Alias

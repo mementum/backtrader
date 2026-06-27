@@ -27,14 +27,21 @@ import backtrader as bt
 
 
 class VChartFile(bt.Store):
-    '''Store provider for Visual Chart binary files
+    '''Visual Chart 二进制文件的 Store provider。
 
-    Params:
+    Args:
+        path: Visual Chart 数据文件目录。若为 ``None`` 且运行于 Windows，会查询注册表
+            以定位 *Visual Chart* 文件根目录。
 
-      - ``path`` (default:``None``):
+    Returns:
+        VChartFile: 用于提供 Visual Chart 文件路径的 store。
 
-        If the path is ``None`` and running under *Windows*, the registry will
-        be examined to find the root directory of the *Visual Chart* files.
+    ---
+    交互界面使用示范:
+
+    >>> store = VChartFile(path='')
+    >>> store.get_datapath()
+    ''
     '''
 
     params = (
@@ -48,8 +55,7 @@ class VChartFile(bt.Store):
 
     @staticmethod
     def _find_vchart():
-        # Find VisualChart registry key to get data directory
-        # If not found returns ''
+        # 查找 VisualChart 注册表项以获取数据目录；找不到则返回 ''
         VC_KEYNAME = r'SOFTWARE\VCG\Visual Chart 6\Config'
         VC_KEYVAL = 'DocsDirectory'
         VC_DATADIR = ['Realserver', 'Data', '01']
@@ -61,22 +67,22 @@ class VChartFile(bt.Store):
             return VC_NONE
 
         vcdir = None
-        # Search for Directory in the usual root keys
+        # 在常见根键中搜索目录
         for rkey in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE,):
             try:
                 vckey = winreg.OpenKey(rkey, VC_KEYNAME)
             except WindowsError as e:
                 continue
 
-            # Try to get the key value
+            # 尝试读取键值
             try:
                 vcdir, _ = winreg.QueryValueEx(vckey, VC_KEYVAL)
             except WindowsError as e:
                 continue
             else:
-                break  # found vcdir
+                break  # 找到 vcdir
 
-        if vcdir is not None:  # something was found
+        if vcdir is not None:  # 找到了内容
             vcdir = os.path.join(vcdir, *VC_DATADIR)
         else:
             vcdir = VC_NONE

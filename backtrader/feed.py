@@ -39,13 +39,13 @@ from .tradingcal import PandasMarketCalendar
 
 
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
+    '''DataBase metaclass 的基类，用于登记 data feed 子类并完成初始化挂接。'''
+
     _indcol = dict()
 
     def __init__(cls, name, bases, dct):
-        '''
-        Class has already been created ... register subclasses
-        '''
-        # Initialize the class
+        '''类已创建完成，登记 data feed 子类。'''
+        # 初始化类
         super(MetaAbstractDataBase, cls).__init__(name, bases, dct)
 
         if not cls.aliased and \
@@ -56,10 +56,10 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj, args, kwargs = \
             super(MetaAbstractDataBase, cls).dopreinit(_obj, *args, **kwargs)
 
-        # Find the owner and store it
+        # 查找 owner 并保存
         _obj._feed = metabase.findowner(_obj, FeedBase)
 
-        _obj.notifs = collections.deque()  # store notifications for cerebro
+        _obj.notifs = collections.deque()  # 保存发给 cerebro 的 notifications
 
         _obj._dataname = _obj.p.dataname
         _obj._name = ''
@@ -69,7 +69,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
         _obj, args, kwargs = \
             super(MetaAbstractDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
-        # Either set by subclass or the parameter or use the dataname (ticker)
+        # 使用子类设置的名称、参数名称，或 dataname（ticker）
         _obj._name = _obj._name or _obj.p.name
         if not _obj._name and isinstance(_obj.p.dataname, string_types):
             _obj._name = _obj.p.dataname
@@ -86,25 +86,23 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             _obj.p.sessionend = _obj.p.sessionend.time()
 
         elif _obj.p.sessionend is None:
-            # remove 9 to avoid precision rounding errors
+            # 减少 9 微秒以避免 precision rounding errors
             _obj.p.sessionend = datetime.time(23, 59, 59, 999990)
 
         if isinstance(_obj.p.fromdate, datetime.date):
-            # push it to the end of the day, or else intraday
-            # values before the end of the day would be gone
+            # 推到当天 sessionstart，否则日内数据在当天结束前的值会被过滤掉
             if not hasattr(_obj.p.fromdate, 'hour'):
                 _obj.p.fromdate = datetime.datetime.combine(
                     _obj.p.fromdate, _obj.p.sessionstart)
 
         if isinstance(_obj.p.todate, datetime.date):
-            # push it to the end of the day, or else intraday
-            # values before the end of the day would be gone
+            # 推到当天 sessionend，否则日内数据在当天结束前的值会被过滤掉
             if not hasattr(_obj.p.todate, 'hour'):
                 _obj.p.todate = datetime.datetime.combine(
                     _obj.p.todate, _obj.p.sessionend)
 
-        _obj._barstack = collections.deque()  # for filter operations
-        _obj._barstash = collections.deque()  # for filter operations
+        _obj._barstack = collections.deque()  # 用于 filter operations
+        _obj._barstash = collections.deque()  # 用于 filter operations
 
         _obj._filters = list()
         _obj._ffilters = list()
@@ -121,6 +119,7 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
 
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                                       dataseries.OHLCDateTime)):
+    '''data feed 的抽象基类，用于管理时间过滤、通知、filter 和 bar 加载流程。'''
 
     params = (
         ('dataname', None),
@@ -134,7 +133,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         ('filters', []),
         ('tz', None),
         ('tzinput', None),
-        ('qcheck', 0.0),  # timeout in seconds (float) to check for events
+        ('qcheck', 0.0),  # 检查 event 的超时时间，单位为秒（float）
         ('calendar', None),
     )
 
@@ -158,25 +157,24 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     _tmoffset = datetime.timedelta()
 
-    # Set to non 0 if resampling/replaying
+    # resampling/replaying 时设为非 0
     resampling = 0
     replaying = 0
 
     _started = False
 
     def _start_finish(self):
-        # A live feed (for example) may have learnt something about the
-        # timezones after the start and that's why the date/time related
-        # parameters are converted at this late stage
-        # Get the output timezone (if any)
+        # live feed 可能在 start 后才知道 timezone 信息，因此 date/time 相关参数
+        # 在这个较晚阶段统一转换。
+        # 获取输出 timezone（如果有）
         self._tz = self._gettz()
-        # Lines have already been create, set the tz
+        # Lines 已经创建，设置 tz
         self.lines.datetime._settz(self._tz)
 
-        # This should probably be also called from an override-able method
+        # 这也许也应该由一个可覆盖方法调用
         self._tzinput = bt.utils.date.Localizer(self._gettzinput())
 
-        # Convert user input times to the output timezone (or min/max)
+        # 将用户输入时间转换到输出 timezone（或 min/max）
         if self.p.fromdate is None:
             self.fromdate = float('-inf')
         else:
@@ -187,7 +185,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         else:
             self.todate = self.date2num(self.p.todate)
 
-        # FIXME: These two are never used and could be removed
+        # FIXME: 这两个值从未使用，可以移除
         self.sessionstart = time2num(self.p.sessionstart)
         self.sessionend = time2num(self.p.sessionend)
 
@@ -209,7 +207,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return self._tmoffset
 
     def _getnexteos(self):
-        '''Returns the next eos using a trading calendar if available'''
+        '''使用 trading calendar 返回下一个 end-of-session（如果可用）。'''
         if self._clone:
             return self.data._getnexteos()
 
@@ -220,27 +218,26 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         dtime = num2date(dt)
         if self._calendar is None:
             nexteos = datetime.datetime.combine(dtime, self.p.sessionend)
-            nextdteos = self.date2num(nexteos)  # locl'ed -> utc-like
+            nextdteos = self.date2num(nexteos)  # localized -> utc-like
             nexteos = num2date(nextdteos)  # utc
             while dtime > nexteos:
-                nexteos += datetime.timedelta(days=1)  # already utc-like
+                nexteos += datetime.timedelta(days=1)  # 已经是 utc-like
 
             nextdteos = date2num(nexteos)  # -> utc-like
 
         else:
-            # returns times in utc
+            # 返回 utc 时间
             _, nexteos = self._calendar.schedule(dtime, self._tz)
             nextdteos = date2num(nexteos)  # nextos is already utc
 
         return nexteos, nextdteos
 
     def _gettzinput(self):
-        '''Can be overriden by classes to return a timezone for input'''
+        '''供子类覆盖，用于返回输入 timezone。'''
         return tzparse(self.p.tzinput)
 
     def _gettz(self):
-        '''To be overriden by subclasses which may auto-calculate the
-        timezone'''
+        '''供可自动计算 timezone 的子类覆盖。'''
         return tzparse(self.p.tz)
 
     def date2num(self, dt):
@@ -256,36 +253,36 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return num2date(dt, tz or self._tz, naive)
 
     def haslivedata(self):
-        return False  # must be overriden for those that can
+        return False  # 支持 live data 的子类必须覆盖
 
     def do_qcheck(self, onoff, qlapse):
-        # if onoff is True the data will wait p.qcheck for incoming live data
-        # on its queue.
+        # onoff 为 True 时，data 会在队列上等待 p.qcheck，以接收 live data。
         qwait = self.p.qcheck if onoff else 0.0
         qwait = max(0.0, qwait - qlapse)
         self._qcheck = qwait
 
     def islive(self):
-        '''If this returns True, ``Cerebro`` will deactivate ``preload`` and
-        ``runonce`` because a live data source must be fetched tick by tick (or
-        bar by bar)'''
+        '''返回该 data feed 是否为 live feed。
+
+        如果返回 ``True``，``Cerebro`` 会停用 ``preload`` 和 ``runonce``，因为 live
+        data source 必须逐 tick（或逐 bar）获取。
+        '''
         return False
 
     def put_notification(self, status, *args, **kwargs):
-        '''Add arguments to notification queue'''
+        '''向 notification queue 添加状态通知。'''
         if self._laststatus != status:
             self.notifs.append((status, args, kwargs))
             self._laststatus = status
 
     def get_notifications(self):
-        '''Return the pending "store" notifications'''
-        # The background thread could keep on adding notifications. The None
-        # mark allows to identify which is the last notification to deliver
-        self.notifs.append(None)  # put a mark
+        '''返回待处理的 data notification。'''
+        # 后台线程可能持续添加 notification。None 标记用于识别本轮最后一个待交付项。
+        self.notifs.append(None)  # 放置标记
         notifs = list()
         while True:
             notif = self.notifs.popleft()
-            if notif is None:  # mark is reached
+            if notif is None:  # 到达标记
                 break
             notifs.append(notif)
 
@@ -317,7 +314,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return d
 
     def setenvironment(self, env):
-        '''Keep a reference to the environment'''
+        '''保存 environment 引用。'''
         self._env = env
 
     def getenvironment(self):
@@ -339,16 +336,14 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self._filters.append((p, args, kwargs))
 
     def compensate(self, other):
-        '''Call it to let the broker know that actions on this asset will
-        compensate open positions in another'''
+        '''告知 broker：该资产上的操作会抵消另一个资产的 open position。'''
 
         self._compensate = other
 
     def _tick_nullify(self):
-        # These are the updating prices in case the new bar is "updated"
-        # and the length doesn't change like if a replay is happening or
-        # a real-time data feed is in use and 1 minutes bars are being
-        # constructed with 5 seconds updates
+        # 这些是 new bar 被“更新”时使用的更新价格。
+        # 例如 replay 正在发生，或 real-time data feed 用 5 秒更新构造 1 分钟 bar，
+        # 此时长度不会变化。
         for lalias in self.getlinealiases():
             if lalias != 'datetime':
                 setattr(self, 'tick_' + lalias, None)
@@ -356,7 +351,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.tick_last = None
 
     def _tick_fill(self, force=False):
-        # If nothing filled the tick_xxx attributes, the bar is the tick
+        # 如果没有填充 tick_xxx 属性，则当前 bar 本身就是 tick
         alias0 = self._getlinealias(0)
         if force or getattr(self, 'tick_' + alias0, None) is None:
             for lalias in self.getlinealiases():
@@ -368,21 +363,20 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def advance_peek(self):
         if len(self) < self.buflen():
-            return self.lines.datetime[1]  # return the future
+            return self.lines.datetime[1]  # 返回未来时间
 
-        return float('inf')  # max date else
+        return float('inf')  # 否则返回最大日期
 
     def advance(self, size=1, datamaster=None, ticks=True):
         if ticks:
             self._tick_nullify()
 
-        # Need intercepting this call to support datas with
-        # different lengths (timeframes)
+        # 需要拦截该调用，以支持不同长度（timeframes）的 data
         self.lines.advance(size)
 
         if datamaster is not None:
             if len(self) > self.buflen():
-                # if no bar can be delivered, fill with an empty bar
+                # 没有 bar 可交付时，填充一个 empty bar
                 self.rewind()
                 self.lines.forward()
                 return
@@ -393,7 +387,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 if ticks:
                     self._tick_fill()
         elif len(self) < self.buflen():
-            # a resampler may have advance us past the last point
+            # resampler 可能已经把当前位置 advance 到最后一个点之后
             if ticks:
                 self._tick_fill()
 
@@ -403,25 +397,25 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if ticks:
                 self._tick_nullify()
 
-            # not preloaded - request next bar
+            # 未 preload，直接请求下一根 bar
             ret = self.load()
             if not ret:
-                # if load cannot produce bars - forward the result
+                # 如果 load 无法生成 bar，直接转发结果
                 return ret
 
             if datamaster is None:
-                # bar is there and no master ... return load's result
+                # bar 已存在且无 master，返回 load 的结果
                 if ticks:
                     self._tick_fill()
                 return ret
         else:
             self.advance(ticks=ticks)
 
-        # a bar is "loaded" or was preloaded - index has been moved to it
+        # bar 已“loaded”或已 preload，索引已移动到该位置
         if datamaster is not None:
-            # there is a time reference to check against
+            # 存在时间参考，需要对齐检查
             if self.lines.datetime[0] > datamaster.lines.datetime[0]:
-                # can't deliver new bar, too early, go back
+                # 时间过早，无法交付 new bar，回退
                 self.rewind()
                 return False
             else:
@@ -432,7 +426,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             if ticks:
                 self._tick_fill()
 
-        # tell the world there is a bar (either the new or the previous
+        # 告知外部已有 bar（新的或上一根）
         return True
 
     def preload(self):
@@ -443,7 +437,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.home()
 
     def _last(self, datamaster=None):
-        # Last chance for filters to deliver something
+        # filters 最后一次交付内容的机会
         ret = 0
         for ff, fargs, fkwargs in self._ffilters:
             ret += ff.last(self, *fargs, **fkwargs)
@@ -453,7 +447,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             doticks = True
 
         while self._fromstack(forward=True):
-            # consume bar(s) produced by "last"s - adding room
+            # 消费由 "last" 产生的 bar，并腾出空间
             pass
 
         if doticks:
@@ -470,7 +464,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     def load(self):
         while True:
-            # move data pointer forward for new bar
+            # 为 new bar 将 data pointer 向前移动
             self.forward()
 
             if self._fromstack():  # bar is available
@@ -478,44 +472,40 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
             if not self._fromstack(stash=True):
                 _loadret = self._load()
-                if not _loadret:  # no bar use force to make sure in exactbars
-                    # the pointer is undone this covers especially (but not
-                    # uniquely) the case in which the last bar has been seen
-                    # and a backwards would ruin pointer accounting in the
-                    # "stop" method of the strategy
-                    self.backwards(force=True)  # undo data pointer
+                if not _loadret:  # 无 bar 时使用 force，确保 exactbars 场景正确
+                    # 撤销 pointer，尤其覆盖已经看到最后一根 bar 的情况。
+                    # 此时普通 backwards 会破坏 strategy "stop" 方法中的 pointer 记账。
+                    self.backwards(force=True)  # 撤销 data pointer
 
-                    # return the actual returned value which may be None to
-                    # signal no bar is available, but the data feed is not
-                    # done. False means game over
+                    # 返回实际返回值：None 表示当前无 bar 可用但 data feed 尚未结束；
+                    # False 表示彻底结束。
                     return _loadret
 
-            # Get a reference to current loaded time
+            # 获取当前 loaded time 的引用
             dt = self.lines.datetime[0]
 
-            # A bar has been loaded, adapt the time
+            # bar 已加载，适配时间
             if self._tzinput:
-                # Input has been converted at face value but it's not UTC in
-                # the input stream
-                dtime = num2date(dt)  # get it in a naive datetime
-                # localize it
+                # input stream 中的时间按表面值转换，但它并不是 UTC
+                dtime = num2date(dt)  # 转为 naive datetime
+                # localize
                 dtime = self._tzinput.localize(dtime)  # pytz compatible-ized
                 self.lines.datetime[0] = dt = date2num(dtime)  # keep UTC val
 
-            # Check standard date from/to filters
+            # 检查标准 from/to date filter
             if dt < self.fromdate:
-                # discard loaded bar and carry on
+                # 丢弃 loaded bar 并继续
                 self.backwards()
                 continue
             if dt > self.todate:
-                # discard loaded bar and break out
+                # 丢弃 loaded bar 并退出
                 self.backwards(force=True)
                 break
 
-            # Pass through filters
+            # 通过 filters
             retff = False
             for ff, fargs, fkwargs in self._filters:
-                # previous filter may have put things onto the stack
+                # 前一个 filter 可能已把内容放入 stack
                 if self._barstack:
                     for i in range(len(self._barstack)):
                         self._fromstack(forward=True)
@@ -523,32 +513,35 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 else:
                     retff = ff(self, *fargs, **fkwargs)
 
-                if retff:  # bar removed from systemn
-                    break  # out of the inner loop
+                if retff:  # bar 已从系统中移除
+                    break  # 跳出内层 loop
 
-            if retff:  # bar removed from system - loop to get new bar
-                continue  # in the greater loop
+            if retff:  # bar 已从系统中移除，继续外层 loop 获取 new bar
+                continue
 
-            # Checks let the bar through ... notify it
+            # checks 允许 bar 通过，通知调用方
             return True
 
-        # Out of the loop ... no more bars or past todate
+        # 跳出 loop，表示无更多 bar 或已超过 todate
         return False
 
     def _load(self):
         return False
 
     def _add2stack(self, bar, stash=False):
-        '''Saves given bar (list of values) to the stack for later retrieval'''
+        '''将给定 bar（value list）保存到 stack，供之后取回。'''
         if not stash:
             self._barstack.append(bar)
         else:
             self._barstash.append(bar)
 
     def _save2stack(self, erase=False, force=False, stash=False):
-        '''Saves current bar to the bar stack for later retrieval
+        '''将当前 bar 保存到 bar stack，供之后取回。
 
-        Parameter ``erase`` determines removal from the data stream
+        Args:
+            erase: 是否从 data stream 中移除当前 bar。
+            force: 移除时是否强制回退 pointer。
+            stash: 是否保存到 stash stack。
         '''
         bar = [line[0] for line in self.itersize()]
         if not stash:
@@ -556,13 +549,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         else:
             self._barstash.append(bar)
 
-        if erase:  # remove bar if requested
+        if erase:  # 按请求移除 bar
             self.backwards(force=force)
 
     def _updatebar(self, bar, forward=False, ago=0):
-        '''Load a value from the stack onto the lines to form the new bar
+        '''把 stack 中的 value 加载到 lines，以形成 new bar。
 
-        Returns True if values are present, False otherwise
+        Args:
+            bar: 要写入 line 的 value list。
+            forward: 写入前是否先 forward。
+            ago: 写入位置相对当前 bar 的偏移。
         '''
         if forward:
             self.forward()
@@ -571,9 +567,14 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             line[0 + ago] = val
 
     def _fromstack(self, forward=False, stash=False):
-        '''Load a value from the stack onto the lines to form the new bar
+        '''从 stack 取出 value 并加载到 lines，以形成 new bar。
 
-        Returns True if values are present, False otherwise
+        Args:
+            forward: 写入前是否先 forward。
+            stash: 是否从 stash stack 读取。
+
+        Returns:
+            bool: stack 中有 value 并成功加载时返回 ``True``，否则返回 ``False``。
         '''
 
         coll = self._barstack if not stash else self._barstash
@@ -597,10 +598,13 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
 
 class DataBase(AbstractDataBase):
+    '''DataBase 的基类，用于作为所有具体 data feed 的共同父类。'''
     pass
 
 
 class FeedBase(with_metaclass(metabase.MetaParams, object)):
+    '''Feed 的基类，用于管理多个 data feed 实例的创建、启动和停止。'''
+
     params = () + DataBase.params._gettuple()
 
     def __init__(self):
@@ -635,8 +639,10 @@ class FeedBase(with_metaclass(metabase.MetaParams, object)):
 
 
 class MetaCSVDataBase(DataBase.__class__):
+    '''CSV data feed metaclass 的基类，用于从文件名推导默认 data 名称。'''
+
     def dopostinit(cls, _obj, *args, **kwargs):
-        # Before going to the base class to make sure it overrides the default
+        # 先于 base class 处理，确保覆盖默认值
         if not _obj.p.name and not _obj._name:
             _obj._name, _ = os.path.splitext(os.path.basename(_obj.p.dataname))
 
@@ -647,18 +653,22 @@ class MetaCSVDataBase(DataBase.__class__):
 
 
 class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
-    '''
-    Base class for classes implementing CSV DataFeeds
+    '''CSV DataFeed 的基类。
 
-    The class takes care of opening the file, reading the lines and
-    tokenizing them.
+    该类负责打开文件、逐行读取并按 separator 切分 token。
 
-    Subclasses do only need to override:
+    子类通常只需要覆盖：
 
-      - _loadline(tokens)
+      - ``_loadline(tokens)``
 
-    The return value of ``_loadline`` (True/False) will be the return value
-    of ``_load`` which has been overriden by this base class
+    ``_loadline`` 的返回值（``True``/``False``）会作为本基类覆盖的 ``_load`` 返回值。
+
+    Args:
+        headers: CSV 是否包含表头；默认 ``True`` 时启动阶段跳过第一行。
+        separator: CSV 字段分隔符。
+
+    Returns:
+        CSVDataBase: 可由具体 CSV feed 继承的 data feed 基类。
     '''
 
     f = None
@@ -671,11 +681,11 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
             if hasattr(self.p.dataname, 'readline'):
                 self.f = self.p.dataname
             else:
-                # Let an exception propagate to let the caller know
+                # 允许异常向上传播，让调用方知道打开失败
                 self.f = io.open(self.p.dataname, 'r')
 
         if self.p.headers:
-            self.f.readline()  # skip the headers
+            self.f.readline()  # 跳过 header
 
         self.separator = self.p.separator
 
@@ -692,7 +702,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         self._last()
         self.home()
 
-        # preloaded - no need to keep the object around - breaks multip in 3.x
+        # 已 preload，无需继续持有文件对象；在 3.x 中会破坏 multiprocessing
         self.f.close()
         self.f = None
 
@@ -700,7 +710,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         if self.f is None:
             return False
 
-        # Let an exception propagate to let the caller know
+        # 允许异常向上传播，让调用方知道读取失败
         line = self.f.readline()
 
         if not line:
@@ -714,7 +724,7 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         if self.f is None:
             return None
 
-        # Let an exception propagate to let the caller know
+        # 允许异常向上传播，让调用方知道读取失败
         line = self.f.readline()
 
         if not line:
@@ -726,6 +736,8 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
 
 
 class CSVFeedBase(FeedBase):
+    '''CSV Feed 的基类，用于按 basepath 创建 CSVDataBase 子类实例。'''
+
     params = (('basepath', ''),) + CSVDataBase.params._gettuple()
 
     def _getdata(self, dataname, **kwargs):
@@ -734,13 +746,15 @@ class CSVFeedBase(FeedBase):
 
 
 class DataClone(AbstractDataBase):
+    '''data clone 的基类，用于复用另一个 data feed 的 line 和时间范围信息。'''
+
     _clone = True
 
     def __init__(self):
         self.data = self.p.dataname
         self._dataname = self.data._dataname
 
-        # Copy date/session parameters
+        # 复制 date/session 参数
         self.p.fromdate = self.p.fromdate
         self.p.todate = self.p.todate
         self.p.sessionstart = self.data.p.sessionstart
@@ -750,19 +764,19 @@ class DataClone(AbstractDataBase):
         self.p.compression = self.data.p.compression
 
     def _start(self):
-        # redefine to copy data bits from guest data
+        # 重新定义，用于从 guest data 复制 data bits
         self.start()
 
-        # Copy tz infos
+        # 复制 tz 信息
         self._tz = self.data._tz
         self.lines.datetime._settz(self._tz)
 
         self._calendar = self.data._calendar
 
-        # input has already been converted by guest data
-        self._tzinput = None  # no need to further converr
+        # input 已由 guest data 转换
+        self._tzinput = None  # 无需进一步转换
 
-        # Copy dates/session infos
+        # 复制 dates/session 信息
         self.fromdate = self.data.fromdate
         self.todate = self.data.todate
 
@@ -778,15 +792,14 @@ class DataClone(AbstractDataBase):
     def preload(self):
         self._preloading = True
         super(DataClone, self).preload()
-        self.data.home()  # preloading data was pushed forward
+        self.data.home()  # preload 时 data 已被向前推进
         self._preloading = False
 
     def _load(self):
-        # assumption: the data is in the system
-        # simply copy the lines
+        # 假设 data 已在系统中，直接复制 lines
         if self._preloading:
-            # data is preloaded, we are preloading too, can move
-            # forward until have full bar or data source is exhausted
+            # data 已 preload，本 clone 也在 preload；可持续向前移动，
+            # 直到得到完整 bar 或 data source 耗尽。
             self.data.advance()
             if len(self.data) > self.data.buflen():
                 return False
@@ -796,9 +809,9 @@ class DataClone(AbstractDataBase):
 
             return True
 
-        # Not preloading
+        # 非 preload 模式
         if not (len(self.data) > self._dlen):
-            # Data not beyond last seen bar
+            # Data 尚未超过上次看到的 bar
             return False
 
         self._dlen += 1

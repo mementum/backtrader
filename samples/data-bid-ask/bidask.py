@@ -85,11 +85,11 @@ def parse_args():
 def runstrategy():
     args = parse_args()
 
-    cerebro = bt.Cerebro()  # Create a cerebro
+    cerebro = bt.Cerebro()  # 创建 cerebro
 
     data = BidAskCSV(dataname=args.data, dtformat=args.dtformat)
-    cerebro.adddata(data)  # Add the 1st data to cerebro
-    # Add the strategy to cerebro
+    cerebro.adddata(data)  # 添加第 1 个 data 到 cerebro
+    # 添加 strategy to cerebro
     cerebro.addstrategy(St, sma=args.sma, period=args.period)
     cerebro.run()
 

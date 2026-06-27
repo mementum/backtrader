@@ -30,8 +30,8 @@ from backtrader.utils import UTC
 
 __all__ = ['TradingCalendarBase', 'TradingCalendar', 'PandasMarketCalendar']
 
-# Imprecission in the full time conversion to float would wrap over to next day
-# if microseconds is 999999 as defined in time.max
+# full time 转为 float 时有精度误差；如果 microseconds 使用 time.max 中定义的
+# 999999，可能会滚到下一天。
 _time_max = time(hour=23, minute=59, second=59, microsecond=999990)
 
 
@@ -45,113 +45,102 @@ ONEDAY = timedelta(days=1)
 
 
 class TradingCalendarBase(with_metaclass(MetaParams, object)):
-    def _nextday(self, day):
-        '''
-        Returns the next trading day (datetime/date instance) after ``day``
-        (datetime/date instance) and the isocalendar components
+    '''trading calendar 的基类，用于定义交易日和 session 时间查询接口。'''
 
-        The return value is a tuple with 2 components: (nextday, (y, w, d))
+    def _nextday(self, day):
+        '''返回 ``day`` 之后的下一个交易日及其 isocalendar 组件。
+
+        Returns:
+            tuple: ``(nextday, (year, week, weekday))``。
         '''
         raise NotImplementedError
 
     def schedule(self, day):
-        '''
-        Returns a tuple with the opening and closing times (``datetime.time``)
-        for the given ``date`` (``datetime/date`` instance)
+        '''返回给定交易日的开盘和收盘时间。
+
+        Returns:
+            tuple: ``(opening, closing)``，元素通常为 ``datetime.time`` 或
+            ``datetime.datetime``。
         '''
         raise NotImplementedError
 
     def nextday(self, day):
-        '''
-        Returns the next trading day (datetime/date instance) after ``day``
-        (datetime/date instance)
-        '''
-        return self._nextday(day)[0]  # 1st ret elem is next day
+        '''返回 ``day`` 之后的下一个交易日。'''
+        return self._nextday(day)[0]  # 第 1 个返回元素是 next day
 
     def nextday_week(self, day):
-        '''
-        Returns the iso week number of the next trading day, given a ``day``
-        (datetime/date) instance
-        '''
-        self._nextday(day)[1][1]  # 2 elem is isocal / 0 - y, 1 - wk, 2 - day
+        '''返回 ``day`` 之后下一个交易日所属的 ISO week number。'''
+        self._nextday(day)[1][1]  # 第 2 个元素是 isocal / 0 - y, 1 - wk, 2 - day
 
     def last_weekday(self, day):
-        '''
-        Returns ``True`` if the given ``day`` (datetime/date) instance is the
-        last trading day of this week
-        '''
-        # Next day must be greater than day. If the week changes is enough for
-        # a week change even if the number is smaller (year change)
+        '''如果给定 ``day`` 是本周最后一个交易日，则返回 ``True``。'''
+        # next day 必须大于 day。如果 week 改变，即使周数变小（跨年），也足以说明换周
         return day.isocalendar()[1] != self._nextday(day)[1][1]
 
     def last_monthday(self, day):
-        '''
-        Returns ``True`` if the given ``day`` (datetime/date) instance is the
-        last trading day of this month
-        '''
-        # Next day must be greater than day. If the week changes is enough for
-        # a week change even if the number is smaller (year change)
+        '''如果给定 ``day`` 是本月最后一个交易日，则返回 ``True``。'''
+        # next day 必须大于 day。月份变化即表示换月
         return day.month != self._nextday(day)[0].month
 
     def last_yearday(self, day):
-        '''
-        Returns ``True`` if the given ``day`` (datetime/date) instance is the
-        last trading day of this month
-        '''
-        # Next day must be greater than day. If the week changes is enough for
-        # a week change even if the number is smaller (year change)
+        '''如果给定 ``day`` 是本年最后一个交易日，则返回 ``True``。'''
+        # next day 必须大于 day。年份变化即表示换年
         return day.year != self._nextday(day)[0].year
 
 
 class TradingCalendar(TradingCalendarBase):
-    '''
-    Wrapper of ``pandas_market_calendars`` for a trading calendar. The package
-    ``pandas_market_calendar`` must be installed
+    '''简单 trading calendar 实现。
 
-    Params:
+    Args:
 
       - ``open`` (default ``time.min``)
 
-        Regular start of the session
+        常规 session start。
 
       - ``close`` (default ``time.max``)
 
-        Regular end of the session
+        常规 session end。
 
       - ``holidays`` (default ``[]``)
 
-        List of non-trading days (``datetime.datetime`` instances)
+        非交易日列表（``datetime.datetime`` 实例）。
 
       - ``earlydays`` (default ``[]``)
 
-        List of tuples determining the date and opening/closing times of days
-        which do not conform to the regular trading hours where each tuple has
-        (``datetime.datetime``, ``datetime.time``, ``datetime.time`` )
+        提前收盘/特殊交易时间的日期列表。每个 tuple 形如
+        ``(datetime.datetime, datetime.time, datetime.time)``。
 
       - ``offdays`` (default ``ISOWEEKEND``)
 
-        A list of weekdays in ISO format (Monday: 1 -> Sunday: 7) in which the
-        market doesn't trade. This is usually Saturday and Sunday and hence the
-        default
+        市场不交易的 ISO weekday 列表（Monday: 1 -> Sunday: 7）。默认是周六和周日。
+
+    Returns:
+        TradingCalendar: 可按交易日查询 session 时间的 calendar。
+
+    ---
+    交互示例：
+        >>> from datetime import datetime
+        >>> cal = TradingCalendar()
+        >>> cal.nextday(datetime(2024, 1, 5)).date()
+        datetime.date(2024, 1, 8)
 
     '''
     params = (
         ('open', time.min),
         ('close', _time_max),
-        ('holidays', []),  # list of non trading days (date)
-        ('earlydays', []),  # list of tuples (date, opentime, closetime)
-        ('offdays', ISOWEEKEND),  # list of non trading (isoweekdays)
+        ('holidays', []),  # 非交易日列表（date）
+        ('earlydays', []),  # tuple 列表：(date, opentime, closetime)
+        ('offdays', ISOWEEKEND),  # 非交易日列表（isoweekdays）
     )
 
     def __init__(self):
-        self._earlydays = [x[0] for x in self.p.earlydays]  # speed up searches
+        self._earlydays = [x[0] for x in self.p.earlydays]  # 加速查找
 
     def _nextday(self, day):
-        '''
-        Returns the next trading day (datetime/date instance) after ``day``
-        (datetime/date instance) and the isocalendar components
+        '''返回 ``day`` 之后的下一个交易日及其 isocalendar 组件。
 
-        The return value is a tuple with 2 components: (nextday, (y, w, d))
+        Returns:
+            tuple: ``(nextday, (year, week, weekday))``。
         '''
         while True:
             day += ONEDAY
@@ -162,19 +151,19 @@ class TradingCalendar(TradingCalendarBase):
             return day, isocal
 
     def schedule(self, day, tz=None):
-        '''
-        Returns the opening and closing times for the given ``day``. If the
-        method is called, the assumption is that ``day`` is an actual trading
-        day
+        '''返回给定交易日的开盘和收盘时间。
 
-        The return value is a tuple with 2 components: opentime, closetime
+        调用该方法时，默认 ``day`` 是实际交易日。
+
+        Returns:
+            tuple: ``(opentime, closetime)``。
         '''
         while True:
             dt = day.date()
             try:
                 i = self._earlydays.index(dt)
                 o, c = self.p.earlydays[i][1:]
-            except ValueError:  # not found
+            except ValueError:  # 未找到
                 o, c = self.p.open, self.p.close
 
             closing = datetime.combine(dt, c)
@@ -182,7 +171,7 @@ class TradingCalendar(TradingCalendarBase):
                 closing = tz.localize(closing).astimezone(UTC)
                 closing = closing.replace(tzinfo=None)
 
-            if day > closing:  # current time over eos
+            if day > closing:  # 当前时间超过 eos
                 day += ONEDAY
                 continue
 
@@ -195,26 +184,25 @@ class TradingCalendar(TradingCalendarBase):
 
 
 class PandasMarketCalendar(TradingCalendarBase):
-    '''
-    Wrapper of ``pandas_market_calendars`` for a trading calendar. The package
-    ``pandas_market_calendar`` must be installed
+    '''``pandas_market_calendars`` 的 trading calendar wrapper。
 
-    Params:
+    需要安装 ``pandas_market_calendars`` 包。
+
+    Args:
 
       - ``calendar`` (default ``None``)
 
-        The param ``calendar`` accepts the following:
+        ``calendar`` 参数接受：
 
-        - string: the name of one of the calendars supported, for example
-          `NYSE`. The wrapper will attempt to get a calendar instance
+        - string: 支持的 calendar 名称，例如 `NYSE`。wrapper 会尝试获取 calendar 实例。
 
-        - calendar instance: as returned by ``get_calendar('NYSE')``
+        - calendar instance: 例如 ``get_calendar('NYSE')`` 返回的对象。
 
       - ``cachesize`` (default ``365``)
 
-        Number of days to cache in advance for lookup
+        为查询提前缓存的天数。
 
-    See also:
+    参考：
 
       - https://github.com/rsheftel/pandas_market_calendars
 
@@ -222,34 +210,33 @@ class PandasMarketCalendar(TradingCalendarBase):
 
     '''
     params = (
-        ('calendar', None),  # A pandas_market_calendars instance or exch name
-        ('cachesize', 365),  # Number of days to cache in advance
+        ('calendar', None),  # pandas_market_calendars 实例或交易所名称
+        ('cachesize', 365),  # 提前缓存的天数
     )
 
     def __init__(self):
         self._calendar = self.p.calendar
 
-        if isinstance(self._calendar, string_types):  # use passed mkt name
+        if isinstance(self._calendar, string_types):  # 使用传入的 market name
             import pandas_market_calendars as mcal
             self._calendar = mcal.get_calendar(self._calendar)
 
-        import pandas as pd  # guaranteed because of pandas_market_calendars
+        import pandas as pd  # pandas_market_calendars 保证可用
         self.dcache = pd.DatetimeIndex([0.0])
         self.idcache = pd.DataFrame(index=pd.DatetimeIndex([0.0]))
         self.csize = timedelta(days=self.p.cachesize)
 
     def _nextday(self, day):
-        '''
-        Returns the next trading day (datetime/date instance) after ``day``
-        (datetime/date instance) and the isocalendar components
+        '''返回 ``day`` 之后的下一个交易日及其 isocalendar 组件。
 
-        The return value is a tuple with 2 components: (nextday, (y, w, d))
+        Returns:
+            tuple: ``(nextday, (year, week, weekday))``。
         '''
         day += ONEDAY
         while True:
             i = self.dcache.searchsorted(day)
             if i == len(self.dcache):
-                # keep a cache of 1 year to speed up searching
+                # 保留 1 年 cache 以加速查找
                 self.dcache = self._calendar.valid_days(day, day + self.csize)
                 continue
 
@@ -257,24 +244,24 @@ class PandasMarketCalendar(TradingCalendarBase):
             return d, d.isocalendar()
 
     def schedule(self, day, tz=None):
-        '''
-        Returns the opening and closing times for the given ``day``. If the
-        method is called, the assumption is that ``day`` is an actual trading
-        day
+        '''返回给定交易日的开盘和收盘时间。
 
-        The return value is a tuple with 2 components: opentime, closetime
+        调用该方法时，默认 ``day`` 是实际交易日。
+
+        Returns:
+            tuple: ``(opentime, closetime)``。
         '''
         while True:
             i = self.idcache.index.searchsorted(day.date())
             if i == len(self.idcache):
-                # keep a cache of 1 year to speed up searching
+                # 保留 1 年 cache 以加速查找
                 self.idcache = self._calendar.schedule(day, day + self.csize)
                 continue
 
             st = (x.tz_localize(None) for x in self.idcache.iloc[i, 0:2])
-            opening, closing = st  # Get utc naive times
-            if day > closing:  # passed time is over the sessionend
-                day += ONEDAY  # wrap over to next day
+            opening, closing = st  # 获取 utc naive times
+            if day > closing:  # 传入时间已超过 sessionend
+                day += ONEDAY  # 滚到下一天
                 continue
 
             return opening.to_pydatetime(), closing.to_pydatetime()

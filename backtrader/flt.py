@@ -30,17 +30,25 @@ __all__ = ['Filter']
 
 
 class MetaFilter(MetaParams):
+    '''Filter metaclass 的基类，用于承载参数元信息。'''
     pass
 
 
 class Filter(with_metaclass(MetaParams, object)):
+    '''data filter 的基类，用于在 data 推进时执行过滤逻辑。'''
 
     _firsttime = True
 
     def __init__(self, data):
+        '''初始化 filter。
+
+        Args:
+            data: filter 绑定的数据源。
+        '''
         pass
 
     def __call__(self, data):
+        '''执行一次 filter 调用。'''
         if self._firsttime:
             self.nextstart(data)
             self._firsttime = False
@@ -48,7 +56,9 @@ class Filter(with_metaclass(MetaParams, object)):
         self.next(data)
 
     def nextstart(self, data):
+        '''首次处理 data 时调用的 hook。'''
         pass
 
     def next(self, data):
+        '''每次处理 data 时调用的 hook。'''
         pass

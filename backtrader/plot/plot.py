@@ -48,6 +48,8 @@ from .utils import tag_box_style
 
 
 class PInfo(object):
+    '''绘图状态容器，用于在一次 plot 过程中保存 axis、颜色、legend 和 figure 信息。'''
+
     def __init__(self, sch):
         self.sch = sch
         self.nrows = 0
@@ -95,6 +97,8 @@ class PInfo(object):
 
 
 class Plot_OldSync(with_metaclass(MetaParams, object)):
+    '''同步绘图器的基类，用于把 strategy/data/indicator 渲染为 matplotlib figure。'''
+
     params = (('scheme', PlotScheme()),)
 
     def __init__(self, **kwargs):
@@ -105,6 +109,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             setattr(self.p.scheme, 'locbgother', 'white')
 
     def drawtag(self, ax, x, y, facecolor, edgecolor, alpha=0.9, **kwargs):
+        '''在 axis 右侧绘制最后 value 的标签。'''
 
         txt = ax.text(x, y, '%.2f' % y, va='center', ha='left',
                       fontsize=self.pinf.sch.subtxtsize,
@@ -112,12 +117,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                                 facecolor=facecolor,
                                 edgecolor=edgecolor,
                                 alpha=alpha),
-                      # 3.0 is the minimum default for text
+                      # 3.0 是 text 的最小默认值
                       zorder=self.pinf.zorder[ax] + 3.0,
                       **kwargs)
 
     def plot(self, strategy, figid=0, numfigs=1, iplot=True,
              start=None, end=None, **kwargs):
+        '''绘制 strategy 的 data、observer 和 indicator。'''
         # pfillers={}):
         if not strategy.datas:
             return
@@ -129,7 +135,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             if 'ipykernel' in sys.modules:
                 matplotlib.use('nbagg')
 
-        # this import must not happen before matplotlib.use
+        # 该 import 不得早于 matplotlib.use
         import matplotlib.pyplot as mpyplot
         self.mpyplot = mpyplot
 
@@ -166,7 +172,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         figs = []
 
         for numfig in range(numfigs):
-            # prepare a figure
+            # 准备 figure
             fig = self.pinf.newfig(figid, numfig, self.mpyplot)
             figs.append(fig)
 
@@ -185,13 +191,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             #     pfend = bisect.bisect_right(val, self.pinf.pend)
             #     self.pinf.pfillers[key] = val[pfstart:pfend]
 
-            # Do the plotting
-            # Things that go always at the top (observers)
+            # 执行绘图
+            # 始终位于顶部的对象（observers）
             self.pinf.xdata = self.pinf.x
             for ptop in self.dplotstop:
                 self.plotind(None, ptop, subinds=self.dplotsover[ptop])
 
-            # Create the rest on a per data basis
+            # 其余内容按 data 逐个创建
             dt0, dt1 = self.pinf.xreal[0], self.pinf.xreal[-1]
             for data in strategy.datas:
                 if not data.plotinfo.plot:
@@ -240,13 +246,13 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             self.pinf.cursors.append(cursor)
 
-            # Put the subplots as indicated by hspace
+            # 按 hspace 指示调整 subplots
             fig.subplots_adjust(hspace=self.pinf.sch.plotdist,
                                 top=0.98, left=0.05, bottom=0.05, right=0.95)
 
             laxis = list(self.pinf.daxis.values())
 
-            # Find last axis which is not a twinx (date locator fails there)
+            # 找到最后一个不是 twinx 的 axis（date locator 在 twinx 上会失败）
             i = -1
             while True:
                 lastax = laxis[i]
@@ -257,23 +263,22 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             self.setlocators(lastax)  # place the locators/fmts
 
-            # Applying fig.autofmt_xdate if the data axis is the last one
-            # breaks the presentation of the date labels. why?
-            # Applying the manual rotation with setp cures the problem
-            # but the labels from all axis but the last have to be hidden
+            # 如果 data axis 是最后一个，应用 fig.autofmt_xdate 会破坏 date label 呈现。
+            # 使用 setp 手动旋转可以解决问题，但必须隐藏除最后 axis 外的所有 label。
             for ax in laxis:
                 self.mpyplot.setp(ax.get_xticklabels(), visible=False)
 
             self.mpyplot.setp(lastax.get_xticklabels(), visible=True,
                               rotation=self.pinf.sch.tickrotation)
 
-            # Things must be tight along the x axis (to fill both ends)
+            # x 轴必须 tight，以填满两端
             axtight = 'x' if not self.pinf.sch.ytight else 'both'
             self.mpyplot.autoscale(enable=True, axis=axtight, tight=True)
 
         return figs
 
     def setlocators(self, ax):
+        '''为给定 axis 设置 date locator 和 formatter。'''
         clock = sorted(self.pinf.clock.datas,
                        key=lambda x: (x._timeframe, x._compression))[0]
 
@@ -304,7 +309,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         for dax in self.pinf.daxis.values():
             dax.fmt_xdata = fordata
 
-        # Major locator / formatter
+        # major locator / formatter
         locmajor = loc.AutoDateLocator(self.pinf.xreal)
         ax.xaxis.set_major_locator(locmajor)
         if self.pinf.sch.fmt_x_ticks is None:
@@ -315,7 +320,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         ax.xaxis.set_major_formatter(autofmt)
 
     def calcrows(self, strategy):
-        # Calculate the total number of rows
+        '''计算绘图需要的总行数。'''
+
+        # 计算总行数
         rowsmajor = self.pinf.sch.rowsmajor
         rowsminor = self.pinf.sch.rowsminor
         nrows = 0
@@ -323,7 +330,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         datasnoplot = 0
         for data in strategy.datas:
             if not data.plotinfo.plot:
-                # neither data nor indicators nor volume add rows
+                # data、indicators 和 volume 都不增加行
                 datasnoplot += 1
                 self.dplotsup.pop(data, None)
                 self.dplotsdown.pop(data, None)
@@ -334,46 +341,47 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 if pmaster is data:
                     pmaster = None
                 if pmaster is not None:
-                    # data doesn't add a row, but volume may
+                    # data 不增加行，但 volume 可能增加
                     if self.pinf.sch.volume:
                         nrows += rowsminor
                 else:
-                    # data adds rows, volume may
+                    # data 增加行，volume 也可能增加
                     nrows += rowsmajor
                     if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
                         nrows += rowsminor
 
         if False:
-            # Datas and volumes
+            # Datas 和 volumes
             nrows += (len(strategy.datas) - datasnoplot) * rowsmajor
             if self.pinf.sch.volume and not self.pinf.sch.voloverlay:
                 nrows += (len(strategy.datas) - datasnoplot) * rowsminor
 
-        # top indicators/observers
+        # 顶部 indicators/observers
         nrows += len(self.dplotstop) * rowsminor
 
-        # indicators above datas
+        # data 上方的 indicators
         nrows += sum(len(v) for v in self.dplotsup.values())
         nrows += sum(len(v) for v in self.dplotsdown.values())
 
         self.pinf.nrows = nrows
 
     def newaxis(self, obj, rowspan):
+        '''创建新的 subplot axis，并登记到绘图状态中。'''
         ax = self.mpyplot.subplot2grid(
             (self.pinf.nrows, 1), (self.pinf.row, 0),
             rowspan=rowspan, sharex=self.pinf.sharex)
 
-        # update the sharex information if not available
+        # 如果 sharex 信息尚不可用，则更新
         if self.pinf.sharex is None:
             self.pinf.sharex = ax
 
-        # update the row index with the taken rows
+        # 根据已占用行数更新 row index
         self.pinf.row += rowspan
 
-        # save the mapping indicator - axis and return
+        # 保存 indicator - axis 映射并返回
         self.pinf.daxis[obj] = ax
 
-        # Activate grid in all axes if requested
+        # 如有请求，在所有 axes 中启用 grid
         ax.yaxis.tick_right()
         ax.grid(self.pinf.sch.grid, which='both')
 
@@ -382,25 +390,26 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
     def plotind(self, iref, ind,
                 subinds=None, upinds=None, downinds=None,
                 masterax=None):
+        '''绘制 indicator 及其上下/嵌套 subindicator。'''
 
         sch = self.p.scheme
 
-        # check subind
+        # 检查 subind
         subinds = subinds or []
         upinds = upinds or []
         downinds = downinds or []
 
-        # plot subindicators on self with independent axis above
+        # 在自身上方用独立 axis 绘制 subindicators
         for upind in upinds:
             self.plotind(iref, upind)
 
-        # Get an axis for this plot
+        # 获取本次绘图使用的 axis
         ax = masterax or self.newaxis(ind, rowspan=self.pinf.sch.rowsminor)
 
         indlabel = ind.plotlabel()
 
-        # Scan lines quickly to find out if some lines have to be skipped for
-        # legend (because matplotlib reorders the legend)
+        # 快速扫描 lines，判断是否有 line 需要从 legend 中跳过
+        # （因为 matplotlib 会重新排序 legend）
         toskip = 0
         for lineidx in range(ind.size()):
             line = ind.lines[lineidx]
@@ -431,19 +440,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             if lineplotinfo._get('_plotskip', False):
                 continue
 
-            # Legend label only when plotting 1st line
+            # 仅绘制第 1 条 line 时添加 legend label
             if masterax and not ind.plotinfo.plotlinelabels:
                 label = indlabel * (not toskip) or '_nolegend'
             else:
                 label = (indlabel + '\n') * (not toskip)
                 label += lineplotinfo._get('_name', '') or linealias
 
-            toskip -= 1  # one line less until legend can be added
+            toskip -= 1  # 距离可添加 legend 又少一条 line
 
-            # plot data
+            # 绘制 data
             lplot = line.plotrange(self.pinf.xstart, self.pinf.xend)
 
-            # Global and generic for indicator
+            # indicator 的全局/通用逻辑
             if self.pinf.sch.linevalues and ind.plotinfo.plotlinevalues:
                 plotlinevalue = lineplotinfo._get('_plotvalue', True)
                 if plotlinevalue and not math.isnan(lplot[-1]):
@@ -467,11 +476,11 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
             xdata, lplotarray = self.pinf.xdata, lplot
             if lineplotinfo._get('_skipnan', False):
-                # Get the full array and a mask to skipnan
+                # 获取完整 array 和用于 skipnan 的 mask
                 lplotarray = np.array(lplot)
                 lplotmask = np.isfinite(lplotarray)
 
-                # Get both the axis and the data masked
+                # 对 axis 和 data 同时应用 mask
                 lplotarray = lplotarray[lplotmask]
                 xdata = np.array(xdata)[lplotmask]
 
@@ -479,7 +488,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             try:
                 plottedline = plottedline[0]
             except:
-                # Possibly a container of artists (when plotting bars)
+                # 绘制 bars 时可能是 artists 容器
                 pass
 
             self.pinf.zorder[ax] = plottedline.get_zorder()
@@ -488,7 +497,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             if self.pinf.sch.valuetags and vtags:
                 linetag = lineplotinfo._get('_plotvaluetag', True)
                 if linetag and not math.isnan(lplot[-1]):
-                    # line has valid values, plot a tag for the last value
+                    # line 有有效值，为最后一个 value 绘制 tag
                     self.drawtag(ax, len(self.pinf.xreal), lplot[-1],
                                  facecolor=self.pinf.sch.locbgother,
                                  edgecolor=self.pinf.color(ax))
@@ -519,19 +528,19 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                                     interpolate=True,
                                     **kwargs)
 
-        # plot subindicators that were created on self
+        # 绘制在自身上创建的 subindicators
         for subind in subinds:
             self.plotind(iref, subind, subinds=self.dplotsover[subind],
                          masterax=ax)
 
         if not masterax:
-            # adjust margin if requested ... general of particular
+            # 如有请求，调整 margin；优先使用具体设置，否则使用通用设置
             ymargin = ind.plotinfo._get('plotymargin', 0.0)
             ymargin = max(ymargin, self.pinf.sch.yadjust)
             if ymargin:
                 ax.margins(y=ymargin)
 
-            # Set specific or generic ticks
+            # 设置特定或通用 ticks
             yticks = ind.plotinfo._get('plotyticks', [])
             if not yticks:
                 yticks = ind.plotinfo._get('plotyhlines', [])
@@ -542,7 +551,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 locator = mticker.MaxNLocator(nbins=4, prune='both')
                 ax.yaxis.set_major_locator(locator)
 
-            # Set specific hlines if asked to
+            # 如有请求，设置特定 hlines
             hlines = ind.plotinfo._get('plothlines', [])
             if not hlines:
                 hlines = ind.plotinfo._get('plotyhlines', [])
@@ -555,33 +564,35 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                ind.plotinfo._get('plotlegend', True):
 
                 handles, labels = ax.get_legend_handles_labels()
-                # Ensure that we have something to show
+                # 确保有可展示内容
                 if labels:
-                    # location can come from the user
+                    # location 可由用户指定
                     loc = ind.plotinfo.legendloc or self.pinf.sch.legendindloc
 
-                    # Legend done here to ensure it includes all plots
+                    # 在这里生成 legend，确保包含所有 plots
                     legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
                                        prop=self.pinf.prop)
 
                     # legend.set_title(indlabel, prop=self.pinf.prop)
-                    # hack: if title is set. legend has a Vbox for the labels
-                    # which has a default "center" set
+                    # hack：如果设置 title，legend 会为 labels 创建 Vbox，
+                    # 其默认 align 为 "center"
                     legend._legend_box.align = 'left'
 
-        # plot subindicators on self with independent axis below
+        # 在自身下方用独立 axis 绘制 subindicators
         for downind in downinds:
             self.plotind(iref, downind)
 
     def plotvolume(self, data, opens, highs, lows, closes, volumes, label):
+        '''绘制 volume，并按配置决定 overlay 或独立 subplot。'''
+
         pmaster = data.plotinfo.plotmaster
         if pmaster is data:
             pmaster = None
         voloverlay = (self.pinf.sch.voloverlay and pmaster is None)
 
-        # if sefl.pinf.sch.voloverlay:
+        # if self.pinf.sch.voloverlay:
         if voloverlay:
             rowspan = self.pinf.sch.rowsmajor
         else:
@@ -598,7 +609,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         maxvol = volylim = max(volumes)
         if maxvol:
 
-            # Plot the volume (no matter if as overlay or standalone)
+            # 绘制 volume（无论 overlay 还是 standalone）
             vollabel = label
             volplot, = plot_volume(ax, self.pinf.xdata, opens, closes, volumes,
                                    colorup=self.pinf.sch.volup,
@@ -609,21 +620,21 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             prune = 'both'
             # if self.pinf.sch.voloverlay:
             if voloverlay:
-                # store for a potential plot over it
+                # 为后续可能绘制在其上方的 plot 保存设置
                 nbins = int(nbins / self.pinf.sch.volscaling)
                 prune = None
 
                 volylim /= self.pinf.sch.volscaling
                 ax.set_ylim(0, volylim, auto=True)
             else:
-                # plot a legend
+                # 绘制 legend
                 handles, labels = ax.get_legend_handles_labels()
                 if handles:
 
-                    # location can come from the user
+                    # location 可由用户指定
                     loc = data.plotinfo.legendloc or self.pinf.sch.legendindloc
 
-                    # Legend done here to ensure it includes all plots
+                    # 在这里生成 legend，确保包含所有 plots
                     legend = ax.legend(loc=loc,
                                        numpoints=1, frameon=False,
                                        shadow=False, fancybox=False,
@@ -640,6 +651,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         return volplot
 
     def plotdata(self, data, indicators):
+        '''绘制单个 data feed 及其关联 indicators。'''
+
         for ind in indicators:
             upinds = self.dplotsup[ind]
             for upind in upinds:
@@ -722,7 +735,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                     filldown=self.pinf.sch.bardownfill)
 
             elif self.pinf.sch.style.startswith('bar') or True:
-                # final default option -- should be "else"
+                # 最终默认选项；理论上应为 "else"
                 plotted = plot_ohlc(
                     ax, self.pinf.xdata, opens, highs, lows, closes,
                     colorup=self.pinf.sch.barup,
@@ -731,7 +744,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
 
         self.pinf.zorder[ax] = plotted[0].get_zorder()
 
-        # Code to place a label at the right hand side with the last value
+        # 在右侧放置最后 value 标签的代码
         vtags = data.plotinfo._get('plotvaluetags', True)
         if self.pinf.sch.valuetags and vtags:
             self.drawtag(ax, len(self.pinf.xreal), closes[-1],
@@ -739,7 +752,7 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                          edgecolor=self.pinf.sch.loc)
 
         ax.yaxis.set_major_locator(mticker.MaxNLocator(prune='both'))
-        # make sure "over" indicators do not change our scale
+        # 确保 "over" indicators 不改变当前 scale
         if data.plotinfo._get('plotylimited', True):
             if axdatamaster is None:
                 ax.set_ylim(ax.get_ylim())
@@ -750,9 +763,9 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 self.plotvolume(
                     data, opens, highs, lows, closes, volumes, vollabel)
             else:
-                # Prepare overlay scaling/pushup or manage own axis
+                # 准备 overlay scaling/pushup，或管理自身 axis
                 if self.pinf.sch.volpushup:
-                    # push up overlaid axis by lowering the bottom limit
+                    # 通过降低 bottom limit 将 overlay axis 向上推
                     axbot, axtop = ax.get_ylim()
                     axbot *= (1.0 - self.pinf.sch.volpushup)
                     ax.set_ylim(axbot, axtop)
@@ -763,15 +776,15 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
         handles, labels = ax.get_legend_handles_labels()
         a = axdatamaster or ax
         if handles:
-            # put data and volume legend entries in the 1st positions
-            # because they are "collections" they are considered after Line2D
-            # for the legend entries, which is not our desire
+            # 将 data 和 volume legend entries 放到最前面。
+            # 因为它们是 "collections"，在 legend entries 中会被排到 Line2D 后面，
+            # 这不是预期顺序。
             # if self.pinf.sch.volume and self.pinf.sch.voloverlay:
 
             ai = self.pinf.legpos[a]
             if self.pinf.sch.volume and voloverlay:
                 if volplot:
-                    # even if volume plot was requested, there may be no volume
+                    # 即使请求了 volume plot，也可能没有 volume
                     labels.insert(ai, vollabel)
                     handles.insert(ai, volplot)
 
@@ -799,8 +812,8 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                                      fancybox=False, prop=self.pinf.prop,
                                      numpoints=1, ncol=1)
 
-            # hack: if title is set. legend has a Vbox for the labels
-            # which has a default "center" set
+            # hack：如果设置 title，legend 会为 labels 创建 Vbox，
+            # 其默认 align 为 "center"
             legend._legend_box.align = 'left'
 
         for ind in indicators:
@@ -818,21 +831,25 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             a.set_yscale('log')
 
     def show(self):
+        '''显示当前 matplotlib plot。'''
         self.mpyplot.show()
 
     def savefig(self, fig, filename, width=16, height=9, dpi=300, tight=True):
+        '''保存 figure 到文件。'''
         fig.set_size_inches(width, height)
         bbox_inches = 'tight' * tight or None
         fig.savefig(filename, dpi=dpi, bbox_inches=bbox_inches)
 
     def sortdataindicators(self, strategy):
-        # These lists/dictionaries hold the subplots that go above each data
+        '''按绘图位置整理 data、observer 和 indicator。'''
+
+        # 这些 list/dictionary 保存每个 data 上方/下方/叠加的 subplots
         self.dplotstop = list()
         self.dplotsup = collections.defaultdict(list)
         self.dplotsdown = collections.defaultdict(list)
         self.dplotsover = collections.defaultdict(list)
 
-        # Sort observers in the different lists/dictionaries
+        # 将 observers 分配到不同 list/dictionary
         for x in strategy.getobservers():
             if not x.plotinfo.plot or x.plotinfo.plotskip:
                 continue
@@ -843,18 +860,18 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
                 key = getattr(x._clock, 'owner', x._clock)
                 self.dplotsover[key].append(x)
 
-        # Sort indicators in the different lists/dictionaries
+        # 将 indicators 分配到不同 list/dictionary
         for x in strategy.getindicators():
             if not hasattr(x, 'plotinfo'):
-                # no plotting support - so far LineSingle derived classes
+                # 暂无绘图支持；目前为 LineSingle 派生类
                 continue
 
             if not x.plotinfo.plot or x.plotinfo.plotskip:
                 continue
 
-            x._plotinit()  # will be plotted ... call its init function
+            x._plotinit()  # 将被绘制，调用其 init function
 
-            # support LineSeriesStub which has "owner" to point to the data
+            # 支持 LineSeriesStub，其 "owner" 指向 data
             key = getattr(x._clock, 'owner', x._clock)
             if key is strategy:  # a LinesCoupler
                 key = strategy.data

@@ -41,11 +41,11 @@ from backtrader.stores import ibstore
 from backtrader.utils import AutoDict, AutoOrderedDict
 from backtrader.comminfo import CommInfoBase
 
-bytes = bstr  # py2/3 need for ibpy
+bytes = bstr  # ibpy 需要 py2/3 兼容 bytes
 
 
 class IBOrderState(object):
-    # wraps OrderState object and can print it
+    # 包装 OrderState 对象，并提供可打印表示
     _fields = ['status', 'initMargin', 'maintMargin', 'equityWithLoan',
                'commission', 'minCommission', 'maxCommission',
                'commissionCurrency', 'warningText']
@@ -66,33 +66,26 @@ class IBOrderState(object):
 
 
 class IBOrder(OrderBase, ib.ext.Order.Order):
-    '''Subclasses the IBPy order to provide the minimum extra functionality
-    needed to be compatible with the internally defined orders
+    '''IBPy order 的子类，用于提供与内部 order 兼容所需的最小扩展功能。
 
-    Once ``OrderBase`` has processed the parameters, the __init__ method takes
-    over to use the parameter values and set the appropriate values in the
-    ib.ext.Order.Order object
+    ``OrderBase`` 处理参数后，``__init__`` 会接管这些参数值，并设置
+    ``ib.ext.Order.Order`` 对象中的对应字段。
 
-    Any extra parameters supplied with kwargs are applied directly to the
-    ib.ext.Order.Order object, which could be used as follows::
+    kwargs 中提供的额外参数会直接应用到 ``ib.ext.Order.Order`` 对象，可按如下方式使用::
 
-      Example: if the 4 order execution types directly supported by
-      ``backtrader`` are not enough, in the case of for example
-      *Interactive Brokers* the following could be passed as *kwargs*::
+      例如：如果 ``backtrader`` 直接支持的 order execution type 不够，
+      对 *Interactive Brokers* 可通过 *kwargs* 传入::
 
         orderType='LIT', lmtPrice=10.0, auxPrice=9.8
 
-      This would override the settings created by ``backtrader`` and
-      generate a ``LIMIT IF TOUCHED`` order with a *touched* price of 9.8
-      and a *limit* price of 10.0.
+      这会覆盖 ``backtrader`` 创建的设置，并生成一个 ``LIMIT IF TOUCHED`` order，
+      其中 *touched* price 为 9.8，*limit* price 为 10.0。
 
-    This would be done almost always from the ``Buy`` and ``Sell`` methods of
-    the ``Strategy`` subclass being used in ``Cerebro``
+    该用法通常通过 ``Cerebro`` 中所用 ``Strategy`` 子类的 ``Buy`` 与 ``Sell`` 方法完成。
     '''
 
     def __str__(self):
-        '''Get the printout from the base class and add some ib.Order specific
-        fields'''
+        '''获取基类打印内容，并追加部分 ib.Order 专属字段。'''
         basetxt = super(IBOrder, self).__str__()
         tojoin = [basetxt]
         tojoin.append('Ref: {}'.format(self.ref))
@@ -106,7 +99,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         tojoin.append('GoodTillDate: {}'.format(self.m_goodTillDate))
         return '\n'.join(tojoin)
 
-    # Map backtrader order types to the ib specifics
+    # 将 backtrader order type 映射到 IB 专属类型
     _IBOrdTypes = {
         None: bytes('MKT'),  # default
         Order.Market: bytes('MKT'),
@@ -120,24 +113,22 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
 
     def __init__(self, action, **kwargs):
 
-        # Marker to indicate an openOrder has been seen with
-        # PendinCancel/Cancelled which is indication of an upcoming
-        # cancellation
+        # 标记 openOrder 中曾出现 PendingCancel/Cancelled，表示即将取消
         self._willexpire = False
 
         self.ordtype = self.Buy if action == 'BUY' else self.Sell
 
         super(IBOrder, self).__init__()
-        ib.ext.Order.Order.__init__(self)  # Invoke 2nd base class
+        ib.ext.Order.Order.__init__(self)  # 调用第 2 个基类
 
-        # Now fill in the specific IB parameters
+        # 填充 IB 专属参数
         self.m_orderType = self._IBOrdTypes[self.exectype]
         self.m_permid = 0
 
-        # 'B' or 'S' should be enough
+        # 'B' 或 'S' 应已足够
         self.m_action = bytes(action)
 
-        # Set the prices
+        # 设置价格
         self.m_lmtPrice = 0.0
         self.m_auxPrice = 0.0
 
@@ -156,25 +147,25 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
             if self.trailamount is not None:
                 self.m_auxPrice = self.trailamount
             elif self.trailpercent is not None:
-                # value expected in % format ... multiply 100.0
+                # 期望值为百分比格式，因此乘以 100.0
                 self.m_trailingPercent = self.trailpercent * 100.0
         elif self.exectype == self.StopTrailLimit:
             self.m_trailStopPrice = self.m_lmtPrice = self.price
-            # The limit offset is set relative to the price difference in TWS
+            # limit offset 在 TWS 中相对价格差设置
             self.m_lmtPrice = self.pricelimit
             if self.trailamount is not None:
                 self.m_auxPrice = self.trailamount
             elif self.trailpercent is not None:
-                # value expected in % format ... multiply 100.0
+                # 期望值为百分比格式，因此乘以 100.0
                 self.m_trailingPercent = self.trailpercent * 100.0
 
-        self.m_totalQuantity = abs(self.size)  # ib takes only positives
+        self.m_totalQuantity = abs(self.size)  # IB 只接受正数
 
         self.m_transmit = self.transmit
         if self.parent is not None:
             self.m_parentId = self.parent.m_orderId
 
-        # Time In Force: DAY, GTC, IOC, GTD
+        # 有效期类型（Time In Force）：DAY, GTC, IOC, GTD
         if self.valid is None:
             tif = 'GTC'  # Good til cancelled
         elif isinstance(self.valid, (datetime, date)):
@@ -185,7 +176,7 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
                 tif = 'DAY'
             else:
                 tif = 'GTD'  # Good til date
-                valid = datetime.now() + self.valid  # .now, using localtime
+                valid = datetime.now() + self.valid  # .now，使用本地时间
                 self.m_goodTillDate = bytes(valid.strftime('%Y%m%d %H:%M:%S'))
 
         elif self.valid == 0:
@@ -198,67 +189,60 @@ class IBOrder(OrderBase, ib.ext.Order.Order):
         self.m_tif = bytes(tif)
 
         # OCA
-        self.m_ocaType = 1  # Cancel all remaining orders with block
+        self.m_ocaType = 1  # 带 block 取消所有剩余 order
 
-        # pass any custom arguments to the order
+        # 将自定义参数传给 order
         for k in kwargs:
             setattr(self, (not hasattr(self, k)) * 'm_' + k, kwargs[k])
 
 
 class IBCommInfo(CommInfoBase):
     '''
-    Commissions are calculated by ib, but the trades calculations in the
-    ```Strategy`` rely on the order carrying a CommInfo object attached for the
-    calculation of the operation cost and value.
+    IB 会计算 commissions，但 ``Strategy`` 中的 trade 计算依赖 order 携带 CommInfo
+    对象，以计算操作成本和价值。
 
-    These are non-critical informations, but removing them from the trade could
-    break existing usage and it is better to provide a CommInfo objet which
-    enables those calculations even if with approvimate values.
+    这些信息不是核心执行路径，但移除可能破坏既有用法，因此提供一个可近似完成计算的
+    CommInfo 对象。
 
-    The margin calculation is not a known in advance information with IB
-    (margin impact can be gotten from OrderState objects) and therefore it is
-    left as future exercise to get it'''
+    margin 不是预先已知的信息（margin impact 可从 OrderState 对象获得），因此这里
+    保留近似计算。
+    '''
 
     def getvaluesize(self, size, price):
-        # In real life the margin approaches the price
+        # 实盘中 margin 接近 price
         return abs(size) * price
 
     def getoperationcost(self, size, price):
-        '''Returns the needed amount of cash an operation would cost'''
-        # Same reasoning as above
+        '''返回一次操作需要占用的 cash 数量。'''
+        # 与上方逻辑相同
         return abs(size) * price
 
 
 class MetaIBBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，执行 broker 注册。'''
+        # 初始化类
         super(MetaIBBroker, cls).__init__(name, bases, dct)
         ibstore.IBStore.BrokerCls = cls
 
 
 class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
-    '''Broker implementation for Interactive Brokers.
+    '''Interactive Brokers 的 broker 实现。
 
-    This class maps the orders/positions from Interactive Brokers to the
-    internal API of ``backtrader``.
+    该类将 Interactive Brokers 的 order/position 映射到 ``backtrader`` 内部 API。
 
-    Notes:
+    注意：
 
-      - ``tradeid`` is not really supported, because the profit and loss are
-        taken directly from IB. Because (as expected) calculates it in FIFO
-        manner, the pnl is not accurate for the tradeid.
+      - ``tradeid`` 并未真正支持，因为 profit/loss 直接来自 IB。IB 按 FIFO 方式计算，
+        因此 pnl 对 tradeid 不精确。
 
       - Position
 
-        If there is an open position for an asset at the beginning of
-        operaitons or orders given by other means change a position, the trades
-        calculated in the ``Strategy`` in cerebro will not reflect the reality.
+        如果操作开始时某资产已有 open position，或其他方式发出的 order 改变了
+        position，``Cerebro`` 中 ``Strategy`` 计算的 trade 将无法反映真实情况。
 
-        To avoid this, this broker would have to do its own position
-        management which would also allow tradeid with multiple ids (profit and
-        loss would also be calculated locally), but could be considered to be
-        defeating the purpose of working with a live broker
+        要避免该问题，broker 需要自行管理 position，并本地计算多 tradeid 的
+        profit/loss；但这会削弱使用 live broker 的意义。
     '''
     params = ()
 
@@ -270,12 +254,12 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         self.startingcash = self.cash = 0.0
         self.startingvalue = self.value = 0.0
 
-        self._lock_orders = threading.Lock()  # control access
-        self.orderbyid = dict()  # orders by order id
-        self.executions = dict()  # notified executions
+        self._lock_orders = threading.Lock()  # 控制访问
+        self.orderbyid = dict()  # 按 order id 保存 order
+        self.executions = dict()  # 已通知 execution
         self.ordstatus = collections.defaultdict(dict)
-        self.notifs = queue.Queue()  # holds orders which are notified
-        self.tonotify = collections.deque()  # hold oids to be notified
+        self.notifs = queue.Queue()  # 保存需要通知的 order
+        self.tonotify = collections.deque()  # 保存待通知 oid
 
     def start(self):
         super(IBBroker, self).start()
@@ -294,7 +278,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         self.ib.stop()
 
     def getcash(self):
-        # This call cannot block if no answer is available from ib
+        # 如果 IB 暂无响应，此调用不能阻塞
         self.cash = self.ib.get_acc_cash()
         return self.cash
 
@@ -309,9 +293,9 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         try:
             o = self.orderbyid[order.m_orderId]
         except (ValueError, KeyError):
-            return  # not found ... not cancellable
+            return  # 未找到，不可取消
 
-        if order.status == Order.Cancelled:  # already cancelled
+        if order.status == Order.Cancelled:  # 已经取消
             return
 
         self.ib.cancelOrder(order.m_orderId)
@@ -327,8 +311,8 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
     def submit(self, order):
         order.submit(self)
 
-        # ocoize if needed
-        if order.oco is None:  # Generate a UniqueId
+        # 按需设置 OCO
+        if order.oco is None:  # 生成 UniqueId
             order.m_ocaGroup = bytes(uuid.uuid4())
         else:
             order.m_ocaGroup = self.orderbyid[order.oco.m_orderId].m_ocaGroup
@@ -402,76 +386,69 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
         return None
 
     def next(self):
-        self.notifs.put(None)  # mark notificatino boundary
+        self.notifs.put(None)  # 标记通知边界
 
-    # Order statuses in msg
+    # msg 中的 order status
     (SUBMITTED, FILLED, CANCELLED, INACTIVE,
      PENDINGSUBMIT, PENDINGCANCEL, PRESUBMITTED) = (
         'Submitted', 'Filled', 'Cancelled', 'Inactive',
          'PendingSubmit', 'PendingCancel', 'PreSubmitted',)
 
     def push_orderstatus(self, msg):
-        # Cancelled and Submitted with Filled = 0 can be pushed immediately
+        # Cancelled 以及 Filled = 0 的 Submitted 可立即推送
         try:
             order = self.orderbyid[msg.orderId]
         except KeyError:
-            return  # not found, it was not an order
+            return  # 未找到，不是当前 order
 
         if msg.status == self.SUBMITTED and msg.filled == 0:
-            if order.status == order.Accepted:  # duplicate detection
+            if order.status == order.Accepted:  # 重复检测
                 return
 
             order.accept(self)
             self.notify(order)
 
         elif msg.status == self.CANCELLED:
-            # duplicate detection
+            # 重复检测
             if order.status in [order.Cancelled, order.Expired]:
                 return
 
             if order._willexpire:
-                # An openOrder has been seen with PendingCancel/Cancelled
-                # and this happens when an order expires
+                # openOrder 曾出现 PendingCancel/Cancelled，这通常发生于 order 过期
                 order.expire()
             else:
-                # Pure user cancellation happens without an openOrder
+                # 纯用户取消不会出现 openOrder
                 order.cancel()
             self.notify(order)
 
         elif msg.status == self.PENDINGCANCEL:
-            # In theory this message should not be seen according to the docs,
-            # but other messages like PENDINGSUBMIT which are similarly
-            # described in the docs have been received in the demo
-            if order.status == order.Cancelled:  # duplicate detection
+            # 按文档理论上不应看到该消息，但 demo 中收到过类似文档描述的 PENDINGSUBMIT
+            if order.status == order.Cancelled:  # 重复检测
                 return
 
-            # We do nothing because the situation is handled with the 202 error
-            # code if no orderStatus with CANCELLED is seen
+            # 这里不处理；若未看到 CANCELLED orderStatus，会由 202 error code 处理
             # order.cancel()
             # self.notify(order)
 
         elif msg.status == self.INACTIVE:
-            # This is a tricky one, because the instances seen have led to
-            # order rejection in the demo, but according to the docs there may
-            # be a number of reasons and it seems like it could be reactivated
-            if order.status == order.Rejected:  # duplicate detection
+            # 该状态较复杂：demo 中观察到它会导致 order rejection；但文档说明原因很多，
+            # 且看起来也可能重新激活。
+            if order.status == order.Rejected:  # 重复检测
                 return
 
             order.reject(self)
             self.notify(order)
 
         elif msg.status in [self.SUBMITTED, self.FILLED]:
-            # These two are kept inside the order until execdetails and
-            # commission are all in place - commission is the last to come
+            # 这两个状态会暂存在 order 中，直到 execdetails 与 commission 都到位。
+            # commission 通常最后到达。
             self.ordstatus[msg.orderId][msg.filled] = msg
 
         elif msg.status in [self.PENDINGSUBMIT, self.PRESUBMITTED]:
-            # According to the docs, these statuses can only be set by the
-            # programmer but the demo account sent it back at random times with
-            # "filled"
+            # 文档说这些状态只能由程序员设置，但 demo account 曾随机带着 "filled" 返回它们
             if msg.filled:
                 self.ordstatus[msg.orderId][msg.filled] = msg
-        else:  # Unknown status ...
+        else:  # 未知状态
             pass
 
     def push_execution(self, ex):
@@ -488,10 +465,10 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             pprice_orig = position.price
             size = ex.m_shares if ex.m_side[0] == 'B' else -ex.m_shares
             price = ex.m_price
-            # use pseudoupdate and let the updateportfolio do the real update?
+            # 是否应使用 pseudoupdate，并让 updateportfolio 做真实更新？
             psize, pprice, opened, closed = position.update(size, price)
 
-            # split commission between closed and opened
+            # 在 closed/opened 之间拆分 commission
             comm = cr.m_commission
             closedcomm = comm * closed / size
             openedcomm = comm - closedcomm
@@ -500,18 +477,18 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             closedvalue = comminfo.getoperationcost(closed, pprice_orig)
             openedvalue = comminfo.getoperationcost(opened, price)
 
-            # default in m_pnl is MAXFLOAT
+            # m_pnl 默认值为 MAXFLOAT
             pnl = cr.m_realizedPNL if closed else 0.0
 
-            # The internal broker calc should yield the same result
+            # 内部 broker 计算应得到相同结果
             # pnl = comminfo.profitandloss(-closed, pprice_orig, price)
 
-            # Use the actual time provided by the execution object
-            # The report from TWS is in actual local time, not the data's tz
+            # 使用 execution 对象提供的真实时间。
+            # TWS 报告使用实际本地时间，而不是 data 的 timezone。
             dt = date2num(datetime.strptime(ex.m_time, '%Y%m%d  %H:%M:%S'))
 
-            # Need to simulate a margin, but it plays no role, because it is
-            # controlled by a real broker. Let's set the price of the item
+            # 需要模拟 margin，但实际由真实 broker 控制，因此这里不起决定作用。
+            # 使用当前 item price 作为 margin。
             margin = order.data.close[0]
 
             order.execute(dt, size, price,
@@ -522,18 +499,16 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
 
             if ostatus.status == self.FILLED:
                 order.completed()
-                self.ordstatus.pop(oid)  # nothing left to be reported
+                self.ordstatus.pop(oid)  # 没有剩余内容需要报告
             else:
                 order.partial()
 
-            if oid not in self.tonotify:  # Lock needed
+            if oid not in self.tonotify:  # 需要锁
                 self.tonotify.append(oid)
 
     def push_portupdate(self):
-        # If the IBStore receives a Portfolio update, then this method will be
-        # indicated. If the execution of an order is split in serveral lots,
-        # updatePortfolio messages will be intermixed, which is used as a
-        # signal to indicate that the strategy can be notified
+        # IBStore 收到 Portfolio update 时会调用该方法。如果一个 order 的 execution
+        # 被拆成多笔，updatePortfolio 消息会穿插到达；这里将其作为 strategy 可被通知的信号。
         with self._lock_orders:
             while self.tonotify:
                 oid = self.tonotify.popleft()
@@ -545,7 +520,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             try:
                 order = self.orderbyid[msg.id]
             except (KeyError, AttributeError):
-                return  # no order or no id in error
+                return  # error 中没有 order 或 id
 
             if msg.errorCode == 202:
                 if not order.alive():
@@ -558,7 +533,7 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
                 order.reject()
 
             else:
-                order.reject()  # default for all other cases
+                order.reject()  # 其他情况默认 reject
 
             self.notify(order)
 
@@ -567,9 +542,9 @@ class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):
             try:
                 order = self.orderbyid[msg.orderId]
             except (KeyError, AttributeError):
-                return  # no order or no id in error
+                return  # error 中没有 order 或 id
 
             if msg.orderState.m_status in ['PendingCancel', 'Cancelled',
                                            'Canceled']:
-                # This is most likely due to an expiration]
+                # 这很可能来自 expiration
                 order._willexpire = True

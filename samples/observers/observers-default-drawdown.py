@@ -44,22 +44,22 @@ class MyStrategy(bt.Strategy):
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # SimpleMovingAverage on main data
-        # Equivalent to -> sma = btind.SMA(self.data, period=self.p.smaperiod)
+        # 主 data 上的 SimpleMovingAverage
+        # 等价于 -> sma = btind.SMA(self.data, period=self.p.smaperiod)
         sma = btind.SMA(period=self.p.smaperiod)
 
-        # CrossOver (1: up, -1: down) close / sma
+        # close / sma 的 CrossOver（1: 向上，-1: 向下）
         self.buysell = btind.CrossOver(self.data.close, sma, plot=True)
 
-        # Sentinel to None: new ordersa allowed
+        # sentinel 设为 None，允许新 orders
         self.order = None
 
     def next(self):
-        # Access -1, because drawdown[0] will be calculated after "next"
+        # 访问 -1，因为 drawdown[0] 会在 "next" 后计算
         self.log('DrawDown: %.2f' % self.stats.drawdown.drawdown[-1])
         self.log('MaxDrawDown: %.2f' % self.stats.drawdown.maxdrawdown[-1])
 
-        # Check if we are in the market
+        # 检查是否在市场中
         if self.position:
             if self.buysell < 0:
                 self.log('SELL CREATE, %.2f' % self.data.close[0])

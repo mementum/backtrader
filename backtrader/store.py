@@ -28,7 +28,8 @@ from backtrader.utils.py3 import with_metaclass
 
 
 class MetaSingleton(MetaParams):
-    '''Metaclass to make a metaclassed class a singleton'''
+    '''singleton metaclass 的基类，用于让使用该 metaclass 的类保持单例。'''
+
     def __init__(cls, name, bases, dct):
         super(MetaSingleton, cls).__init__(name, bases, dct)
         cls._singleton = None
@@ -42,29 +43,46 @@ class MetaSingleton(MetaParams):
 
 
 class Store(with_metaclass(MetaSingleton, object)):
-    '''Base class for all Stores'''
+    '''Store 的基类，用于统一管理 broker/data 的注册、启动和通知。'''
 
     _started = False
 
     params = ()
 
     def getdata(self, *args, **kwargs):
-        '''Returns ``DataCls`` with args, kwargs'''
+        '''创建并返回注册的 ``DataCls`` 实例。
+
+        Args:
+            *args: 传给 ``DataCls`` 的位置参数。
+            **kwargs: 传给 ``DataCls`` 的关键字参数。
+
+        Returns:
+            DataCls: 已绑定当前 store 的 data 实例。
+        '''
         data = self.DataCls(*args, **kwargs)
         data._store = self
         return data
 
     @classmethod
     def getbroker(cls, *args, **kwargs):
-        '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
+        '''创建并返回注册的 ``BrokerCls`` 实例。
+
+        Args:
+            *args: 传给 ``BrokerCls`` 的位置参数。
+            **kwargs: 传给 ``BrokerCls`` 的关键字参数。
+
+        Returns:
+            BrokerCls: 已绑定当前 store 类的 broker 实例。
+        '''
         broker = cls.BrokerCls(*args, **kwargs)
         broker._store = cls
         return broker
 
-    BrokerCls = None  # broker class will autoregister
-    DataCls = None  # data class will auto register
+    BrokerCls = None  # broker class 会自动注册
+    DataCls = None  # data class 会自动注册
 
     def start(self, data=None, broker=None):
+        '''启动 store，并按需关联 data 或 broker。'''
         if not self._started:
             self._started = True
             self.notifs = collections.deque()
@@ -83,12 +101,14 @@ class Store(with_metaclass(MetaSingleton, object)):
             self.broker = broker
 
     def stop(self):
+        '''停止 store 的 hook。'''
         pass
 
     def put_notification(self, msg, *args, **kwargs):
+        '''保存一条 store notification。'''
         self.notifs.append((msg, args, kwargs))
 
     def get_notifications(self):
-        '''Return the pending "store" notifications'''
-        self.notifs.append(None)  # put a mark / threads could still append
+        '''返回待处理的 store notification。'''
+        self.notifs.append(None)  # 放置标记；其它线程仍可能继续 append
         return [x for x in iter(self.notifs.popleft, None)]

@@ -34,9 +34,9 @@ from backtrader.utils.py3 import MAXINT, with_metaclass
 class MetaAnalyzer(bt.MetaParams):
     def donew(cls, *args, **kwargs):
         '''
-        Intercept the strategy parameter
+        拦截 strategy 参数。
         '''
-        # Create the object and set the params in place
+        # 创建对象并设置 params
         _obj, args, kwargs = super(MetaAnalyzer, cls).donew(*args, **kwargs)
 
         _obj._children = list()
@@ -44,14 +44,14 @@ class MetaAnalyzer(bt.MetaParams):
         _obj.strategy = strategy = bt.metabase.findowner(_obj, bt.Strategy)
         _obj._parent = bt.metabase.findowner(_obj, Analyzer)
 
-        # Register with a master observer if created inside one
+        # 如果在 master observer 内创建，则向其注册
         masterobs = bt.metabase.findowner(_obj, bt.Observer)
         if masterobs is not None:
             masterobs._register_analyzer(_obj)
 
         _obj.datas = strategy.datas
 
-        # For each data add aliases: for first data: data and data0
+        # 为每个 data 添加 alias：第一个 data 同时是 data 和 data0
         if _obj.datas:
             _obj.data = data = _obj.datas[0]
 
@@ -72,7 +72,7 @@ class MetaAnalyzer(bt.MetaParams):
 
         _obj.create_analysis()
 
-        # Return to the normal chain
+        # 回到正常调用链
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -82,25 +82,23 @@ class MetaAnalyzer(bt.MetaParams):
         if _obj._parent is not None:
             _obj._parent._register(_obj)
 
-        # Return to the normal chain
+        # 回到正常调用链
         return _obj, args, kwargs
 
 
 class Analyzer(with_metaclass(MetaAnalyzer, object)):
-    '''Analyzer base class. All analyzers are subclass of this one
+    '''Analyzer 的基类，用于在 strategy 运行过程中收集并返回分析结果。
 
-    An Analyzer instance operates in the frame of a strategy and provides an
-    analysis for that strategy.
+    Analyzer 实例在 strategy 的上下文中运行，并为该 strategy 提供分析结果。
 
-    Automagically set member attributes:
+    自动设置的成员属性:
 
-      - ``self.strategy`` (giving access to the *strategy* and anything
-        accessible from it)
+      - ``self.strategy``: 访问 *strategy* 以及 strategy 可访问的所有内容
 
-      - ``self.datas[x]`` giving access to the array of data feeds present in
-        the the system, which could also be accessed via the strategy reference
+      - ``self.datas[x]``: 访问系统中的 data feeds 数组，也可通过 strategy
+        引用访问
 
-      - ``self.data``, giving access to ``self.datas[0]``
+      - ``self.data``: 访问 ``self.datas[0]``
 
       - ``self.dataX`` -> ``self.datas[X]``
 
@@ -112,34 +110,33 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
 
       - ``self.data_Y`` -> ``self.datas[0].lines[Y]``
 
-    This is not a *Lines* object, but the methods and operation follow the same
-    design
+    Analyzer 不是 *Lines* 对象，但方法和运行方式遵循相同设计:
 
-      - ``__init__`` during instantiation and initial setup
+      - ``__init__``: 实例化和初始设置阶段调用
 
-      - ``start`` / ``stop`` to signal the begin and end of operations
+      - ``start`` / ``stop``: 标记运行开始和结束
 
-      - ``prenext`` / ``nextstart`` / ``next`` family of methods that follow
-        the calls made to the same methods in the strategy
+      - ``prenext`` / ``nextstart`` / ``next``: 跟随 strategy 中同名方法的调用
 
       - ``notify_trade`` / ``notify_order`` / ``notify_cashvalue`` /
-        ``notify_fund`` which receive the same notifications as the equivalent
-        methods of the strategy
+        ``notify_fund``: 接收与 strategy 中同名方法相同的通知
 
-    The mode of operation is open and no pattern is preferred. As such the
-    analysis can be generated with the ``next`` calls, at the end of operations
-    during ``stop`` and even with a single method like ``notify_trade``
+    Analyzer 的运行模式是开放的，不强制某一种模式。因此分析结果既可以在
+    ``next`` 调用中生成，也可以在运行结束时的 ``stop`` 中生成，甚至可以只用
+    ``notify_trade`` 这类单个方法生成。
 
-    The important thing is to override ``get_analysis`` to return a *dict-like*
-    object containing the results of the analysis (the actual format is
-    implementation dependent)
+    子类最重要的是覆盖 ``get_analysis``，返回包含分析结果的 *dict-like*
+    对象。实际格式由具体实现决定。
 
     '''
     csv = True
 
     def __len__(self):
-        '''Support for invoking ``len`` on analyzers by actually returning the
-        current length of the strategy the analyzer operates on'''
+        '''支持对 analyzer 调用 ``len``。
+
+        Returns:
+            int: analyzer 所属 strategy 的当前长度。
+        '''
         return len(self.strategy)
 
     def _register(self, child):
@@ -200,77 +197,92 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         self.stop()
 
     def notify_cashvalue(self, cash, value):
-        '''Receives the cash/value notification before each next cycle'''
+        '''在每个 next cycle 前接收 cash/value 通知。
+
+        Args:
+            cash (float): 当前 cash。
+            value (float): 当前 portfolio value。
+        '''
         pass
 
     def notify_fund(self, cash, value, fundvalue, shares):
-        '''Receives the current cash, value, fundvalue and fund shares'''
+        '''接收当前 cash、value、fundvalue 和 fund shares。
+
+        Args:
+            cash (float): 当前 cash。
+            value (float): 当前 portfolio value。
+            fundvalue (float): 当前 fund value。
+            shares (float): 当前 fund shares。
+        '''
         pass
 
     def notify_order(self, order):
-        '''Receives order notifications before each next cycle'''
+        '''在每个 next cycle 前接收 order 通知。
+
+        Args:
+            order: 发生状态变化的 order。
+        '''
         pass
 
     def notify_trade(self, trade):
-        '''Receives trade notifications before each next cycle'''
+        '''在每个 next cycle 前接收 trade 通知。
+
+        Args:
+            trade: 发生状态变化的 trade。
+        '''
         pass
 
     def next(self):
-        '''Invoked for each next invocation of the strategy, once the minum
-        preiod of the strategy has been reached'''
+        '''当 strategy 达到最小 period 后，随 strategy 的每次 next 调用而调用。'''
         pass
 
     def prenext(self):
-        '''Invoked for each prenext invocation of the strategy, until the minimum
-        period of the strategy has been reached
+        '''在 strategy 达到最小 period 前，随 strategy 的每次 prenext 调用而调用。
 
-        The default behavior for an analyzer is to invoke ``next``
+        默认行为是调用 ``next``。
         '''
         self.next()
 
     def nextstart(self):
-        '''Invoked exactly once for the nextstart invocation of the strategy,
-        when the minimum period has been first reached
+        '''当 strategy 首次达到最小 period 时，随 strategy 的 nextstart 调用一次。
         '''
         self.next()
 
     def start(self):
-        '''Invoked to indicate the start of operations, giving the analyzer
-        time to setup up needed things'''
+        '''运行开始时调用，用于让 analyzer 设置所需状态。'''
         pass
 
     def stop(self):
-        '''Invoked to indicate the end of operations, giving the analyzer
-        time to shut down needed things'''
+        '''运行结束时调用，用于让 analyzer 收尾或生成最终结果。'''
         pass
 
     def create_analysis(self):
-        '''Meant to be overriden by subclasses. Gives a chance to create the
-        structures that hold the analysis.
+        '''供子类覆盖，用于创建保存分析结果的数据结构。
 
-        The default behaviour is to create a ``OrderedDict`` named ``rets``
+        默认行为是创建名为 ``rets`` 的 ``OrderedDict``。
         '''
         self.rets = OrderedDict()
 
     def get_analysis(self):
-        '''Returns a *dict-like* object with the results of the analysis
+        '''返回包含分析结果的 *dict-like* 对象。
 
-        The keys and format of analysis results in the dictionary is
-        implementation dependent.
+        Returns:
+            dict-like: 分析结果。key 和结果格式由具体实现决定。
 
-        It is not even enforced that the result is a *dict-like object*, just
-        the convention
-
-        The default implementation returns the default OrderedDict ``rets``
-        created by the default ``create_analysis`` method
+        这里并不强制返回值一定是 *dict-like object*，这只是约定。默认实现返回
+        由默认 ``create_analysis`` 方法创建的 ``OrderedDict`` ``rets``。
 
         '''
         return self.rets
 
     def print(self, *args, **kwargs):
-        '''Prints the results returned by ``get_analysis`` via a standard
-        ``Writerfile`` object, which defaults to writing things to standard
-        output
+        '''通过标准 ``WriterFile`` 对象打印 ``get_analysis`` 返回的结果。
+
+        Args:
+            *args: 传给 ``WriterFile`` 的位置参数。
+            **kwargs: 传给 ``WriterFile`` 的关键字参数。
+
+        默认会写到 standard output。
         '''
         writer = bt.WriterFile(*args, **kwargs)
         writer.start()
@@ -280,8 +292,11 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         writer.stop()
 
     def pprint(self, *args, **kwargs):
-        '''Prints the results returned by ``get_analysis`` using the pretty
-        print Python module (*pprint*)
+        '''使用 Python 的 pretty print 模块（*pprint*）打印分析结果。
+
+        Args:
+            *args: 传给 ``pprint`` 的位置参数。
+            **kwargs: 传给 ``pprint`` 的关键字参数。
         '''
         pp.pprint(self.get_analysis(), *args, **kwargs)
 

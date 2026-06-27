@@ -27,35 +27,36 @@ import backtrader.indicators as btind
 
 
 class MA_CrossOver(bt.Strategy):
-    '''This is a long-only strategy which operates on a moving average cross
+    '''基于 moving average cross 的 long-only strategy。
 
-    Note:
-      - Although the default
+    当 fast moving average 向上穿越 slow moving average 且当前没有 position 时买入；
+    当 fast moving average 向下穿越 slow moving average 且当前已有 position 时卖出。
 
-    Buy Logic:
-      - No position is open on the data
+    Args:
+        fast: fast moving average 的 period。
+        slow: slow moving average 的 period。
+        _movav: 使用的 moving average 类，默认 ``btind.MovAv.SMA``。
 
-      - The ``fast`` moving averagecrosses over the ``slow`` strategy to the
-        upside.
+    Returns:
+        MA_CrossOver: 使用 ``Market`` order 执行均线交叉信号的 strategy。
 
-    Sell Logic:
-      - A position exists on the data
-
-      - The ``fast`` moving average crosses over the ``slow`` strategy to the
-        downside
-
-    Order Execution Type:
-      - Market
+    ---
+    交互示例：
+        >>> import backtrader as bt
+        >>> from backtrader.strategies import MA_CrossOver
+        >>> cerebro = bt.Cerebro()
+        >>> cerebro.addstrategy(MA_CrossOver, fast=5, slow=20)
+        0
 
     '''
     alias = ('SMA_CrossOver',)
 
     params = (
-        # period for the fast Moving Average
+        # fast Moving Average 的 period
         ('fast', 10),
-        # period for the slow moving average
+        # slow Moving Average 的 period
         ('slow', 30),
-        # moving average to use
+        # 使用的 moving average
         ('_movav', btind.MovAv.SMA)
     )
 

@@ -39,6 +39,35 @@ TIMEFRAMES = dict(
 
 
 class InfluxDB(feed.DataBase):
+    '''从 InfluxDB 聚合读取 OHLCV 数据的 data feed。
+
+    Args:
+        dataname: InfluxDB 中的 measurement 名称。
+        host: InfluxDB 主机地址，默认 ``127.0.0.1``。
+        port: InfluxDB 端口，默认 ``8086``。
+        username: 连接用户名。
+        password: 连接密码。
+        database: 要连接的数据库名。
+        timeframe: 聚合输出的 timeframe。
+        startdate: 查询起始时间；为空时查询到当前时间为止。
+        high: high 字段名。
+        low: low 字段名。
+        open: open 字段名。
+        close: close 字段名。
+        volume: volume 字段名。
+        ointerest: openinterest 字段名。
+
+    Returns:
+        InfluxDB: 可加入 Cerebro 的 InfluxDB 数据源实例。
+
+    ---
+    交互界面使用示范:
+
+    >>> data = InfluxDB(dataname='prices', database='market')  # doctest: +SKIP
+    >>> data.p.database  # doctest: +SKIP
+    'market'
+    '''
+
     frompackages = (
         ('influxdb', [('InfluxDBClient', 'idbclient')]),
         ('influxdb.exceptions', 'InfluxDBClientError')
@@ -77,8 +106,8 @@ class InfluxDB(feed.DataBase):
         else:
             st = '>= \'%s\'' % self.p.startdate
 
-        # The query could already consider parameters like fromdate and todate
-        # to have the database skip them and not the internal code
+        # 查询本身可以纳入 fromdate/todate 等参数，让数据库先过滤数据，
+        # 避免内部代码再做一次过滤
         qstr = ('SELECT mean("{open_f}") AS "open", mean("{high_f}") AS "high", '
                 'mean("{low_f}") AS "low", mean("{close_f}") AS "close", '
                 'mean("{vol_f}") AS "volume", mean("{oi_f}") AS "openinterest" '

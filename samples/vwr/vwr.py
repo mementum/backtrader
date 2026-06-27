@@ -36,14 +36,14 @@ TFRAMES = dict(
 def runstrat(pargs=None):
     args = parse_args(pargs)
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
     if args.cash is not None:
         cerebro.broker.set_cash(args.cash)
 
     dkwargs = dict()
-    # Get the dates from the args
+    # 从 args 获取日期
     if args.fromdate is not None:
         fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
         dkwargs['fromdate'] = fromdate
@@ -51,11 +51,11 @@ def runstrat(pargs=None):
         todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dkwargs['todate'] = todate
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = bt.feeds.BacktraderCSVData(dataname=args.data, **dkwargs)
-    cerebro.adddata(data)  # Add the data to cerebro
+    cerebro.adddata(data)  # 添加 data 到 cerebro
 
-    cerebro.addstrategy(bt.strategies.SMA_CrossOver)  # Add the strategy
+    cerebro.addstrategy(bt.strategies.SMA_CrossOver)  # 添加 strategy
 
     lrkwargs = dict()
     if args.tframe is not None:
@@ -88,12 +88,12 @@ def runstrat(pargs=None):
     cerebro.addanalyzer(bt.analyzers.TimeReturn,
                         timeframe=bt.TimeFrame.Years)
 
-    # Add a writer to get output
+    # 添加 writer 以获取输出
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
 
-    cerebro.run()  # And run it
+    cerebro.run()  # 然后运行
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         pkwargs = dict(style='bar')
         if args.plot is not True:  # evals to True but is not True
@@ -145,7 +145,7 @@ def parse_args(pargs=None):
     parser.add_argument('--stddev-sample', required=False, action='store_true',
                         help='Consider Bessels correction for stddeviation')
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

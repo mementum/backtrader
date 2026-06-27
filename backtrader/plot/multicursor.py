@@ -49,58 +49,50 @@
 # Agreement.
 
 # CHANGES
-# The original MultiCursor plots all horizontal lines at the same time
-# The modified version plots only the horizontal line in the axis in which the
-# motion event takes place
+# 原始 MultiCursor 会同时绘制所有水平线。
+# 修改后的版本只在 motion event 所在 axis 中绘制对应水平线。
 #
-# The original MultiCursos uses the ylimit of the las passed axis, to calculate
-# the mid point of the axis. which creates a huge distorsion if all axis don't
-# have the same y dimensions
+# 原始 MultiCursor 使用最后传入 axis 的 ylimit 计算 axis 中点；
+# 如果各 axis 的 y 维度不同，会产生明显失真。
 #
-# The modified version uses the y limits of each axis to calculate the initial
-# position of each line avoiding the distorsion
+# 修改后的版本使用每个 axis 自身的 y limit 计算各 line 初始位置，从而避免失真。
 
 from ..utils.py3 import zip
 
 class Widget(object):
-    """
-    Abstract base class for GUI neutral widgets
-    """
+    """GUI-neutral widget 的抽象基类，用于统一 widget 激活状态和事件过滤。"""
     drawon = True
     eventson = True
     _active = True
 
     def set_active(self, active):
-        """Set whether the widget is active.
+        """设置 widget 是否处于 active 状态。
         """
         self._active = active
 
     def get_active(self):
-        """Get whether the widget is active.
+        """返回 widget 是否处于 active 状态。
         """
         return self._active
 
-    # set_active is overriden by SelectorWidgets.
+    # set_active 会被 SelectorWidgets 覆盖。
     active = property(get_active, lambda self, active: self.set_active(active),
-                      doc="Is the widget active?")
+                      doc="widget 是否处于 active 状态。")
 
     def ignore(self, event):
-        """Return True if event should be ignored.
-        This method (or a version of it) should be called at the beginning
-        of any event callback.
+        """判断 event 是否应被忽略。
+
+        该方法（或其变体）应在任何 event callback 开始处调用。
         """
         return not self.active
 
 
 class MultiCursor(Widget):
-    """
-    Provide a vertical (default) and/or horizontal line cursor shared between
-    multiple axes.
+    """在多个 axes 之间共享 vertical/horizontal line cursor。
 
-    For the cursor to remain responsive you much keep a reference to
-    it.
+    为保持 cursor 响应，需要持有该对象引用。
 
-    Example usage::
+    示例用法::
 
         from matplotlib.widgets import MultiCursor
         from pylab import figure, show, np
@@ -171,18 +163,18 @@ class MultiCursor(Widget):
         self.connect()
 
     def connect(self):
-        """connect events"""
+        """连接 matplotlib events。"""
         self._cidmotion = self.canvas.mpl_connect('motion_notify_event',
                                                   self.onmove)
         self._ciddraw = self.canvas.mpl_connect('draw_event', self.clear)
 
     def disconnect(self):
-        """disconnect events"""
+        """断开 matplotlib events。"""
         self.canvas.mpl_disconnect(self._cidmotion)
         self.canvas.mpl_disconnect(self._ciddraw)
 
     def clear(self, event):
-        """clear the cursor"""
+        """清除 cursor。"""
         if self.ignore(event):
             return
         if self.useblit:
@@ -238,12 +230,11 @@ class MultiCursor(Widget):
             self.canvas.draw_idle()
 
 class MultiCursor2(Widget):
-    """
-    Provide a vertical (default) and/or horizontal line cursor shared between
-    multiple axes.
-    For the cursor to remain responsive you much keep a reference to
-    it.
-    Example usage::
+    """在多个 axes 之间共享 vertical/horizontal line cursor。
+
+    为保持 cursor 响应，需要持有该对象引用。
+
+    示例用法::
         from matplotlib.widgets import MultiCursor
         from pylab import figure, show, np
         t = np.arange(0.0, 2.0, 0.01)
@@ -296,18 +287,18 @@ class MultiCursor2(Widget):
         self.connect()
 
     def connect(self):
-        """connect events"""
+        """连接 matplotlib events。"""
         self._cidmotion = self.canvas.mpl_connect('motion_notify_event',
                                                   self.onmove)
         self._ciddraw = self.canvas.mpl_connect('draw_event', self.clear)
 
     def disconnect(self):
-        """disconnect events"""
+        """断开 matplotlib events。"""
         self.canvas.mpl_disconnect(self._cidmotion)
         self.canvas.mpl_disconnect(self._ciddraw)
 
     def clear(self, event):
-        """clear the cursor"""
+        """清除 cursor。"""
         if self.ignore(event):
             return
         if self.useblit:

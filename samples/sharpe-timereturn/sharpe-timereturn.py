@@ -30,25 +30,25 @@ import backtrader as bt
 def runstrat(pargs=None):
     args = parse_args(pargs)
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
     if args.cash is not None:
         cerebro.broker.set_cash(args.cash)
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = bt.feeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    cerebro.adddata(data)  # Add the data to cerebro
+    cerebro.adddata(data)  # 添加 data 到 cerebro
 
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(bt.strategies.SMA_CrossOver)
 
     tframes = dict(
@@ -57,7 +57,7 @@ def runstrat(pargs=None):
         months=bt.TimeFrame.Months,
         years=bt.TimeFrame.Years)
 
-    # Add the Analyzers
+    # 添加 Analyzers
     cerebro.addanalyzer(bt.analyzers.TimeReturn,
                         timeframe=tframes[args.tframe])
 
@@ -81,12 +81,12 @@ def runstrat(pargs=None):
                         timeframe=tframes[args.tframe],
                         **shkwargs)
 
-    # Add a writer to get output
+    # 添加 writer 以获取输出
     cerebro.addwriter(bt.WriterFile, csv=args.writercsv, rounding=4)
 
-    cerebro.run()  # And run it
+    cerebro.run()  # 然后运行
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         pkwargs = dict(style='bar')
         if args.plot is not True:  # evals to True but is not True
@@ -144,7 +144,7 @@ def parse_args(pargs=None):
                         help=('Upgrade returns to target timeframe rather than'
                               'downgrading the riskfreerate'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

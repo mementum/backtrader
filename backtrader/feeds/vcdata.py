@@ -36,90 +36,68 @@ from backtrader.stores import vcstore
 
 class MetaVCData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，随后把它注册到对应 store。'''
+        # 初始化类对象
         super(MetaVCData, cls).__init__(name, bases, dct)
 
-        # Register with the store
+        # 注册到 store，供 VCStore 找到实际 DataCls
         vcstore.VCStore.DataCls = cls
 
 
 class VCData(with_metaclass(MetaVCData, DataBase)):
-    '''VisualChart Data Feed.
+    '''VisualChart 数据源。
 
-    Params:
+    Args:
+        dataname: VisualChart symbol 名称。
+        qcheck: resample/replay 场景下的默认唤醒超时时间，用于检查当前 bar 是否已经
+            可以交付。只有插入 resampling/replaying filter 时才使用。
+        historical: 若没有提供基类参数 ``todate``，设置为 ``True`` 会强制只下载历史数据；
+            如果提供了 ``todate``，也会达到相同效果。
+        millisecond: VisualChart 构造的 bar 时间可能形如 ``HH:MM:59.999000``。
+            为 ``True`` 时增加 1 毫秒，使其看起来像下一分钟的 ``00.000000``。
+        tradename: 连续期货适合跟踪数据但不能交易；可用该参数指定当前可交易期货作为
+            交易资产。
+        usetimezones: 是否尝试导入 ``pytz`` 并使用 timezone。多数市场可通过
+            VisualChart 的 time offset 转为市场时间；部分特殊市场（如 ``096``）需要
+            内部补偿和 timezone 支持。
 
-      - ``qcheck`` (default: ``0.5``)
-        Default timeout for waking up to let a resampler/replayer that the
-        current bar can be check for due delivery
+    Returns:
+        VCData: 可加入 Cerebro 的 VisualChart 数据源实例。
 
-        The value is only used if a resampling/replaying filter has been
-        inserted in the data
+    ---
+    交互界面使用示范:
 
-      - ``historical`` (default: ``False``)
-        If no ``todate`` parameter is supplied (defined in the base class),
-        this will force a historical only download if set to ``True``
-
-        If ``todate`` is supplied the same effect is achieved
-
-      - ``milliseconds`` (default: ``True``)
-        The bars constructed by *Visual Chart* have this aspect:
-        HH:MM:59.999000
-
-        If this parameter is ``True`` a millisecond will be added to this time
-        to make it look like: HH::MM + 1:00.000000
-
-      - ``tradename`` (default: ``None``)
-        Continous futures cannot be traded but are ideal for data tracking. If
-        this parameter is supplied it will be the name of the current future
-        which will be the trading asset. Example:
-
-        - 001ES -> ES-Mini continuous supplied as ``dataname``
-
-        - ESU16 -> ES-Mini 2016-09. If this is supplied in ``tradename`` it
-          will be the trading asset.
-
-      - ``usetimezones`` (default: ``True``)
-        For most markets the time offset information provided by *Visual Chart*
-        allows for datetime to be converted to market time (*backtrader* choice
-        for representation)
-
-        Some markets are special (``096``) and need special internal coverage
-        and timezone support to display in the user expected market time.
-
-        If this parameter is set to ``True`` importing ``pytz`` will be
-        attempted to use timezones (default)
-
-        Disabling it will remove timezone usage (may help if the load is
-        excesive)
+    >>> data = VCData(dataname='001ES')  # doctest: +SKIP
+    >>> data.p.dataname  # doctest: +SKIP
+    '001ES'
     '''
     params = (
-        ('qcheck', 0.5),  # timeout in seconds (float) to check for events
-        ('historical', False),  # usual industry value
-        ('millisecond', True),  # fix missing millisecond in time
-        ('tradename', None),  # name of the real asset to trade on
-        ('usetimezones', True),  # use pytz timezones if found
+        ('qcheck', 0.5),  # 检查事件的超时时间（秒，float）
+        ('historical', False),  # 行业常用默认值
+        ('millisecond', True),  # 修正时间中缺失的 millisecond
+        ('tradename', None),  # 实际交易资产名称
+        ('usetimezones', True),  # 找到 pytz timezone 时使用它
     )
 
-    # Holds the calculated offset to the timestamps of the VC Server
+    # 保存本地时间到 VC Server 时间戳的偏移
     _TOFFSET = timedelta()
 
-    # States for the Finite State Machine in _load
+    # _load 中有限状态机的状态
     _ST_START, _ST_FEEDING, _ST_NOTFOUND = range(3)
 
-    # Base NULL Date for VB/Excel date compatibility
+    # 为兼容 VB/Excel 日期而使用的空日期基准
     NULLDATE = datetime(1899, 12, 30, 0, 0, 0)
 
-    # To correct HH:MM:59.999 times
+    # 用于修正 HH:MM:59.999 时间
     MILLISECOND = timedelta(microseconds=1000)
 
-    # Large ping timeout
+    # 较长的 ping 超时时间
     PING_TIMEOUT = 25.0
 
-    # Timezones for the different exchanges
+    # 不同交易所对应的 timezone
     _TZS = {
         'Europe/London': ('011', '024', '027', '036', '049', '092', '114',
-                          # These are the global markets
+                          # 这些是 global markets
                           '033', '034', '035', '043', '054', '096', '300',),
 
         'Europe/Berlin': ('005', '006', '008', '012', '013', '014', '015',
@@ -140,7 +118,7 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         'US/Central': ('001', '002', '020', '021', '022', '023', '056',),
     }
 
-    # The global assets may have a different output timezoe
+    # global assets 可能有不同的输出 timezone
     _TZOUT = {
         '096.FTSE': 'Europe/London',
         '096.FTEU3': 'Europe/London',
@@ -154,8 +132,7 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         '096.NDX': 'US/Eastern',
     }
 
-    # These global markets deliver data in local time dst adjuste unlike those
-    # from above and need a readjustment
+    # 这些 global markets 返回的是本地 DST 调整后的时间，与上面的不同，需要再修正
     _EXTRA_TIMEOFFSET = ('096',)
 
     _TIMEFRAME_BACKFILL = {
@@ -170,42 +147,39 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
     }
 
     def _timeoffset(self):
-        '''Returns the calculated time offset local equipment -> data server'''
+        '''返回本地设备到数据服务器之间计算出的时间偏移。'''
         return self._TOFFSET
 
     def _gettzinput(self):
-        '''Returns the timezone to consider for the input data'''
+        '''返回输入数据应使用的 timezone。'''
         return self._gettz(tzin=True)
 
     def _gettz(self, tzin=False):
-        '''Returns the default output timezone for the data
+        '''返回数据默认输出 timezone。
 
-        This defaults to be the timezone in which the market is traded
+        默认返回市场实际交易所在地的 timezone。
         '''
-        # If no object has been provided by the user and a timezone can be
-        # found via contractdtails, then try to get it from pytz, which may or
-        # may not be available.
+        # 如果用户没有提供 timezone 对象，就按市场代码尝试通过 pytz 获取；
+        # pytz 可能不存在。
 
-        # The timezone specifications returned by TWS seem to be abbreviations
-        # understood by pytz, but the full list which TWS may return is not
-        # documented and one of the abbreviations may fail
+        # 市场 timezone 表可能无法覆盖全部返回值，某些缩写可能无法被 pytz 识别
         ptz = self.p.tz
         tzstr = isinstance(ptz, string_types)
         if ptz is not None and not tzstr:
             return bt.utils.date.Localizer(ptz)
 
         if self._state == self._ST_NOTFOUND:
-            return None  # nothing else can be done
+            return None  # 无法继续处理
 
         if not self.p.usetimezones:
             return None
 
         try:
-            import pytz  # keep the import very local
+            import pytz  # 保持局部导入
         except ImportError:
-            return None  # nothing can be done
+            return None  # 无法继续处理
 
-        # dataname 010ABCXXXXX -> ABC (3, 4 and 5) is market code
+        # dataname 010ABCXXXXX -> ABC（第 3、4、5 位）是市场代码
         if tzstr:
             tzs = ptz
         else:
@@ -231,22 +205,21 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
             try:
                 tz = pytz.timezone(tzs)
             except pytz.UnknownTimeZoneError:
-                return None  # nothing can be done
+                return None  # 无法继续处理
         else:
             return None
 
-        # contractdetails there, import ok, timezone found, return it
+        # 已找到 timezone，直接返回
         return tz
 
     def islive(self):
-        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
-        should be deactivated'''
+        '''返回 ``True``，通知 ``Cerebro`` 关闭 preload 和 runonce。'''
         return True
 
     def __init__(self, **kwargs):
         self.store = vcstore.VCStore(**kwargs)
 
-        # Correct a copy past directly from VisualChart
+        # 修正从 VisualChart 直接复制出来的 symbol
         dataname = self.p.dataname
         if dataname[3].isspace():
             dataname = dataname[0:2] + dataname[4:]
@@ -256,92 +229,81 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         self._mktcode = self.p.dataname[0:3]
 
         self._tradename = tradename = self.p.tradename or self._dataname
-        # Correct a copy past directly from VisualChart
+        # 修正从 VisualChart 直接复制出来的 tradename
         if tradename[3].isspace():
             tradename = tradename[0:2] + tradename[4:]
             self._tradename = tradename
 
     def setenvironment(self, env):
-        '''Receives an environment (cerebro) and passes it over to the store it
-        belongs to'''
+        '''接收 Cerebro 环境，并把它传给所属 store。'''
         super(VCData, self).setenvironment(env)
         env.addstore(self.store)
 
     def start(self):
-        '''Starts the VC connecction and gets the real contract and
-        contractdetails if it exists'''
+        '''启动 VC 连接，并在存在时获取真实 symbol 信息。'''
         super(VCData, self).start()
 
-        self._state = self._ST_START  # mini finite state machine
+        self._state = self._ST_START  # 小型有限状态机
 
-        self._newticks = True  # control processing of initial ticks
+        self._newticks = True  # 控制初始 tick 的处理
 
-        self._pingtmout = self.PING_TIMEOUT  # Initial timeout for ping
+        self._pingtmout = self.PING_TIMEOUT  # 初始 ping 超时
 
-        self.idx = 1  # counter for the dataserie (vb is based at 1)
-        self.q = None  # where bars are received
+        self.idx = 1  # dataserie 计数器（VB 从 1 开始）
+        self.q = None  # 接收 bar 的队列
 
-        # market time offsets
+        # 市场时间偏移
         self._mktoffset = None
         self._mktoff1 = None
         self._mktoffdiff = None
 
         if not self.store.connected():
-            # Not connected -> go away
+            # 未连接，直接退出
             self.put_notification(self.DISCONNECTED)
             self._state = self._ST_NOTFOUND
             return
 
         self.put_notification(self.CONNECTED)
-        # get real contract details with real conId (contractId)
-        self.qrt = queue.Queue()  # to await a ping
+        # 获取真实 symbol 信息
+        self.qrt = queue.Queue()  # 等待 ping
         self.store._rtdata(self, self._dataname)
         symfound = self.qrt.get()
         if not symfound:
-            # Kill any further action and signal it
+            # 停止后续动作并发出通知
             self.put_notification(self.NOTSUBSCRIBED)
             self.put_notification(self.DISCONNECTED)
             self._state = self._ST_NOTFOUND
             return
 
         if self.replaying:
-            # In this case don't request the final
-            # timeframe from vc, but the original that has to be replayed
+            # replaying 时不要向 VC 请求最终 timeframe，而是请求需要 replay 的原始周期
             self._tf, self._comp = self.p.timeframe, self.p.compression
         else:
-            # Else (even if resampling) pass the final timeframe which may
-            # been modified by a resampling filter
+            # 其他情况（包括 resampling）传递可能已被 filter 修改的最终 timeframe
             self._tf, self._comp = self._timeframe, self._compression,
 
         self._ticking = self.store._ticking(self._tf)
         self._syminfo = syminfo = self.store._symboldata(self._dataname)
 
-        # For most markets:
-        # mktoffset == mktoff1 and substracting this value from reported times
-        # is enough to report the "market time". Visual Chart changes this from
-        # a value X to 0 if the appropriate setting in the GUI is changed to
-        # change display of time from local <-> market
+        # 对大多数市场：
+        # mktoffset == mktoff1，从返回时间中减去该值即可得到“市场时间”。
+        # 如果在 Visual Chart GUI 中切换本地时间/市场时间显示，Visual Chart 会把该值
+        # 从 X 改为 0。
         #
-        # But some markets (at least 096XXX) that theoretically live in
-        # Europe/London seem to be displaced 1 hour to the west and an extra
-        # hour is needed.
-        # These markets do also need "usetimezoned" True to actually display
-        # the market time, because this is done internally using the
-        # definitions in TZOUTS
+        # 但某些市场（至少 096XXX）理论上属于 Europe/London，实际看起来向西偏移了
+        # 1 小时，因此需要额外补 1 小时。这些市场也需要 usetimezones=True 才能显示
+        # 用户预期的市场时间，因为内部会使用 TZOUTS 定义。
 
-        # Record and calculate market offsets
+        # 记录并计算市场时间偏移
         self._mktoffset = timedelta(seconds=syminfo.TimeOffset)
-        # Add millisecond to pusth HH:MM:59.999 -> 00.000 unless ticks
+        # 非 tick 数据增加 millisecond，把 HH:MM:59.999 推到下一分钟 00.000
         if self.p.millisecond and not self._ticking:
             self._mktoffset -= self.MILLISECOND
 
         self._mktoff1 = self._mktoffset
         if self._mktcode in self._EXTRA_TIMEOFFSET:
-            # These codes live theoretically in
-            # (UTC+00:00) Dublin, Edinburgh, Lisbon, London which is
-            # 'Europe/London'
-            # But all experiments show the times to be displaced 1 hour to
-            # the west and hence the extra 3600 seconds
+            # 这些代码理论上位于 (UTC+00:00) Dublin/Edinburgh/Lisbon/London，
+            # 即 Europe/London；但实验显示时间向西偏移 1 小时，因此额外减 3600 秒
             self._mktoffset -= timedelta(seconds=3600)
 
         self._mktoffdiff = self._mktoffset - self._mktoff1
@@ -349,7 +311,7 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
         if self._state == self._ST_START:
             self.put_notification(self.DELAYED)
 
-            # Now request the data and get a comms queue for it
+            # 请求数据并获取通信队列
             self.q = self.store._directdata(
                 self,
                 self._dataname,
@@ -360,13 +322,13 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
             self._state = self._ST_FEEDING
 
     def stop(self):
-        '''Stops and tells the store to stop'''
+        '''停止数据源，并通知 store 停止。'''
         super(VCData, self).stop()
         if self.q:
             self.store._canceldirectdata(self.q)
 
     def _setserie(self, serie):
-        # Accepts a serie (COM Object) to use in ping events
+        # 接收 serie（COM 对象），用于 ping 事件
         self._serie = serie
 
     def haslivedata(self):
@@ -374,22 +336,22 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
 
     def _load(self):
         if self._state == self._ST_NOTFOUND:
-            return False  # nothing can be done
+            return False  # 无法继续处理
 
         while True:
             try:
-                # tmout <> 0 only if resampling/replaying, else no waking up
+                # 只有 resampling/replaying 时 tmout 才不为 0，否则不唤醒
                 tmout = self._qcheck * bool(self.resampling)
                 msg = self.q.get(timeout=tmout)
             except queue.Empty:
                 return None
 
             if msg is None:
-                return False  # end of stream
+                return False  # 数据流结束
 
             if msg == self.store._RT_SHUTDOWN:
                 self.put_notification(self.DISCONNECTED)
-                return False  # VC has exited
+                return False  # VC 已退出
 
             if msg == self.store._RT_DISCONNECTED:
                 self.put_notification(self.CONNBROKEN)
@@ -414,10 +376,10 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
                 self.put_notification(self.UNKNOWN, msg)
                 continue
 
-            # it must be a bar
+            # 走到这里时 msg 必然是 bar
             bar = msg
 
-            # Put the tick into the bar
+            # 把 tick 写入 bar
             self.lines.open[0] = bar.Open
             self.lines.high[0] = bar.High
             self.lines.low[0] = bar.Low
@@ -425,122 +387,117 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
             self.lines.volume[0] = bar.Volume
             self.lines.openinterest[0] = bar.OpenInterest
 
-            # Convert time to "market" time (096 exception)
+            # 转换为“市场时间”（含 096 特例）
             dt = self.NULLDATE + timedelta(days=bar.Date) - self._mktoffset
             self.lines.datetime[0] = date2num(dt)
 
             return True
 
     #
-    # DS Events
+    # DS 事件
     #
     def _getpingtmout(self):
-        '''Returns the actual ping timeout for PumpEvents to wake up and call
-        ping, which will check if the not yet delivered bar can be
-        delivered. The bar may be stalled because vc awaits a new tick and
-        during low negotiation hour this can take several seconds after the
-        actual expected delivery time'''
+        '''返回 PumpEvents 唤醒并调用 ping 所需的实际超时时间。
+
+        ping 会检查尚未交付的 bar 是否已经可以交付。VC 可能因为等待新 tick 而卡住
+        当前 bar；在交易清淡时，这可能比预期交付时间晚几秒。
+        '''
         if self._ticking:
-            return -1  # no timeout
+            return -1  # 无超时
 
         return self._pingtmout
 
     def OnNewDataSerieBar(self, DataSerie, forcepush=False):
-        # Processes the COM Event (also called directly when 1st creating the
-        # data serie
+        # 处理 COM 事件；首次创建 data serie 时也会直接调用
         ssize = DataSerie.Size
 
         if ssize - self.idx > 1:
-            # More than 1 bar on-board -> delay in place
+            # 队列中超过 1 个 bar，说明存在延迟
             if self._laststatus != self.DELAYED:
                 self.q.put(self.store._RT_DELAYED)
 
-        # return everything if original tf is ticks or force pushing
+        # 原始 timeframe 为 ticks 或强制推送时，返回全部内容
         ssize += forcepush or self._ticking
         for idx in range(self.idx, ssize):
             bar = DataSerie.GetBarValues(idx)
             self.q.put(bar)
 
         if not forcepush and not self._ticking and ssize:
-            # A bar has been left in place
-            dtnow = datetime.now() - self._TOFFSET  # adjust local time
+            # 仍有一个 bar 留在当前位置
+            dtnow = datetime.now() - self._TOFFSET  # 修正本地时间
 
             bar = DataSerie.GetBarValues(ssize)
             dt = self.NULLDATE + timedelta(days=bar.Date) - self._mktoffdiff
             if dtnow < dt:
-                # A bar is there, not deliverable yet - LIVE
+                # bar 已存在但尚未到可交付时间，仍为 LIVE
                 if self._laststatus != self.LIVE:
                     self.q.put(self.store._RT_LIVE)
 
-                # Adjust ping timeout to the bar boundary (plus mini leeway)
+                # 把 ping 超时调整到 bar 边界，并增加少量余量
                 self._pingtmout = (dt - dtnow).total_seconds() + 0.5
 
             else:
-                self._pingtmout = self.PING_TIMEOUT  # no bar left, long pause
-                self.q.put(bar)  # push bar and update index
-                ssize += 1  # pushed last one out
+                self._pingtmout = self.PING_TIMEOUT  # 没有 bar 剩余，长暂停
+                self.q.put(bar)  # 推送 bar 并更新索引
+                ssize += 1  # 已推出最后一个 bar
 
-        # Write down the last processed bar
+        # 记录最后处理过的 bar
         self.idx = max(1, ssize)
 
     def ping(self):
         ssize = self._serie.Size
 
         if self.idx > ssize:
-            return  # no bar available
+            return  # 没有可用 bar
 
         if self._laststatus == self.CONNBROKEN:
             self._pingtmout = self.PING_TIMEOUT
-            return  # do not push during disconnection
+            return  # 断线期间不推送
 
         dtnow = datetime.now() - self._TOFFSET
-        # CHECK: there should be a maximum of 1 bar when pinging
-        # In any case the algorithm doesn't hurt
-        for idx in range(self.idx, ssize + 1):  # reach ssize
+        # CHECK: ping 时最多应该只有 1 个 bar；即便更多，该算法也不会造成伤害
+        for idx in range(self.idx, ssize + 1):  # 到达 ssize
             bar = self._serie.GetBarValues(self.idx)
             # dt = (self.NULLDATE + timedelta(days=bar.Date) + self._mktoff1)
             dt = self.NULLDATE + timedelta(days=bar.Date) - self._mktoffdiff
             if dtnow < dt:
                 self._pingtmout = (dt - dtnow).total_seconds() + 0.5
-                break  # cannot deliver anything
+                break  # 还不能交付
 
-            # Adjust ping timeout to the bar boundary (plus mini leeway)
-            self._pingtmout = self.PING_TIMEOUT  # no bar, nothing to check
-            self.q.put(bar)  # push bar and update index
+            # 把 ping 超时调整到 bar 边界，并增加少量余量
+            self._pingtmout = self.PING_TIMEOUT  # 没有 bar，无需检查
+            self.q.put(bar)  # 推送 bar 并更新索引
             self.idx += 1
 
     #
-    # RTEvents
+    # RT 事件
     #
-    # Can be used on a per data basis to check the connection status
+    # 可按单个 data 检查连接状态
     if False:
         def OnInternalEvent(self, p1, p2, p3):
-            if p1 != 1:  # Apparently "Connection Event"
+            if p1 != 1:  # 看起来是 "Connection Event"
                 return
 
             if p2 == self.lastconn:
-                return  # do not notify twice
+                return  # 不重复通知
 
-            self.lastconn = p2  # keep new notification code
+            self.lastconn = p2  # 保存新的 notification code
 
             # p2 should be 0 (disconn), 1 (conn)
             self.store._vcrt_connection(self.store._RT_BASEMSG - p2)
 
     def OnNewTicks(self, ArrayTicks):
-        # Process the COM Event for New Ticks. This is only used temporarily
-        # for 2 purposes
+        # 处理 New Ticks 的 COM 事件。这里临时用于两个目的：
         #
-        # 1. If tick.Field == Field_Description is returned, it can be checked
-        # if the requested symbol has been found or not (tick.Date == 0 -> not
-        # found). tick.Text has 'Not Found', but this is more likely to change
-        # Once Field_Description has been seen, the 2nd stage takes place
+        # 1. 如果返回 tick.Field == Field_Description，就可以检查请求的 symbol 是否
+        #    已找到（tick.Date == 0 表示未找到）。tick.Text 也有 'Not Found'，但更容易
+        #    变化。看到 Field_Description 后进入第 2 阶段。
         #
-        # 2. When a tick.Field == Field_Time is seen and tick.TickIndex == 0,
-        # the 1st tick of a second is seen and the tick.Date value can be used
-        # to calculate a time offset to the feed server. This is later used to
-        # check if a bar is due delivery or not
+        # 2. 当看到 tick.Field == Field_Time 且 tick.TickIndex == 0 时，表示看到了
+        #    某一秒的第一个 tick，可用 tick.Date 计算到 feed server 的时间偏移。后续用
+        #    它判断 bar 是否到了交付时间。
         #
-        # After this the reception of ticks is cancelled
+        # 完成后会取消 tick 接收
 
         aticks = ArrayTicks[0]
         # self.debug_ticks(aticks)
@@ -562,19 +519,17 @@ class VCData(with_metaclass(MetaVCData, DataBase)):
                 return
 
             if tick.TickIndex == 0 and self._mktoff1 is not None:
-                # Adjust the tick time using the mktoffset (with the 096 excep)
+                # 使用 mktoffset 修正 tick 时间（含 096 特例）
                 dttick = (self.NULLDATE + timedelta(days=tick.Date) +
                           self._mktoff1)
 
                 self._TOFFSET = datetime.now() - dttick
                 if self._mktcode in self._EXTRA_TIMEOFFSET:
-                    # These codes live theoretically in (UTC+00:00) Dublin,
-                    # Edinburgh, Lisbon, London which is 'Europe/London'
-                    # But all experiments show the times to be displaced 1
-                    # hour to the west and hence the extra 3600 seconds
+                    # 这些代码理论上位于 (UTC+00:00) Dublin/Edinburgh/Lisbon/London，
+                    # 即 Europe/London；但实验显示时间向西偏移 1 小时，因此额外减 3600 秒
                     self._TOFFSET -= timedelta(seconds=3600)
 
-                # Cancel ticks
+                # 取消 tick 接收
                 self._vcrt.CancelSymbolFeed(self._dataname, False)
 
     def debug_ticks(self, ticks):

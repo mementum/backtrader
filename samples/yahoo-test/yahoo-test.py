@@ -33,13 +33,13 @@ import backtrader.filters as btfilters
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(stdstats=False)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.addstrategy(bt.Strategy)
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
@@ -48,20 +48,20 @@ def runstrat():
         fromdate=fromdate,
         todate=todate)
 
-    # Add the resample data instead of the original
+    # 添加 resample data，而不是原始 data
     cerebro.adddata(data)
 
-    # Add a simple moving average if requirested
+    # 如果需要则添加 Simple Moving Average
     cerebro.addindicator(btind.SMA, period=args.period)
 
-    # Add a writer with CSV
+    # 添加带 CSV 的 writer
     if args.writer:
         cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
 
-    # Run over everything
+    # 运行全部流程
     cerebro.run()
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(style='bar', numfigs=args.numfigs, volume=False)
 

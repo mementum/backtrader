@@ -62,27 +62,26 @@ class St(bt.Strategy):
 
 
 class SessionEndFiller(with_metaclass(bt.metabase.MetaParams, object)):
-    '''This data filter simply adds the time given in param ``endtime`` to the
-    current data datetime
+    '''为当前 data datetime 添加 ``endtime`` 指定的时间。
 
-    It is intended for daily bars which come from sources with no time
-    indication and can be used to signal the bar is passed the end of the
-    session
+    该 filter 用于来源中不包含时间信息的 daily bars，可用于标记 bar 已经过了
+    session 结束时间。
 
-    The default value for ``endtime`` is 1 second before midnight 23:59:59
+    Args:
+      - ``endtime`` (default: ``23:59:59``): session 结束标记时间。
     '''
     params = (('endtime', datetime.time(23, 59, 59)),)
 
     def __call__(self, data):
-        '''
-        Params:
-          - data: the data source to filter/process
+        '''处理一根 data bar。
+
+        Args:
+          - ``data``: 要过滤/处理的数据源。
 
         Returns:
-          - False (always) because this filter does not remove bars from the
-            stream
+          bool: 始终返回 ``False``，因为该 filter 不会从 stream 中移除 bars。
         '''
-        # Get time of current (from data source) bar
+        # 获取当前 data source bar 的时间
         dtime = datetime.combine(data.datetime.date(), self.p.endtime)
         data.datetime[0] = data.date2num(dtime)
         return False

@@ -28,7 +28,7 @@ import json
 import threading
 
 import oandapy
-import requests  # oandapy depdendency
+import requests  # oandapy 依赖
 
 import backtrader as bt
 from backtrader.metabase import MetaParams
@@ -36,7 +36,7 @@ from backtrader.utils.py3 import queue, with_metaclass
 from backtrader.utils import AutoDict
 
 
-# Extend the exceptions to support extra cases
+# 扩展异常以支持额外场景
 
 class OandaRequestError(oandapy.OandaError):
     def __init__(self):
@@ -64,8 +64,8 @@ class OandaNetworkError(oandapy.OandaError):
 
 class API(oandapy.API):
     def request(self, endpoint, method='GET', params=None):
-        # Overriden to make something sensible out of a
-        # request.RequestException rather than simply issuing a print(str(e))
+        # 覆盖默认逻辑，将 request.RequestException 转成可处理响应，
+        # 而不是仅执行 print(str(e))
         url = '%s/%s' % (self.api_url, endpoint)
 
         method = method.lower()
@@ -79,7 +79,7 @@ class API(oandapy.API):
         else:
             request_args['data'] = params
 
-        # Added the try block
+        # 增加异常捕获
         try:
             response = func(url, **request_args)
         except requests.RequestException as e:
@@ -88,9 +88,9 @@ class API(oandapy.API):
         content = response.content.decode('utf-8')
         content = json.loads(content)
 
-        # error message
+        # 错误消息
         if response.status_code >= 400:
-            # changed from raise to return
+            # 从 raise 改为 return
             return oandapy.OandaError(content).error_response
 
         return content
@@ -98,7 +98,7 @@ class API(oandapy.API):
 
 class Streamer(oandapy.Streamer):
     def __init__(self, q, headers=None, *args, **kwargs):
-        # Override to provide headers, which is in the standard API interface
+        # 覆盖以提供 headers，该能力存在于标准 API interface 中
         super(Streamer, self).__init__(*args, **kwargs)
 
         if headers:
@@ -107,8 +107,7 @@ class Streamer(oandapy.Streamer):
         self.q = q
 
     def run(self, endpoint, params=None):
-        # Override to better manage exceptions.
-        # Kept as much as possible close to the original
+        # 覆盖以更好地管理异常，并尽量保持接近原始实现
         self.connected = True
 
         params = params or {}
@@ -123,7 +122,7 @@ class Streamer(oandapy.Streamer):
         url = '%s/%s' % (self.api_url, endpoint)
 
         while self.connected:
-            # Added exception control here
+            # 在这里增加异常控制
             try:
                 response = self.client.get(url, **request_args)
             except requests.RequestException as e:
@@ -132,9 +131,9 @@ class Streamer(oandapy.Streamer):
 
             if response.status_code != 200:
                 self.on_error(response.content)
-                break  # added break here
+                break  # 在这里增加 break
 
-            # Changed chunk_size 90 -> None
+            # chunk_size 从 90 改为 None
             try:
                 for line in response.iter_lines(chunk_size=None):
                     if not self.connected:
@@ -145,7 +144,7 @@ class Streamer(oandapy.Streamer):
                         if not (ignore_heartbeat and 'heartbeat' in data):
                             self.on_success(data)
 
-            except:  # socket.error has been seen
+            except:  # 曾观察到 socket.error
                 self.q.put(OandaStreamError().error_response)
                 break
 
@@ -161,7 +160,7 @@ class Streamer(oandapy.Streamer):
 
 
 class MetaSingleton(MetaParams):
-    '''Metaclass to make a metaclassed class a singleton'''
+    '''让带 metaclass 的类成为 singleton 的 metaclass。'''
     def __init__(cls, name, bases, dct):
         super(MetaSingleton, cls).__init__(name, bases, dct)
         cls._singleton = None
@@ -175,28 +174,26 @@ class MetaSingleton(MetaParams):
 
 
 class OandaStore(with_metaclass(MetaSingleton, object)):
-    '''Singleton class wrapping to control the connections to Oanda.
+    '''控制 Oanda 连接的 singleton store。
 
-    Params:
+    Args:
+        token: API access token。
+        account: account id。
+        practice: 是否使用测试环境。
+        account_tmout: account value/cash 刷新周期。
 
-      - ``token`` (default:``None``): API access token
-
-      - ``account`` (default: ``None``): account id
-
-      - ``practice`` (default: ``False``): use the test environment
-
-      - ``account_tmout`` (default: ``10.0``): refresh period for account
-        value/cash refresh
+    Returns:
+        OandaStore: 用于管理 Oanda API、streaming、order 与 account 状态的 store。
     '''
 
-    BrokerCls = None  # broker class will autoregister
-    DataCls = None  # data class will auto register
+    BrokerCls = None  # broker class 会自动注册
+    DataCls = None  # data class 会自动注册
 
     params = (
         ('token', ''),
         ('account', ''),
         ('practice', False),
-        ('account_tmout', 10.0),  # account balance refresh timeout
+        ('account_tmout', 10.0),  # account balance 刷新 timeout
     )
 
     _DTEPOCH = datetime(1970, 1, 1)
@@ -205,25 +202,25 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
     @classmethod
     def getdata(cls, *args, **kwargs):
-        '''Returns ``DataCls`` with args, kwargs'''
+        '''使用 args/kwargs 返回 ``DataCls`` 实例。'''
         return cls.DataCls(*args, **kwargs)
 
     @classmethod
     def getbroker(cls, *args, **kwargs):
-        '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
+        '''使用注册的 ``BrokerCls`` 与 args/kwargs 返回 broker。'''
         return cls.BrokerCls(*args, **kwargs)
 
     def __init__(self):
         super(OandaStore, self).__init__()
 
-        self.notifs = collections.deque()  # store notifications for cerebro
+        self.notifs = collections.deque()  # 发送给 cerebro 的 store 通知
 
-        self._env = None  # reference to cerebro for general notifications
-        self.broker = None  # broker instance
-        self.datas = list()  # datas that have registered over start
+        self._env = None  # 指向 cerebro，用于通用通知
+        self.broker = None  # broker 实例
+        self.datas = list()  # start 期间注册的 data
 
-        self._orders = collections.OrderedDict()  # map order.ref to oid
-        self._ordersrev = collections.OrderedDict()  # map oid to order.ref
+        self._orders = collections.OrderedDict()  # 映射 order.ref -> oid
+        self._ordersrev = collections.OrderedDict()  # 映射 oid -> order.ref
         self._transpend = collections.defaultdict(collections.deque)
 
         self._oenv = self._ENVPRACTICE if self.p.practice else self._ENVLIVE
@@ -236,14 +233,14 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         self._evt_acct = threading.Event()
 
     def start(self, data=None, broker=None):
-        # Datas require some processing to kickstart data reception
+        # data 需要一些处理来启动数据接收
         if data is None and broker is None:
             self.cash = None
             return
 
         if data is not None:
             self._env = data._env
-            # For datas simulate a queue with None to kickstart co
+            # 对 data 使用带 None 的模拟 queue 启动连接
             self.datas.append(data)
 
             if self.broker is not None:
@@ -255,7 +252,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             self.broker_threads()
 
     def stop(self):
-        # signal end of thread
+        # 标记线程结束
         if self.broker is not None:
             self.q_ordercreate.put(None)
             self.q_orderclose.put(None)
@@ -265,11 +262,11 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         self.notifs.append((msg, args, kwargs))
 
     def get_notifications(self):
-        '''Return the pending "store" notifications'''
-        self.notifs.append(None)  # put a mark / threads could still append
+        '''返回待处理的 "store" 通知。'''
+        self.notifs.append(None)  # 放置标记；线程仍可能继续 append
         return [x for x in iter(self.notifs.popleft, None)]
 
-    # Oanda supported granularities
+    # Oanda 支持的 granularity
     _GRANULARITIES = {
         (bt.TimeFrame.Seconds, 5): 'S5',
         (bt.TimeFrame.Seconds, 10): 'S10',
@@ -386,7 +383,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         for candle in response.get('candles', []):
             q.put(candle)
 
-        q.put({})  # end of transmission
+        q.put({})  # 传输结束
 
     def streaming_prices(self, dataname, tmout=None):
         q = queue.Queue()
@@ -421,7 +418,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
     def broker_threads(self):
         self.q_account = queue.Queue()
-        self.q_account.put(True)  # force an immediate update
+        self.q_account.put(True)  # 强制立即更新
         t = threading.Thread(target=self._t_account)
         t.daemon = True
         t.start()
@@ -436,7 +433,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         t.daemon = True
         t.start()
 
-        # Wait once for the values to be set
+        # 等待一次，确保值已设置
         self._evt_acct.wait(self.p.account_tmout)
 
     def _t_account(self):
@@ -444,8 +441,8 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             try:
                 msg = self.q_account.get(timeout=self.p.account_tmout)
                 if msg is None:
-                    break  # end of thread
-            except queue.Empty:  # tmout -> time to refresh
+                    break  # 线程结束
+            except queue.Empty:  # timeout -> 到刷新时间
                 pass
 
             try:
@@ -471,11 +468,11 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         if order.exectype != bt.Order.Market:
             okwargs['price'] = order.created.price
             if order.valid is None:
-                # 1 year and datetime.max fail ... 1 month works
+                # 1 年和 datetime.max 会失败；1 个月可用
                 valid = datetime.utcnow() + timedelta(days=30)
             else:
                 valid = order.data.num2date(order.valid)
-                # To timestamp with seconds precision
+                # 转成秒级 timestamp
             okwargs['expiry'] = int((valid - self._DTEPOCH).total_seconds())
 
         if order.exectype == bt.Order.StopLimit:
@@ -491,7 +488,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         if takeside is not None:
             okwargs['takeProfit'] = takeside.price
 
-        okwargs.update(**kwargs)  # anything from the user
+        okwargs.update(**kwargs)  # 用户传入的其他内容
 
         self.q_ordercreate.put((order.ref, okwargs,))
         return order
@@ -513,8 +510,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                 self.broker._reject(oref)
                 return
 
-            # Ids are delivered in different fields and all must be fetched to
-            # match them (as executions) to the order generated here
+            # id 会在不同字段中返回，必须全部取出，才能作为 execution 匹配到这里生成的 order
             oids = list()
             for oidfield in self._OIDSINGLE:
                 if oidfield in o and 'id' in o[oidfield]:
@@ -532,14 +528,14 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
             self._orders[oref] = oids[0]
             self.broker._submit(oref)
             if okwargs['type'] == 'market':
-                self.broker._accept(oref)  # taken immediately
+                self.broker._accept(oref)  # 立即接收
 
             for oid in oids:
-                self._ordersrev[oid] = oref  # maps ids to backtrader order
+                self._ordersrev[oid] = oref  # 映射 id 到 backtrader order
 
-                # An transaction may have happened and was stored
+                # transaction 可能已经发生并被暂存
                 tpending = self._transpend[oid]
-                tpending.append(None)  # eom marker
+                tpending.append(None)  # eom 标记
                 while True:
                     trans = tpending.popleft()
                     if trans is None:
@@ -558,11 +554,11 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
 
             oid = self._orders.get(oref, None)
             if oid is None:
-                continue  # the order is no longer there
+                continue  # order 已不存在
             try:
                 o = self.oapi.close_order(self.p.account, oid)
             except Exception as e:
-                continue  # not cancelled - FIXME: notify
+                continue  # 未取消 - FIXME: 通知
 
             self.broker._cancel(oref)
 
@@ -570,9 +566,8 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                        'LIMIT_ORDER_CREATE', 'MARKET_IF_TOUCHED_ORDER_CREATE',)
 
     def _transaction(self, trans):
-        # Invoked from Streaming Events. May actually receive an event for an
-        # oid which has not yet been returned after creating an order. Hence
-        # store if not yet seen, else forward to processer
+        # 从 Streaming Events 调用。可能收到某个 oid 的事件，但创建 order 后该 oid 尚未返回。
+        # 因此未见过时先暂存，否则转发给处理器。
         ttype = trans['type']
         if ttype == 'MARKET_ORDER_CREATE':
             try:
@@ -581,7 +576,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
                 try:
                     oid = trans['tradeOpened']['id']
                 except KeyError:
-                    return  # cannot do anything else
+                    return  # 无法继续处理
 
         elif ttype in self._X_ORDER_CREATE:
             oid = trans['id']
@@ -594,20 +589,18 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         elif ttype == 'TRADE_CLOSE':
             oid = trans['id']
             pid = trans['tradeId']
-            if pid in self._orders and False:  # Know nothing about trade
-                return  # can do nothing
+            if pid in self._orders and False:  # 对 trade 无可用信息
+                return  # 无法处理
 
-            # Skip above - at the moment do nothing
-            # Received directly from an event in the WebGUI for example which
-            # closes an existing position related to order with id -> pid
-            # COULD BE DONE: Generate a fake counter order to gracefully
-            # close the existing position
+            # 跳过上方逻辑；当前不做处理。
+            # 例如直接从 WebGUI 收到关闭现有 position 的事件，该 position 关联 order id -> pid。
+            # 可考虑生成一个假的反向 order，以平滑关闭现有 position。
             msg = ('Received TRADE_CLOSE for unknown order, possibly generated'
                    ' over a different client or GUI')
             self.put_notification(msg, trans)
             return
 
-        else:  # Go aways gracefully
+        else:  # 平稳退出未知情况
             try:
                 oid = trans['id']
             except KeyError:
@@ -621,7 +614,7 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         try:
             oref = self._ordersrev[oid]
             self._process_transaction(oid, trans)
-        except KeyError:  # not yet seen, keep as pending
+        except KeyError:  # 尚未见过，保留为 pending
             self._transpend[oid].append(trans)
 
     _X_ORDER_FILLED = ('MARKET_ORDER_CREATE',
@@ -650,10 +643,10 @@ class OandaStore(with_metaclass(MetaSingleton, object)):
         elif ttype in 'ORDER_CANCEL':
             reason = trans['reason']
             if reason == 'ORDER_FILLED':
-                pass  # individual execs have done the job
+                pass  # 单个 execution 已完成工作
             elif reason == 'TIME_IN_FORCE_EXPIRED':
                 self.broker._expire(oref)
             elif reason == 'CLIENT_REQUEST':
                 self.broker._cancel(oref)
-            else:  # default action ... if nothing else
+            else:  # 其他情况的默认动作
                 self.broker._reject(oref)

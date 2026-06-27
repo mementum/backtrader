@@ -50,7 +50,7 @@ class LongOnly(bt.Sizer):
         if isbuy:
             return self.p.stake
 
-        # Sell situation
+        # sell 情境
         position = self.broker.getposition(data)
         if not position.size:
             return 0  # do not sell if nothing is open
@@ -134,7 +134,7 @@ def parse_args(pargs=None):
                         type=int, default=15,
                         help=('Period for the Simple Moving Average'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

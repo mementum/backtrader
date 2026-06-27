@@ -55,7 +55,7 @@ class St(bt.Strategy):
 
     def next(self):
         if self.p.printout:
-            # Print only 1st data ... is just a check that things are running
+            # 只打印第 1 个 data，用于确认流程正在运行
             txtfields = list()
             txtfields.append('%04d' % len(self))
             txtfields.append(self.data.datetime.datetime(0).isoformat())
@@ -187,7 +187,7 @@ def parse_args(pargs=None):
                         default=None, choices=TIMEFRAMES.keys(),
                         help=('TimeFrame to apply to the Observer'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

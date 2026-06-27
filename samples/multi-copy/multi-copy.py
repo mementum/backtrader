@@ -30,15 +30,13 @@ import backtrader as bt
 
 
 class TheStrategy(bt.Strategy):
-    '''
-    This strategy is capable of:
+    '''该 strategy 可以：
 
-      - Going Long with a Moving Average upwards CrossOver
+      - 在 Moving Average 向上 CrossOver 时做多。
 
-      - Going Long again with a MACD upwards CrossOver
+      - 在 MACD 向上 CrossOver 时再次做多。
 
-      - Closing the aforementioned longs with the corresponding downwards
-        crossovers
+      - 在对应的向下 crossovers 出现时关闭上述 long positions。
     '''
 
     params = (
@@ -68,10 +66,10 @@ class TheStrategy(bt.Strategy):
                 print(','.join(str(x) for x in tfields))
 
     def __init__(self):
-        # Choose data to buy from
+        # 选择用于买入的 data
         self.dtarget = self.getdatabyname(self.p.dtarget)
 
-        # Create indicators
+        # 创建 indicators
         sma1 = bt.ind.SMA(self.dtarget, period=self.p.sma1)
         sma2 = bt.ind.SMA(self.dtarget, period=self.p.sma2)
         self.smasig = bt.ind.CrossOver(sma1, sma2)
@@ -81,7 +79,7 @@ class TheStrategy(bt.Strategy):
                            period_me2=self.p.macd2,
                            period_signal=self.p.macdsig)
 
-        # Cross of macd.macd and macd.signal
+        # macd.macd 与 macd.signal 的交叉
         self.macdsig = bt.ind.CrossOver(macd.macd, macd.signal)
 
     def start(self):
@@ -151,7 +149,7 @@ def runstrat(args=None):
         todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dkwargs['todate'] = todate
 
-    # if dataset is None, args.data has been given
+    # 如果 dataset 为 None，说明已传入 args.data
     data0 = bt.feeds.YahooFinanceCSVData(dataname=args.data0, **dkwargs)
     cerebro.adddata(data0, name='MyData0')
 
@@ -230,7 +228,7 @@ def parse_args(pargs=None):
                               'stake=200,macd1=15,macd2=22,macdsig=7,'
                               'sma1=15,sma2=50'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

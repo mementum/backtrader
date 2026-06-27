@@ -22,8 +22,8 @@
 
 .. module:: lineroot
 
-Definition of the base class LineRoot and base classes LineSingle/LineMultiple
-to define interfaces and hierarchy for the real operational classes
+定义 ``LineRoot`` 基类，以及 ``LineSingle`` / ``LineMultiple`` 基类，用于为真正
+执行计算的 line 类建立接口和继承层级。
 
 .. moduleauthor:: Daniel Rodriguez
 
@@ -40,33 +40,29 @@ from . import metabase
 
 class MetaLineRoot(metabase.MetaParams):
     '''
-    Once the object is created (effectively pre-init) the "owner" of this
-    class is sought
+    ``LineRoot`` 的 metaclass，用于在对象创建后、``__init__`` 前寻找并记录 owner。
     '''
 
     def donew(cls, *args, **kwargs):
         _obj, args, kwargs = super(MetaLineRoot, cls).donew(*args, **kwargs)
 
-        # Find the owner and store it
-        # startlevel = 4 ... to skip intermediate call stacks
+        # 查找并保存 owner
+        # startlevel = 4 ... 用于跳过中间调用栈
         ownerskip = kwargs.pop('_ownerskip', None)
         _obj._owner = metabase.findowner(_obj,
                                          _obj._OwnerCls or LineMultiple,
                                          skip=ownerskip)
 
-        # Parameter values have now been set before __init__
+        # 参数值此时已经在 __init__ 前设置完毕
         return _obj, args, kwargs
 
 
 class LineRoot(with_metaclass(MetaLineRoot, object)):
     '''
-    Defines a common base and interfaces for Single and Multiple
-    LineXXX instances
+    ``LineXXX`` 单线和多线实例的基类，用于定义共同接口。
 
-        Period management
-        Iteration management
-        Operation (dual/single operand) Management
-        Rich Comparison operator definition
+    主要覆盖 period 管理、迭代管理、单/双操作数运算管理，以及 rich comparison
+    操作符定义。
     '''
     _OwnerCls = None
     _minperiod = 1
@@ -94,83 +90,148 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         return self._operationown_stage2(operation)
 
     def qbuffer(self, savemem=0):
-        '''Change the lines to implement a minimum size qbuffer scheme'''
+        '''切换 line，使其使用最小尺寸 qbuffer 方案。
+
+        Args:
+            savemem: 是否启用更省内存的 buffer 模式。
+
+        Returns:
+            None
+        '''
         raise NotImplementedError
 
     def minbuffer(self, size):
-        '''Receive notification of how large the buffer must at least be'''
+        '''接收最小 buffer 尺寸通知。
+
+        Args:
+            size: buffer 至少需要保证的尺寸。
+
+        Returns:
+            None
+        '''
         raise NotImplementedError
 
     def setminperiod(self, minperiod):
         '''
-        Direct minperiod manipulation. It could be used for example
-        by a strategy
-        to not wait for all indicators to produce a value
+        直接设置 minperiod。
+
+        Args:
+            minperiod: 要设置的最小 period。
+
+        Returns:
+            None
+
+        例如 strategy 可用它避免等待所有 indicator 都产出值。
         '''
         self._minperiod = minperiod
 
     def updateminperiod(self, minperiod):
         '''
-        Update the minperiod if needed. The minperiod will have been
-        calculated elsewhere
-        and has to take over if greater that self's
+        在需要时更新 minperiod。
+
+        Args:
+            minperiod: 外部计算出的 minperiod；大于当前值时接管当前值。
+
+        Returns:
+            None
         '''
         self._minperiod = max(self._minperiod, minperiod)
 
     def addminperiod(self, minperiod):
         '''
-        Add a minperiod to own ... to be defined by subclasses
+        向自身增加 minperiod，由子类定义具体行为。
+
+        Args:
+            minperiod: 要增加的 minperiod。
+
+        Returns:
+            None
         '''
         raise NotImplementedError
 
     def incminperiod(self, minperiod):
         '''
-        Increment the minperiod with no considerations
+        不做额外折算，直接递增 minperiod。
+
+        Args:
+            minperiod: 要递增的 minperiod。
+
+        Returns:
+            None
         '''
         raise NotImplementedError
 
     def prenext(self):
         '''
-        It will be called during the "minperiod" phase of an iteration.
+        在迭代的 ``minperiod`` 阶段调用。
+
+        Returns:
+            None
         '''
         pass
 
     def nextstart(self):
         '''
-        It will be called when the minperiod phase is over for the 1st
-        post-minperiod value. Only called once and defaults to automatically
-        calling next
+        在 minperiod 阶段结束后的第一个值上调用。
+
+        Returns:
+            None
+
+        该方法只调用一次，默认自动调用 ``next``。
         '''
         self.next()
 
     def next(self):
         '''
-        Called to calculate values when the minperiod is over
+        minperiod 结束后用于逐 bar 计算值。
+
+        Returns:
+            None
         '''
         pass
 
     def preonce(self, start, end):
         '''
-        It will be called during the "minperiod" phase of a "once" iteration
+        在 ``once`` 迭代的 ``minperiod`` 阶段调用。
+
+        Args:
+            start: 起始位置。
+            end: 结束位置。
+
+        Returns:
+            None
         '''
         pass
 
     def oncestart(self, start, end):
         '''
-        It will be called when the minperiod phase is over for the 1st
-        post-minperiod value
+        在 minperiod 阶段结束后的第一个 ``once`` 值上调用。
 
-        Only called once and defaults to automatically calling once
+        Args:
+            start: 起始位置。
+            end: 结束位置。
+
+        Returns:
+            None
+
+        该方法只调用一次，默认自动调用 ``once``。
         '''
         self.once(start, end)
 
     def once(self, start, end):
         '''
-        Called to calculate values at "once" when the minperiod is over
+        minperiod 结束后用于批量计算值。
+
+        Args:
+            start: 起始位置。
+            end: 结束位置。
+
+        Returns:
+            None
         '''
         pass
 
-    # Arithmetic operators
+    # 算术操作符
     def _makeoperation(self, other, operation, r=False, _ownerskip=None):
         raise NotImplementedError
 
@@ -179,21 +240,42 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
     def _operationown_stage1(self, operation):
         '''
-        Operation with single operand which is "self"
+        构建以 ``self`` 为唯一操作数的运算。
+
+        Args:
+            operation: 要应用的运算函数。
+
+        Returns:
+            LineRoot: 表示该运算的 line 对象。
         '''
         return self._makeoperationown(operation, _ownerskip=self)
 
     def _roperation(self, other, operation, intify=False):
         '''
-        Relies on self._operation to and passes "r" True to define a
-        reverse operation
+        通过 ``self._operation`` 构建反向运算。
+
+        Args:
+            other: 另一个操作数。
+            operation: 要应用的运算函数。
+            intify: 是否把结果转换为整数语义。
+
+        Returns:
+            LineRoot: 表示该反向运算的 line 对象或运算结果。
         '''
         return self._operation(other, operation, r=True, intify=intify)
 
     def _operation_stage1(self, other, operation, r=False, intify=False):
         '''
-        Two operands' operation. Scanning of other happens to understand
-        if other must be directly an operand or rather a subitem thereof
+        构建两个操作数的运算。
+
+        Args:
+            other: 另一个操作数；如果是 ``LineMultiple``，会使用其第一条 line。
+            operation: 要应用的运算函数。
+            r: 是否反向运算。
+            intify: 是否把结果转换为整数语义。
+
+        Returns:
+            LineRoot: 表示该运算的 line 对象。
         '''
         if isinstance(other, LineMultiple):
             other = other.lines[0]
@@ -202,13 +284,20 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
     def _operation_stage2(self, other, operation, r=False):
         '''
-        Rich Comparison operators. Scans other and returns either an
-        operation with other directly or a subitem from other
+        在运行阶段执行 rich comparison 或其他即时运算。
+
+        Args:
+            other: 另一个操作数；如果是 ``LineRoot``，会取其当前值。
+            operation: 要应用的运算函数。
+            r: 是否反向运算。
+
+        Returns:
+            object: 运算结果。
         '''
         if isinstance(other, LineRoot):
             other = other[0]
 
-        # operation(float, other) ... expecting other to be a float
+        # operation(float, other) ... 这里预期 other 是 float
         if r:
             return operation(other, self[0])
 
@@ -288,14 +377,13 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
 
     __bool__ = __nonzero__
 
-    # Python 3 forces explicit implementation of hash if
-    # the class has redefined __eq__
+    # Python 3 中，如果类重定义了 __eq__，就必须显式实现 hash
     __hash__ = object.__hash__
 
 
 class LineMultiple(LineRoot):
     '''
-    Base class for LineXXX instances that hold more than one line
+    多线 ``LineXXX`` 实例的基类，用于管理包含多条 line 的对象。
     '''
     def reset(self):
         self._stage1()
@@ -313,17 +401,29 @@ class LineMultiple(LineRoot):
 
     def addminperiod(self, minperiod):
         '''
-        The passed minperiod is fed to the lines
+        把传入的 minperiod 下发给所有 line。
+
+        Args:
+            minperiod: 要下发的 minperiod。
+
+        Returns:
+            None
         '''
-        # pass it down to the lines
+        # 下发给所有 line
         for line in self.lines:
             line.addminperiod(minperiod)
 
     def incminperiod(self, minperiod):
         '''
-        The passed minperiod is fed to the lines
+        把传入的 minperiod 递增量下发给所有 line。
+
+        Args:
+            minperiod: 要下发的 minperiod 增量。
+
+        Returns:
+            None
         '''
-        # pass it down to the lines
+        # 下发给所有 line
         for line in self.lines:
             line.incminperiod(minperiod)
 
@@ -344,16 +444,28 @@ class LineMultiple(LineRoot):
 
 class LineSingle(LineRoot):
     '''
-    Base class for LineXXX instances that hold a single line
+    单线 ``LineXXX`` 实例的基类，用于管理只包含一条 line 的对象。
     '''
     def addminperiod(self, minperiod):
         '''
-        Add the minperiod (substracting the overlapping 1 minimum period)
+        增加 minperiod，并扣除重叠的 1 个最小 period。
+
+        Args:
+            minperiod: 要增加的 minperiod。
+
+        Returns:
+            None
         '''
         self._minperiod += minperiod - 1
 
     def incminperiod(self, minperiod):
         '''
-        Increment the minperiod with no considerations
+        不做额外折算，直接递增 minperiod。
+
+        Args:
+            minperiod: 要递增的 minperiod。
+
+        Returns:
+            None
         '''
         self._minperiod += minperiod

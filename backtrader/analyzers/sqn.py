@@ -29,8 +29,9 @@ from backtrader.utils import AutoOrderedDict
 
 
 class SQN(Analyzer):
-    '''SQN or SystemQualityNumber. Defined by Van K. Tharp to categorize trading
-    systems.
+    '''计算 SQN（System Quality Number）的 analyzer。
+
+    SQN 由 Van K. Tharp 定义，用于给交易系统分类。
 
       - 1.6 - 1.9 Below average
       - 2.0 - 2.4 Average
@@ -39,25 +40,35 @@ class SQN(Analyzer):
       - 5.1 - 6.9 Superb
       - 7.0 -     Holy Grail?
 
-    The formula:
+    公式:
 
       - SquareRoot(NumberTrades) * Average(TradesProfit) / StdDev(TradesProfit)
 
-    The sqn value should be deemed reliable when the number of trades >= 30
+    当 trade 数量 >= 30 时，SQN 值通常更可靠。
 
-    Methods:
+    Args:
+        无。
 
-      - get_analysis
+    Returns:
+        AutoOrderedDict: ``get_analysis`` 返回包含以下 key 的对象:
 
-        Returns a dictionary with keys "sqn" and "trades" (number of
-        considered trades)
+      - ``sqn``: 计算得到的 SQN
+      - ``trades``: 纳入计算的 trade 数量
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(SQN, _name='sqn')
 
     '''
     alias = ('SystemQualityNumber',)
 
     def create_analysis(self):
-        '''Replace default implementation to instantiate an AutoOrdereDict
-        rather than an OrderedDict'''
+        '''使用 ``AutoOrderedDict`` 替代默认 ``OrderedDict``。
+
+        Returns:
+            None: 该方法只初始化 ``self.rets``。
+        '''
         self.rets = AutoOrderedDict()
 
     def start(self):

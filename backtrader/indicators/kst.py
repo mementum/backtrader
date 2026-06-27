@@ -27,8 +27,25 @@ from . import SMA, ROC100
 
 class KnowSureThing(bt.Indicator):
     '''
-    It is a "summed" momentum indicator. Developed by Martin Pring and
-    published in 1992 in Stocks & Commodities.
+    Martin Pring 开发并于 1992 年在 *Stocks & Commodities* 发表的
+    "summed" momentum indicator。
+
+    Args:
+        rp1: 第 1 个 ROC100 周期。
+        rp2: 第 2 个 ROC100 周期。
+        rp3: 第 3 个 ROC100 周期。
+        rp4: 第 4 个 ROC100 周期。
+        rma1: 第 1 个 ROC 平滑周期。
+        rma2: 第 2 个 ROC 平滑周期。
+        rma3: 第 3 个 ROC 平滑周期。
+        rma4: 第 4 个 ROC 平滑周期。
+        rsignal: signal line 的平滑周期。
+        rfactors: 应用于各个 MovAv(ROC) 的权重列表。
+        _rmovav: 用于 ROC 平滑的 Moving Average 类型。
+        _smovav: 用于 signal line 的 Moving Average 类型。
+
+    Returns:
+        KnowSureThing: 输出 ``kst`` 与 ``signal`` line 的 indicator。
 
     Formula:
       - rcma1 = MovAv(roc100(rp1), period)
@@ -42,15 +59,12 @@ class KnowSureThing(bt.Indicator):
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:know_sure_thing_kst
 
-    Params
+    ---
+    交互界面使用示范:
 
-      - ``rma1``, ``rma2``, ``rma3``, ``rma4``: for the MovingAverages on ROCs
-      - ``rp1``, ``rp2``, ``rp3``, ``rp4``: for the ROCs
-      - ``rsig``: for the MovingAverage for the signal line
-      - ``rfactors``: list of factors to apply to the different MovAv(ROCs)
-      - ``_movav`` and ``_movavs``, allows to change the Moving Average type
-        applied for the calculation of kst and signal
-
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(KnowSureThing)
     '''
     alias = ('KST',)
     lines = ('kst', 'signal',)

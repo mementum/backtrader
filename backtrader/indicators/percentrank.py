@@ -31,8 +31,21 @@ __all__ = ['PercentRank', 'PctRank']
 
 class PercentRank(BaseApplyN):
     '''
-    Measures the percent rank of the current value with respect to that of
-    period bars ago
+    计算当前值在最近 ``period`` 个 bar 中的 percent rank。
+
+    Args:
+        period: 统计窗口周期。
+        func: 对窗口数据执行 percent rank 计算的函数。
+
+    Returns:
+        PercentRank: 输出 ``pctrank`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PercentRank, period=50)
     '''
     alias = ('PctRank',)
     lines = ('pctrank',)

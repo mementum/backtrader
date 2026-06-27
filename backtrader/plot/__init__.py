@@ -28,14 +28,13 @@ try:
     import matplotlib
 except ImportError:
     raise ImportError(
-        'Matplotlib seems to be missing. Needed for plotting support')
+        '缺少 Matplotlib；绘图支持需要该依赖')
 else:
     touse = 'TKAgg' if sys.platform != 'darwin' else 'MacOSX'
     try:
         matplotlib.use(touse)
     except:
-        # if another backend has already been loaded, an exception will be
-        # generated and this can be skipped
+        # 如果已经加载了另一个 backend，会生成异常；此处可以跳过
         pass
 
 

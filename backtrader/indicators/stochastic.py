@@ -25,6 +25,7 @@ from . import Indicator, Max, MovAv, Highest, Lowest, DivByZero
 
 
 class _StochasticBase(Indicator):
+    '''Stochastic 的基类，用于统一 %K/%D 计算、参数和绘图参考线。'''
     lines = ('percK', 'percD',)
     params = (('period', 14), ('period_dfast', 3), ('movav', MovAv.Simple),
               ('upperband', 80.0), ('lowerband', 20.0),
@@ -57,15 +58,25 @@ class _StochasticBase(Indicator):
 
 class StochasticFast(_StochasticBase):
     '''
-    By Dr. George Lane in the 50s. It compares a closing price to the price
-    range and tries to show convergence if the closing prices are close to the
-    extremes
+    Dr. George Lane 在 20 世纪 50 年代提出的 StochasticFast。它比较 close
+    与价格区间的位置，当 close 靠近极值时尝试显示 convergence。
 
-      - It will go up if closing prices are close to the highs
-      - It will roughly go down if closing prices are close to the lows
+      - close 接近 high 时通常上升
+      - close 接近 low 时通常下降
 
-    It shows divergence if the extremes keep on growing but closing prices
-    do not in the same manner (distance to the extremes grow)
+    当极值继续扩张而 close 未同步接近极值时，可用于观察 divergence。
+
+    Args:
+        period: high/low 回看周期。
+        period_dfast: %D 快线平滑周期。
+        movav: 用于平滑的 Moving Average 类型。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+        safediv: 是否保护除零。
+        safezero: 除零时使用的默认值。
+
+    Returns:
+        StochasticFast: 输出 ``percK`` 与 ``percD`` line 的 indicator。
 
     Formula:
       - hh = highest(data.high, period)
@@ -77,6 +88,13 @@ class StochasticFast(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(StochasticFast)
     '''
     def __init__(self):
         super(StochasticFast, self).__init__()
@@ -86,11 +104,19 @@ class StochasticFast(_StochasticBase):
 
 class Stochastic(_StochasticBase):
     '''
-    The regular (or slow version) adds an additional moving average layer and
-    thus:
+    常规版（或 slow version）额外添加一层 Moving Average，因此：
 
-      - The percD line of the StochasticFast becomes the percK line
-      - percD becomes a  moving average of period_dslow of the original percD
+      - StochasticFast 的 percD line 会成为 percK line
+      - percD 会成为原始 percD 上 ``period_dslow`` 周期的 Moving Average
+
+    Args:
+        period: high/low 回看周期。
+        period_dfast: 快速 %D 平滑周期。
+        period_dslow: 慢速 %D 平滑周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        Stochastic: 输出 ``percK`` 与 ``percD`` line 的 indicator。
 
     Formula:
       - k = k
@@ -99,6 +125,13 @@ class Stochastic(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Stochastic)
     '''
     alias = ('StochasticSlow',)
     params = (('period_dslow', 3),)
@@ -116,11 +149,21 @@ class Stochastic(_StochasticBase):
 
 class StochasticFull(_StochasticBase):
     '''
-    This version displays the 3 possible lines:
+    该版本显示 3 条可用 line：
 
       - percK
       - percD
       - percSlow
+
+    Args:
+        period: high/low 回看周期。
+        period_dfast: 快速 %D 平滑周期。
+        period_dslow: 慢速 %D 平滑周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        StochasticFull: 输出 ``percK``、``percD`` 与 ``percDSlow`` line 的
+        indicator。
 
     Formula:
       - k = d
@@ -129,6 +172,13 @@ class StochasticFull(_StochasticBase):
 
     See:
       - http://en.wikipedia.org/wiki/Stochastic_oscillator
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(StochasticFull)
     '''
     lines = ('percDSlow',)
     params = (('period_dslow', 3),)

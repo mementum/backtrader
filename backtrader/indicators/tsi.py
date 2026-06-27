@@ -28,12 +28,19 @@ from . import EMA
 
 class TrueStrengthIndicator(bt.Indicator):
     '''
-    The True Strength Indicators was first introduced in Stocks & Commodities
-    Magazine by its author William Blau. It measures momentum with a double
-    exponential (default) of the prices.
+    William Blau 在 *Stocks & Commodities* 杂志中提出的 True Strength Indicator。
+    它默认通过价格的 double exponential 平滑来衡量 momentum。
 
-    It shows divergence if the extremes keep on growign but closing prices
-    do not in the same manner (distance to the extremes grow)
+    当极值继续扩张而收盘价没有同步扩张时，它可用于观察 divergence。
+
+    Args:
+        period1: 第一次平滑周期。
+        period2: 第二次平滑周期。
+        pchange: 计算价格变化的回看周期。
+        _movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        TrueStrengthIndicator: 输出 ``tsi`` line 的 indicator。
 
     Formula:
       - price_change = close - close(pchange periods ago)
@@ -46,12 +53,12 @@ class TrueStrengthIndicator(bt.Indicator):
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:true_strength_index
 
-    Params
+    ---
+    交互界面使用示范:
 
-      - ``period1``: the period for the 1st smoothing
-      - ``period2``: the period for the 2nd smoothing
-      - ``pchange``: the lookback period for the price change
-      - ``_movav``: the moving average to apply for the smoothing
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(TrueStrengthIndicator, period1=25, period2=13)
     '''
     alias = ('TSI',)
     params = (

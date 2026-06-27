@@ -25,16 +25,25 @@ import backtrader as bt
 
 
 class FixedSize(bt.Sizer):
-    '''
-    This sizer simply returns a fixed size for any operation.
-    Size can be controlled by number of tranches that a system
-    wishes to use to scale into trades by specifying the ``tranches``
-    parameter.
+    '''返回固定 size 的 sizer。
 
+    可以通过 ``tranches`` 参数把 ``stake`` 拆成多份，用于分批建仓。
 
-    Params:
-      - ``stake`` (default: ``1``)
-      - ``tranches`` (default: ``1``)
+    Args:
+        stake (int): 每次操作使用的基础 size，默认 ``1``。
+        tranches (int): 分批数量，默认 ``1``。大于 ``1`` 时返回
+            ``stake / tranches`` 的整数部分。
+
+    Returns:
+        int: ``_getsizing`` 返回固定 size 或分批后的 size。
+
+    ---
+    >>> sizer = FixedSize(stake=10)
+    >>> sizer._getsizing(None, 1000.0, None, True)
+    10
+    >>> sizer = FixedSize(stake=10, tranches=2)
+    >>> sizer._getsizing(None, 1000.0, None, True)
+    5
     '''
 
     params = (('stake', 1),
@@ -50,22 +59,34 @@ class FixedSize(bt.Sizer):
         if self.p.tranches > 1:
             self.p.stake = abs(int(self.p.stake / self.p.tranches))
         else:
-            self.p.stake = stake  # OLD METHOD FOR SAMPLE COMPATIBILITY
+            self.p.stake = stake  # 旧方法，为 sample 兼容保留
 
 
 SizerFix = FixedSize
 
 
 class FixedReverser(bt.Sizer):
-    '''This sizer returns the needes fixed size to reverse an open position or
-    the fixed size to open one
+    '''返回固定 size，并在反手时返回双倍 size 的 sizer。
 
-      - To open a position: return the param ``stake``
+    无持仓时返回 ``stake``，已有持仓时返回 ``2 * stake``，便于一次操作完成
+    平旧仓并开新仓。
 
-      - To reverse a position: return 2 * ``stake``
+    Args:
+        stake (int): 开仓使用的基础 size，默认 ``1``。
 
-    Params:
-      - ``stake`` (default: ``1``)
+    Returns:
+        int: 当前无持仓时为 ``stake``；已有持仓时为 ``2 * stake``。
+
+    ---
+    >>> class Position:
+    ...     size = 3
+    >>> class Strategy:
+    ...     def getposition(self, data):
+    ...         return Position()
+    >>> sizer = FixedReverser(stake=5)
+    >>> sizer.strategy = Strategy()
+    >>> sizer._getsizing(None, 1000.0, None, False)
+    10
     '''
     params = (('stake', 1),)
 
@@ -76,17 +97,29 @@ class FixedReverser(bt.Sizer):
 
 
 class FixedSizeTarget(bt.Sizer):
-    '''
-    This sizer simply returns a fixed target size, useful when coupled
-    with Target Orders and specifically ``cerebro.target_order_size()``.
-    Size can be controlled by number of tranches that a system
-    wishes to use to scale into trades by specifying the ``tranches``
-    parameter.
+    '''返回固定 target size 的 sizer。
 
+    该 sizer 适合配合 Target Orders 使用，尤其是
+    ``cerebro.target_order_size()``。也可以通过 ``tranches`` 参数分批靠近
+    目标 size。
 
-    Params:
-      - ``stake`` (default: ``1``)
-      - ``tranches`` (default: ``1``)
+    Args:
+        stake (int): 目标 size，默认 ``1``。
+        tranches (int): 分批数量，默认 ``1``。大于 ``1`` 时，每次最多增加
+            ``stake / tranches`` 的整数部分。
+
+    Returns:
+        int: 目标 size，或在分批模式下不超过 ``stake`` 的下一步 target size。
+
+    ---
+    >>> class Position:
+    ...     size = 4
+    >>> class Strategy:
+    ...     position = Position()
+    >>> sizer = FixedSizeTarget(stake=10, tranches=2)
+    >>> sizer.strategy = Strategy()
+    >>> sizer._getsizing(None, 1000.0, None, True)
+    9
     '''
 
     params = (('stake', 1),
@@ -105,4 +138,4 @@ class FixedSizeTarget(bt.Sizer):
             self.p.stake = min((self.strategy.position.size + size),
                                self.p.stake)
         else:
-            self.p.stake = stake  # OLD METHOD FOR SAMPLE COMPATIBILITY
+            self.p.stake = stake  # 旧方法，为 sample 兼容保留

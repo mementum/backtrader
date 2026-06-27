@@ -46,17 +46,17 @@ DATAFORMATS = dict(
 try:
     DATAFORMATS['vcdata'] = bt.feeds.VCData
 except AttributeError:
-    pass  # no comtypes available
+    pass  # comtypes 不可用
 
 try:
     DATAFORMATS['ibdata'] = bt.feeds.IBData,
 except AttributeError:
-    pass  # no ibpy available
+    pass  # ibpy 不可用
 
 try:
     DATAFORMATS['oandadata'] = bt.feeds.OandaData,
 except AttributeError:
-    pass  # no oandapy available
+    pass  # oandapy 不可用
 
 
 TIMEFRAMES = dict(
@@ -71,6 +71,11 @@ TIMEFRAMES = dict(
 
 
 def btrun(pargs=''):
+    '''执行 backtrader 命令行入口。
+
+    Args:
+        pargs: 可选命令行参数；默认空字符串时从 ``sys.argv`` 解析。
+    '''
     args = parse_args(pargs)
 
     if args.flush:
@@ -91,13 +96,13 @@ def btrun(pargs=''):
         elif args.replay is not None:
             tfcp = args.replay.split(':')
 
-        # compression may be skipped and it will default to 1
+        # compression 可省略，默认值为 1
         if len(tfcp) == 1 or tfcp[1] == '':
             tf, cp = tfcp[0], 1
         else:
             tf, cp = tfcp
 
-        cp = int(cp)  # convert any value to int
+        cp = int(cp)  # 将任意值转换为 int
         tf = TIMEFRAMES.get(tf, None)
 
     for data in getdatas(args):
@@ -108,13 +113,13 @@ def btrun(pargs=''):
         else:
             cerebro.adddata(data)
 
-    # get and add signals
+    # 获取并添加 signals
     signals = getobjects(args.signals, bt.Indicator, bt.signals, issignal=True)
     for sig, kwargs, sigtype in signals:
         stype = getattr(bt.signal, 'SIGNAL_' + sigtype.upper())
         cerebro.add_signal(stype, sig, **kwargs)
 
-    # get and add strategies
+    # 获取并添加 strategies
     strategies = getobjects(args.strategies, bt.Strategy, bt.strategies)
     for strat, kwargs in strategies:
         cerebro.addstrategy(strat, **kwargs)
@@ -141,7 +146,7 @@ def btrun(pargs=''):
     for hook, kwargs in ans:
         hook(cerebro, **kwargs)
     runsts = cerebro.run()
-    runst = runsts[0]  # single strategy and no optimization
+    runst = runsts[0]  # 单 strategy 且无 optimization
 
     if args.pranalyzer or args.ppranalyzer:
         if runst.analyzers:
@@ -160,7 +165,7 @@ def btrun(pargs=''):
     if args.plot:
         pkwargs = dict(style='bar')
         if args.plot is not True:
-            # evaluates to True but is not "True" - args were passed
+            # 表达式为 True 但不是 "True"，说明传入了 args
             ekwargs = eval('dict(' + args.plot + ')')
             pkwargs.update(ekwargs)
 
@@ -169,6 +174,12 @@ def btrun(pargs=''):
 
 
 def setbroker(args, cerebro):
+    '''根据 CLI 参数配置 broker。
+
+    Args:
+        args: ``parse_args`` 返回的参数对象。
+        cerebro: 需要配置 broker 的 ``Cerebro`` 实例。
+    '''
     broker = cerebro.getbroker()
 
     if args.cash is not None:
@@ -202,10 +213,12 @@ def setbroker(args, cerebro):
 
 
 def getdatas(args):
-    # Get the data feed class from the global dictionary
+    '''根据 CLI 参数创建 data feed 列表。'''
+
+    # 从全局 dictionary 获取 data feed class
     dfcls = DATAFORMATS[args.format]
 
-    # Prepare some args
+    # 准备参数
     dfkwargs = dict()
     if args.format == 'yahoo_unreversed':
         dfkwargs['reverse'] = True
@@ -243,6 +256,16 @@ def getdatas(args):
 
 
 def getmodclasses(mod, clstype, clsname=None):
+    '''从 module 中获取指定类型的 class。
+
+    Args:
+        mod: 要扫描的 module。
+        clstype: class 必须继承的基类。
+        clsname: 可选 class 名称；未传入时返回所有匹配 class。
+
+    Returns:
+        list: 匹配到的 class 列表。
+    '''
     clsmembers = inspect.getmembers(mod, inspect.isclass)
 
     clslist = list()
@@ -261,6 +284,15 @@ def getmodclasses(mod, clstype, clsname=None):
 
 
 def getmodfunctions(mod, funcname=None):
+    '''从 module 中获取 function/method。
+
+    Args:
+        mod: 要扫描的 module。
+        funcname: 可选函数名；未传入时返回所有 function/method。
+
+    Returns:
+        list: 匹配到的 function/method 列表。
+    '''
     members = inspect.getmembers(mod, inspect.isfunction) + \
         inspect.getmembers(mod, inspect.ismethod)
 
@@ -277,7 +309,17 @@ def getmodfunctions(mod, funcname=None):
 
 
 def loadmodule(modpath, modname=''):
-    # generate a random name for the module
+    '''按路径加载 Python module。
+
+    Args:
+        modpath: module 文件路径，可省略 ``.py`` 后缀。
+        modname: 可选 module 名称；未传入时自动生成随机名称。
+
+    Returns:
+        tuple: ``(module, error)``，加载成功时 error 为 ``None``。
+    '''
+
+    # 为 module 生成随机名称
 
     if not modpath.endswith('.py'):
         modpath += '.py'
@@ -297,6 +339,7 @@ def loadmodule(modpath, modname=''):
 
 
 def loadmodule2(modpath, modname):
+    '''使用 Python 2 兼容方式加载 module。'''
     import imp
 
     try:
@@ -308,6 +351,7 @@ def loadmodule2(modpath, modname):
 
 
 def loadmodule3(modpath, modname):
+    '''使用 Python 3 importlib loader 加载 module。'''
     import importlib.machinery
 
     try:
@@ -320,6 +364,18 @@ def loadmodule3(modpath, modname):
 
 
 def getobjects(iterable, clsbase, modbase, issignal=False):
+    '''从 CLI 声明中解析并加载 class 对象。
+
+    Args:
+        iterable: CLI 中传入的对象声明列表。
+        clsbase: 目标 class 必须继承的基类。
+        modbase: 未指定 module 时使用的默认 module。
+        issignal: 是否按 signal 语法解析声明。
+
+    Returns:
+        list: 普通对象返回 ``(class, kwargs)``；signal 返回
+        ``(class, kwargs, sigtype)``。
+    '''
     retobjects = list()
 
     for item in iterable or []:
@@ -340,7 +396,7 @@ def getobjects(iterable, clsbase, modbase, issignal=False):
             modpath, name = tokens
             kwtokens = name.split(':', 1)
             if len(kwtokens) == 1:
-                # no '(' found
+                # 未找到 '('
                 kwargs = dict()
             else:
                 name = kwtokens[0]
@@ -371,6 +427,15 @@ def getobjects(iterable, clsbase, modbase, issignal=False):
     return retobjects
 
 def getfunctions(iterable, modbase):
+    '''从 CLI 声明中解析并加载 function。
+
+    Args:
+        iterable: CLI 中传入的 function 声明列表。
+        modbase: 未指定 module 时使用的默认 module。
+
+    Returns:
+        list: ``(function, kwargs)`` 元组列表。
+    '''
     retfunctions = list()
 
     for item in iterable or []:
@@ -384,7 +449,7 @@ def getfunctions(iterable, modbase):
             modpath, name = tokens
             kwtokens = name.split(':', 1)
             if len(kwtokens) == 1:
-                # no '(' found
+                # 未找到 '('
                 kwargs = dict()
             else:
                 name = kwtokens[0]
@@ -413,13 +478,21 @@ def getfunctions(iterable, modbase):
 
 
 def parse_args(pargs=''):
+    '''解析命令行参数。
+
+    Args:
+        pargs: 可选参数列表；为空时使用默认命令行参数。
+
+    Returns:
+        argparse.Namespace: 解析后的参数对象。
+    '''
     parser = argparse.ArgumentParser(
         description='Backtrader Run Script',
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
     group = parser.add_argument_group(title='Data options')
-    # Data options
+    # Data options（命令行分组标题保持英文）
     group.add_argument('--data', '-d', action='append', required=True,
                        help='Data files to be added to the system')
 
@@ -510,7 +583,7 @@ def parse_args(pargs=''):
               'cerebro, beyond options provided by this script\n\n')
     )
 
-    # Module where to read the strategy from
+    # 读取 strategy 的 module
     group = parser.add_argument_group(title='Strategy options')
     group.add_argument(
         '--strategy', '-st', dest='strategies',
@@ -537,7 +610,7 @@ def parse_args(pargs=''):
               '  - module or module::kwargs')
     )
 
-    # Module where to read the strategy from
+    # 读取 signal 的 module
     group = parser.add_argument_group(title='Signals')
     group.add_argument(
         '--signal', '-sig', dest='signals',
@@ -571,7 +644,7 @@ def parse_args(pargs=''):
               '  - module or module:::kwargs')
     )
 
-    # Observers
+    # Observers（命令行分组标题保持英文）
     group = parser.add_argument_group(title='Observers and statistics')
     group.add_argument(
         '--observer', '-ob', dest='observers',
@@ -597,7 +670,7 @@ def parse_args(pargs=''):
               '\n'
               '  - module or module::kwargs')
     )
-    # Analyzers
+    # Analyzers（命令行分组标题保持英文）
     group = parser.add_argument_group(title='Analyzers')
     group.add_argument(
         '--analyzer', '-an', dest='analyzers',
@@ -624,7 +697,7 @@ def parse_args(pargs=''):
               '  - module or module::kwargs')
     )
 
-    # Analyzer - Print
+    # Analyzer - Print（命令行分组标题保持英文）
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--pranalyzer', '-pralyzer',
                        required=False, action='store_true',
@@ -634,7 +707,7 @@ def parse_args(pargs=''):
                        required=False, action='store_true',
                        help=('Automatically PRETTY print analyzers'))
 
-    # Indicators
+    # Indicators（命令行分组标题保持英文）
     group = parser.add_argument_group(title='Indicators')
     group.add_argument(
         '--indicator', '-ind', dest='indicators',
@@ -661,7 +734,7 @@ def parse_args(pargs=''):
               '  - module or module::kwargs')
     )
 
-    # Writer
+    # Writer（命令行分组标题保持英文）
     group = parser.add_argument_group(title='Writers')
     group.add_argument(
         '--writer', '-wr',
@@ -682,7 +755,7 @@ def parse_args(pargs=''):
               'Please see the documentation for the available kwargs')
     )
 
-    # Broker/Commissions
+    # Broker/Commissions（命令行分组标题保持英文）
     group = parser.add_argument_group(title='Cash and Commission Scheme Args')
     group.add_argument('--cash', '-cash', required=False, type=float,
                        help='Cash to set to the broker')
@@ -717,11 +790,11 @@ def parse_args(pargs=''):
     group.add_argument('--slip_out', required=False, action='store_true',
                        help='with slip_match enabled, match outside high-low')
 
-    # Output flushing
+    # Output flushing（命令行选项保持英文）
     group.add_argument('--flush', required=False, action='store_true',
                        help='flush the output - useful under win32 systems')
 
-    # Plot options
+    # Plot options（命令行分组标题保持英文）
     parser.add_argument(
         '--plot', '-p', nargs='?',
         metavar='kwargs',

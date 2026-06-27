@@ -27,56 +27,81 @@ from .metabase import MetaParams
 
 
 class Sizer(with_metaclass(MetaParams, object)):
-    '''This is the base class for *Sizers*. Any *sizer* should subclass this
-    and override the ``_getsizing`` method
+    '''*Sizers* 的基类。任何 *sizer* 都应继承该类并覆盖 ``_getsizing`` 方法。
 
-    Member Attribs:
+    成员属性:
 
-      - ``strategy``: will be set by the strategy in which the sizer is working
+      - ``strategy``: 由使用该 sizer 的 strategy 设置
 
-        Gives access to the entire api of the strategy, for example if the
-        actual data position would be needed in ``_getsizing``::
+        可访问 strategy 的完整 api。例如，如果 ``_getsizing`` 需要实际 data
+        position，可以使用::
 
            position = self.strategy.getposition(data)
 
-      - ``broker``: will be set by the strategy in which the sizer is working
+      - ``broker``: 由使用该 sizer 的 strategy 设置
 
-        Gives access to information some complex sizers may need like portfolio
-        value, ..
+        可访问复杂 sizer 可能需要的信息，例如 portfolio value 等。
+
+    ---
+    交互示例:
+
+    >>> class FixedSizer(Sizer):
+    ...     def _getsizing(self, comminfo, cash, data, isbuy):
+    ...         return 10
+    >>> class Broker:
+    ...     def getcommissioninfo(self, data):
+    ...         return None
+    ...     def getcash(self):
+    ...         return 1000.0
+    >>> sizer = FixedSizer()
+    >>> sizer.set(strategy='strategy', broker=Broker())
+    >>> sizer.getsizing(data='data0', isbuy=True)
+    10
     '''
     strategy = None
     broker = None
 
     def getsizing(self, data, isbuy):
+        '''返回给定 data 和买卖方向下的实际 size。
+
+        Args:
+            data: 操作目标 data。
+            isbuy (bool): ``True`` 表示 buy 操作，``False`` 表示 sell 操作。
+
+        Returns:
+            int: 由 ``_getsizing`` 计算得到的实际 size。
+        '''
         comminfo = self.broker.getcommissioninfo(data)
         return self._getsizing(comminfo, self.broker.getcash(), data, isbuy)
 
     def _getsizing(self, comminfo, cash, data, isbuy):
-        '''This method has to be overriden by subclasses of Sizer to provide
-        the sizing functionality
+        '''子类必须覆盖该方法，以提供 sizing 功能。
 
-        Params:
-          - ``comminfo``: The CommissionInfo instance that contains
-            information about the commission for the data and allows
-            calculation of position value, operation cost, commision for the
-            operation
+        Args:
+            comminfo: CommissionInfo 实例，包含该 data 的 commission 信息，并可
+                用于计算 position value、operation cost 和 operation commission。
 
-          - ``cash``: current available cash in the *broker*
+            cash (float): *broker* 当前可用 cash。
 
-          - ``data``: target of the operation
+            data: 操作目标。
 
-          - ``isbuy``: will be ``True`` for *buy* operations and ``False``
-            for *sell* operations
+            isbuy (bool): *buy* 操作为 ``True``，*sell* 操作为 ``False``。
 
-        The method has to return the actual size (an int) to be executed. If
-        ``0`` is returned nothing will be executed.
+        Returns:
+            int: 要执行的实际 size。如果返回 ``0``，则不会执行任何操作。
 
-        The absolute value of the returned value will be used
+        返回值会使用其绝对值。
 
         '''
         raise NotImplementedError
 
     def set(self, strategy, broker):
+        '''设置 sizer 所属的 strategy 和 broker。
+
+        Args:
+            strategy: 使用该 sizer 的 strategy。
+            broker: strategy 对应的 broker。
+        '''
         self.strategy = strategy
         self.broker = broker
 

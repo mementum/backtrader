@@ -40,7 +40,7 @@ class OptimizeStrategy(bt.Strategy):
               )
 
     def __init__(self):
-        # Add indicators to add load
+        # 添加 indicators 以增加负载
 
         btind.SMA(period=self.p.smaperiod)
         btind.MACD(period_me1=self.p.macdperiod1,
@@ -51,14 +51,14 @@ class OptimizeStrategy(bt.Strategy):
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(maxcpus=args.maxcpus,
                          runonce=not args.no_runonce,
                          exactbars=args.exactbars,
                          optdatas=not args.no_optdatas,
                          optreturn=not args.no_optreturn)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.optstrategy(
         OptimizeStrategy,
         smaperiod=range(args.ma_low, args.ma_high),
@@ -67,26 +67,26 @@ def runstrat():
         macdperiod3=range(args.m3_low, args.m3_high),
     )
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the Data Feed to Cerebro
+    # 添加 Data Feed 到 Cerebro
     cerebro.adddata(data)
 
-    # clock the start of the process
+    # 记录流程开始时间
     tstart = time.clock()
 
-    # Run over everything
+    # 运行全部流程
     stratruns = cerebro.run()
 
-    # clock the end of the process
+    # 记录流程结束时间
     tend = time.clock()
 
     print('==================================================')
@@ -97,7 +97,7 @@ def runstrat():
             print(strat.p._getkwargs())
     print('==================================================')
 
-    # print out the result
+    # 输出结果
     print('Time used:', str(tend - tstart))
 
 

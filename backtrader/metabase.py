@@ -40,21 +40,21 @@ def findbases(kls, topclass):
 
 
 def findowner(owned, cls, startlevel=2, skip=None):
-    # skip this frame and the caller's -> start at 2
+    # 跳过当前 frame 和调用者 frame，因此从 2 开始
     for framelevel in itertools.count(startlevel):
         try:
             frame = sys._getframe(framelevel)
         except ValueError:
-            # Frame depth exceeded ... no owner ... break away
+            # frame 深度超限，找不到 owner，退出
             break
 
-        # 'self' in regular code
+        # 常规代码中的 'self'
         self_ = frame.f_locals.get('self', None)
         if skip is not self_:
             if self_ is not owned and isinstance(self_, cls):
                 return self_
 
-        # '_obj' in metaclasses
+        # metaclasses 中的 '_obj'
         obj_ = frame.f_locals.get('_obj', None)
         if skip is not obj_:
             if obj_ is not owned and isinstance(obj_, cls):
@@ -97,7 +97,7 @@ class AutoInfoClass(object):
 
     @classmethod
     def _derive(cls, name, info, otherbases, recurse=False):
-        # collect the 3 set of infos
+        # 收集 3 组 infos
         # info = OrderedDict(info)
         baseinfo = cls._getpairs().copy()
         obasesinfo = OrderedDict()
@@ -107,26 +107,24 @@ class AutoInfoClass(object):
             else:
                 obasesinfo.update(obase._getpairs())
 
-        # update the info of this class (base) with that from the other bases
+        # 用其他 bases 的信息更新当前 class/base 的信息
         baseinfo.update(obasesinfo)
 
-        # The info of the new class is a copy of the full base info
-        # plus and update from parameter
+        # 新 class 的 info 是完整 base info 的副本，再叠加参数中的更新
         clsinfo = baseinfo.copy()
         clsinfo.update(info)
 
-        # The new items to update/set are those from the otherbase plus the new
+        # 需要 update/set 的新项来自 otherbase 与新增 info
         info2add = obasesinfo.copy()
         info2add.update(info)
 
         clsmodule = sys.modules[cls.__module__]
         newclsname = str(cls.__name__ + '_' + name)  # str - Python 2/3 compat
 
-        # This loop makes sure that if the name has already been defined, a new
-        # unique name is found. A collision example is in the plotlines names
-        # definitions of bt.indicators.MACD and bt.talib.MACD. Both end up
-        # definining a MACD_pl_macd and this makes it impossible for the pickle
-        # module to send results over a multiprocessing channel
+        # 该循环确保当 name 已经定义时，可以找到新的唯一名称。
+        # 一个冲突示例是 bt.indicators.MACD 和 bt.talib.MACD 的 plotlines 名称定义：
+        # 两者最终都会定义 MACD_pl_macd，导致 pickle 无法通过 multiprocessing channel
+        # 发送结果
         namecounter = 1
         while hasattr(clsmodule, newclsname):
             newclsname += str(namecounter)
@@ -202,30 +200,29 @@ class AutoInfoClass(object):
 
 class MetaParams(MetaBase):
     def __new__(meta, name, bases, dct):
-        # Remove params from class definition to avoid inheritance
-        # (and hence "repetition")
+        # 从 class 定义中移除 params，以避免继承导致的重复
         newparams = dct.pop('params', ())
 
         packs = 'packages'
-        newpackages = tuple(dct.pop(packs, ()))  # remove before creation
+        newpackages = tuple(dct.pop(packs, ()))  # 创建前移除
 
         fpacks = 'frompackages'
-        fnewpackages = tuple(dct.pop(fpacks, ()))  # remove before creation
+        fnewpackages = tuple(dct.pop(fpacks, ()))  # 创建前移除
 
-        # Create the new class - this pulls predefined "params"
+        # 创建新 class，这会拉取预定义的 "params"
         cls = super(MetaParams, meta).__new__(meta, name, bases, dct)
 
-        # Pulls the param class out of it - default is the empty class
+        # 取出 param class，默认为空 class
         params = getattr(cls, 'params', AutoInfoClass)
 
-        # Pulls the packages class out of it - default is the empty class
+        # 取出 packages class，默认为空 class
         packages = tuple(getattr(cls, packs, ()))
         fpackages = tuple(getattr(cls, fpacks, ()))
 
-        # get extra (to the right) base classes which have a param attribute
+        # 获取右侧额外 bases 中带 param 属性的 class
         morebasesparams = [x.params for x in bases[1:] if hasattr(x, 'params')]
 
-        # Get extra packages, add them to the packages and put all in the class
+        # 获取额外 packages，合并后写回 class
         for y in [x.packages for x in bases[1:] if hasattr(x, packs)]:
             packages += tuple(y)
 
@@ -235,14 +232,14 @@ class MetaParams(MetaBase):
         cls.packages = packages + newpackages
         cls.frompackages = fpackages + fnewpackages
 
-        # Subclass and store the newly derived params class
+        # 派生并保存新的 params class
         cls.params = params._derive(name, newparams, morebasesparams)
 
         return cls
 
     def donew(cls, *args, **kwargs):
         clsmod = sys.modules[cls.__module__]
-        # import specified packages
+        # import 指定 packages
         for p in cls.packages:
             if isinstance(p, (tuple, list)):
                 p, palias = p
@@ -252,57 +249,55 @@ class MetaParams(MetaBase):
             pmod = __import__(p)
 
             plevels = p.split('.')
-            if p == palias and len(plevels) > 1:  # 'os.path' not aliased
-                setattr(clsmod, pmod.__name__, pmod)  # set 'os' in module
+            if p == palias and len(plevels) > 1:  # 'os.path' 未使用 alias
+                setattr(clsmod, pmod.__name__, pmod)  # 在 module 中设置 'os'
 
-            else:  # aliased and/or dots
-                for plevel in plevels[1:]:  # recurse down the mod
+            else:  # 使用 alias 和/或 dotted path
+                for plevel in plevels[1:]:  # 沿 module 层级向下递归
                     pmod = getattr(pmod, plevel)
 
                 setattr(clsmod, palias, pmod)
 
-        # import from specified packages - the 2nd part is a string or iterable
+        # 从指定 packages import，第 2 部分可以是字符串或 iterable
         for p, frompackage in cls.frompackages:
             if isinstance(frompackage, string_types):
-                frompackage = (frompackage,)  # make it a tuple
+                frompackage = (frompackage,)  # 转成 tuple
 
             for fp in frompackage:
                 if isinstance(fp, (tuple, list)):
                     fp, falias = fp
                 else:
-                    fp, falias = fp, fp  # assumed is string
+                    fp, falias = fp, fp  # 假设为字符串
 
-                # complain "not string" without fp (unicode vs bytes)
+                # 使用 str(fp) 规避 unicode/bytes 场景下的非字符串报错
                 pmod = __import__(p, fromlist=[str(fp)])
                 pattr = getattr(pmod, fp)
                 setattr(clsmod, falias, pattr)
                 for basecls in cls.__bases__:
                     setattr(sys.modules[basecls.__module__], falias, pattr)
 
-        # Create params and set the values from the kwargs
+        # 创建 params，并从 kwargs 设置值
         params = cls.params()
         for pname, pdef in cls.params._getitems():
             setattr(params, pname, kwargs.pop(pname, pdef))
 
-        # Create the object and set the params in place
+        # 创建对象并设置 params
         _obj, args, kwargs = super(MetaParams, cls).donew(*args, **kwargs)
         _obj.params = params
         _obj.p = params  # shorter alias
 
-        # Parameter values have now been set before __init__
+        # parameter values 已在 __init__ 前设置完毕
         return _obj, args, kwargs
 
 
 class ParamsBase(with_metaclass(MetaParams, object)):
-    pass  # stub to allow easy subclassing without metaclasses
+    pass  # stub，用于在不直接处理 metaclasses 的情况下方便 subclassing
 
 
 class ItemCollection(object):
-    '''
-    Holds a collection of items that can be reached by
+    '''保存一组可通过索引或名称访问的 items。
 
-      - Index
-      - Name (if set in the append operation)
+    append 时如果设置了名称，之后即可通过名称访问。
     '''
     def __init__(self):
         self._items = list()

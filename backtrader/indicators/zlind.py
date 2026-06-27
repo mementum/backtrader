@@ -30,29 +30,39 @@ from . import MovingAverageBase, MovAv
 
 
 class ZeroLagIndicator(MovingAverageBase):
-    '''By John Ehlers and Ric Way
+    '''John Ehlers 与 Ric Way 提出的 ZeroLagIndicator。
 
-    The zero-lag indicator (ZLIndicator) is a variation of the EMA
-    which modifies the EMA by trying to minimize the error (distance price -
-    error correction) and thus reduce the lag
+    zero-lag indicator（ZLIndicator）是 EMA 的变体，通过最小化误差
+    （price 与 error correction 的距离）来修正 EMA，从而降低滞后。
+
+    Args:
+        period: EMA 计算周期。
+        gainlimit: 搜索 error correction factor 的增益上限。
+        _movav: 用于计算基础 EMA 的 Moving Average 类型。
+
+    Returns:
+        ZeroLagIndicator: 输出 ``ec`` line 的 Moving Average indicator。
 
     Formula:
       - EMA(data, period)
 
-      - For each iteration calculate a best-error-correction of the ema (see
-        the paper and/or the code) iterating over ``-bestgain`` ->
-        ``+bestgain`` for the error correction factor (both incl.)
+      - 每轮遍历 ``-bestgain`` -> ``+bestgain``（含两端），为 EMA 计算最佳
+        error correction。
 
-      - The default moving average is EMA, but can be changed with the
-        parameter ``_movav``
+      - 默认 Moving Average 为 EMA，可通过参数 ``_movav`` 修改。
 
-        .. note:: the passed moving average must calculate alpha (and 1 -
-                  alpha) and make them available as attributes ``alpha`` and
-                  ``alpha1`` in the instance
+        .. note:: 传入的 Moving Average 必须计算 alpha（以及 1 - alpha），并在
+                  实例上以 ``alpha`` 和 ``alpha1`` 属性暴露。
 
     See also:
       - http://www.mesasoftware.com/papers/ZeroLag.pdf
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ZeroLagIndicator, period=30)
     '''
     alias = ('ZLIndicator', 'ZLInd', 'EC', 'ErrorCorrecting',)
     lines = ('ec',)
@@ -70,12 +80,12 @@ class ZeroLagIndicator(MovingAverageBase):
         self.ema = MovAv.EMA(period=self.p.period)
         self.limits = [-self.p.gainlimit, self.p.gainlimit + 1]
 
-        # To make mixins work - super at the end for cooperative inheritance
+        # 为了让 mixin 生效，将 super 放在末尾以支持协作式继承
         super(ZeroLagIndicator, self).__init__()
 
     def next(self):
-        leasterror = MAXINT  # 1000000 in original code
-        bestec = ema = self.ema[0]  # seed value 1st time for ec
+        leasterror = MAXINT  # 原始代码中为 1000000
+        bestec = ema = self.ema[0]  # ec 首次计算时的种子值
         price = self.data[0]
         ec1 = self.lines.ec[-1]
         alpha, alpha1 = self.ema.alpha, self.ema.alpha1

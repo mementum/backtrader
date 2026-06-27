@@ -29,38 +29,39 @@ __all__ = ['Renko']
 
 
 class Renko(Filter):
-    '''Modify the data stream to draw Renko bars (or bricks)
+    '''修改 data stream，用于绘制 Renko bars（bricks）的 filter。
 
-    Params:
-
-      - ``hilo`` (default: *False*) Use high and low instead of close to decide
-        if a new brick is needed
-
-      - ``size`` (default: *None*) The size to consider for each brick
-
-      - ``autosize`` (default: *20.0*) If *size* is *None*, this will be used
-        to autocalculate the size of the bricks (simply dividing the current
-        price by the given value)
-
-      - ``dynamic`` (default: *False*) If *True* and using *autosize*, the size
-        of the bricks will be recalculated when moving to a new brick. This
-        will of course eliminate the perfect alignment of Renko bricks.
-
-      - ``align`` (default: *1.0*) Factor use to align the price boundaries of
-        the bricks. If the price is for example *3563.25* and *align* is
-        *10.0*, the resulting aligned price will be *3560*. The calculation:
+    Args:
+        hilo (bool): 是否使用 high/low 而不是 close 来判断是否需要新 brick，
+            默认 ``False``。
+        size: 每个 brick 使用的 size，默认 ``None``。
+        autosize (float): ``size`` 为 ``None`` 时用于自动计算 brick size 的值，
+            默认 ``20.0``。计算方式是用当前价格除以该值。
+        dynamic (bool): 在使用 ``autosize`` 时，是否在移动到新 brick 时重新
+            计算 brick size，默认 ``False``。启用后会破坏 Renko bricks 的
+            完美对齐。
+        align (float): 用于对齐 brick price 边界的 factor，默认 ``1.0``。
+            例如 price 为 ``3563.25``、align 为 ``10.0`` 时，对齐结果为
+            ``3560``:
 
           - 3563.25 / 10.0 = 356.325
-          - round it and remove the decimals -> 356
+          - round 并移除 decimals -> 356
           - 356 * 10.0 -> 3560
 
-      - ``roundstart`` (default: *True*)  If *True*, round the initial start
-        value to int. Else keep the original value, which should aid when
-        backtesting penny stocks
+        roundstart (bool): 是否将初始 start value round 为 int，默认
+            ``True``。设为 ``False`` 可在回测 penny stocks 时保留原始值。
+
+    Returns:
+        bool: 输出 Renko brick 时返回 ``False``；当前 bar 未形成新 brick 时
+        回退 data 并返回 ``True``，表示 stream 长度改变，需要获取新 bar。
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:chart_analysis:renko
 
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='daily.csv')
+    >>> data.addfilter(Renko, size=2.0, align=1.0)
     '''
 
     params = (
@@ -74,7 +75,7 @@ class Renko(Filter):
 
     def nextstart(self, data):
         o = data.open[0]
-        o = round(o / self.p.align, 0) * self.p.align  # aligned
+        o = round(o / self.p.align, 0) * self.p.align  # 已对齐
         self._size = self.p.size or float(o // self.p.autosize)
         if self.p.roundstart:
             o = int(o)
@@ -94,13 +95,13 @@ class Renko(Filter):
             hiprice = loprice = c
 
         if hiprice >= self._top:
-            # deliver a renko brick from top -> top + size
+            # 输出一个从 top -> top + size 的 renko brick
             self._bot = bot = self._top
 
             if self.p.size is None and self.p.dynamic:
                 self._size = float(c // self.p.autosize)
                 top = bot + self._size
-                top = round(top / self.p.align, 0) * self.p.align  # aligned
+                top = round(top / self.p.align, 0) * self.p.align  # 已对齐
             else:
                 top = bot + self._size
 
@@ -112,16 +113,16 @@ class Renko(Filter):
             data.close[0] = top
             data.volume[0] = 0.0
             data.openinterest[0] = 0.0
-            return False  # length of data stream is unaltered
+            return False  # data stream 长度不变
 
         elif loprice <= self._bot:
-            # deliver a renko brick from bot -> bot - size
+            # 输出一个从 bot -> bot - size 的 renko brick
             self._top = top = self._bot
 
             if self.p.size is None and self.p.dynamic:
                 self._size = float(c // self.p.autosize)
                 bot = top - self._size
-                bot = round(bot / self.p.align, 0) * self.p.align  # aligned
+                bot = round(bot / self.p.align, 0) * self.p.align  # 已对齐
             else:
                 bot = top - self._size
 
@@ -133,7 +134,7 @@ class Renko(Filter):
             data.close[0] = bot
             data.volume[0] = 0.0
             data.openinterest[0] = 0.0
-            return False  # length of data stream is unaltered
+            return False  # data stream 长度不变
 
         data.backwards()
-        return True  # length of stream was changed, get new bar
+        return True  # stream 长度已改变，获取新 bar

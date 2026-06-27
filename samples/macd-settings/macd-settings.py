@@ -32,14 +32,14 @@ BTVERSION = tuple(int(x) for x in bt.__version__.split('.'))
 
 
 class FixedPerc(bt.Sizer):
-    '''This sizer simply returns a fixed size for any operation
+    '''为每次操作返回固定现金比例对应的 size。
 
-    Params:
-      - ``perc`` (default: ``0.20``) Perc of cash to allocate for operation
+    Args:
+      - ``perc`` (default: ``0.20``): 每次操作分配的现金比例。
     '''
 
     params = (
-        ('perc', 0.20),  # perc of cash to use for operation
+        ('perc', 0.20),  # 每次操作使用的现金比例
     )
 
     def _getsizing(self, comminfo, cash, data, isbuy):
@@ -52,27 +52,21 @@ class FixedPerc(bt.Sizer):
 
 
 class TheStrategy(bt.Strategy):
-    '''
-    This strategy is loosely based on some of the examples from the Van
-    K. Tharp book: *Trade Your Way To Financial Freedom*. The logic:
+    '''该 strategy 大致参考 Van K. Tharp 的 *Trade Your Way To Financial Freedom*。
 
-      - Enter the market if:
-        - The MACD.macd line crosses the MACD.signal line to the upside
-        - The Simple Moving Average has a negative direction in the last x
-          periods (actual value below value x periods ago)
+    逻辑如下：
 
-     - Set a stop price x times the ATR value away from the close
+      - 当 MACD.macd line 向上穿过 MACD.signal line，且 Simple Moving Average
+        最近 x 个 periods 方向为负时进入市场。
 
-     - If in the market:
+      - 在距离 close 为 x 倍 ATR 的位置设置 stop price。
 
-       - Check if the current close has gone below the stop price. If yes,
-         exit.
-       - If not, update the stop price if the new stop price would be higher
-         than the current
+      - 持仓期间，如果当前 close 低于 stop price，则退出；否则仅当新的 stop price
+        高于当前值时更新。
     '''
 
     params = (
-        # Standard MACD Parameters
+        # 标准 MACD 参数
         ('macd1', 12),
         ('macd2', 26),
         ('macdsig', 9),
@@ -95,13 +89,13 @@ class TheStrategy(bt.Strategy):
                                        period_me2=self.p.macd2,
                                        period_signal=self.p.macdsig)
 
-        # Cross of macd.macd and macd.signal
+        # macd.macd 与 macd.signal 的交叉
         self.mcross = bt.indicators.CrossOver(self.macd.macd, self.macd.signal)
 
-        # To set the stop price
+        # 用于设置 stop price
         self.atr = bt.indicators.ATR(self.data, period=self.p.atrperiod)
 
-        # Control market trend
+        # 控制市场趋势
         self.sma = bt.indicators.SMA(self.data, period=self.p.smaperiod)
         self.smadir = self.sma - self.sma(-self.p.dirperiod)
 
@@ -126,7 +120,7 @@ class TheStrategy(bt.Strategy):
                 self.close()  # stop met - get out
             else:
                 pdist = self.atr[0] * self.p.atrdist
-                # Update only if greater than
+                # 仅在更大时更新
                 self.pstop = max(pstop, pclose - pdist)
 
 
@@ -156,7 +150,7 @@ def runstrat(args=None):
         todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dkwargs['todate'] = todate
 
-    # if dataset is None, args.data has been given
+    # 如果 dataset 为 None，说明已传入 args.data
     dataname = DATASETS.get(args.dataset, args.data)
     data0 = bt.feeds.YahooFinanceCSVData(dataname=dataname, **dkwargs)
     cerebro.adddata(data0)
@@ -171,20 +165,20 @@ def runstrat(args=None):
 
     cerebro.addsizer(FixedPerc, perc=args.cashalloc)
 
-    # Add TimeReturn Analyzers for self and the benchmark data
+    # 为自身和 benchmark data 添加 TimeReturn Analyzers
     cerebro.addanalyzer(bt.analyzers.TimeReturn, _name='alltime_roi',
                         timeframe=bt.TimeFrame.NoTimeFrame)
 
     cerebro.addanalyzer(bt.analyzers.TimeReturn, data=data0, _name='benchmark',
                         timeframe=bt.TimeFrame.NoTimeFrame)
 
-    # Add TimeReturn Analyzers fot the annuyl returns
+    # 为 annual returns 添加 TimeReturn Analyzers
     cerebro.addanalyzer(bt.analyzers.TimeReturn, timeframe=bt.TimeFrame.Years)
-    # Add a SharpeRatio
+    # 添加 SharpeRatio
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, timeframe=bt.TimeFrame.Years,
                         riskfreerate=args.riskfreerate)
 
-    # Add SQN to qualify the trades
+    # 添加 SQN 以评估 trades
     cerebro.addanalyzer(bt.analyzers.SQN)
     cerebro.addobserver(bt.observers.DrawDown)  # visualize the drawdown evol
 
@@ -270,7 +264,7 @@ def parse_args(pargs=None):
                         type=float, default=0.01,
                         help=('Risk free rate in Perc (abs) of the asset for '
                               'the Sharpe Ratio'))
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

@@ -26,17 +26,30 @@ from . import Indicator, And, If, MovAv, ATR
 
 class UpMove(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* as part of the Directional Move System to
-    calculate Directional Indicators.
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中作为 Directional Move System 的一部分定义，用于计算
+    Directional Indicator。
 
-    Positive if the given data has moved higher than the previous day
+    当给定 data 高于前一日时为正。
+
+    Args:
+        data: 用于比较的 line。
+
+    Returns:
+        UpMove: 输出 ``upmove`` line 的 indicator。
 
     Formula:
       - upmove = data - data(-1)
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(UpMove)
     '''
     lines = ('upmove',)
 
@@ -47,17 +60,30 @@ class UpMove(Indicator):
 
 class DownMove(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* as part of the Directional Move System to
-    calculate Directional Indicators.
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中作为 Directional Move System 的一部分定义，用于计算
+    Directional Indicator。
 
-    Positive if the given data has moved lower than the previous day
+    当给定 data 低于前一日时为正。
+
+    Args:
+        data: 用于比较的 line。
+
+    Returns:
+        DownMove: 输出 ``downmove`` line 的 indicator。
 
     Formula:
       - downmove = data(-1) - data
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DownMove)
     '''
     lines = ('downmove',)
 
@@ -68,13 +94,9 @@ class DownMove(Indicator):
 
 class _DirectionalIndicator(Indicator):
     '''
-    This class serves as the root base class for all "Directional Movement
-    System" related indicators, given that the calculations are first common
-    and then derived from the common calculations.
+    Directional Movement System 相关 indicator 的根基类，用于承载公共计算。
 
-    It can calculate the +DI and -DI values (using kwargs as the hint as to
-    what to calculate) but doesn't assign them to lines. This is left for
-    sublcases of this class.
+    它可根据参数提示计算 +DI 和 -DI，但不直接赋给 line；具体赋值由子类完成。
     '''
     params = (('period', 14), ('movav', MovAv.Smoothed))
 
@@ -110,18 +132,25 @@ class _DirectionalIndicator(Indicator):
 
 class DirectionalIndicator(_DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中定义的 Directional Indicator。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator shows +DI, -DI:
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use AverageDirectionalIndexRating (ADXR) to get ADX, ADXR
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 显示 +DI、-DI：
+      - 使用 PlusDirectionalIndicator (PlusDI) 获取 +DI
+      - 使用 MinusDirectionalIndicator (MinusDI) 获取 -DI
+      - 使用 AverageDirectionalIndex (ADX) 获取 ADX
+      - 使用 AverageDirectionalIndexRating (ADXR) 获取 ADX、ADXR
+      - 使用 DirectionalMovementIndex (DMI) 获取 ADX、+DI、-DI
+      - 使用 DirectionalMovement (DM) 获取 ADX、ADXR、+DI、-DI
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        DirectionalIndicator: 输出 ``plusDI`` 与 ``minusDI`` line 的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -131,11 +160,17 @@ class DirectionalIndicator(_DirectionalIndicator):
       - +di = 100 * MovingAverage(+dm, period) / atr(period)
       - -di = 100 * MovingAverage(-dm, period) / atr(period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DirectionalIndicator)
     '''
     alias = ('DI',)
     lines = ('plusDI', 'minusDI',)
@@ -149,18 +184,18 @@ class DirectionalIndicator(_DirectionalIndicator):
 
 class PlusDirectionalIndicator(_DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的 +DI indicator。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator shows +DI:
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use AverageDirectionalIndexRating (ADXR) to get ADX, ADXR
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 显示 +DI。
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        PlusDirectionalIndicator: 输出 ``plusDI`` line 的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -168,11 +203,17 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
       - +dm = upmove if upmove > downmove and upmove > 0 else 0
       - +di = 100 * MovingAverage(+dm, period) / atr(period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PlusDirectionalIndicator)
     '''
     alias = (('PlusDI', '+DI'),)
     lines = ('plusDI',)
@@ -187,18 +228,18 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
 
 class MinusDirectionalIndicator(_DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的 -DI indicator。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator shows -DI:
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use AverageDirectionalIndexRating (ADXR) to get ADX, ADXR
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 显示 -DI。
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        MinusDirectionalIndicator: 输出 ``minusDI`` line 的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -206,11 +247,17 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
       - -dm = downmove if downmove > upmove and downmove > 0 else 0
       - -di = 100 * MovingAverage(-dm, period) / atr(period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MinusDirectionalIndicator)
     '''
     alias = (('MinusDI', '-DI'),)
     lines = ('minusDI',)
@@ -225,18 +272,18 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
 
 class AverageDirectionalMovementIndex(_DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的 Average Directional Movement Index。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator only shows ADX:
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndexRating (ADXR) to get ADX, ADXR
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 只显示 ADX。
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        AverageDirectionalMovementIndex: 输出 ``adx`` line 的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -248,11 +295,17 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
       - dx = 100 * abs(+di - -di) / (+di + -di)
       - adx = MovingAverage(dx, period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AverageDirectionalMovementIndex)
     '''
     alias = ('ADX',)
 
@@ -269,20 +322,21 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
 
 class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的 ADXR。
 
-    Intended to measure trend strength.
+    用于衡量趋势强度。
 
-    ADXR is the average of ADX with a value period bars ago
+    ADXR 是当前 ADX 与 ``period`` 个 bar 之前 ADX 的平均值。
 
-    This indicator shows the ADX and ADXR:
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 显示 ADX 与 ADXR。
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        AverageDirectionalMovementIndexRating: 输出 ``adx`` 与 ``adxr`` line
+        的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -295,11 +349,17 @@ class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
       - adx = MovingAverage(dx, period)
       - adxr = (adx + adx(-period)) / 2
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AverageDirectionalMovementIndexRating)
     '''
     alias = ('ADXR',)
 
@@ -315,18 +375,19 @@ class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
 class DirectionalMovementIndex(AverageDirectionalMovementIndex,
                                DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的 Directional Movement Index。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator shows the ADX, +DI, -DI:
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use AverageDirectionalIndexRating (ADXRating) to get ADX, ADXR
-      - Use DirectionalMovement (DM) to get ADX, ADXR, +DI, -DI
+    该 indicator 显示 ADX、+DI 与 -DI。
+
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        DirectionalMovementIndex: 输出 ``adx``、``plusDI`` 与 ``minusDI`` line
+        的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -338,11 +399,17 @@ class DirectionalMovementIndex(AverageDirectionalMovementIndex,
       - dx = 100 * abs(+di - -di) / (+di + -di)
       - adx = MovingAverage(dx, period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DirectionalMovementIndex)
     '''
     alias = ('DMI',)
 
@@ -350,19 +417,19 @@ class DirectionalMovementIndex(AverageDirectionalMovementIndex,
 class DirectionalMovement(AverageDirectionalMovementIndexRating,
                           DirectionalIndicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    J. Welles Wilder, Jr. 于 1978 年定义的完整 Directional Movement indicator。
 
-    Intended to measure trend strength
+    用于衡量趋势强度。
 
-    This indicator shows ADX, ADXR, +DI, -DI.
+    该 indicator 显示 ADX、ADXR、+DI 与 -DI。
 
-      - Use PlusDirectionalIndicator (PlusDI) to get +DI
-      - Use MinusDirectionalIndicator (MinusDI) to get -DI
-      - Use Directional Indicator (DI) to get +DI, -DI
-      - Use AverageDirectionalIndex (ADX) to get ADX
-      - Use AverageDirectionalIndexRating (ADXR) to get ADX, ADXR
-      - Use DirectionalMovementIndex (DMI) to get ADX, +DI, -DI
+    Args:
+        period: 计算周期。
+        movav: 用于平滑的 Moving Average 类型。
+
+    Returns:
+        DirectionalMovement: 输出 ``adx``、``adxr``、``plusDI`` 与 ``minusDI``
+        line 的 indicator。
 
     Formula:
       - upmove = high - high(-1)
@@ -374,10 +441,16 @@ class DirectionalMovement(AverageDirectionalMovementIndexRating,
       - dx = 100 * abs(+di - -di) / (+di + -di)
       - adx = MovingAverage(dx, period)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DirectionalMovement)
     '''
     alias = ('DM',)

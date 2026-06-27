@@ -25,26 +25,21 @@ import backtrader as bt
 
 
 class GrossLeverage(bt.Analyzer):
-    '''This analyzer calculates the Gross Leverage of the current strategy
-    on a timeframe basis
+    '''按时间点计算当前 strategy 的 Gross Leverage。
 
-    Params:
+    Args:
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 leverage 基于总净资产 value 还是 fund
+            value。将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``fund`` (default: ``None``)
+    Returns:
+        dict: ``get_analysis`` 返回以 datetime 为 key、Gross Leverage 为
+        value 的字典。
 
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(GrossLeverage, _name='grossleverage')
     '''
 
     params = (
@@ -65,7 +60,7 @@ class GrossLeverage(bt.Analyzer):
             self._value = fundvalue
 
     def next(self):
-        # Updates the leverage for "dtkey" (see base class) for each cycle
-        # 0.0 if 100% in cash, 1.0 if no short selling and fully invested
+        # 每个 cycle 更新 leverage
+        # 100% cash 时为 0.0；无 short selling 且满仓时为 1.0
         lev = (self._value - self._cash) / self._value
         self.rets[self.data0.datetime.datetime()] = lev

@@ -30,13 +30,13 @@ import backtrader.feeds as btfeeds
 def runstrat():
     args = parse_args()
 
-    # Create a cerebro entity
+    # 创建 cerebro 实体
     cerebro = bt.Cerebro(stdstats=False)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.addstrategy(bt.Strategy)
 
-    # Load the Data
+    # 加载 Data
     datapath = args.dataname or '../../datas/ticksample.csv'
 
     data = btfeeds.GenericCSVData(
@@ -45,7 +45,7 @@ def runstrat():
         timeframe=bt.TimeFrame.Ticks,
     )
 
-    # Handy dictionary for the argument timeframe conversion
+    # 用于参数 timeframe 转换的便捷字典
     tframes = dict(
         ticks=bt.TimeFrame.Ticks,
         microseconds=bt.TimeFrame.MicroSeconds,
@@ -55,7 +55,7 @@ def runstrat():
         weekly=bt.TimeFrame.Weeks,
         monthly=bt.TimeFrame.Months)
 
-    # Resample the data
+    # resample data
     cerebro.resampledata(
         data,
         timeframe=tframes[args.timeframe],
@@ -65,13 +65,13 @@ def runstrat():
         rightedge=args.rightedge)
 
     if args.writer:
-        # add a writer
+        # 添加 writer
         cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
 
-    # Run over everything
+    # 运行全部流程
     cerebro.run()
 
-    # Plot the result
+    # 绘制结果
     cerebro.plot(style='bar')
 
 

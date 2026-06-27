@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-# From: http://stackoverflow.com/questions/4126348/how-do-i-rewrite-this-function-to-implement-ordereddict/4127426#4127426
+# 来源：http://stackoverflow.com/questions/4126348/how-do-i-rewrite-this-function-to-implement-ordereddict/4127426#4127426
 ###############################################################################
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -29,6 +29,23 @@ from .py3 import iteritems
 
 
 class OrderedDefaultdict(OrderedDict):
+    '''保持插入顺序的 ``defaultdict``。
+
+    Args:
+        *args: 第一个位置参数可为 default factory，其余参数传给 ``OrderedDict``。
+        **kwargs: 传给 ``OrderedDict`` 的初始键值。
+
+    Returns:
+        OrderedDefaultdict: 读取缺失 key 时可自动创建默认值的有序字典。
+
+    ---
+    交互示例：
+        >>> d = OrderedDefaultdict(list)
+        >>> d['orders'].append(1)
+        >>> d['orders']
+        [1]
+    '''
+
     def __init__(self, *args, **kwargs):
         if not args:
             self.default_factory = None
@@ -45,6 +62,6 @@ class OrderedDefaultdict(OrderedDict):
         self[key] = default = self.default_factory()
         return default
 
-    def __reduce__(self):  # optional, for pickle support
+    def __reduce__(self):  # 可选：支持 pickle
         args = (self.default_factory,) if self.default_factory else ()
         return self.__class__, args, None, None, iteritems(self)

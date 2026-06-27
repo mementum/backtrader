@@ -21,8 +21,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the Indicator objects
-# of prepend an "_" (underscore) to private classes/variables
+# 下方模块应定义 __all__ 来声明 Indicator 对象，或给私有 class/variable 加上
+# "_" 前缀
 
 from .broker import *
 from .buysell import *

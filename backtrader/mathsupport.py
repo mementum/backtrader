@@ -25,26 +25,37 @@ import math
 
 
 def average(x, bessel=False):
-    '''
-    Args:
-      x: iterable with len
+    '''计算序列的平均值。
 
-      oneless: (default ``False``) reduces the length of the array for the
-                division.
+    Args:
+      x: 支持 ``len`` 的 iterable。
+      bessel: 是否使用 ``N - 1`` 作为分母，常用于 Bessel 校正。
 
     Returns:
-      A float with the average of the elements of x
+      float: ``x`` 中元素的平均值。
+
+    ---
+    交互示例：
+      >>> average([1, 2, 3])
+      2.0
     '''
     return math.fsum(x) / (len(x) - bessel)
 
 
 def variance(x, avgx=None):
-    '''
+    '''计算序列每个元素相对平均值的平方偏差。
+
     Args:
-      x: iterable with len
+      x: 支持 ``len`` 的 iterable。
+      avgx: 已预先计算好的平均值；默认 ``None`` 时内部调用 ``average``。
 
     Returns:
-      A list with the variance for each element of x
+      list: ``x`` 中每个元素的平方偏差。
+
+    ---
+    交互示例：
+      >>> variance([1, 2, 3])
+      [1.0, 0.0, 1.0]
     '''
     if avgx is None:
         avgx = average(x)
@@ -52,14 +63,19 @@ def variance(x, avgx=None):
 
 
 def standarddev(x, avgx=None, bessel=False):
-    '''
-    Args:
-      x: iterable with len
+    '''计算序列的标准差。
 
-      bessel: (default ``False``) to be passed to the average to divide by
-      ``N - 1`` (Bessel's correction)
+    Args:
+      x: 支持 ``len`` 的 iterable。
+      avgx: 已预先计算好的平均值；默认 ``None`` 时内部计算。
+      bessel: 是否按 ``N - 1`` 作为分母应用 Bessel 校正。
 
     Returns:
-      A float with the standard deviation of the elements of x
+      float: ``x`` 中元素的标准差。
+
+    ---
+    交互示例：
+      >>> round(standarddev([1, 2, 3]), 6)
+      0.816497
     '''
     return math.sqrt(average(variance(x, avgx), bessel=bessel))

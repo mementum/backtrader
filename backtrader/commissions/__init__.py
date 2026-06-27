@@ -25,40 +25,47 @@ from ..comminfo import CommInfoBase
 
 
 class CommInfo(CommInfoBase):
-    pass  # clone of CommissionInfo but with xx% instead of 0.xx
+    '''CommissionInfo 的兼容变体，使用 ``xx%`` 表示百分比而不是 ``0.xx``。'''
+    pass
 
 
 class CommInfo_Futures(CommInfoBase):
+    '''futures-like commission scheme 的基类。'''
     params = (
         ('stocklike', False),
     )
 
 
 class CommInfo_Futures_Perc(CommInfo_Futures):
+    '''按百分比计算的 futures-like commission scheme。'''
     params = (
         ('commtype', CommInfoBase.COMM_PERC),
     )
 
 
 class CommInfo_Futures_Fixed(CommInfo_Futures):
+    '''按固定金额计算的 futures-like commission scheme。'''
     params = (
         ('commtype', CommInfoBase.COMM_FIXED),
     )
 
 
 class CommInfo_Stocks(CommInfoBase):
+    '''stock-like commission scheme 的基类。'''
     params = (
         ('stocklike', True),
     )
 
 
 class CommInfo_Stocks_Perc(CommInfo_Stocks):
+    '''按百分比计算的 stock-like commission scheme。'''
     params = (
         ('commtype', CommInfoBase.COMM_PERC),
     )
 
 
 class CommInfo_Stocks_Fixed(CommInfo_Stocks):
+    '''按固定金额计算的 stock-like commission scheme。'''
     params = (
         ('commtype', CommInfoBase.COMM_FIXED),
     )

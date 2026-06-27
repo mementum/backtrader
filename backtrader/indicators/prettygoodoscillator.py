@@ -27,18 +27,21 @@ from . import Indicator, MovAv, ATR
 
 class PrettyGoodOscillator(Indicator):
     '''
-    The "Pretty Good Oscillator" (PGO) by Mark Johnson measures the distance of
-    the current close from its simple moving average of period
-    Average), expressed in terms of an average true range (see Average True
-    Range) over a similar period.
+    Mark Johnson 提出的 "Pretty Good Oscillator" (PGO)，用于衡量当前 close
+    与同周期 Simple Moving Average 的距离，并用同类周期的 Average True Range
+    表达该距离。
 
-    So for instance a PGO value of +2.5 would mean the current close is 2.5
-    average days' range above the SMA.
+    例如 PGO 为 +2.5，表示当前 close 高于 SMA 的距离约为 2.5 个平均日内波幅。
 
-    Johnson's approach was to use it as a breakout system for longer term
-    trades. If the PGO rises above 3.0 then go long, or below -3.0 then go
-    short, and in both cases exit on returning to zero (which is a close back
-    at the SMA).
+    Johnson 的用法偏向较长期的突破系统：PGO 上穿 3.0 可做多，下穿 -3.0 可做空，
+    两种情况下都在回到 0（即 close 回到 SMA 附近）时退出。
+
+    Args:
+        period: 计算 Moving Average 与 ATR 的周期。
+        _movav: 用于计算中线的 Moving Average 类型。
+
+    Returns:
+        PrettyGoodOscillator: 输出 ``pgo`` line 的 indicator。
 
     Formula:
       - pgo = (data.close - sma(data, period)) / atr(data, period)
@@ -46,6 +49,12 @@ class PrettyGoodOscillator(Indicator):
     See also:
       - http://user42.tuxfamily.org/chart/manual/Pretty-Good-Oscillator.html
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PrettyGoodOscillator, period=14)
     '''
     alias = ('PGO', 'PrettyGoodOsc',)
     lines = ('pgo',)

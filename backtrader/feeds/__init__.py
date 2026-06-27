@@ -35,17 +35,17 @@ from .influxfeed import *
 try:
     from .ibdata import *
 except ImportError:
-    pass  # The user may not have ibpy installed
+    pass  # 用户可能没有安装 ibpy
 
 try:
     from .vcdata import *
 except ImportError:
-    pass  # The user may not have something installed
+    pass  # 用户可能没有安装相关可选依赖
 
 try:
     from .oanda import OandaData
 except ImportError:
-    pass  # The user may not have something installed
+    pass  # 用户可能没有安装相关可选依赖
 
 
 from .vchartfile import VChartFile

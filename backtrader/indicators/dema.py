@@ -27,17 +27,31 @@ from . import Indicator, MovingAverageBase, MovAv
 
 class DoubleExponentialMovingAverage(MovingAverageBase):
     '''
-    DEMA was first time introduced in 1994, in the article "Smoothing Data with
-    Faster Moving Averages" by Patrick G. Mulloy in "Technical Analysis of
-    Stocks & Commodities" magazine.
+    Patrick G. Mulloy 于 1994 年在 *Technical Analysis of Stocks & Commodities*
+    的文章 "Smoothing Data with Faster Moving Averages" 中首次介绍 DEMA。
 
-    It attempts to reduce the inherent lag associated to Moving Averages
+    它尝试降低 Moving Average 固有的滞后。
+
+    Args:
+        period: EMA 计算周期。
+        _movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        DoubleExponentialMovingAverage: 输出 ``dema`` line 的 Moving Average
+        indicator。
 
     Formula:
       - dema = (2.0 - ema(data, period) - ema(ema(data, period), period)
 
     See:
       (None)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DoubleExponentialMovingAverage, period=30)
     '''
     alias = ('DEMA', 'MovingAverageDoubleExponential',)
 
@@ -54,11 +68,18 @@ class DoubleExponentialMovingAverage(MovingAverageBase):
 
 class TripleExponentialMovingAverage(MovingAverageBase):
     '''
-    TEMA was first time introduced in 1994, in the article "Smoothing Data with
-    Faster Moving Averages" by Patrick G. Mulloy in "Technical Analysis of
-    Stocks & Commodities" magazine.
+    Patrick G. Mulloy 于 1994 年在 *Technical Analysis of Stocks & Commodities*
+    的文章 "Smoothing Data with Faster Moving Averages" 中首次介绍 TEMA。
 
-    It attempts to reduce the inherent lag associated to Moving Averages
+    它尝试进一步降低 Moving Average 固有的滞后。
+
+    Args:
+        period: EMA 计算周期。
+        _movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        TripleExponentialMovingAverage: 输出 ``tema`` line 的 Moving Average
+        indicator。
 
     Formula:
       - ema1 = ema(data, period)
@@ -68,6 +89,13 @@ class TripleExponentialMovingAverage(MovingAverageBase):
 
     See:
       (None)
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(TripleExponentialMovingAverage, period=30)
     '''
     alias = ('TEMA', 'MovingAverageTripleExponential',)
 

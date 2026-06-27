@@ -38,33 +38,28 @@ __all__ = ['QuandlCSV', 'Quandl']
 
 class QuandlCSV(feed.CSVDataBase):
     '''
-    Parses pre-downloaded Quandl CSV Data Feeds (or locally generated if they
-    comply to the Quandl format)
+    解析已经下载好的 Quandl CSV data feed；本地生成但符合 Quandl 格式的 CSV
+    也可以使用。
 
-    Specific parameters:
+    Args:
+        dataname: 要解析的文件名，或已经打开的类文件对象。
+        reverse: 是否反转本地文件顺序，默认 ``False``。通常认为本地保存的文件在下载
+            阶段已经处理过顺序。
+        adjclose: 是否使用经过分红/拆股调整的 close，并据此调整全部价格字段。
+        round: 是否在调整 close 后按指定小数位四舍五入。
+        decimals: ``round`` 启用时保留的小数位数。
 
-      - ``dataname``: The filename to parse or a file-like object
+    Returns:
+        QuandlCSV: 可加入 Cerebro 的 Quandl CSV 数据源实例。
 
-      - ``reverse`` (default: ``False``)
+    ---
+    交互界面使用示范:
 
-        It is assumed that locally stored files have already been reversed
-        during the download process
-
-      - ``adjclose`` (default: ``True``)
-
-        Whether to use the dividend/split adjusted close and adjust all
-        values according to it.
-
-      - ``round`` (default: ``False``)
-
-        Whether to round the values to a specific number of decimals after
-        having adjusted the close
-
-      - ``decimals`` (default: ``2``)
-
-        Number of decimals to round to
+    >>> data = QuandlCSV(dataname='WIKI-AAPL.csv', reverse=True)
+    >>> data.p.reverse
+    True
     '''
-    _online = False  # flag to avoid double reversal
+    _online = False  # 避免重复反转的标记
 
     params = (
         ('reverse', False),
@@ -79,9 +74,9 @@ class QuandlCSV(feed.CSVDataBase):
         if not self.params.reverse:
             return
         elif self._online:
-            return  # revers is True but also online, managed with order=asc
+            return  # reverse 为 True 且在线下载时，已通过 order=asc 处理
 
-        # Quandl data can be in reverse order -> reverse
+        # Quandl 数据可能倒序排列，需要反转
         dq = collections.deque()
         for line in self.f:
             dq.appendleft(line)
@@ -95,14 +90,14 @@ class QuandlCSV(feed.CSVDataBase):
     def _loadline(self, linetokens):
         i = itertools.count(0)
 
-        dttxt = linetokens[next(i)]  # YYYY-MM-DD
+        dttxt = linetokens[next(i)]  # YYYY-MM-DD 格式
         dt = date(int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10]))
         dtnum = date2num(datetime.combine(dt, self.p.sessionend))
 
         self.lines.datetime[0] = dtnum
         if self.p.adjclose:
             for _ in range(7):
-                next(i)  # skip ohlcv, ex-dividend, split ratio
+                next(i)  # 跳过 ohlcv、除息、拆股比例
 
         o = float(linetokens[next(i)])
         h = float(linetokens[next(i)])
@@ -130,52 +125,32 @@ class QuandlCSV(feed.CSVDataBase):
 
 class Quandl(QuandlCSV):
     '''
-    Executes a direct download of data from Quandl servers for the given time
-    range.
+    按指定时间范围直接从 Quandl 服务器下载数据。
 
-    Specific parameters (or specific meaning):
+    Args:
+        dataname: 要下载的 ticker，例如 ``'YHOO'``。
+        baseurl: 服务端 URL。未来也可以指向兼容 Quandl 格式的服务。
+        proxies: 下载时使用的代理字典，例如
+            ``{'http': 'http://127.0.0.1:8080'}``。
+        buffered: 是否先把整个 socket 返回内容缓冲到本地，再开始解析。
+        reverse: Quandl 默认返回倒序数据。为 ``True`` 时，请求会要求 Quandl 返回
+            升序数据，也就是从旧到新。
+        adjclose: 是否使用经过分红/拆股调整的 close，并据此调整全部价格字段。
+        apikey: 需要时传入 Quandl API key。
+        dataset: 要查询的数据集名称，默认 ``WIKI``。
 
-      - ``dataname``
+    Returns:
+        Quandl: 可加入 Cerebro 的 Quandl 在线数据源实例。
 
-        The ticker to download ('YHOO' for example)
+    ---
+    交互界面使用示范:
 
-      - ``baseurl``
-
-        The server url. Someone might decide to open a Quandl compatible
-        service in the future.
-
-      - ``proxies``
-
-        A dict indicating which proxy to go through for the download as in
-        {'http': 'http://myproxy.com'} or {'http': 'http://127.0.0.1:8080'}
-
-      - ``buffered``
-
-        If True the entire socket connection wil be buffered locally before
-        parsing starts.
-
-      - ``reverse``
-
-        Quandl returns the value in descending order (newest first). If this is
-        ``True`` (the default), the request will tell Quandl to return in
-        ascending (oldest to newest) format
-
-      - ``adjclose``
-
-        Whether to use the dividend/split adjusted close and adjust all values
-        according to it.
-
-      - ``apikey``
-
-        apikey identification in case it may be needed
-
-      - ``dataset``
-
-        string identifying the dataset to query. Defaults to ``WIKI``
-
+    >>> data = Quandl(dataname='YHOO', dataset='WIKI')
+    >>> data.p.dataset
+    'WIKI'
       '''
 
-    _online = True  # flag to avoid double reversal
+    _online = True  # 避免重复反转的标记
 
     params = (
         ('baseurl', 'https://www.quandl.com/api/v3/datasets'),
@@ -219,15 +194,15 @@ class Quandl(QuandlCSV):
             datafile = urlopen(url)
         except IOError as e:
             self.error = str(e)
-            # leave us empty
+            # 保持空数据源
             return
 
         if datafile.headers['Content-Type'] != 'text/csv':
             self.error = 'Wrong content type: %s' % datafile.headers
-            return  # HTML returned? wrong url?
+            return  # 返回了 HTML，通常表示 URL 不正确
 
         if self.params.buffered:
-            # buffer everything from the socket into a local buffer
+            # 把 socket 返回内容全部缓冲到本地
             f = io.StringIO(datafile.read().decode('utf-8'), newline=None)
             datafile.close()
         else:
@@ -235,5 +210,5 @@ class Quandl(QuandlCSV):
 
         self.f = f
 
-        # Prepared a "path" file -  CSV Parser can take over
+        # 已准备好类文件对象，交给 CSV parser 接管
         super(Quandl, self).start()

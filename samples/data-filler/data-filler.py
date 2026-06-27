@@ -25,7 +25,7 @@ import argparse
 import datetime
 import math
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 import backtrader.utils.flushfile
@@ -37,19 +37,19 @@ from relativevolume import RelativeVolume
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Get the session times to pass them to the indicator
-    # datetime.time has no strptime ...
+    # 获取 session 时间并传给 indicator
+    # datetime.time 没有 strptime
     dtstart = datetime.datetime.strptime(args.tstart, '%H:%M')
     dtend = datetime.datetime.strptime(args.tend, '%H:%M')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
@@ -66,28 +66,28 @@ def runstrategy():
     if args.filler:
         data.addfilter(btfilters.SessionFiller, fill_vol=args.fvol)
 
-    # Add the data to cerebro
+    # 添加 data 到 cerebro
     cerebro.adddata(data)
 
     if args.relvol:
-        # Calculate backward period - tend tstart are in same day
-        # + 1 to include last moment of the interval dstart <-> dtend
+        # 计算向后 period；tend 和 tstart 位于同一天
+        # +1 用于包含 dstart <-> dtend 区间最后一刻
         td = ((dtend - dtstart).seconds // 60) + 1
         cerebro.addindicator(RelativeVolume,
                              period=td,
                              volisnan=math.isnan(args.fvol))
 
-    # Add an empty strategy
+    # 添加空 strategy
     cerebro.addstrategy(bt.Strategy)
 
-    # Add a writer with CSV
+    # 添加带 CSV 的 writer
     if args.writer:
         cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
 
-    # And run it - no trading - disable stdstats
+    # 然后运行 - no trading - disable stdstats
     cerebro.run(stdstats=False)
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=True)
 

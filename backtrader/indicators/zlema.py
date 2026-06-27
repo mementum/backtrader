@@ -27,9 +27,16 @@ from . import Indicator, MovingAverageBase, MovAv
 
 class ZeroLagExponentialMovingAverage(MovingAverageBase):
     '''
-    The zero-lag exponential moving average (ZLEMA) is a variation of the EMA
-    which adds a momentum term aiming to reduce lag in the average so as to
-    track current prices more closely.
+    Zero-lag Exponential Moving Average（ZLEMA）是 EMA 的变体。
+
+    它加入 momentum 项来降低平均值滞后，使其更贴近当前价格。
+
+    Args:
+        period: 平滑周期。
+        _movav: 用于内部计算的 Moving Average 类型。
+
+    Returns:
+        ZeroLagExponentialMovingAverage: 输出 ``zlema`` line 的 indicator。
 
     Formula:
       - lag = (period - 1) / 2
@@ -38,6 +45,12 @@ class ZeroLagExponentialMovingAverage(MovingAverageBase):
     See also:
       - http://user42.tuxfamily.org/chart/manual/Zero_002dLag-Exponential-Moving-Average.html
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ZeroLagExponentialMovingAverage, period=20)
     '''
     alias = ('ZLEMA', 'ZeroLagEma',)
     lines = ('zlema',)

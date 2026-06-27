@@ -28,64 +28,41 @@ from backtrader import TimeFrameAnalyzerBase
 
 
 class Returns(TimeFrameAnalyzerBase):
-    '''Total, Average, Compound and Annualized Returns calculated using a
-    logarithmic approach
+    '''使用 logarithmic 方法计算总收益、平均收益、复合收益和年化收益。
 
-    See:
+    参考:
 
       - https://www.crystalbull.com/sharpe-ratio-better-with-log-returns/
 
-    Params:
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``None``。如果为 ``None``，
+            使用系统中第 1 个 data 的 timeframe。传入
+            ``TimeFrame.NoTimeFrame`` 可在不受时间约束的情况下考虑整个
+            dataset。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。例如指定 ``TimeFrame.Minutes`` 并将 compression 设为
+            60，即可按小时 timeframe 工作。如果为 ``None``，使用系统中第 1
+            个 data 的 compression。
+        tann: 年化（normalization）使用的 period 数量，默认 ``None``。如果
+            未指定，会按 timeframe 使用默认值: days=252、weeks=52、
+            months=12、years=1。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 基于总净资产 value 还是 fund value。
+            将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``timeframe`` (default: ``None``)
+    Returns:
+        dict: ``get_analysis`` 返回包含以下 key 的字典:
 
-        If ``None`` the ``timeframe`` of the 1st data in the system will be
-        used
+      - ``rtot``: 总复合 return
+      - ``ravg``: 整个 period 的平均 return（与 timeframe 相关）
+      - ``rnorm``: 年化/标准化 return
+      - ``rnorm100``: 以 100% 表示的年化/标准化 return
 
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
-
-      - ``compression`` (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
-      - ``tann`` (default: ``None``)
-
-        Number of periods to use for the annualization (normalization) of the
-
-        namely:
-
-          - ``days: 252``
-          - ``weeks: 52``
-          - ``months: 12``
-          - ``years: 1``
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
-
-        The returned dict the following keys:
-
-          - ``rtot``: Total compound return
-          - ``ravg``: Average return for the entire period (timeframe specific)
-          - ``rnorm``: Annualized/Normalized return
-          - ``rnorm100``: Annualized/Normalized return expressed in 100%
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(Returns, timeframe=bt.TimeFrame.Years,
+    ...                     _name='returns')
 
     '''
 
@@ -123,7 +100,7 @@ class Returns(TimeFrameAnalyzerBase):
         else:
             self._value_end = self.strategy.broker.fundvalue
 
-        # Compound return
+        # 复合 return
         try:
             nlrtot = self._value_end / self._value_start
         except ZeroDivisionError:
@@ -136,20 +113,20 @@ class Returns(TimeFrameAnalyzerBase):
 
         self.rets['rtot'] = rtot
 
-        # Average return
+        # 平均 return
         self.rets['ravg'] = ravg = rtot / self._tcount
 
-        # Annualized normalized return
+        # 年化标准化 return
         tann = self.p.tann or self._TANN.get(self.timeframe, None)
         if tann is None:
-            tann = self._TANN.get(self.data._timeframe, 1.0)  # assign default
+            tann = self._TANN.get(self.data._timeframe, 1.0)  # 指派默认值
 
         if ravg > float('-inf'):
             self.rets['rnorm'] = rnorm = math.expm1(ravg * tann)
         else:
             self.rets['rnorm'] = rnorm = ravg
 
-        self.rets['rnorm100'] = rnorm * 100.0  # human readable %
+        self.rets['rnorm100'] = rnorm * 100.0  # 更便于阅读的百分比
 
     def _on_dt_over(self):
-        self._tcount += 1  # count the subperiod
+        self._tcount += 1  # 统计 subperiod

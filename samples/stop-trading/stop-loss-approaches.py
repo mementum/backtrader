@@ -34,10 +34,10 @@ class BaseStrategy(bt.Strategy):
     )
 
     def __init__(self):
-        # omitting a data implies self.datas[0] (aka self.data and self.data0)
+        # 省略 data 表示使用 self.datas[0]（即 self.data 和 self.data0）
         fast_ma = bt.ind.EMA(period=self.p.fast_ma)
         slow_ma = bt.ind.EMA(period=self.p.slow_ma)
-        # our entry point
+        # 入场点
         self.crossup = bt.ind.CrossUp(fast_ma, slow_ma)
 
 
@@ -55,7 +55,7 @@ class ManualStopOrStopTrail(BaseStrategy):
             print('SELL@price: {:.2f}'.format(order.executed.price))
             return
 
-        # We have entered the market
+        # 已进入市场
         print('BUY @price: {:.2f}'.format(order.executed.price))
 
         if not self.p.trail:
@@ -66,7 +66,7 @@ class ManualStopOrStopTrail(BaseStrategy):
 
     def next(self):
         if not self.position and self.crossup > 0:
-            # not in the market and signal triggered
+            # 不在市场中且信号已触发
             self.buy()
 
 
@@ -88,12 +88,12 @@ class ManualStopOrStopTrailCheat(BaseStrategy):
             print('SELL@price: {:.2f}'.format(order.executed.price))
             return
 
-        # We have entered the market
+        # 已进入市场
         print('BUY @price: {:.2f}'.format(order.executed.price))
 
     def next(self):
         if not self.position and self.crossup > 0:
-            # not in the market and signal triggered
+            # 不在市场中且信号已触发
             self.buy()
 
             if not self.p.trail:
@@ -126,7 +126,7 @@ class AutoStopOrStopTrail(BaseStrategy):
             print('SELL@price: {:.2f}'.format(order.executed.price))
             return
 
-        # We have entered the market
+        # 已进入市场
         print('BUY @price: {:.2f}'.format(order.executed.price))
 
     def next(self):
@@ -134,17 +134,17 @@ class AutoStopOrStopTrail(BaseStrategy):
             if self.buy_order:  # something was pending
                 self.cancel(self.buy_order)
 
-            # not in the market and signal triggered
+            # 不在市场中且信号已触发
             if not self.p.buy_limit:
                 self.buy_order = self.buy(transmit=False)
             else:
                 price = self.data.close[0] * (1.0 - self.p.buy_limit)
 
-                # transmit = False ... await child order before transmission
+                # transmit = False：等待子 order 后再提交
                 self.buy_order = self.buy(price=price, exectype=bt.Order.Limit,
                                           transmit=False)
 
-            # Setting parent=buy_order ... sends both together
+            # 设置 parent=buy_order 会将两者一起发送
             if not self.p.trail:
                 stop_price = self.data.close[0] * (1.0 - self.p.stop_loss)
                 self.sell(exectype=bt.Order.Stop, price=stop_price,
@@ -170,7 +170,7 @@ def runstrat(args=None):
     # Data feed kwargs
     kwargs = dict()
 
-    # Parse from/to-date
+    # 解析 from/to-date
     dtfmt, tmfmt = '%Y-%m-%d', 'T%H:%M:%S'
     for a, d in ((getattr(args, x), x) for x in ['fromdate', 'todate']):
         if a:
@@ -190,10 +190,10 @@ def runstrat(args=None):
     StClass = APPROACHES[args.approach]
     cerebro.addstrategy(StClass, **eval('dict(' + args.strat + ')'))
 
-    # Execute
+    # 执行
     cerebro.run(**eval('dict(' + args.cerebro + ')'))
 
-    if args.plot:  # Plot if requested to
+    if args.plot:  # 按需绘图 to
         cerebro.plot(**eval('dict(' + args.plot + ')'))
 
 
@@ -208,11 +208,11 @@ def parse_args(pargs=None):
     parser.add_argument('--data0', default='../../datas/2005-2006-day-001.txt',
                         required=False, help='Data to read in')
 
-    # Strategy to choose
+    # 要选择的 strategy
     parser.add_argument('approach', choices=APPROACHES.keys(),
                         help='Stop approach to use')
 
-    # Defaults for dates
+    # 日期默认值
     parser.add_argument('--fromdate', required=False, default='',
                         help='Date[time] in YYYY-MM-DD[THH:MM:SS] format')
 

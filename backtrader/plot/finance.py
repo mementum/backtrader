@@ -50,12 +50,12 @@ class CandlestickPlotHandler(object):
                  filldown=True,
                  **kwargs):
 
-        # Manager up/down bar colors
+        # 管理 up/down bar 颜色
         r, g, b = mcolors.colorConverter.to_rgb(colorup)
         self.colorup = r, g, b, alpha
         r, g, b = mcolors.colorConverter.to_rgb(colordown)
         self.colordown = r, g, b, alpha
-        # Manage the edge up/down colors for the bars
+        # 管理 bar 的 up/down edge 颜色
         if edgeup:
             r, g, b = mcolors.colorConverter.to_rgb(edgeup)
             self.edgeup = ((r, g, b, alpha),)
@@ -68,7 +68,7 @@ class CandlestickPlotHandler(object):
         else:
             self.edgedown = shade_color(self.colordown, edgeshading)
 
-            # Manage the up/down tick colors
+            # 管理 up/down tick 颜色
         if tickup:
             r, g, b = mcolors.colorConverter.to_rgb(tickup)
             self.tickup = ((r, g, b, alpha),)
@@ -88,15 +88,15 @@ class CandlestickPlotHandler(object):
             fillup=fillup, filldown=filldown,
             **kwargs)
 
-        # add collections to the axis and return them
+        # 将 collections 添加到 axis
         ax.add_collection(self.tickcol)
         ax.add_collection(self.barcol)
 
-        # Update the axis
+        # 更新 axis
         ax.update_datalim(((0, min(lows)), (len(opens), max(highs))))
         ax.autoscale_view()
 
-        # Add self as legend handler for this object
+        # 将自身注册为该对象的 legend handler
         mlegend.Legend.update_default_handler_map({self.barcol: self})
 
     def legend_artist(self, legend, orig_handle, fontsize, handlebox):
@@ -105,7 +105,7 @@ class CandlestickPlotHandler(object):
         width = handlebox.width / len(self.legend_opens)
         height = handlebox.height
 
-        # Generate the x axis coordinates (handlebox based)
+        # 生成 x 轴坐标（基于 handlebox）
         xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_opens))]
 
         barcol, tickcol = self.barcollection(
@@ -131,7 +131,7 @@ class CandlestickPlotHandler(object):
                       fillup=True, filldown=True,
                       **kwargs):
 
-        # Prepack different zips of the series values
+        # 预打包 series value 的不同 zip 组合
         oc = lambda: zip(opens, closes)  # NOQA: E731
         xoc = lambda: zip(xs, opens, closes)  # NOQA: E731
         iohlc = lambda: zip(xs, opens, highs, lows, closes)  # NOQA: E731
@@ -150,7 +150,7 @@ class CandlestickPlotHandler(object):
         delta = width / 2 - edgeadjust
 
         def barbox(i, open, close):
-            # delta seen as closure
+            # delta 作为 closure 使用
             left, right = i - delta, i + delta
             open = open * scaling + bot
             close = close * scaling + bot
@@ -176,12 +176,12 @@ class CandlestickPlotHandler(object):
 
         tickrangesdown = [tdown(i, o, l, c) for i, o, h, l, c in iohlc()]
 
-        # Extra variables for the collections
-        useaa = 0,  # use tuple here
-        lw = 0.5,   # and here
+        # collections 使用的附加变量
+        useaa = 0,  # 此处使用 tuple
+        lw = 0.5,   # 此处同样使用 tuple
         tlw = tickwidth,
 
-        # Bar collection for the candles
+        # candle 使用的 bar collection
         barcol = mcol.PolyCollection(
             barareas,
             facecolors=colors,
@@ -191,12 +191,11 @@ class CandlestickPlotHandler(object):
             label=label,
             **kwargs)
 
-        # LineCollections have a higher zorder than PolyCollections
-        # to ensure the edges of the bars are not overwriten by the Lines
-        # we need to put the bars slightly over the LineCollections
+        # LineCollections 的 zorder 高于 PolyCollections。
+        # 为避免 bar edge 被 Lines 覆盖，需要让 bars 略高于 LineCollections。
         kwargs['zorder'] = barcol.get_zorder() * 0.9999
 
-        # Up/down ticks from the body
+        # body 上下两侧的 ticks
         tickcol = mcol.LineCollection(
             tickrangesup + tickrangesdown,
             colors=tickcolors,
@@ -204,7 +203,7 @@ class CandlestickPlotHandler(object):
             antialiaseds=useaa,
             **kwargs)
 
-        # return barcol, tickcol
+        # 返回 barcol, tickcol
         return barcol, tickcol
 
 
@@ -234,8 +233,7 @@ def plot_candlestick(ax,
         filldown,
         **kwargs)
 
-    # Return the collections. the barcol goes first because
-    # is the larger,  has the dominant zorder and defines the legend
+    # 返回 collections。barcol 放在前面，因为它更大、有主要 zorder，并定义 legend。
     return chandler.barcol, chandler.tickcol
 
 
@@ -252,13 +250,13 @@ class VolumePlotHandler(object):
                  width=1, alpha=1.0,
                  **kwargs):
 
-        # Manage the up/down colors
+        # 管理 up/down 颜色
         r, g, b = mcolors.colorConverter.to_rgb(colorup)
         self.colorup = r, g, b, alpha
         r, g, b = mcolors.colorConverter.to_rgb(colordown)
         self.colordown = r, g, b, alpha
 
-        # Prepare the edge colors
+        # 准备 edge 颜色
         if not edgeup:
             self.edgeup = shade_color(self.colorup, edgeshading)
         else:
@@ -280,10 +278,10 @@ class VolumePlotHandler(object):
             width=width, edgeadjust=edgeadjust,
             **kwargs)
 
-        # add to axes
+        # 添加到 axes
         ax.add_collection(self.barcol)
 
-        # Add a legend handler for this object
+        # 为该对象添加 legend handler
         mlegend.Legend.update_default_handler_map({self.barcol: self})
 
     def legend_artist(self, legend, orig_handle, fontsize, handlebox):
@@ -292,7 +290,7 @@ class VolumePlotHandler(object):
         width = handlebox.width / len(self.legend_vols)
         height = handlebox.height
 
-        # Generate the x axis coordinates (handlebox based)
+        # 生成 x 轴坐标（基于 handlebox）
         xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_vols))]
 
         barcol = self.barcollection(
@@ -310,19 +308,19 @@ class VolumePlotHandler(object):
                       vscaling=1.0, vbot=0,
                       **kwargs):
 
-        # Prepare the data
+        # 准备数据
         openclose = lambda: zip(opens, closes)  # NOQA: E731
 
-        # Calculate bars colors
+        # 计算 bar 颜色
         colord = {True: self.colorup, False: self.colordown}
         colors = [colord[open < close] for open, close in openclose()]
         edgecolord = {True: self.edgeup, False: self.edgedown}
         edgecolors = [edgecolord[open < close] for open, close in openclose()]
 
-        # bar width to the sides
+        # bar 向两侧展开的宽度
         delta = width / 2 - edgeadjust
 
-        # small auxiliary func to return the bar coordinates
+        # 返回 bar 坐标的小型辅助函数
         def volbar(i, v):
             left, right = i - delta, i + delta
             v = vbot + v * vscaling
@@ -373,7 +371,7 @@ class OHLCPlotHandler(object):
                  label='_nolegend',
                  **kwargs):
 
-        # Manager up/down bar colors
+        # 管理 up/down bar 颜色
         r, g, b = mcolors.colorConverter.to_rgb(colorup)
         self.colorup = r, g, b, alpha
         r, g, b = mcolors.colorConverter.to_rgb(colordown)
@@ -389,16 +387,16 @@ class OHLCPlotHandler(object):
         self.opencol = ocol
         self.closecol = ccol
 
-        # add collections to the axis and return them
+        # 将 collections 添加到 axis
         ax.add_collection(self.barcol)
         ax.add_collection(self.opencol)
         ax.add_collection(self.closecol)
 
-        # Update the axis
+        # 更新 axis
         ax.update_datalim(((0, min(lows)), (len(opens), max(highs))))
         ax.autoscale_view()
 
-        # Add self as legend handler for this object
+        # 将自身注册为该对象的 legend handler
         mlegend.Legend.update_default_handler_map({self.barcol: self})
 
     def legend_artist(self, legend, orig_handle, fontsize, handlebox):
@@ -407,7 +405,7 @@ class OHLCPlotHandler(object):
         width = handlebox.width / len(self.legend_opens)
         height = handlebox.height
 
-        # Generate the x axis coordinates (handlebox based)
+        # 生成 x 轴坐标（基于 handlebox）
         xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_opens))]
 
         barcol, opencol, closecol = self.barcollection(
@@ -434,7 +432,7 @@ class OHLCPlotHandler(object):
                       scaling=1.0, bot=0,
                       **kwargs):
 
-        # Prepack different zips of the series values
+        # 预打包 series value 的不同 zip 组合
         ihighlow = lambda: zip(xs, highs, lows)  # NOQA: E731
         iopen = lambda: zip(xs, opens)  # NOQA: E731
         iclose = lambda: zip(xs, closes)  # NOQA: E731
@@ -443,12 +441,12 @@ class OHLCPlotHandler(object):
         colord = {True: self.colorup, False: self.colordown}
         colors = [colord[open < close] for open, close in openclose()]
 
-        # Extra variables for the collections
+        # collections 使用的附加变量
         useaa = 0,
         lw = width,
         tlw = tickwidth,
 
-        # Calculate the barranges
+        # 计算 bar range
         def barrange(i, high, low):
             return (i, low * scaling + bot), (i, high * scaling + bot)
 
@@ -488,7 +486,7 @@ class OHLCPlotHandler(object):
             label='_nolegend',
             **kwargs)
 
-        # return barcol, tickcol
+        # 返回 barcol, tickcol
         return barcol, opencol, closecol
 
 
@@ -528,14 +526,14 @@ class LineOnClosePlotHandler(object):
             label=label,
             **kwargs)
 
-        # add collections to the axis and return them
+        # 将 collection 添加到 axis
         ax.add_line(self.loc)
 
-        # Update the axis
+        # 更新 axis
         ax.update_datalim(((x[0], min(closes)), (x[-1], max(closes))))
         ax.autoscale_view()
 
-        # Add self as legend handler for this object
+        # 将自身注册为该对象的 legend handler
         mlegend.Legend.update_default_handler_map({self.loc: self})
 
     def legend_artist(self, legend, orig_handle, fontsize, handlebox):
@@ -544,7 +542,7 @@ class LineOnClosePlotHandler(object):
         width = handlebox.width / len(self.legend_closes)
         height = handlebox.height
 
-        # Generate the x axis coordinates (handlebox based)
+        # 生成 x 轴坐标（基于 handlebox）
         xs = [x0 + width * (i + 0.5) for i in range(len(self.legend_closes))]
 
         linecol, = self.barcollection(
@@ -564,7 +562,7 @@ class LineOnClosePlotHandler(object):
                       scaling=1.0, bot=0,
                       **kwargs):
 
-        # Prepack different zips of the series values
+        # 预打包 series value 的不同 zip 组合
         scaled = [close * scaling + bot for close in closes]
 
         loc = mlines.Line2D(

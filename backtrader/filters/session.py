@@ -29,32 +29,28 @@ from .. import metabase
 
 
 class SessionFiller(with_metaclass(metabase.MetaParams, object)):
-    '''
-    Bar Filler for a Data Source inside the declared session start/end times.
+    '''在声明的 session start/end 时间内为 data source 补 bar 的 Bar Filler。
 
-    The fill bars are constructed using the declared Data Source ``timeframe``
-    and ``compression`` (used to calculate the intervening missing times)
+    补出的 bar 会使用 data source 声明的 ``timeframe`` 和 ``compression``
+    来计算缺失时间点。
 
-    Params:
+    Args:
+        fill_price: 缺失 bar 使用的价格，默认 ``None``。如果为 ``None``，
+            使用上一根 bar 的 close。也可以传入 ``float('NaN')``，让该 bar
+            占用时间但不在图上显示出有效价格。
+        fill_vol: 缺失 bar 使用的 volume，默认 ``NaN``。
+        fill_oi: 缺失 bar 使用的 open interest，默认 ``NaN``。
+        skip_first_fill (bool): 看到第 1 根有效 bar 时，是否跳过从
+            sessionstart 到该 bar 的填补，默认 ``True``。
 
-      - fill_price (def: None):
+    Returns:
+        None: filter 会把补出的 bar 加入 data stack。
 
-        If None is passed, the closing price of the previous bar will be
-        used. To end up with a bar which for example takes time but it is not
-        displayed in a plot ... use float('Nan')
-
-      - fill_vol (def: float('NaN')):
-
-        Value to use to fill the missing volume
-
-      - fill_oi (def: float('NaN')):
-
-        Value to use to fill the missing Open Interest
-
-      - skip_first_fill (def: True):
-
-        Upon seeing the 1st valid bar do not fill from the sessionstart up to
-        that bar
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='intraday.csv',
+    ...                                timeframe=bt.TimeFrame.Minutes)
+    >>> data.addfilter(SessionFiller, fill_vol=0.0)
     '''
     params = (('fill_price', None),
               ('fill_vol', float('NaN')),
@@ -63,7 +59,7 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
     MAXDATE = datetime.max
 
-    # Minimum delta unit in between bars
+    # bar 之间的最小 delta 单位
     _tdeltas = {
         TimeFrame.Minutes: timedelta(seconds=60),
         TimeFrame.Seconds: timedelta(seconds=1),
@@ -71,60 +67,56 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
     }
 
     def __init__(self, data):
-        # Calculate and save timedelta for timeframe
+        # 计算并保存 timeframe 对应的 timedelta
         self._tdframe = self._tdeltas[data._timeframe]
         self._tdunit = self._tdeltas[data._timeframe] * data._compression
 
-        self.seenbar = False  # control if at least one bar has been seen
-        self.sessend = self.MAXDATE  # maxdate is the control for session bar
+        self.seenbar = False  # 控制是否至少见过一根 bar
+        self.sessend = self.MAXDATE  # maxdate 是 session bar 的控制标记
 
     def __call__(self, data):
-        '''
-        Params:
-          - data: the data source to filter/process
+        '''处理一根 data bar，并按 session 边界补出缺失 bar。
+
+        Args:
+            data: 要过滤/处理的 data source。
 
         Returns:
-          - False (always) because this filter does not remove bars from the
-        stream
+            bool: 添加了补 bar 或需要重新处理 stream 时返回 ``True``；否则返回
+            ``False``。
 
-        The logic (starting with a session end control flag of MAXDATE)
+        逻辑从 ``MAXDATE`` 作为 session end 控制标记开始:
 
-          - If new bar is over session end (never true for 1st bar)
+          - 如果新 bar 超过 session end（第 1 根 bar 不会出现这种情况），
+            补到 session end，并将 session end 重置为 ``MAXDATE`` 后继续。
 
-            Fill up to session end. Reset sessionend to MAXDATE & fall through
+          - 如果 session end 标记为 ``MAXDATE``，重新计算 session 边界，
+            检查 bar 是否在边界内；如果在，补齐并记录最后看到的时间。
 
-          - If session end is flagged as MAXDATE
-
-            Recalculate session limits and check whether the bar is within them
-
-            if so, fill up and record the last seen tim
-
-          - Else ... the incoming bar is in the session, fill up to it
+          - 否则 incoming bar 位于 session 内，补到该 bar 为止。
         '''
-        # Get time of current (from data source) bar
+        # 获取当前底层 data source bar 的时间
         ret = False
 
         dtime_cur = data.datetime.datetime()
 
         if dtime_cur > self.sessend:
-            # bar over session end - fill up and invalidate
-            # Do not put current bar in stack to let it be evaluated below
-            # Fill up to endsession + smallest unit of timeframe
+            # bar 超过 session end，补齐并使控制标记失效
+            # 不把当前 bar 放入 stack，让它在下方继续被评估
+            # 补到 session end + timeframe 最小单位
             ret = self._fillbars(data, self.dtime_prev,
                                  self.sessend + self._tdframe,
                                  tostack=False)
             self.sessend = self.MAXDATE
 
-        # Fall through from previous check ... the bar which is over the
-        # session could already be in a new session and within the limits
+        # 从前一检查继续：超过旧 session 的 bar 可能已经处于新 session 内
         if self.sessend == self.MAXDATE:
-            # No bar seen yet or one went over previous session limit
+            # 尚未见过 bar，或某根 bar 超过了上一 session 边界
             ddate = dtime_cur.date()
             sessstart = datetime.combine(ddate, data.p.sessionstart)
             self.sessend = sessend = datetime.combine(ddate, data.p.sessionend)
 
             if sessstart <= dtime_cur <= sessend:
-                # 1st bar from session in the session - fill from session start
+                # session 内的第 1 根 bar：从 session start 开始填补
                 if self.seenbar or not self.p.skip_first_fill:
                     ret = self._fillbars(data,
                                          sessstart - self._tdunit, dtime_cur)
@@ -133,19 +125,25 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
             self.dtime_prev = dtime_cur
 
         else:
-            # Seen a previous bar and this is in the session - fill up to it
+            # 已见过前一根 bar，且当前 bar 在 session 内：补到当前 bar
             ret = self._fillbars(data, self.dtime_prev, dtime_cur)
             self.dtime_prev = dtime_cur
 
         return ret
 
     def _fillbars(self, data, time_start, time_end, tostack=True):
-        '''
-        Fills one by one bars as needed from time_start to time_end
+        '''按需逐根填补从 ``time_start`` 到 ``time_end`` 之间的 bar。
 
-        Invalidates the control dtime_prev if requested
+        Args:
+            data: 要补 bar 的 data source。
+            time_start: 填补起始时间。
+            time_end: 填补结束时间。
+            tostack (bool): 是否把触发填补的 bar 保存回 stack。
+
+        Returns:
+            bool: 有补 bar 或 ``tostack`` 为 ``False`` 时返回 ``True``。
         '''
-        # Control flag - bars added to the stack
+        # 控制标记：是否有 bar 加入 stack
         dirty = 0
 
         time_start += self._tdunit
@@ -159,86 +157,110 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
         return bool(dirty) or not tostack
 
     def _fillbar(self, data, dtime):
-        # Prepare an array of the needed size
+        # 准备所需大小的数组
         bar = [float('Nan')] * data.size()
 
-        # Fill datetime
+        # 填充 datetime
         bar[data.DateTime] = data.date2num(dtime)
 
-        # Fill the prices
+        # 填充 price
         price = self.p.fill_price or data.close[-1]
         for pricetype in [data.Open, data.High, data.Low, data.Close]:
             bar[pricetype] = price
 
-        # Fill volume and open interest
+        # 填充 volume 和 open interest
         bar[data.Volume] = self.p.fill_vol
         bar[data.OpenInterest] = self.p.fill_oi
 
-        # Fill extra lines the data feed may have defined beyond DateTime
+        # 填充 data feed 可能在 DateTime 之后定义的额外 lines
         for i in range(data.DateTime + 1, data.size()):
             bar[i] = data.lines[i][0]
 
-        # Add tot he stack of bars to save
+        # 加入待保存 bar stack
         data._add2stack(bar)
 
         return True
 
 
 class SessionFilterSimple(with_metaclass(metabase.MetaParams, object)):
-    '''
-    This class can be applied to a data source as a filter and will filter out
-    intraday bars which fall outside of the regular session times (ie: pre/post
-    market data)
+    '''过滤常规 session 时间之外日内 bar 的 simple filter。
 
-    This is a "simple" filter and must NOT manage the stack of the data (passed
-    during init and __call__)
+    该 filter 可应用到 data source，用于过滤 pre/post market data 等常规
+    session 之外的日内 bar。
 
-    It needs no "last" method because it has nothing to deliver
+    这是 "simple" filter，不管理传入 ``__init__`` 和 ``__call__`` 的 data
+    stack。它没有需要额外交付的数据，因此不需要 ``last`` 方法。Bar
+    management 会由 ``DataBase.addfilter_simple`` 添加的
+    ``SimpleFilterWrapper`` 完成。
 
-    Bar Management will be done by the SimpleFilterWrapper class made which is
-    added durint the DataBase.addfilter_simple call
+    Args:
+        无。
+
+    Returns:
+        bool: 当前 bar 在 session 内返回 ``False``；在 session 外返回
+        ``True``，表示过滤当前 bar。
+
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='intraday.csv')
+    >>> data.addfilter_simple(SessionFilterSimple)
     '''
     def __init__(self, data):
         pass
 
     def __call__(self, data):
-        '''
-        Return Values:
+        '''判断当前 bar 是否应被过滤。
 
-          - False: nothing to filter
-          - True: filter current bar (because it's not in the session times)
+        Args:
+            data: 要过滤/处理的 data source。
+
+        Returns:
+            bool: ``False`` 表示无需过滤；``True`` 表示当前 bar 不在 session
+            时间内，应被过滤。
         '''
-        # Both ends of the comparison are in the session
+        # 比较的两端都位于 session 中
         return not (
             data.p.sessionstart <= data.datetime.time(0) <= data.p.sessionend)
 
 
 class SessionFilter(with_metaclass(metabase.MetaParams, object)):
-    '''
-    This class can be applied to a data source as a filter and will filter out
-    intraday bars which fall outside of the regular session times (ie: pre/post
-    market data)
+    '''过滤常规 session 时间之外日内 bar 的非 simple filter。
 
-    This is a "non-simple" filter and must manage the stack of the data (passed
-    during init and __call__)
+    该 filter 可应用到 data source，用于过滤 pre/post market data 等常规
+    session 之外的日内 bar。
 
-    It needs no "last" method because it has nothing to deliver
+    这是 "non-simple" filter，必须管理传入 ``__init__`` 和 ``__call__`` 的
+    data stack。它没有需要额外交付的数据，因此不需要 ``last`` 方法。
+
+    Args:
+        无。
+
+    Returns:
+        bool: 当前 bar 在 session 内返回 ``False``；在 session 外移除 bar 并
+        返回 ``True``。
+
+    ---
+    >>> import backtrader as bt
+    >>> data = bt.feeds.GenericCSVData(dataname='intraday.csv')
+    >>> data.addfilter(SessionFilter)
     '''
     def __init__(self, data):
         pass
 
     def __call__(self, data):
-        '''
-        Return Values:
+        '''判断并处理当前 bar 是否应被过滤。
 
-          - False: data stream was not touched
-          - True: data stream was manipulated (bar outside of session times and
-          - removed)
+        Args:
+            data: 要过滤/处理的 data source。
+
+        Returns:
+            bool: ``False`` 表示 data stream 未改动；``True`` 表示 data stream
+            已被改动，即 session 时间外的 bar 已被移除。
         '''
         if data.p.sessionstart <= data.datetime.time(0) <= data.p.sessionend:
-            # Both ends of the comparison are in the session
-            return False  # say the stream is untouched
+            # 比较的两端都位于 session 中
+            return False  # 表示 stream 未改动
 
-        # bar outside of the regular session times
-        data.backwards()  # remove bar from data stack
-        return True  # signal the data was manipulated
+        # bar 位于常规 session 时间之外
+        data.backwards()  # 从 data stack 移除 bar
+        return True  # 表示 data 已被改动

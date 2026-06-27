@@ -77,7 +77,7 @@ class St(bt.Strategy):
         txtfields.append('%.2f' % self.data0.openinterest[0])
         print(','.join(txtfields))
 
-        # Single order
+        # 单个 order
         if self.doop == 0:
             if not self.position.size:
                 stakevol = (self.data0.volume[0] * self.p.stakeperc) // 100

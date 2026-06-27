@@ -53,13 +53,13 @@ class DayStepsCloseFilter(bt.with_metaclass(bt.MetaParams, object)):
         self.pendingbar = None
 
     def __call__(self, data):
-        # Make a copy of the new bar and remove it from stream
+        # 复制新 bar，并从 stream 中移除
         closebar = [data.lines[i][0] for i in range(data.size())]
         datadt = data.datetime.date()  # keep the date
 
         ohlbar = closebar[:]  # Make an open-high-low bar
 
-        # Adjust volume
+        # 调整 volume
         ohlbar[data.Volume] = int(closebar[data.Volume] * (1.0 - self.p.cvol))
 
         dt = datetime.datetime.combine(datadt, data.p.sessionstart)
@@ -68,28 +68,29 @@ class DayStepsCloseFilter(bt.with_metaclass(bt.MetaParams, object)):
         dt = datetime.datetime.combine(datadt, data.p.sessionend)
         closebar[data.DateTime] = data.date2num(dt)
 
-        # Update stream
+        # 更新 stream
         data.backwards()  # remove the copied bar from stream
-        # Overwrite the new data bar with our pending data - except start point
+        # 用 pending data 覆盖新 data bar，但起点除外
         if self.pendingbar is not None:
             data._updatebar(self.pendingbar)
 
         self.pendingbar = closebar  # update the pending bar to the new bar
-        data._add2stack(ohlbar)  # Add the openbar to the stack for processing
+        data._add2stack(ohlbar)  # 将 openbar 加入 stack 等待处理
 
         return False  # the length of the stream was not changed
 
     def last(self, data):
-        '''Called when the data is no longer producing bars
-        Can be called multiple times. It has the chance to (for example)
-        produce extra bars'''
-        if self.pendingbar is not None:
-            data.backwards()  # remove delivered open bar
-            data._add2stack(self.pendingbar)  # add remaining
-            self.pendingbar = None  # No further action
-            return True  # something delivered
+        '''在 data 不再产生 bars 时调用。
 
-        return False  # nothing delivered here
+        该方法可能被多次调用，并有机会产生额外 bars。
+        '''
+        if self.pendingbar is not None:
+            data.backwards()  # 移除已交付的 open bar
+            data._add2stack(self.pendingbar)  # 加入剩余部分
+            self.pendingbar = None  # 无需后续操作
+            return True  # 已交付内容
+
+        return False  # 此处没有交付内容
 
 
 class DayStepsReplayFilter(bt.with_metaclass(bt.MetaParams, object)):
@@ -120,7 +121,7 @@ class DayStepsReplayFilter(bt.with_metaclass(bt.MetaParams, object)):
         pass
 
     def __call__(self, data):
-        # Make a copy of the new bar and remove it from stream
+        # 复制新 bar，并从 stream 中移除
         datadt = data.datetime.date()  # keep the date
 
         if self.lastdt == datadt:
@@ -128,11 +129,11 @@ class DayStepsReplayFilter(bt.with_metaclass(bt.MetaParams, object)):
 
         self.lastdt = datadt  # keep ref to last seen bar
 
-        # Make a copy of current data for ohlbar
+        # 为 ohlbar 复制当前 data
         ohlbar = [data.lines[i][0] for i in range(data.size())]
         closebar = ohlbar[:]  # Make a copy for the close
 
-        # replace close price with o-h-l average
+        # 用 o-h-l 平均值替换 close price
         ohlprice = ohlbar[data.Open] + ohlbar[data.High] + ohlbar[data.Low]
         ohlbar[data.Close] = ohlprice / 3.0
 
@@ -142,25 +143,25 @@ class DayStepsReplayFilter(bt.with_metaclass(bt.MetaParams, object)):
         oi = ohlbar[data.OpenInterest]  # adjust open interst
         ohlbar[data.OpenInterest] = 0
 
-        # Adjust times
+        # 调整时间
         dt = datetime.datetime.combine(datadt, data.p.sessionstart)
         ohlbar[data.DateTime] = data.date2num(dt)
 
-        # Ajust closebar to generate a single tick -> close price
+        # 调整 closebar，使其生成单个 tick，即 close price
         closebar[data.Open] = cprice = closebar[data.Close]
         closebar[data.High] = cprice
         closebar[data.Low] = cprice
         closebar[data.Volume] = vol - vohl
         ohlbar[data.OpenInterest] = oi
 
-        # Adjust times
+        # 调整时间
         dt = datetime.datetime.combine(datadt, data.p.sessionend)
         closebar[data.DateTime] = data.date2num(dt)
 
-        # Update stream
+        # 更新 stream
         data.backwards(force=True)  # remove the copied bar from stream
         data._add2stack(ohlbar)  # add ohlbar to stack
-        # Add 2nd part to stash to delay processing to next round
+        # 将第 2 部分加入 stash，延迟到下一轮处理
         data._add2stack(closebar, stash=True)
 
         return False  # the length of the stream was not changed
@@ -194,7 +195,7 @@ class St(bt.Strategy):
         self.lcontrol = 0  # control if 1st or 2nd call
         self.inmarket = 0
 
-        # Get the highest but delayed 1 ... to avoid "today"
+        # 获取 highest 并延迟 1，以避开“今天”
         self.highest = btind.Highest(self.data.high,
                                      period=self.p.highperiod,
                                      subplot=False)
@@ -326,7 +327,7 @@ def parse_args(pargs=None):
     parser.add_argument('--oldbuysell', required=False, action='store_true',
                         help=('Old buysell plot behavior - ON THE PRICE'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

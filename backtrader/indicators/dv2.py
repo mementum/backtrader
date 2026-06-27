@@ -30,15 +30,28 @@ __all__ = ['DV2']
 
 class DV2(Indicator):
     '''
-    RSI(2) alternative
-    Developed by David Varadi of http://cssanalytics.wordpress.com/
+    RSI(2) 的替代指标，由 David Varadi 提出。
 
-    This seems to be the *Bounded* version.
+    Args:
+        period: PercentRank 的统计周期。
+        maperiod: 内部 moving average 周期。
+        _movav: 内部使用的 Moving Average 类型。
+
+    Returns:
+        DV2: 输出 ``dv2`` line 的 indicator。
+
+    该实现看起来是 *Bounded* 版本。
 
     See also:
 
       - http://web.archive.org/web/20131216100741/http://quantingdutchman.wordpress.com/2010/08/06/dv2-indicator-for-amibroker/
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DV2)
     '''
     params = (
         ('period', 252),

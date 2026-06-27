@@ -26,29 +26,38 @@ from . import RSI
 
 class RelativeMomentumIndex(RSI):
     '''
-    Description:
-    The Relative Momentum Index was developed by Roger Altman and was
-    introduced in his article in the February, 1993 issue of Technical Analysis
-    of Stocks & Commodities magazine.
+    Roger Altman 开发的 Relative Momentum Index，并在 1993 年 2 月
+    *Technical Analysis of Stocks & Commodities* 杂志文章中介绍。
 
-    While your typical RSI counts up and down days from close to close, the
-    Relative Momentum Index counts up and down days from the close relative to
-    a close x number of days ago. The result is an RSI that is a bit smoother.
+    普通 RSI 统计 close 到 close 的涨跌日，Relative Momentum Index 则统计当前
+    close 相对若干日前 close 的涨跌，因此结果会比 RSI 更平滑一些。
 
-    Usage:
-    Use in the same way you would any other RSI . There are overbought and
-    oversold zones, and can also be used for divergence and trend analysis.
+    用法与 RSI 类似，可观察 overbought/oversold 区域，也可用于 divergence
+    与趋势分析。
+
+    Args:
+        period: RSI 平滑周期。
+        lookback: 用来比较历史 close 的回看周期。
+
+    Returns:
+        RelativeMomentumIndex: 输出 ``rmi`` line 别名的 RSI 派生 indicator。
 
     See:
       - https://www.marketvolume.com/technicalanalysis/relativemomentumindex.asp
       - https://www.tradingview.com/script/UCm7fIvk-FREE-INDICATOR-Relative-Momentum-Index-RMI/
       - https://www.prorealcode.com/prorealtime-indicators/relative-momentum-index-rmi/
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RelativeMomentumIndex, period=20, lookback=5)
     '''
     alias = ('RMI', )
 
-    linealias = (('rsi', 'rmi',),)  # add an alias for this class rmi -> rsi
-    plotlines = dict(rsi=dict(_name='rmi'))  # change line plotting name
+    linealias = (('rsi', 'rmi',),)  # 为该类添加 rmi -> rsi 的 line 别名
+    plotlines = dict(rsi=dict(_name='rmi'))  # 修改绘图时显示的 line 名称
 
     params = (
         ('period', 20),
@@ -56,7 +65,7 @@ class RelativeMomentumIndex(RSI):
     )
 
     def _plotlabel(self):
-        # override to always print the lookback label and do it before movav
+        # 覆盖标签逻辑，始终显示 lookback，并将其放在 movav 之前
         plabels = [self.p.period]
         plabels += [self.p.lookback]
         plabels += [self.p.movav] * self.p.notdefault('movav')

@@ -30,10 +30,17 @@ __all__ = ['AccelerationDecelerationOscillator', 'AccDeOsc']
 
 class AccelerationDecelerationOscillator(bt.Indicator):
     '''
-    Acceleration/Deceleration Technical Indicator (AC) measures acceleration
-    and deceleration of the current driving force. This indicator will change
-    direction before any changes in the driving force, which, it its turn, will
-    change its direction before the price.
+    Acceleration/Deceleration Technical Indicator（AC）用于衡量当前驱动力的加速和
+    减速。
+
+    该指标会先于驱动力变化而改变方向，而驱动力又通常先于价格改变方向。
+
+    Args:
+        period: 对 AwesomeOscillator 做 SMA 的周期。
+        movav: 使用的 Moving Average 类型。
+
+    Returns:
+        AccelerationDecelerationOscillator: 输出 ``accde`` line 的 indicator。
 
     Formula:
      - AcdDecOsc = AwesomeOscillator - SMA(AwesomeOscillator, period)
@@ -42,6 +49,12 @@ class AccelerationDecelerationOscillator(bt.Indicator):
       - https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/ao
       - https://www.ifcmarkets.com/en/ntx-indicators/ntx-indicators-accelerator-decelerator-oscillator
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(AccelerationDecelerationOscillator)
     '''
     alias = ('AccDeOsc',)
     lines = ('accde', )

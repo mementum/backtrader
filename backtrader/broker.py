@@ -32,9 +32,9 @@ from . import fillers as filler
 class MetaBroker(MetaParams):
     def __init__(cls, name, bases, dct):
         '''
-        Class has already been created ... fill missing methods if needed be
+        类已经创建完成；按需补齐缺失方法。
         '''
-        # Initialize the class
+        # 初始化类
         super(MetaBroker, cls).__init__(name, bases, dct)
         translations = {
             'get_cash': 'getcash',
@@ -47,6 +47,13 @@ class MetaBroker(MetaParams):
 
 
 class BrokerBase(with_metaclass(MetaBroker, object)):
+    '''Broker 的基类，用于定义 broker 实现需要提供的基础接口。
+
+    该类负责保存 commission scheme，并定义 cash/value、position、submit、
+    cancel、buy、sell 等 broker 行为的抽象接口。具体 broker 子类需要覆盖
+    未实现的方法。
+    '''
+
     params = (
         ('commission', CommInfoBase(percabs=True)),
     )
@@ -56,7 +63,7 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         self.init()
 
     def init(self):
-        # called from init and from start
+        # 从 init 和 start 中调用
         if None not in self.comminfo:
             self.comminfo = dict({None: self.p.commission})
 
@@ -67,16 +74,36 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         pass
 
     def add_order_history(self, orders, notify=False):
-        '''Add order history. See cerebro for details'''
+        '''添加 order history。
+
+        Args:
+            orders: order history 数据。
+            notify (bool): 是否发送通知。
+
+        详情参见 cerebro。
+        '''
         raise NotImplementedError
 
     def set_fund_history(self, fund):
-        '''Add fund history. See cerebro for details'''
+        '''添加 fund history。
+
+        Args:
+            fund: fund history 数据。
+
+        详情参见 cerebro。
+        '''
         raise NotImplementedError
 
     def getcommissioninfo(self, data):
-        '''Retrieves the ``CommissionInfo`` scheme associated with the given
-        ``data``'''
+        '''获取与给定 ``data`` 关联的 ``CommissionInfo`` scheme。
+
+        Args:
+            data: 需要查询 commission scheme 的 data。
+
+        Returns:
+            CommInfoBase: 与 data 关联的 commission scheme；如果没有 data 专属
+            scheme，则返回默认 scheme。
+        '''
         if data._name in self.comminfo:
             return self.comminfo[data._name]
 
@@ -89,12 +116,23 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
                       automargin=False,
                       name=None):
 
-        '''This method sets a `` CommissionInfo`` object for assets managed in
-        the broker with the parameters. Consult the reference for
-        ``CommInfoBase``
+        '''使用参数为 broker 管理的资产设置 ``CommissionInfo`` 对象。
 
-        If name is ``None``, this will be the default for assets for which no
-        other ``CommissionInfo`` scheme can be found
+        Args:
+            commission (float): commission 数值。
+            margin: margin 设置。
+            mult (float): asset value/profit 乘数。
+            commtype: commission 类型。
+            percabs (bool): 百分比 commission 是否按 0.XX 理解。
+            stocklike (bool): 是否按 stock-like 行为处理。
+            interest (float): 年化 credit interest。
+            interest_long (bool): long position 是否也收取 interest。
+            leverage (float): leverage 值。
+            automargin: 自动 margin 规则。
+            name: data 名称。如果为 ``None``，则作为没有专属 scheme 的资产的
+                默认 scheme。
+
+        详情参见 ``CommInfoBase``。
         '''
 
         comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
@@ -105,8 +143,13 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         self.comminfo[name] = comm
 
     def addcommissioninfo(self, comminfo, name=None):
-        '''Adds a ``CommissionInfo`` object that will be the default for all assets if
-        ``name`` is ``None``'''
+        '''添加 ``CommissionInfo`` 对象。
+
+        Args:
+            comminfo: 要添加的 commission info 对象。
+            name: data 名称。如果为 ``None``，则该对象作为所有资产的默认
+                commission info。
+        '''
         self.comminfo[name] = comminfo
 
     def getcash(self):
@@ -116,8 +159,12 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         raise NotImplementedError
 
     def get_fundshares(self):
-        '''Returns the current number of shares in the fund-like mode'''
-        return 1.0  # the abstract mode has only 1 share
+        '''返回 fund-like 模式下当前 share 数量。
+
+        Returns:
+            float: 当前 fund shares。抽象模式只有 1 份。
+        '''
+        return 1.0  # 抽象模式只有 1 share
 
     fundshares = property(get_fundshares)
 
@@ -127,14 +174,20 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     fundvalue = property(get_fundvalue)
 
     def set_fundmode(self, fundmode, fundstartval=None):
-        '''Set the actual fundmode (True or False)
+        '''设置实际 fundmode。
 
-        If the argument fundstartval is not ``None``, it will used
+        Args:
+            fundmode (bool): 是否启用 fundmode。
+            fundstartval: 可选初始 fund value。如果不是 ``None``，子类可使用它。
         '''
-        pass  # do nothing, not all brokers can support this
+        pass  # 不执行任何操作，不是所有 broker 都支持该功能
 
     def get_fundmode(self):
-        '''Returns the actual fundmode (True or False)'''
+        '''返回实际 fundmode。
+
+        Returns:
+            bool: 当前是否启用 fundmode。
+        '''
         return False
 
     fundmode = property(get_fundmode, set_fundmode)

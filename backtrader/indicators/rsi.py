@@ -27,17 +27,29 @@ from . import DivZeroByZero
 
 class UpDay(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* for the RSI
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中为 RSI 定义的 UpDay。
 
-    Records days which have been "up", i.e.: the close price has been
-    higher than the day before.
+    记录 "up" day，即 close 高于前一日的情况。
+
+    Args:
+        period: 比较前值的回看周期。
+
+    Returns:
+        UpDay: 输出 ``upday`` line 的 indicator。
 
     Formula:
       - upday = max(close - close_prev, 0)
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(UpDay)
     '''
     lines = ('upday',)
     params = (('period', 1),)
@@ -49,17 +61,29 @@ class UpDay(Indicator):
 
 class DownDay(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* for the RSI
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中为 RSI 定义的 DownDay。
 
-    Records days which have been "down", i.e.: the close price has been
-    lower than the day before.
+    记录 "down" day，即 close 低于前一日的情况。
+
+    Args:
+        period: 比较前值的回看周期。
+
+    Returns:
+        DownDay: 输出 ``downday`` line 的 indicator。
 
     Formula:
       - downday = max(close_prev - close, 0)
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DownDay)
     '''
     lines = ('downday',)
     params = (('period', 1),)
@@ -71,20 +95,32 @@ class DownDay(Indicator):
 
 class UpDayBool(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* for the RSI
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中为 RSI 定义的布尔版 UpDay。
 
-    Records days which have been "up", i.e.: the close price has been
-    higher than the day before.
+    记录 "up" day，即 close 高于前一日的情况。
+
+    Args:
+        period: 比较前值的回看周期。
+
+    Returns:
+        UpDayBool: 输出布尔型 ``upday`` line 的 indicator。
 
     Note:
-      - This version returns a bool rather than the difference
+      - 该版本返回 bool，而不是差值。
 
     Formula:
       - upday = close > close_prev
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(UpDayBool)
     '''
     lines = ('upday',)
     params = (('period', 1),)
@@ -96,20 +132,32 @@ class UpDayBool(Indicator):
 
 class DownDayBool(Indicator):
     '''
-    Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"* for the RSI
+    J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中为 RSI 定义的布尔版 DownDay。
 
-    Records days which have been "down", i.e.: the close price has been
-    lower than the day before.
+    记录 "down" day，即 close 低于前一日的情况。
+
+    Args:
+        period: 比较前值的回看周期。
+
+    Returns:
+        DownDayBool: 输出布尔型 ``downday`` line 的 indicator。
 
     Note:
-      - This version returns a bool rather than the difference
+      - 该版本返回 bool，而不是差值。
 
     Formula:
       - downday = close_prev > close
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(DownDayBool)
     '''
     lines = ('downday',)
     params = (('period', 1),)
@@ -120,12 +168,24 @@ class DownDayBool(Indicator):
 
 
 class RelativeStrengthIndex(Indicator):
-    '''Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
-    Technical Trading Systems"*.
+    '''J. Welles Wilder, Jr. 于 1978 年在 *"New Concepts in Technical Trading
+    Systems"* 中定义的 Relative Strength Index。
 
-    It measures momentum by calculating the ration of higher closes and
-    lower closes after having been smoothed by an average, normalizing
-    the result between 0 and 100
+    它先对上涨 close 与下跌 close 进行平均平滑，再计算二者比例，用 0 到 100
+    的范围表达 momentum。
+
+    Args:
+        period: RSI 平滑周期。
+        movav: 用于平滑 up/down day 的 Moving Average 类型。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+        safediv: 是否处理 ``0 / 0`` 与 ``x / 0`` 的特殊除法情况。
+        safehigh: ``x / 0`` 时使用的 RSI 值。
+        safelow: ``0 / 0`` 时使用的 RSI 值。
+        lookback: up/down day 比较的回看周期。
+
+    Returns:
+        RelativeStrengthIndex: 输出 ``rsi`` line 的 indicator。
 
     Formula:
       - up = upday(data)
@@ -135,22 +195,25 @@ class RelativeStrengthIndex(Indicator):
       - rs = maup / madown
       - rsi = 100 - 100 / (1 + rs)
 
-    The moving average used is the one originally defined by Wilder,
-    the SmoothedMovingAverage
+    默认 Moving Average 使用 Wilder 原始定义中的 SmoothedMovingAverage。
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
 
     Notes:
-      - ``safediv`` (default: False) If this parameter is True the division
-        rs = maup / madown will be checked for the special cases in which a
-        ``0 / 0`` or ``x / 0`` division will happen
+      - ``safediv`` 为 True 时，会检查 ``rs = maup / madown`` 中可能出现的
+        ``0 / 0`` 或 ``x / 0`` 特殊情况。
 
-      - ``safehigh`` (default: 100.0) will be used as RSI value for the
-        ``x / 0`` case
+      - ``safehigh`` 会作为 ``x / 0`` 情况下的 RSI 值。
 
-      - ``safelow``  (default: 50.0) will be used as RSI value for the
-        ``0 / 0`` case
+      - ``safelow`` 会作为 ``0 / 0`` 情况下的 RSI 值。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RelativeStrengthIndex, period=14)
     '''
     alias = ('RSI', 'RSI_SMMA', 'RSI_Wilder',)
 
@@ -201,21 +264,49 @@ class RelativeStrengthIndex(Indicator):
 
 class RSI_Safe(RSI):
     '''
-    Subclass of RSI which changes parameers ``safediv`` to ``True`` as the
-    default value
+    RSI 的子类，将 ``safediv`` 默认值改为 ``True``。
+
+    Args:
+        period: RSI 平滑周期。
+        movav: 用于平滑 up/down day 的 Moving Average 类型。
+        lookback: up/down day 比较的回看周期。
+
+    Returns:
+        RSI_Safe: 输出 ``rsi`` line 的安全除法版 RSI indicator。
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RSI_Safe)
     '''
     params = (('safediv', True),)
 
 
 class RSI_SMA(RSI):
     '''
-    Uses a SimpleMovingAverage as described in Wikipedia and other soures
+    使用 Wikipedia 和其他资料中描述的 SimpleMovingAverage 版本 RSI。
+
+    Args:
+        period: RSI 平滑周期。
+        lookback: up/down day 比较的回看周期。
+
+    Returns:
+        RSI_SMA: 输出 ``rsi`` line 的 SimpleMovingAverage 版 RSI indicator。
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RSI_SMA)
     '''
     alias = ('RSI_Cutler',)
 
@@ -224,9 +315,23 @@ class RSI_SMA(RSI):
 
 class RSI_EMA(RSI):
     '''
-    Uses an ExponentialMovingAverage as described in Wikipedia
+    使用 Wikipedia 中描述的 ExponentialMovingAverage 版本 RSI。
+
+    Args:
+        period: RSI 平滑周期。
+        lookback: up/down day 比较的回看周期。
+
+    Returns:
+        RSI_EMA: 输出 ``rsi`` line 的 ExponentialMovingAverage 版 RSI indicator。
 
     See:
       - http://en.wikipedia.org/wiki/Relative_strength_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(RSI_EMA)
     '''
     params = (('movav', MovAv.Exponential),)

@@ -30,42 +30,34 @@ from ..utils.py3 import integer_types, string_types
 
 
 class GenericCSVData(feed.CSVDataBase):
-    '''Parses a CSV file according to the order and field presence defined by the
-    parameters
+    '''按参数定义的字段顺序和字段存在性解析 CSV 文件的 data feed。
 
-    Specific parameters (or specific meaning):
+    Args:
+        dataname: 要解析的文件名或 file-like 对象。
+        datetime (int): datetime 字段所在列索引，默认 ``0``。
+        time (int): time 字段所在列索引，默认 ``-1``，表示不存在独立 time
+            字段。如果 ``time >= 0``，date 和 time 会被合并。
+        open (int): open 字段所在列索引，默认 ``1``。
+        high (int): high 字段所在列索引，默认 ``2``。
+        low (int): low 字段所在列索引，默认 ``3``。
+        close (int): close 字段所在列索引，默认 ``4``。
+        volume (int): volume 字段所在列索引，默认 ``5``。
+        openinterest (int): openinterest 字段所在列索引，默认 ``6``。
+        nullvalue: CSV 字段缺失或为空时使用的值，默认 ``NaN``。
+        dtformat: 解析 datetime CSV 字段使用的格式，默认
+            ``'%Y-%m-%d %H:%M:%S'``。可传入:
 
-      - ``dataname``: The filename to parse or a file-like object
+          - ``1``: Unix timestamp，``int`` 秒数，自 1970-01-01 起算
+          - ``2``: Unix timestamp，``float`` 秒数
+          - callable: 接收字符串并返回 ``datetime.datetime`` 实例
 
-      - The lines parameters (datetime, open, high ...) take numeric values
+        tmformat: 独立 time CSV 字段存在时使用的解析格式，默认 ``'%H:%M:%S'``。
 
-        A value of -1 indicates absence of that field in the CSV source
+    Returns:
+        bool: ``_loadline`` 成功解析一行时返回 ``True``。
 
-      - If ``time`` is present (parameter time >=0) the source contains
-        separated fields for date and time, which will be combined
-
-      - ``nullvalue``
-
-        Value that will be used if a value which should be there is missing
-        (the CSV field is empty)
-
-      - ``dtformat``: Format used to parse the datetime CSV field. See the
-        python strptime/strftime documentation for the format.
-
-        If a numeric value is specified, it will be interpreted as follows
-
-          - ``1``: The value is a Unix timestamp of type ``int`` representing
-            the number of seconds since Jan 1st, 1970
-
-          - ``2``: The value is a Unix timestamp of type ``float``
-
-        If a **callable** is passed
-
-          - it will accept a string and return a `datetime.datetime` python
-            instance
-
-      - ``tmformat``: Format used to parse the time CSV field if "present"
-        (the default for the "time" CSV field is not to be present)
+    ---
+    >>> data = GenericCSVData(dataname='prices.csv', dtformat='%Y-%m-%d')
 
     '''
 
@@ -97,17 +89,17 @@ class GenericCSVData(feed.CSVDataBase):
             elif idt == 2:
                 self._dtconvert = lambda x: datetime.utcfromtimestamp(float(x))
 
-        else:  # assume callable
+        else:  # 假定为 callable
             self._dtconvert = self.p.dtformat
 
     def _loadline(self, linetokens):
-        # Datetime needs special treatment
+        # Datetime 需要特殊处理
         dtfield = linetokens[self.p.datetime]
         if self._dtstr:
             dtformat = self.p.dtformat
 
             if self.p.time >= 0:
-                # add time value and format if it's in a separate field
+                # 如果 time 位于独立字段，则追加 time 值和格式
                 dtfield += 'T' + linetokens[self.p.time]
                 dtformat += 'T' + self.p.tmformat
 
@@ -116,42 +108,42 @@ class GenericCSVData(feed.CSVDataBase):
             dt = self._dtconvert(dtfield)
 
         if self.p.timeframe >= TimeFrame.Days:
-            # check if the expected end of session is larger than parsed
+            # 检查预期 session end 是否大于解析出的时间
             if self._tzinput:
-                dtin = self._tzinput.localize(dt)  # pytz compatible-ized
+                dtin = self._tzinput.localize(dt)  # pytz 兼容化
             else:
                 dtin = dt
 
-            dtnum = date2num(dtin)  # utc'ize
+            dtnum = date2num(dtin)  # 转为 UTC
 
             dteos = datetime.combine(dt.date(), self.p.sessionend)
-            dteosnum = self.date2num(dteos)  # utc'ize
+            dteosnum = self.date2num(dteos)  # 转为 UTC
 
             if dteosnum > dtnum:
                 self.lines.datetime[0] = dteosnum
             else:
-                # Avoid reconversion if already converted dtin == dt
+                # 如果已经转换且 dtin == dt，避免重复转换
                 self.l.datetime[0] = date2num(dt) if self._tzinput else dtnum
         else:
             self.lines.datetime[0] = date2num(dt)
 
-        # The rest of the fields can be done with the same procedure
+        # 其余字段可用相同流程处理
         for linefield in (x for x in self.getlinealiases() if x != 'datetime'):
-            # Get the index created from the passed params
+            # 获取由传入 params 创建的索引
             csvidx = getattr(self.params, linefield)
 
             if csvidx is None or csvidx < 0:
-                # the field will not be present, assignt the "nullvalue"
+                # 字段不存在，赋值为 nullvalue
                 csvfield = self.p.nullvalue
             else:
-                # get it from the token
+                # 从 token 获取字段
                 csvfield = linetokens[csvidx]
 
             if csvfield == '':
-                # if empty ... assign the "nullvalue"
+                # 如果为空，赋值为 nullvalue
                 csvfield = self.p.nullvalue
 
-            # get the corresponding line reference and set the value
+            # 获取对应 line 引用并设置 value
             line = getattr(self.lines, linefield)
             line[0] = float(float(csvfield))
 

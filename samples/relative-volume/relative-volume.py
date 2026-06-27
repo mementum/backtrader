@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import argparse
 import datetime
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 import backtrader.feeds as btfeeds
 
@@ -34,43 +34,43 @@ from relvolbybar import RelativeVolumeByBar
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate,
         )
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data)
 
-    # Add an empty strategy
+    # 添加空 strategy
     cerebro.addstrategy(bt.Strategy)
 
-    # Get the session times to pass them to the indicator
+    # 获取 session 时间并传给 indicator
     prestart = datetime.datetime.strptime(args.prestart, '%H:%M').time()
     start = datetime.datetime.strptime(args.start, '%H:%M').time()
     end = datetime.datetime.strptime(args.end, '%H:%M').time()
 
-    # Add the Relative volume indicator
+    # 添加 Relative volume indicator
     cerebro.addindicator(RelativeVolumeByBar,
                          prestart=prestart, start=start, end=end)
 
-    # Add a writer with CSV
+    # 添加带 CSV 的 writer
     if args.writer:
         cerebro.addwriter(bt.WriterFile, csv=args.wrcsv)
 
-    # And run it
+    # 然后运行
     cerebro.run(stdstats=False)
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=True)
 

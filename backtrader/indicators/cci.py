@@ -26,9 +26,18 @@ from . import Indicator, Max, MovAv, MeanDev
 
 class CommodityChannelIndex(Indicator):
     '''
-    Introduced by Donald Lambert in 1980 to measure variations of the
-    "typical price" (see below) from its mean to identify extremes and
-    reversals
+    Donald Lambert 于 1980 年提出的 Commodity Channel Index，用于衡量
+    "typical price" 相对均值的偏离，以识别极端状态和反转。
+
+    Args:
+        period: 计算 typical price 均值与平均偏差的周期。
+        factor: 标准化偏离值的缩放因子。
+        movav: 用于 typical price 均值的 Moving Average 类型。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        CommodityChannelIndex: 输出 ``cci`` line 的 indicator。
 
     Formula:
       - tp = typical_price = (high + low + close) / 3
@@ -39,6 +48,13 @@ class CommodityChannelIndex(Indicator):
 
     See:
       - https://en.wikipedia.org/wiki/Commodity_channel_index
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(CommodityChannelIndex, period=20)
     '''
     alias = ('CCI',)
 

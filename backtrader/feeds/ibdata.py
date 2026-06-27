@@ -34,227 +34,144 @@ from backtrader.stores import ibstore
 
 class MetaIBData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
-        '''Class has already been created ... register'''
-        # Initialize the class
+        '''类已经创建完成，随后把它注册到对应 store。'''
+        # 初始化类对象
         super(MetaIBData, cls).__init__(name, bases, dct)
 
-        # Register with the store
+        # 注册到 store，供 IBStore 找到实际 DataCls
         ibstore.IBStore.DataCls = cls
 
 
 class IBData(with_metaclass(MetaIBData, DataBase)):
-    '''Interactive Brokers Data Feed.
+    '''Interactive Brokers 数据源。
 
-    Supports the following contract specifications in parameter ``dataname``:
+    Args:
+        dataname: IB contract 描述字符串。支持下列格式：
 
-          - TICKER  # Stock type and SMART exchange
-          - TICKER-STK  # Stock and SMART exchange
+          - TICKER  # Stock 类型和 SMART 交易所
+          - TICKER-STK  # Stock 和 SMART 交易所
           - TICKER-STK-EXCHANGE  # Stock
           - TICKER-STK-EXCHANGE-CURRENCY  # Stock
 
-          - TICKER-CFD  # CFD and SMART exchange
+          - TICKER-CFD  # CFD 和 SMART 交易所
           - TICKER-CFD-EXCHANGE  # CFD
           - TICKER-CDF-EXCHANGE-CURRENCY  # Stock
 
-          - TICKER-IND-EXCHANGE  # Index
-          - TICKER-IND-EXCHANGE-CURRENCY  # Index
+          - TICKER-IND-EXCHANGE  # 指数
+          - TICKER-IND-EXCHANGE-CURRENCY  # 指数
 
-          - TICKER-YYYYMM-EXCHANGE  # Future
-          - TICKER-YYYYMM-EXCHANGE-CURRENCY  # Future
-          - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULT  # Future
-          - TICKER-FUT-EXCHANGE-CURRENCY-YYYYMM-MULT # Future
+          - TICKER-YYYYMM-EXCHANGE  # 期货
+          - TICKER-YYYYMM-EXCHANGE-CURRENCY  # 期货
+          - TICKER-YYYYMM-EXCHANGE-CURRENCY-MULT  # 期货
+          - TICKER-FUT-EXCHANGE-CURRENCY-YYYYMM-MULT # 期货
 
           - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT  # FOP
           - TICKER-YYYYMM-EXCHANGE-CURRENCY-STRIKE-RIGHT-MULT  # FOP
           - TICKER-FOP-EXCHANGE-CURRENCY-YYYYMM-STRIKE-RIGHT # FOP
           - TICKER-FOP-EXCHANGE-CURRENCY-YYYYMM-STRIKE-RIGHT-MULT # FOP
 
-          - CUR1.CUR2-CASH-IDEALPRO  # Forex
+          - CUR1.CUR2-CASH-IDEALPRO  # 外汇
 
           - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-STRIKE-RIGHT  # OPT
           - TICKER-YYYYMMDD-EXCHANGE-CURRENCY-STRIKE-RIGHT-MULT  # OPT
           - TICKER-OPT-EXCHANGE-CURRENCY-YYYYMMDD-STRIKE-RIGHT # OPT
           - TICKER-OPT-EXCHANGE-CURRENCY-YYYYMMDD-STRIKE-RIGHT-MULT # OPT
 
-    Params:
+        sectype: ``dataname`` 未提供 security type 时使用的默认值，默认 ``STK``。
+        exchange: ``dataname`` 未提供 exchange 时使用的默认值，默认 ``SMART``。
+        currency: ``dataname`` 未提供 currency 时使用的默认值，默认空字符串。
+        historical: 为 ``True`` 时，完成首次历史数据下载后停止。会使用标准 data feed
+            参数 ``fromdate`` 和 ``todate`` 作为时间范围。若请求范围超过 IB 在当前
+            timeframe/compression 下允许的范围，会拆成多次请求。
+        what: 历史数据请求类型。``None`` 时按资产类型使用默认值：``CASH`` 使用
+            ``'BID'``，其他资产使用 ``'TRADES'``。现金资产也可使用 ``'ASK'``。
+        rtbar: 为 ``True`` 时使用 IB 的 ``5 Seconds Realtime bars``；为 ``False``
+            时使用基于 tick 的 ``RTVolume``。``CASH`` 资产始终使用 ``RTVolume``。
+        useRTH: 历史数据是否仅下载 Regular Trading Hours。
+        qcheck: 没有收到数据时的唤醒间隔（秒），用于给 resample/replay 和 notification
+            传播留出处理机会。
+        backfill_start: 启动时是否执行 backfill。会在单次请求中尽可能获取最大历史数据。
+        backfill: 断线/重连后是否执行 backfill。会按缺口时长下载尽量小的数据范围。
+        backfill_from: 额外的初始 backfill 数据源。该数据源耗尽后，如有需要，再从 IB
+            拉取 backfill 数据。
+        latethrough: resample/replay 后，如果 tick 晚于已输出的 bar，是否仍允许其通过。
+        tradename: 与 ``dataname`` 不同的交易标的名称，常用于 CFD 等“报价资产”和
+            “交易资产”不同的场景。
 
-      - ``sectype`` (default: ``STK``)
+    Returns:
+        IBData: 可加入 Cerebro 的 Interactive Brokers 数据源实例。
 
-        Default value to apply as *security type* if not provided in the
-        ``dataname`` specification
+    默认参数允许像 ``TICKER`` 这样的简写形式，此时会自动套用 ``sectype='STK'`` 和
+    ``exchange='SMART'``。例如 ``AAPL-STK-SMART-USD`` 是完整写法，也可以写成
+    ``IBData(dataname='AAPL', currency='USD')``。
 
-      - ``exchange`` (default: ``SMART``)
+    ---
+    交互界面使用示范:
 
-        Default value to apply as *exchange* if not provided in the
-        ``dataname`` specification
-
-      - ``currency`` (default: ``''``)
-
-        Default value to apply as *currency* if not provided in the
-        ``dataname`` specification
-
-      - ``historical`` (default: ``False``)
-
-        If set to ``True`` the data feed will stop after doing the first
-        download of data.
-
-        The standard data feed parameters ``fromdate`` and ``todate`` will be
-        used as reference.
-
-        The data feed will make multiple requests if the requested duration is
-        larger than the one allowed by IB given the timeframe/compression
-        chosen for the data.
-
-      - ``what`` (default: ``None``)
-
-        If ``None`` the default for different assets types will be used for
-        historical data requests:
-
-          - 'BID' for CASH assets
-          - 'TRADES' for any other
-
-        Use 'ASK' for the Ask quote of cash assets
-        
-        Check the IB API docs if another value is wished
-
-      - ``rtbar`` (default: ``False``)
-
-        If ``True`` the ``5 Seconds Realtime bars`` provided by Interactive
-        Brokers will be used as the smalles tick. According to the
-        documentation they correspond to real-time values (once collated and
-        curated by IB)
-
-        If ``False`` then the ``RTVolume`` prices will be used, which are based
-        on receiving ticks. In the case of ``CASH`` assets (like for example
-        EUR.JPY) ``RTVolume`` will always be used and from it the ``bid`` price
-        (industry de-facto standard with IB according to the literature
-        scattered over the Internet)
-
-        Even if set to ``True``, if the data is resampled/kept to a
-        timeframe/compression below Seconds/5, no real time bars will be used,
-        because IB doesn't serve them below that level
-
-      - ``qcheck`` (default: ``0.5``)
-
-        Time in seconds to wake up if no data is received to give a chance to
-        resample/replay packets properly and pass notifications up the chain
-
-      - ``backfill_start`` (default: ``True``)
-
-        Perform backfilling at the start. The maximum possible historical data
-        will be fetched in a single request.
-
-      - ``backfill`` (default: ``True``)
-
-        Perform backfilling after a disconnection/reconnection cycle. The gap
-        duration will be used to download the smallest possible amount of data
-
-      - ``backfill_from`` (default: ``None``)
-
-        An additional data source can be passed to do an initial layer of
-        backfilling. Once the data source is depleted and if requested,
-        backfilling from IB will take place. This is ideally meant to backfill
-        from already stored sources like a file on disk, but not limited to.
-
-      - ``latethrough`` (default: ``False``)
-
-        If the data source is resampled/replayed, some ticks may come in too
-        late for the already delivered resampled/replayed bar. If this is
-        ``True`` those ticks will bet let through in any case.
-
-        Check the Resampler documentation to see who to take those ticks into
-        account.
-
-        This can happen especially if ``timeoffset`` is set to ``False``  in
-        the ``IBStore`` instance and the TWS server time is not in sync with
-        that of the local computer
-
-      - ``tradename`` (default: ``None``)
-        Useful for some specific cases like ``CFD`` in which prices are offered
-        by one asset and trading happens in a different onel
-
-        - SPY-STK-SMART-USD -> SP500 ETF (will be specified as ``dataname``)
-
-        - SPY-CFD-SMART-USD -> which is the corresponding CFD which offers not
-          price tracking but in this case will be the trading asset (specified
-          as ``tradename``)
-
-    The default values in the params are the to allow things like ```TICKER``,
-    to which the parameter ``sectype`` (default: ``STK``) and ``exchange``
-    (default: ``SMART``) are applied.
-
-    Some assets like ``AAPL`` need full specification including ``currency``
-    (default: '') whereas others like ``TWTR`` can be simply passed as it is.
-
-      - ``AAPL-STK-SMART-USD`` would be the full specification for dataname
-
-        Or else: ``IBData`` as ``IBData(dataname='AAPL', currency='USD')``
-        which uses the default values (``STK`` and ``SMART``) and overrides
-        the currency to be ``USD``
+    >>> data = IBData(dataname='AAPL', currency='USD')  # doctest: +SKIP
+    >>> data.p.currency  # doctest: +SKIP
+    'USD'
     '''
     params = (
-        ('sectype', 'STK'),  # usual industry value
-        ('exchange', 'SMART'),  # usual industry value
+        ('sectype', 'STK'),  # 行业常用默认值
+        ('exchange', 'SMART'),  # 行业常用默认值
         ('currency', ''),
-        ('rtbar', False),  # use RealTime 5 seconds bars
-        ('historical', False),  # only historical download
-        ('what', None),  # historical - what to show
-        ('useRTH', False),  # historical - download only Regular Trading Hours
-        ('qcheck', 0.5),  # timeout in seconds (float) to check for events
-        ('backfill_start', True),  # do backfilling at the start
-        ('backfill', True),  # do backfilling when reconnecting
-        ('backfill_from', None),  # additional data source to do backfill from
-        ('latethrough', False),  # let late samples through
-        ('tradename', None),  # use a different asset as order target
+        ('rtbar', False),  # 使用 RealTime 5 秒 bar
+        ('historical', False),  # 仅下载历史数据
+        ('what', None),  # 历史数据请求类型
+        ('useRTH', False),  # 历史数据仅下载 Regular Trading Hours
+        ('qcheck', 0.5),  # 检查事件的超时时间（秒，float）
+        ('backfill_start', True),  # 启动时执行 backfill
+        ('backfill', True),  # 重连时执行 backfill
+        ('backfill_from', None),  # 用于 backfill 的额外数据源
+        ('latethrough', False),  # 允许延迟样本通过
+        ('tradename', None),  # 使用不同资产作为下单目标
     )
 
     _store = ibstore.IBStore
 
-    # Minimum size supported by real-time bars
+    # 实时 bar 支持的最小周期
     RTBAR_MINSIZE = (TimeFrame.Seconds, 5)
 
-    # States for the Finite State Machine in _load
+    # _load 中有限状态机的状态
     _ST_FROM, _ST_START, _ST_LIVE, _ST_HISTORBACK, _ST_OVER = range(5)
 
     def _timeoffset(self):
         return self.ib.timeoffset()
 
     def _gettz(self):
-        # If no object has been provided by the user and a timezone can be
-        # found via contractdtails, then try to get it from pytz, which may or
-        # may not be available.
+        # 如果用户没有提供 timezone 对象，但 contractdetails 中可以找到 timezone，
+        # 就尝试通过 pytz 获取；pytz 可能不存在。
 
-        # The timezone specifications returned by TWS seem to be abbreviations
-        # understood by pytz, but the full list which TWS may return is not
-        # documented and one of the abbreviations may fail
+        # TWS 返回的 timezone 看起来是 pytz 能理解的缩写，但 TWS 可能返回的完整列表
+        # 没有文档保证，某些缩写可能失败
         tzstr = isinstance(self.p.tz, string_types)
         if self.p.tz is not None and not tzstr:
             return bt.utils.date.Localizer(self.p.tz)
 
         if self.contractdetails is None:
-            return None  # nothing can be done
+            return None  # 无法继续处理
 
         try:
-            import pytz  # keep the import very local
+            import pytz  # 保持局部导入
         except ImportError:
-            return None  # nothing can be done
+            return None  # 无法继续处理
 
         tzs = self.p.tz if tzstr else self.contractdetails.m_timeZoneId
 
-        if tzs == 'CST':  # reported by TWS, not compatible with pytz. patch it
+        if tzs == 'CST':  # TWS 返回值，与 pytz 不兼容，需要修正
             tzs = 'CST6CDT'
 
         try:
             tz = pytz.timezone(tzs)
         except pytz.UnknownTimeZoneError:
-            return None  # nothing can be done
+            return None  # 无法继续处理
 
-        # contractdetails there, import ok, timezone found, return it
+        # contractdetails 存在，导入成功，timezone 已找到，直接返回
         return tz
 
     def islive(self):
-        '''Returns ``True`` to notify ``Cerebro`` that preloading and runonce
-        should be deactivated'''
+        '''返回 ``True``，通知 ``Cerebro`` 关闭 preload 和 runonce。'''
         return not self.p.historical
 
     def __init__(self, **kwargs):
@@ -263,14 +180,13 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         self.pretradecontract = self.parsecontract(self.p.tradename)
 
     def setenvironment(self, env):
-        '''Receives an environment (cerebro) and passes it over to the store it
-        belongs to'''
+        '''接收 Cerebro 环境，并把它传给所属 store。'''
         super(IBData, self).setenvironment(env)
         env.addstore(self.ib)
 
     def parsecontract(self, dataname):
-        '''Parses dataname generates a default contract'''
-        # Set defaults for optional tokens in the ticker string
+        '''解析 dataname，并生成默认 contract。'''
+        # 为 ticker 字符串中的可选 token 设置默认值
         if dataname is None:
             return None
 
@@ -281,58 +197,58 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         right = ''
         mult = ''
 
-        # split the ticker string
+        # 拆分 ticker 字符串
         tokens = iter(dataname.split('-'))
 
-        # Symbol and security type are compulsory
+        # symbol 和 security type 是必需字段
         symbol = next(tokens)
         try:
             sectype = next(tokens)
         except StopIteration:
             sectype = self.p.sectype
 
-        # security type can be an expiration date
+        # security type 位置也可能是到期日
         if sectype.isdigit():
-            expiry = sectype  # save the expiration ate
+            expiry = sectype  # 保存到期日
 
             if len(sectype) == 6:  # YYYYMM
                 sectype = 'FUT'
-            else:  # Assume OPTIONS - YYYYMMDD
+            else:  # 视为 OPTIONS - YYYYMMDD
                 sectype = 'OPT'
 
-        if sectype == 'CASH':  # need to address currency for Forex
+        if sectype == 'CASH':  # Forex 需要拆出 currency
             symbol, curr = symbol.split('.')
 
-        # See if the optional tokens were provided
+        # 检查是否提供了可选 token
         try:
-            exch = next(tokens)  # on exception it will be the default
-            curr = next(tokens)  # on exception it will be the default
+            exch = next(tokens)  # 异常时保持默认值
+            curr = next(tokens)  # 异常时保持默认值
 
             if sectype == 'FUT':
                 if not expiry:
                     expiry = next(tokens)
                 mult = next(tokens)
 
-                # Try to see if this is FOP - Futures on OPTIONS
+                # 尝试判断是否为 FOP - Futures on OPTIONS
                 right = next(tokens)
-                # if still here this is a FOP and not a FUT
+                # 能走到这里说明是 FOP，而不是 FUT
                 sectype = 'FOP'
-                strike, mult = float(mult), ''  # assign to strike and void
+                strike, mult = float(mult), ''  # 转给 strike，并清空 mult
 
-                mult = next(tokens)  # try again to see if there is any
+                mult = next(tokens)  # 再尝试读取 mult
 
             elif sectype == 'OPT':
                 if not expiry:
                     expiry = next(tokens)
-                strike = float(next(tokens))  # on exception - default
-                right = next(tokens)  # on exception it will be the default
+                strike = float(next(tokens))  # 异常时保持默认值
+                right = next(tokens)  # 异常时保持默认值
 
-                mult = next(tokens)  # ?? no harm in any case
+                mult = next(tokens)  # 即使不存在也无妨
 
         except StopIteration:
             pass
 
-        # Make the initial contract
+        # 创建初始 contract
         precon = self.ib.makecontract(
             symbol=symbol, sectype=sectype, exch=exch, curr=curr,
             expiry=expiry, strike=strike, right=right, mult=mult)
@@ -340,17 +256,16 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return precon
 
     def start(self):
-        '''Starts the IB connecction and gets the real contract and
-        contractdetails if it exists'''
+        '''启动 IB 连接，并在存在时获取真实 contract 和 contractdetails。'''
         super(IBData, self).start()
-        # Kickstart store and get queue to wait on
+        # 启动 store，并获取后续等待的数据队列
         self.qlive = self.ib.start(data=self)
         self.qhist = None
 
         self._usertvol = not self.p.rtbar
         tfcomp = (self._timeframe, self._compression)
         if tfcomp < self.RTBAR_MINSIZE:
-            # Requested timeframe/compression not supported by rtbars
+            # 请求的 timeframe/compression 不受 rtbar 支持
             self._usertvol = True
 
         self.contract = None
@@ -363,54 +278,53 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
             self.p.backfill_from.setenvironment(self._env)
             self.p.backfill_from._start()
         else:
-            self._state = self._ST_START  # initial state for _load
-        self._statelivereconn = False  # if reconnecting in live state
-        self._subcription_valid = False  # subscription state
-        self._storedmsg = dict()  # keep pending live message (under None)
+            self._state = self._ST_START  # _load 的初始状态
+        self._statelivereconn = False  # 是否在 live 状态下重连
+        self._subcription_valid = False  # 订阅状态
+        self._storedmsg = dict()  # 保存待处理的 live 消息（键为 None）
 
         if not self.ib.connected():
             return
 
         self.put_notification(self.CONNECTED)
-        # get real contract details with real conId (contractId)
+        # 通过真实 conId（contractId）获取真实 contract details
         cds = self.ib.getContractDetails(self.precontract, maxcount=1)
         if cds is not None:
             cdetails = cds[0]
             self.contract = cdetails.contractDetails.m_summary
             self.contractdetails = cdetails.contractDetails
         else:
-            # no contract can be found (or many)
+            # 找不到 contract，或匹配到多个
             self.put_notification(self.DISCONNECTED)
             return
 
         if self.pretradecontract is None:
-            # no different trading asset - default to standard asset
+            # 没有不同的交易资产，默认使用标准资产
             self.tradecontract = self.contract
             self.tradecontractdetails = self.contractdetails
         else:
-            # different target asset (typical of some CDS products)
-            # use other set of details
+            # 交易目标资产不同（某些 CDS 产品常见），使用另一套 details
             cds = self.ib.getContractDetails(self.pretradecontract, maxcount=1)
             if cds is not None:
                 cdetails = cds[0]
                 self.tradecontract = cdetails.contractDetails.m_summary
                 self.tradecontractdetails = cdetails.contractDetails
             else:
-                # no contract can be found (or many)
+                # 找不到 contract，或匹配到多个
                 self.put_notification(self.DISCONNECTED)
                 return
 
         if self._state == self._ST_START:
-            self._start_finish()  # to finish initialization
+            self._start_finish()  # 完成初始化
             self._st_start()
 
     def stop(self):
-        '''Stops and tells the store to stop'''
+        '''停止数据源，并通知 store 停止。'''
         super(IBData, self).stop()
         self.ib.stop()
 
     def reqdata(self):
-        '''request real-time data. checks cash vs non-cash) and param useRT'''
+        '''请求实时数据，并根据资产类型和 rtbar 参数选择订阅方式。'''
         if self.contract is None or self._subcription_valid:
             return
 
@@ -423,7 +337,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return self.qlive
 
     def canceldata(self):
-        '''Cancels Market Data subscription, checking asset type and rtbar'''
+        '''取消 Market Data 订阅，并根据资产类型和 rtbar 参数选择取消方式。'''
         if self.contract is None:
             return
 
@@ -437,7 +351,7 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
 
     def _load(self):
         if self.contract is None or self._state == self._ST_OVER:
-            return False  # nothing can be done
+            return False  # 无法继续处理
 
         while True:
             if self._state == self._ST_LIVE:
@@ -448,11 +362,11 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     if True:
                         return None
 
-                # Code invalidated until further checking is done
+                # 这段代码在进一步检查前保持无效
                     if not self._statelivereconn:
-                        return None  # indicate timeout situation
+                        return None  # 表示超时
 
-                    # Awaiting data and nothing came in - fake it up until now
+                    # 等待数据但没有收到，临时补到当前时间
                     dtend = self.num2date(date2num(datetime.datetime.utcnow()))
                     dtbegin = None
                     if len(self) > 1:
@@ -472,15 +386,15 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self._state = self._ST_HISTORBACK
 
                     self._statelivereconn = False
-                    continue  # to reenter the loop and hit st_historback
+                    continue  # 重新进入循环并命中 st_historback
 
-                if msg is None:  # Conn broken during historical/backfilling
+                if msg is None:  # historical/backfill 期间连接断开
                     self._subcription_valid = False
                     self.put_notification(self.CONNBROKEN)
-                    # Try to reconnect
+                    # 尝试重连
                     if not self.ib.reconnect(resub=True):
                         self.put_notification(self.DISCONNECTED)
-                        return False  # failed
+                        return False  # 失败
 
                     self._statelivereconn = self.p.backfill
                     continue
@@ -489,44 +403,44 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 
-                elif msg == -1100:  # conn broken
-                    # Tell to wait for a message to do a backfill
+                elif msg == -1100:  # 连接断开
+                    # 等待消息后再执行 backfill
                     # self._state = self._ST_DISCONN
                     self._subcription_valid = False
                     self._statelivereconn = self.p.backfill
                     continue
 
-                elif msg == -1102:  # conn broken/restored tickerId maintained
-                    # The message may be duplicated
+                elif msg == -1102:  # 连接恢复，tickerId 保持
+                    # 消息可能重复
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
                     continue
 
-                elif msg == -1101:  # conn broken/restored tickerId gone
-                    # The message may be duplicated
+                elif msg == -1101:  # 连接恢复，tickerId 丢失
+                    # 消息可能重复
                     self._subcription_valid = False
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
-                        self.reqdata()  # resubscribe
+                        self.reqdata()  # 重新订阅
                     continue
 
-                elif msg == -10225:  # Bust event occurred, current subscription is deactivated.
+                elif msg == -10225:  # 发生 Bust event，当前订阅失效
                     self._subcription_valid = False
                     if not self._statelivereconn:
                         self._statelivereconn = self.p.backfill
-                        self.reqdata()  # resubscribe
+                        self.reqdata()  # 重新订阅
                     continue
 
                 elif isinstance(msg, integer_types):
-                    # Unexpected notification for historical data skip it
-                    # May be a "not connected not yet processed"
+                    # 历史数据阶段收到意外 notification，跳过它
+                    # 可能是“尚未处理的未连接状态”
                     self.put_notification(self.UNKNOWN, msg)
                     continue
 
-                # Process the message according to expected return type
+                # 按预期返回类型处理消息
                 if not self._statelivereconn:
                     if self._laststatus != self.LIVE:
-                        if self.qlive.qsize() <= 1:  # very short live queue
+                        if self.qlive.qsize() <= 1:  # live 队列很短
                             self.put_notification(self.LIVE)
 
                     if self._usertvol:
@@ -536,25 +450,25 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     if ret:
                         return True
 
-                    # could not load bar ... go and get new one
+                    # 当前消息无法形成 bar，继续取下一条
                     continue
 
-                # Fall through to processing reconnect - try to backfill
-                self._storedmsg[None] = msg  # keep the msg
+                # 进入重连处理流程，尝试 backfill
+                self._storedmsg[None] = msg  # 保存当前消息
 
-                # else do a backfill
+                # 否则执行 backfill
                 if self._laststatus != self.DELAYED:
                     self.put_notification(self.DELAYED)
 
                 dtend = None
                 if len(self) > 1:
-                    # len == 1 ... forwarded for the 1st time
-                    # get begin date in utc-like format like msg.datetime
+                    # len == 1 表示第一次转发
+                    # 获取类似 msg.datetime 的 UTC 风格起始时间
                     dtbegin = num2date(self.datetime[-1])
                 elif self.fromdate > float('-inf'):
                     dtbegin = num2date(self.fromdate)
                 else:  # 1st bar and no begin set
-                    # passing None to fetch max possible in 1 request
+                    # 传 None 表示单次请求尽可能获取最大范围
                     dtbegin = None
 
                 dtend = msg.datetime if self._usertvol else msg.time
@@ -566,56 +480,56 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                     sessionend=self.p.sessionend)
 
                 self._state = self._ST_HISTORBACK
-                self._statelivereconn = False  # no longer in live
+                self._statelivereconn = False  # 不再处于 live 重连状态
                 continue
 
             elif self._state == self._ST_HISTORBACK:
                 msg = self.qhist.get()
-                if msg is None:  # Conn broken during historical/backfilling
-                    # Situation not managed. Simply bail out
+                if msg is None:  # historical/backfill 期间连接断开
+                    # 未处理该情况，直接退出
                     self._subcription_valid = False
                     self.put_notification(self.DISCONNECTED)
-                    return False  # error management cancelled the queue
+                    return False  # 错误处理取消了队列
 
-                elif msg == -354:  # Data not subscribed
+                elif msg == -354:  # 未订阅数据
                     self._subcription_valid = False
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 
-                elif msg == -420:  # No permissions for the data
+                elif msg == -420:  # 没有数据权限
                     self._subcription_valid = False
                     self.put_notification(self.NOTSUBSCRIBED)
                     return False
 
                 elif isinstance(msg, integer_types):
-                    # Unexpected notification for historical data skip it
-                    # May be a "not connected not yet processed"
+                    # 历史数据阶段收到意外 notification，跳过它
+                    # 可能是“尚未处理的未连接状态”
                     self.put_notification(self.UNKNOWN, msg)
                     continue
 
                 if msg.date is not None:
                     if self._load_rtbar(msg, hist=True):
-                        return True  # loading worked
+                        return True  # 加载成功
 
-                    # the date is from overlapping historical request
+                    # 日期来自重叠的历史数据请求
                     continue
 
-                # End of histdata
-                if self.p.historical:  # only historical
+                # 历史数据结束
+                if self.p.historical:  # 仅历史模式
                     self.put_notification(self.DISCONNECTED)
-                    return False  # end of historical
+                    return False  # 历史数据结束
 
-                # Live is also wished - go for it
+                # 还需要进入 live 模式
                 self._state = self._ST_LIVE
                 continue
 
             elif self._state == self._ST_FROM:
                 if not self.p.backfill_from.next():
-                    # additional data source is consumed
+                    # 额外 backfill 数据源已经耗尽
                     self._state = self._ST_START
                     continue
 
-                # copy lines of the same name
+                # 复制同名 line
                 for alias in self.lines.getlinealiases():
                     lsrc = getattr(self.p.backfill_from.lines, alias)
                     ldst = getattr(self.lines, alias)
@@ -646,32 +560,30 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
                 sessionend=self.p.sessionend)
 
             self._state = self._ST_HISTORBACK
-            return True  # continue before
+            return True  # 前面继续
 
-        # Live is requested
+        # 请求 live 数据
         if not self.ib.reconnect(resub=True):
             self.put_notification(self.DISCONNECTED)
             self._state = self._ST_OVER
-            return False  # failed - was so
+            return False  # 失败
 
         self._statelivereconn = self.p.backfill_start
         if self.p.backfill_start:
             self.put_notification(self.DELAYED)
 
         self._state = self._ST_LIVE
-        return True  # no return before - implicit continue
+        return True  # 前面没有返回时，隐式继续
 
     def _load_rtbar(self, rtbar, hist=False):
-        # A complete 5 second bar made of real-time ticks is delivered and
-        # contains open/high/low/close/volume prices
-        # The historical data has the same data but with 'date' instead of
-        # 'time' for datetime
+        # 完整的 5 秒 bar 由实时 tick 聚合而来，包含 open/high/low/close/volume
+        # 历史数据包含相同字段，但 datetime 使用 'date' 而不是 'time'
         dt = date2num(rtbar.time if not hist else rtbar.date)
         if dt < self.lines.datetime[-1] and not self.p.latethrough:
-            return False  # cannot deliver earlier than already delivered
+            return False  # 不能输出早于已输出时间的 bar
 
         self.lines.datetime[0] = dt
-        # Put the tick into the bar
+        # 把 tick 写入 bar
         self.lines.open[0] = rtbar.open
         self.lines.high[0] = rtbar.high
         self.lines.low[0] = rtbar.low
@@ -682,17 +594,15 @@ class IBData(with_metaclass(MetaIBData, DataBase)):
         return True
 
     def _load_rtvolume(self, rtvol):
-        # A single tick is delivered and is therefore used for the entire set
-        # of prices. Ideally the
-        # contains open/high/low/close/volume prices
-        # Datetime transformation
+        # 单个 tick 会用于整组价格字段；理想情况下它包含 open/high/low/close/volume
+        # 转换 datetime
         dt = date2num(rtvol.datetime)
         if dt < self.lines.datetime[-1] and not self.p.latethrough:
-            return False  # cannot deliver earlier than already delivered
+            return False  # 不能输出早于已输出时间的 bar
 
         self.lines.datetime[0] = dt
 
-        # Put the tick into the bar
+        # 把 tick 写入 bar
         tick = rtvol.price
         self.lines.open[0] = tick
         self.lines.high[0] = tick

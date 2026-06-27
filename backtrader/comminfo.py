@@ -28,92 +28,57 @@ from .metabase import MetaParams
 
 
 class CommInfoBase(with_metaclass(MetaParams)):
-    '''Base Class for the Commission Schemes.
+    '''Commission Schemes 的基类，用于描述资产的 commission、margin、leverage
+    和 credit interest 计算规则。
 
-    Params:
+    Args:
+        commission (float): 基础 commission 数值，可以表示百分比或货币单位。
+        mult (float): 用于 asset value/profit 的乘数。
+        margin: 打开/持有一次操作所需的货币单位数量。仅当最终 ``_stocklike``
+            属性为 ``False`` 时适用。
+        automargin: 由 ``get_margin`` 用于自动计算所需 margin/guarantees。
+            规则如下:
 
-      - ``commission`` (def: ``0.0``): base commission value in percentage or
-        monetary units
+            - 如果 ``automargin`` 为 ``False``，使用参数 ``margin``
+            - 如果 ``automargin < 0``，使用 ``mult * price``
+            - 如果 ``automargin > 0``，使用 ``automargin * price``
 
-      - ``mult`` (def ``1.0``): multiplier applied to the asset for
-        value/profit
+        commtype: 支持 ``CommInfoBase.COMM_PERC`` 和
+            ``CommInfoBase.COMM_FIXED``。``COMM_PERC`` 表示 commission 按
+            百分比理解，``COMM_FIXED`` 表示 commission 按货币单位理解。
 
-      - ``margin`` (def: ``None``): amount of monetary units needed to
-        open/hold an operation. It only applies if the final ``_stocklike``
-        attribute in the class is set to ``False``
+            ``None`` 是受支持的默认值，用于保持与旧版 ``CommissionInfo`` 对象
+            兼容。如果 ``commtype`` 为 ``None``，则:
 
-      - ``automargin`` (def: ``False``): Used by the method ``get_margin``
-        to automatically calculate the margin/guarantees needed with the
-        following policy
+            - ``margin`` 为 ``None``: 内部 ``_commtype`` 设为 ``COMM_PERC``，
+              ``_stocklike`` 设为 ``True``（按股票式百分比运作）
+            - ``margin`` 不为 ``None``: 内部 ``_commtype`` 设为
+              ``COMM_FIXED``，``_stocklike`` 设为 ``False``（按 futures 式固定
+              round-trip commission 运作）
 
-          - Use param ``margin`` if param ``automargin`` evaluates to ``False``
+            如果该参数不是 ``None``，则会赋值给内部 ``_commtype`` 属性；参数
+            ``stocklike`` 也会同样赋值给内部 ``_stocklike`` 属性。
 
-          - Use param ``mult`` * ``price`` if ``automargin < 0``
-
-          - Use param ``automargin`` * ``price`` if ``automargin > 0``
-
-      - ``commtype`` (def: ``None``): Supported values are
-        ``CommInfoBase.COMM_PERC`` (commission to be understood as %) and
-        ``CommInfoBase.COMM_FIXED`` (commission to be understood as monetary
-        units)
-
-        The default value of ``None`` is a supported value to retain
-        compatibility with the legacy ``CommissionInfo`` object. If
-        ``commtype`` is set to None, then the following applies:
-
-          - ``margin`` is ``None``: Internal ``_commtype`` is set to
-            ``COMM_PERC`` and ``_stocklike`` is set to ``True`` (Operating
-            %-wise with Stocks)
-
-          - ``margin`` is not ``None``: ``_commtype`` set to ``COMM_FIXED`` and
-            ``_stocklike`` set to ``False`` (Operating with fixed rount-trip
-            commission with Futures)
-
-        If this param is set to something else than ``None``, then it will be
-        passed to the internal ``_commtype`` attribute and the same will be
-        done with the param ``stocklike`` and the internal attribute
-        ``_stocklike``
-
-      - ``stocklike`` (def: ``False``): Indicates if the instrument is
-        Stock-like or Futures-like (see the ``commtype`` discussion above)
-
-      - ``percabs`` (def: ``False``): when ``commtype`` is set to COMM_PERC,
-        whether the parameter ``commission`` has to be understood as XX% or
-        0.XX
-
-        If this param is ``True``: 0.XX
-        If this param is ``False``: XX%
-
-      - ``interest`` (def: ``0.0``)
-
-        If this is non-zero, this is the yearly interest charged for holding a
-        short selling position. This is mostly meant for stock short-selling
-
-        The formula: ``days * price * abs(size) * (interest / 365)``
-
-        It must be specified in absolute terms: 0.05 -> 5%
-
-        .. note:: the behavior can be changed by overriding the method:
-                 ``_get_credit_interest``
-
-      - ``interest_long`` (def: ``False``)
-
-        Some products like ETFs get charged on interest for short and long
-        positions. If ths is ``True`` and ``interest`` is non-zero the interest
-        will be charged on both directions
-
-      - ``leverage`` (def: ``1.0``)
-
-        Amount of leverage for the asset with regards to the needed cash
+        stocklike (bool): 表示 instrument 是 Stock-like 还是 Futures-like
+            （见上方 ``commtype`` 说明）。
+        percabs (bool): 当 ``commtype`` 为 ``COMM_PERC`` 时，表示参数
+            ``commission`` 应按 XX% 还是 0.XX 理解。``True`` 表示 0.XX，
+            ``False`` 表示 XX%。
+        interest (float): 持有 short selling position 时收取的年化 interest。
+            主要用于股票 short-selling。公式为
+            ``days * price * abs(size) * (interest / 365)``。必须按绝对值指定:
+            0.05 表示 5%。
+        interest_long (bool): 某些产品（如 ETF）会对 short 和 long position
+            都收取 interest。如果该值为 ``True`` 且 ``interest`` 非零，则两个
+            方向都会收取 interest。
+        leverage (float): 该 asset 相对于所需 cash 的 leverage。
 
     Attributes:
+        _stocklike: 最终用于 Stock-like/Futures-like 行为的值。
+        _commtype: 最终用于 PERC/FIXED commission 行为的值。
 
-      - ``_stocklike``: Final value to use for Stock-like/Futures-like behavior
-      - ``_commtype``: Final value to use for PERC vs FIXED commissions
-
-      This two are used internally instead of the declared params to enable the
-      compatibility check described above for the legacy ``CommissionInfo``
-      object
+    ``_stocklike`` 和 ``_commtype`` 在内部使用，而不是直接使用声明参数，以便
+    执行上面描述的旧版 ``CommissionInfo`` 兼容性检查。
 
     '''
 
@@ -136,13 +101,11 @@ class CommInfoBase(with_metaclass(MetaParams)):
         self._stocklike = self.p.stocklike
         self._commtype = self.p.commtype
 
-        # The intial block checks for the behavior of the original
-        # CommissionInfo in which the commission scheme (perc/fixed) was
-        # determined by parameter "margin" evaluating to False/True
-        # If the parameter "commtype" is None, this behavior is emulated
-        # else, the parameter values are used
+        # 初始代码块检查原始 CommissionInfo 的行为：commission scheme
+        # (perc/fixed) 由参数 "margin" 的 False/True 判定。如果参数
+        # "commtype" 为 None，则模拟该行为；否则使用参数值
 
-        if self._commtype is None:  # original CommissionInfo behavior applies
+        if self._commtype is None:  # 使用原始 CommissionInfo 行为
             if self.p.margin:
                 self._stocklike = False
                 self._commtype = self.COMM_FIXED
@@ -151,7 +114,7 @@ class CommInfoBase(with_metaclass(MetaParams)):
                 self._commtype = self.COMM_PERC
 
         if not self._stocklike and not self.p.margin:
-            self.p.margin = 1.0  # avoid having None/0
+            self.p.margin = 1.0  # 避免 None/0
 
         if self._commtype == self.COMM_PERC and not self.p.percabs:
             self.p.commission /= 100.0
@@ -167,14 +130,17 @@ class CommInfoBase(with_metaclass(MetaParams)):
         return self._stocklike
 
     def get_margin(self, price):
-        '''Returns the actual margin/guarantees needed for a single item of the
-        asset at the given price. The default implementation has this policy:
+        '''返回给定 price 下单个 asset 实际所需的 margin/guarantees。
 
-          - Use param ``margin`` if param ``automargin`` evaluates to ``False``
+        Args:
+            price (float): 用于计算 margin 的 asset price。
 
-          - Use param ``mult`` * ``price`` if ``automargin < 0``
+        Returns:
+            float: 实际所需 margin。默认实现使用以下策略:
 
-          - Use param ``automargin`` * ``price`` if ``automargin > 0``
+              - 如果 ``automargin`` 为 ``False``，使用参数 ``margin``
+              - 如果 ``automargin < 0``，使用 ``mult * price``
+              - 如果 ``automargin > 0``，使用 ``automargin * price``
         '''
         if not self.p.automargin:
             return self.p.margin
@@ -186,34 +152,68 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
     def get_leverage(self):
 
-        '''Returns the level of leverage allowed for this comission scheme'''
+        '''返回该 commission scheme 允许的 leverage。
+
+        Returns:
+            float: 当前 leverage。
+        '''
         return self.p.leverage
 
     def getsize(self, price, cash):
-        '''Returns the needed size to meet a cash operation at a given price'''
+        '''返回给定 price 和 cash 下可满足 cash 操作的 size。
+
+        Args:
+            price (float): asset price。
+            cash (float): 可用 cash。
+
+        Returns:
+            int: 可执行 size。
+        '''
         if not self._stocklike:
             return int(self.p.leverage * (cash // self.get_margin(price)))
 
         return int(self.p.leverage * (cash // price))
 
     def getoperationcost(self, size, price):
-        '''Returns the needed amount of cash an operation would cost'''
+        '''返回一次 operation 所需的 cash 数量。
+
+        Args:
+            size (int): operation size。
+            price (float): operation price。
+
+        Returns:
+            float: 所需 cash。
+        '''
         if not self._stocklike:
             return abs(size) * self.get_margin(price)
 
         return abs(size) * price
 
     def getvaluesize(self, size, price):
-        '''Returns the value of size for given a price. For future-like
-        objects it is fixed at size * margin'''
+        '''返回给定 price 下 size 对应的 value。
+
+        Args:
+            size (int): position 或 operation size。
+            price (float): asset price。
+
+        Returns:
+            float: 对应 value。对 future-like 对象，固定为 ``size * margin``。
+        '''
         if not self._stocklike:
             return abs(size) * self.get_margin(price)
 
         return size * price
 
     def getvalue(self, position, price):
-        '''Returns the value of a position given a price. For future-like
-        objects it is fixed at size * margin'''
+        '''返回给定 price 下 position 的 value。
+
+        Args:
+            position: 带有 ``size`` 和 ``price`` 属性的 position 对象。
+            price (float): 当前 asset price。
+
+        Returns:
+            float: position value。对 future-like 对象，固定为 ``size * margin``。
+        '''
         if not self._stocklike:
             return abs(position.size) * self.get_margin(price)
 
@@ -221,15 +221,21 @@ class CommInfoBase(with_metaclass(MetaParams)):
         if size >= 0:
             return size * price
 
-        # With stocks, a short position is worth more as the price goes down
+        # 对股票来说，short position 会在 price 下跌时更有价值
         value = position.price * size  # original value
         value += (position.price - price) * size  # increased value
         return value
 
     def _getcommission(self, size, price, pseudoexec):
-        '''Calculates the commission of an operation at a given price
+        '''计算给定 price 下一次 operation 的 commission。
 
-        pseudoexec: if True the operation has not yet been executed
+        Args:
+            size (int): operation size。
+            price (float): operation price。
+            pseudoexec (bool): 如果为 ``True``，表示 operation 尚未实际执行。
+
+        Returns:
+            float: commission 金额。
         '''
         if self._commtype == self.COMM_PERC:
             return abs(size) * self.p.commission * price
@@ -237,30 +243,73 @@ class CommInfoBase(with_metaclass(MetaParams)):
         return abs(size) * self.p.commission
 
     def getcommission(self, size, price):
-        '''Calculates the commission of an operation at a given price
+        '''计算给定 price 下一次 operation 的 commission。
+
+        Args:
+            size (int): operation size。
+            price (float): operation price。
+
+        Returns:
+            float: commission 金额。
         '''
         return self._getcommission(size, price, pseudoexec=True)
 
     def confirmexec(self, size, price):
+        '''确认实际执行后的 commission。
+
+        Args:
+            size (int): executed size。
+            price (float): executed price。
+
+        Returns:
+            float: 实际执行 commission。
+        '''
         return self._getcommission(size, price, pseudoexec=False)
 
     def profitandloss(self, size, price, newprice):
-        '''Return actual profit and loss a position has'''
+        '''返回 position 的实际 profit and loss。
+
+        Args:
+            size (int): position size。
+            price (float): 原始 price。
+            newprice (float): 新 price。
+
+        Returns:
+            float: profit and loss。
+        '''
         return size * (newprice - price) * self.p.mult
 
     def cashadjust(self, size, price, newprice):
-        '''Calculates cash adjustment for a given price difference'''
+        '''根据 price 差值计算 cash adjustment。
+
+        Args:
+            size (int): position size。
+            price (float): 原始 price。
+            newprice (float): 新 price。
+
+        Returns:
+            float: cash adjustment。stock-like 对象返回 ``0.0``。
+        '''
         if not self._stocklike:
             return size * (newprice - price) * self.p.mult
 
         return 0.0
 
     def get_credit_interest(self, data, pos, dt):
-        '''Calculates the credit due for short selling or product specific'''
+        '''计算 short selling 或特定产品产生的 credit interest。
+
+        Args:
+            data: 产生 interest 的 data feed。
+            pos: 当前 position，需包含 ``size``、``price`` 和 ``datetime``。
+            dt (datetime.datetime): 当前 datetime。
+
+        Returns:
+            float: 应计 credit interest。
+        '''
         size, price = pos.size, pos.price
 
         if size > 0 and not self.p.interest_long:
-            return 0.0  # long positions not charged
+            return 0.0  # long positions 不收费
 
         dt0 = dt.date()
         dt1 = pos.datetime.date()
@@ -273,54 +322,47 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
     def _get_credit_interest(self, data, size, price, days, dt0, dt1):
         '''
-        This method returns  the cost in terms of credit interest charged by
-        the broker.
+        返回 broker 收取的 credit interest 成本。
 
-        In the case of ``size > 0`` this method will only be called if the
-        parameter to the class ``interest_long`` is ``True``
+        当 ``size > 0`` 时，只有类参数 ``interest_long`` 为 ``True`` 才会调用
+        该方法。
 
-        The formulat for the calculation of the credit interest rate is:
+        credit interest rate 的计算公式为:
 
-          The formula: ``days * price * abs(size) * (interest / 365)``
+          ``days * price * abs(size) * (interest / 365)``
 
 
-        Params:
-          - ``data``: data feed for which interest is charged
+        Args:
+            data: 收取 interest 的 data feed。
+            size (int): 当前 position size。> 0 表示 long position，< 0 表示
+                short position（该参数不会为 ``0``）。
+            price (float): 当前 position price。
+            days (int): 距上次 credit 计算经过的天数，即 ``(dt0 - dt1).days``。
+            dt0 (datetime.datetime): 当前 datetime。
+            dt1 (datetime.datetime): 上次计算的 datetime。
 
-          - ``size``: current position size. > 0 for long positions and < 0 for
-            short positions (this parameter will not be ``0``)
+        Returns:
+            float: credit interest 成本。
 
-          - ``price``: current position price
-
-          - ``days``: number of days elapsed since last credit calculation
-            (this is (dt0 - dt1).days)
-
-          - ``dt0``: (datetime.datetime) current datetime
-
-          - ``dt1``: (datetime.datetime) datetime of previous calculation
-
-        ``dt0`` and ``dt1`` are not used in the default implementation and are
-        provided as extra input for overridden methods
+        ``dt0`` 和 ``dt1`` 在默认实现中未使用，只是作为额外输入提供给覆盖方法。
         '''
         return days * self._creditrate * abs(size) * price
 
 
 class CommissionInfo(CommInfoBase):
-    '''Base Class for the actual Commission Schemes.
+    '''实际 Commission Schemes 的基类，用于兼容旧版 commission 行为。
 
-    CommInfoBase was created to keep suppor for the original, incomplete,
-    support provided by *backtrader*. New commission schemes derive from this
-    class which subclasses ``CommInfoBase``.
+    ``CommInfoBase`` 用于保留 *backtrader* 原始但不完整的支持。新的 commission
+    schemes 从该类派生，而该类继承 ``CommInfoBase``。
 
-    The default value of ``percabs`` is also changed to ``True``
+    ``percabs`` 的默认值也改为 ``True``。
 
-    Params:
+    Args:
+        percabs (bool): 当 ``commtype`` 为 COMM_PERC 时，表示参数
+            ``commission`` 应按 XX% 还是 0.XX 理解。``True`` 表示 0.XX，
+            ``False`` 表示 XX%。
 
-      - ``percabs`` (def: True): when ``commtype`` is set to COMM_PERC, whether
-        the parameter ``commission`` has to be understood as XX% or 0.XX
-
-        If this param is True: 0.XX
-        If this param is False: XX%
+    旧版 ``CommissionInfo`` 将 0.xx 作为百分比输入。
 
     '''
     params = (

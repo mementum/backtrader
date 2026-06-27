@@ -28,8 +28,13 @@ from . import MovingAverageBase, AverageWeighted
 
 class WeightedMovingAverage(MovingAverageBase):
     '''
-    A Moving Average which gives an arithmetic weighting to values with the
-    newest having the more weight
+    对值做算术加权的 Moving Average，越新的值权重越高。
+
+    Args:
+        period: 加权平均周期。
+
+    Returns:
+        WeightedMovingAverage: 输出 ``wma`` line 的 indicator。
 
     Formula:
       - weights = range(1, period + 1)
@@ -38,6 +43,13 @@ class WeightedMovingAverage(MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(WeightedMovingAverage, period=20)
     '''
     alias = ('WMA', 'MovingAverageWeighted',)
     lines = ('wma',)
@@ -46,8 +58,7 @@ class WeightedMovingAverage(MovingAverageBase):
         coef = 2.0 / (self.p.period * (self.p.period + 1.0))
         weights = tuple(float(x) for x in range(1, self.p.period + 1))
 
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
+        # 放在 super 之前，确保 mixin（子类化时右侧基类）能看到赋值操作并处理该 line
         self.lines[0] = AverageWeighted(
             self.data, period=self.p.period,
             coef=coef, weights=weights)

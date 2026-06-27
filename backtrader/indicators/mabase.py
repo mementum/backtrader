@@ -27,19 +27,17 @@ from . import Indicator
 
 
 class MovingAverage(object):
-    '''MovingAverage (alias MovAv)
+    '''MovingAverage（别名 MovAv）的占位基类，用于集中登记所有 Moving Average 类型。
 
-    A placeholder to gather all Moving Average Types in a single place.
-
-    Instantiating a SimpleMovingAverage can be achieved as follows::
+    实例化 SimpleMovingAverage 可使用下列写法::
 
       sma = MovingAverage.Simple(self.data, period)
 
-    Or using the shorter aliases::
+    也可以使用更短的别名::
 
       sma = MovAv.SMA(self.data, period)
 
-    or with the full (forwards and backwards) names:
+    或使用完整的正向/反向命名:
 
       sma = MovAv.SimpleMovingAverage(self.data, period)
 
@@ -69,23 +67,23 @@ class MovingAverage(object):
 
 
 class MovAv(MovingAverage):
-    pass  # alias
+    pass  # 别名
 
 
 class MetaMovAvBase(Indicator.__class__):
-    # Register any MovingAverage with the placeholder to allow the automatic
-    # creation of envelopes and oscillators
+    # 将所有 MovingAverage 注册到占位类，以便自动创建 envelope 和 oscillator
 
     def __new__(meta, name, bases, dct):
-        # Create the class
+        # 创建类
         cls = super(MetaMovAvBase, meta).__new__(meta, name, bases, dct)
 
         MovingAverage.register(cls)
 
-        # return the class
+        # 返回类
         return cls
 
 
 class MovingAverageBase(with_metaclass(MetaMovAvBase, Indicator)):
+    '''MovingAverage 的基类，用于统一 period 参数、绘图行为和自动登记逻辑。'''
     params = (('period', 30),)
     plotinfo = dict(subplot=False)

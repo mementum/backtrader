@@ -37,11 +37,11 @@ class RelativeVolume(bt.Indicator):
 
     def __init__(self):
         if self.p.volisnan:
-            # if missing volume will be NaN, do a simple division
-            # the end result for missing volumes will also be NaN
+            # 如果缺失 volume 会得到 NaN，此处做简单除法
+            # 缺失 volume 的最终结果也会是 NaN
             relvol = self.data.volume(-self.p.period) / self.data.volume
         else:
-            # Else do a controlled Div with a built-in function
+            # 否则使用内置函数做受控除法
             relvol = bt.DivByZero(
                 self.data.volume(-self.p.period),
                 self.data.volume,

@@ -26,10 +26,10 @@ import io
 import itertools
 import sys
 
-try:  # For new Python versions
+try:  # 新 Python 版本
     collectionsAbc = collections.abc  # collections.Iterable -> collections.abc.Iterable
-except AttributeError:  # For old Python versions
-    collectionsAbc = collections  # Используем collections.Iterable
+except AttributeError:  # 旧 Python 版本
+    collectionsAbc = collections  # 使用 collections.Iterable
 
 import backtrader as bt
 from backtrader.utils.py3 import (map, with_metaclass, string_types,
@@ -41,54 +41,42 @@ class WriterBase(with_metaclass(bt.MetaParams, object)):
 
 
 class WriterFile(WriterBase):
-    '''The system wide writer class.
+    '''系统级 writer 类，用于输出运行信息和可选 csv 数据流。
 
-    It can be parametrized with:
+    Args:
+      - ``out`` (default: ``sys.stdout``): 要写入的输出流。
 
-      - ``out`` (default: ``sys.stdout``): output stream to write to
+        如果传入字符串，会将该参数内容作为文件名使用。
 
-        If a string is passed a filename with the content of the parameter will
-        be used.
+        如果希望在 multiprocess optimization 时使用 ``sys.stdout``，请保持为
+        ``None``；子进程会自动初始化 ``sys.stdout``。
 
-        If you wish to run with ``sys.stdout`` while doing multiprocess optimization, leave it as ``None``, which will
-        automatically initiate ``sys.stdout`` on the child processes.
+      - ``close_out`` (default: ``False``): 当 ``out`` 是 stream 时，writer 是否
+        需要显式关闭它。
 
-      - ``close_out``  (default: ``False``)
+      - ``csv`` (default: ``False``): 是否在执行期间把 data feeds、strategies、
+        observers 和 indicators 的 csv stream 写入输出流。
 
-        If ``out`` is a stream whether it has to be explicitly closed by the
-        writer
+        哪些对象实际进入 csv stream，可通过各对象的 ``csv`` 属性控制。默认情况下
+        ``data feeds`` 和 ``observers`` 为 ``True``，``indicators`` 为 ``False``。
 
-      - ``csv`` (default: ``False``)
+      - ``csv_filternan`` (default: ``True``): 是否从 csv stream 中清理 ``nan``，
+        并替换为空字段。
 
-        If a csv stream of the data feeds, strategies, observers and indicators
-        has to be written to the stream during execution
+      - ``csv_counter`` (default: ``True``): 是否保留并输出实际写出行数的计数器。
 
-        Which objects actually go into the csv stream can be controlled with
-        the ``csv`` attribute of each object (defaults to ``True`` for ``data
-        feeds`` and ``observers`` / False for ``indicators``)
-
-      - ``csv_filternan`` (default: ``True``) whether ``nan`` values have to be
-        purged out of the csv stream (replaced by an empty field)
-
-      - ``csv_counter`` (default: ``True``) if the writer shall keep and print
-        out a counter of the lines actually output
-
-      - ``indent`` (default: ``2``) indentation spaces for each level
+      - ``indent`` (default: ``2``): 每一层缩进使用的空格数。
 
       - ``separators`` (default: ``['=', '-', '+', '*', '.', '~', '"', '^',
-        '#']``)
+        '#']``): section/subsection 分隔线使用的字符。
 
-        Characters used for line separators across section/sub(sub)sections
+      - ``seplen`` (default: ``79``): 分隔线总长度，包含缩进。
 
-      - ``seplen`` (default: ``79``)
+      - ``rounding`` (default: ``None``): float 向下保留的小数位数；``None`` 表示
+        不做 rounding。
 
-        total length of a line separator including indentation
-
-      - ``rounding`` (default: ``None``)
-
-        Number of decimal places to round floats down to. With ``None`` no
-        rounding is performed
-
+    Returns:
+      WriterFile: 可由 Cerebro 调用的 writer 实例。
     '''
     params = (
         ('out', None),
@@ -111,7 +99,7 @@ class WriterFile(WriterBase):
         self.values = list()
 
     def _start_output(self):
-        # open file if needed
+        # 按需打开文件
         if not hasattr(self, 'out') or not self.out:
             if self.p.out is None:
                 self.out = sys.stdout
@@ -210,7 +198,7 @@ class WriterFile(WriterBase):
                     self.writelineseparator(level=level)
                 self.writeline(kline)
                 self.writedict(val, level=level + 1, recurse=True)
-            elif isinstance(val, (list, tuple, collectionsAbc.Iterable)):  # Для разных версий Python будут вызываться разные функции
+            elif isinstance(val, (list, tuple, collectionsAbc.Iterable)):  # 不同 Python 版本会调用不同实现
                 line = ', '.join(map(str, val))
                 self.writeline(kline + ' ' + line)
             else:
@@ -230,5 +218,5 @@ class WriterStringIO(WriterFile):
 
     def stop(self):
         super(WriterStringIO, self).stop()
-        # Leave the file positioned at the beginning
+        # 将文件位置留在开头
         self.out.seek(0)

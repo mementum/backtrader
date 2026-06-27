@@ -26,9 +26,15 @@ from . import MovingAverageBase, ExponentialSmoothing
 
 class ExponentialMovingAverage(MovingAverageBase):
     '''
-    A Moving Average that smoothes data exponentially over time.
+    随时间对数据做指数平滑的 Moving Average。
 
-    It is a subclass of SmoothingMovingAverage.
+    Args:
+        period: 平滑周期。
+
+    Returns:
+        ExponentialMovingAverage: 输出 ``ema`` line 的 indicator。
+
+    它是 ``SmoothingMovingAverage`` 的子类。
 
       - self.smfactor -> 2 / (1 + period)
       - self.smfactor1 -> `1 - self.smfactor`
@@ -38,13 +44,19 @@ class ExponentialMovingAverage(MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(ExponentialMovingAverage, period=20)
     '''
     alias = ('EMA', 'MovingAverageExponential',)
     lines = ('ema',)
 
     def __init__(self):
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
+        # 放在 super 之前，确保 mixin（子类化时右侧基类）能看到赋值操作并处理该 line
         self.lines[0] = es = ExponentialSmoothing(
             self.data,
             period=self.p.period,

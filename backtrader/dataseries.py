@@ -31,6 +31,8 @@ from .utils import AutoOrderedDict, OrderedDict, date2num
 
 
 class TimeFrame(object):
+    '''timeframe 枚举容器，用于统一表示 data 的时间粒度。'''
+
     (Ticks, MicroSeconds, Seconds, Minutes,
      Days, Weeks, Months, Years, NoTimeFrame) = range(1, 10)
 
@@ -41,11 +43,12 @@ class TimeFrame(object):
 
     @classmethod
     def getname(cls, tframe, compression=None):
+        '''返回 timeframe 名称，并在 compression 为 1 时使用单数形式。'''
         tname = cls.Names[tframe]
         if compression > 1 or tname == cls.Names[-1]:
-            return tname  # for plural or 'NoTimeFrame' return plain entry
+            return tname  # 复数或 'NoTimeFrame' 直接返回原条目
 
-        # return singular if compression is 1
+        # compression 为 1 时返回单数形式
         return cls.Names[tframe][:-1]
 
     @classmethod
@@ -58,6 +61,8 @@ class TimeFrame(object):
 
 
 class DataSeries(LineSeries):
+    '''data series 的基类，用于提供 OHLCV line、timeframe 和 writer 输出信息。'''
+
     plotinfo = dict(plot=True, plotind=True, plotylimited=True)
 
     _name = ''
@@ -90,12 +95,12 @@ class DataSeries(LineSeries):
             for i in range(len(self.LineOrder), self.lines.size()):
                 values.append(self.lines[i][0])
         else:
-            values.extend([''] * self.lines.size())  # no values yet
+            values.extend([''] * self.lines.size())  # 尚无 values
 
         return values
 
     def getwriterinfo(self):
-        # returns dictionary with information
+        # 返回包含 data 描述信息的 dictionary
         info = OrderedDict()
         info['Name'] = self._name
         info['Timeframe'] = TimeFrame.TName(self._timeframe)
@@ -105,25 +110,50 @@ class DataSeries(LineSeries):
 
 
 class OHLC(DataSeries):
+    '''OHLCV data series 的基类，用于定义标准价格与成交量 line。'''
+
     lines = ('close', 'low', 'high', 'open', 'volume', 'openinterest',)
 
 
 class OHLCDateTime(OHLC):
+    '''带 datetime line 的 OHLC data series 基类。'''
+
     lines = (('datetime'),)
 
 
 class SimpleFilterWrapper(object):
-    '''Wrapper for filters added via .addfilter to turn them
-    into processors.
+    '''filter wrapper，用于把通过 ``.addfilter`` 添加的 filter 转成 processor。
 
-    Filters are callables which
+    filter 是 callable，约定如下：
 
-      - Take a ``data`` as an argument
-      - Return False if the current bar has not triggered the filter
-      - Return True if the current bar must be filtered
+      - 接收 ``data`` 作为参数
+      - 当前 bar 未触发 filter 时返回 ``False``
+      - 当前 bar 必须被过滤时返回 ``True``
 
-    The wrapper takes the return value and executes the bar removal
-    if needed be
+    wrapper 会读取返回值，并在需要时执行 bar removal。
+
+    Args:
+        data: 绑定的 data feed。
+        ffilter: filter callable 或 filter class。
+        *args: 传给 filter 的位置参数。
+        **kwargs: 传给 filter 的关键字参数。
+
+    Returns:
+        SimpleFilterWrapper: 可被 data feed 调用的 filter wrapper。
+
+    ---
+    交互示例：
+        >>> class Data:
+        ...     def __init__(self):
+        ...         self.backwards_called = False
+        ...     def backwards(self):
+        ...         self.backwards_called = True
+        >>> data = Data()
+        >>> wrapper = SimpleFilterWrapper(data, lambda data: True)
+        >>> wrapper(data)
+        True
+        >>> data.backwards_called
+        True
     '''
     def __init__(self, data, ffilter, *args, **kwargs):
         if inspect.isclass(ffilter):
@@ -144,20 +174,25 @@ class SimpleFilterWrapper(object):
 
 
 class _Bar(AutoOrderedDict):
-    '''
-    This class is a placeholder for the values of the standard lines of a
-    DataBase class (from OHLCDateTime)
+    '''DataBase 标准 line 值的占位容器。
 
-    It inherits from AutoOrderedDict to be able to easily return the values as
-    an iterable and address the keys as attributes
+    该类保存 ``OHLCDateTime`` 标准 line 的当前 bar 值，并继承 ``AutoOrderedDict``，
+    以便按 iterable 返回 values，同时支持按属性访问 key。
 
-    Order of definition is important and must match that of the lines
-    definition in DataBase (which directly inherits from OHLCDateTime)
+    定义顺序很重要，必须与 ``DataBase`` 中继承自 ``OHLCDateTime`` 的 line 定义一致。
+
+    ---
+    交互示例：
+        >>> bar = _Bar()
+        >>> bar.isopen()
+        False
+        >>> bar.volume
+        0.0
     '''
     replaying = False
 
-    # Without - 1 ... converting back to time will not work
-    # Need another -1 to support timezones which may move the time forward
+    # 如果不减 1，转换回 time 会失败。
+    # 额外再减 1，用于支持可能把 time 向前移动的 timezone。
     MAXDATE = date2num(_datetime.datetime.max) - 2
 
     def __init__(self, maxdate=False):
@@ -165,8 +200,8 @@ class _Bar(AutoOrderedDict):
         self.bstart(maxdate=maxdate)
 
     def bstart(self, maxdate=False):
-        '''Initializes a bar to the default not-updated vaues'''
-        # Order is important: defined in DataSeries/OHLC/OHLCDateTime
+        '''将 bar 初始化为默认的未更新值。'''
+        # 顺序很重要：由 DataSeries/OHLC/OHLCDateTime 定义
         self.close = float('NaN')
         self.low = float('inf')
         self.high = float('-inf')
@@ -176,20 +211,22 @@ class _Bar(AutoOrderedDict):
         self.datetime = self.MAXDATE if maxdate else None
 
     def isopen(self):
-        '''Returns if a bar has already been updated
+        '''返回 bar 是否已经被更新。
 
-        Uses the fact that NaN is the value which is not equal to itself
-        and ``open`` is initialized to NaN
+        该方法利用 NaN 不等于自身的事实；``open`` 初始化为 NaN。
         '''
         o = self.open
-        return o == o  # False if NaN, True in other cases
+        return o == o  # NaN 时为 False，其它情况为 True
 
     def bupdate(self, data, reopen=False):
-        '''Updates a bar with the values from data
+        '''使用 data 中的值更新当前 bar。
 
-        Returns True if the update was the 1st on a bar (just opened)
+        Args:
+            data: 提供 OHLCV 当前值的 data feed。
+            reopen: 是否先重新初始化 bar。
 
-        Returns False otherwise
+        Returns:
+            bool: 如果这是该 bar 的首次更新（刚打开）则返回 ``True``，否则返回 ``False``。
         '''
         if reopen:
             self.bstart()
@@ -206,6 +243,6 @@ class _Bar(AutoOrderedDict):
         o = self.open
         if reopen or not o == o:
             self.open = data.open[0]
-            return True  # just opened the bar
+            return True  # 刚打开 bar
 
         return False

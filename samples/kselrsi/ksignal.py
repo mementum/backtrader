@@ -42,7 +42,7 @@ class TheStrategy(bt.SignalStrategy):
             print('Close[-1]: %f - Open[0]: %f' % (d.close[-1], d.open[0]))
 
     def __init__(self):
-        # Original code needs artificial warmup phase - hidden sma to replic
+        # 原始代码需要人工 warmup 阶段；使用隐藏 sma 复现
         if self.p.warmup:
             bt.indicators.SMA(period=self.p.warmup, plot=False)
 

@@ -27,17 +27,33 @@ from .py3 import values as py3lvalues
 
 
 def Tree():
+    '''创建可递归自动生成子节点的 ``defaultdict``。
+
+    Returns:
+        defaultdict: 默认值仍为 ``Tree`` 的嵌套字典。
+
+    ---
+    交互示例：
+        >>> t = Tree()
+        >>> t['a']['b'] = 1
+        >>> t['a']['b']
+        1
+    '''
     return defaultdict(Tree)
 
 
 class AutoDictList(dict):
+    '''缺失 key 自动创建 ``list`` 的 dict。'''
+
     def __missing__(self, key):
         value = self[key] = list()
         return value
 
 
 class DotDict(dict):
-    # If the attribut is not found in the usual places try the dict itself
+    '''支持以属性方式读取 item 的 dict。'''
+
+    # 常规属性查找失败后，尝试从 dict 自身读取
     def __getattr__(self, key):
         if key.startswith('__'):
             return super(DotDict, self).__getattr__(key)
@@ -45,15 +61,27 @@ class DotDict(dict):
 
 
 class AutoDict(dict):
+    '''缺失 key 自动创建嵌套 ``AutoDict`` 的 dict。
+
+    ---
+    交互示例：
+        >>> d = AutoDict()
+        >>> d.account.cash = 100
+        >>> d['account']['cash']
+        100
+    '''
+
     _closed = False
 
     def _close(self):
+        '''关闭自动创建行为，并递归关闭子 AutoDict。'''
         self._closed = True
         for key, val in self.items():
             if isinstance(val, (AutoDict, AutoOrderedDict)):
                 val._close()
 
     def _open(self):
+        '''重新打开自动创建行为。'''
         self._closed = False
 
     def __missing__(self, key):
@@ -78,15 +106,27 @@ class AutoDict(dict):
 
 
 class AutoOrderedDict(OrderedDict):
+    '''保持插入顺序且缺失 key 自动创建嵌套 ``AutoOrderedDict`` 的 dict。
+
+    ---
+    交互示例：
+        >>> d = AutoOrderedDict()
+        >>> d.stats.pnl = 12
+        >>> d['stats']['pnl']
+        12
+    '''
+
     _closed = False
 
     def _close(self):
+        '''关闭自动创建行为，并递归关闭子 AutoOrderedDict。'''
         self._closed = True
         for key, val in self.items():
             if isinstance(val, (AutoDict, AutoOrderedDict)):
                 val._close()
 
     def _open(self):
+        '''重新打开自动创建行为。'''
         self._closed = False
 
     def __missing__(self, key):
@@ -110,7 +150,7 @@ class AutoOrderedDict(OrderedDict):
 
         self[key] = value
 
-    # Define math operations
+    # 定义数学操作
     def __iadd__(self, other):
         if type(self) != type(other):
             return type(other)() + other
@@ -142,4 +182,5 @@ class AutoOrderedDict(OrderedDict):
         return self + other
 
     def lvalues(self):
+        '''返回 values 的 list 兼容视图。'''
         return py3lvalues(self)

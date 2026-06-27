@@ -28,27 +28,29 @@ from backtrader import Analyzer
 
 
 class AnnualReturn(Analyzer):
-    '''
-    This analyzer calculates the AnnualReturns by looking at the beginning
-    and end of the year
+    '''按自然年计算年度收益率的 analyzer。
 
-    Params:
+    该 analyzer 会比较每一年的起始 value 和结束 value，生成年度 return。
 
-      - (None)
+    Args:
+        无。
+
+    Returns:
+        OrderedDict: ``get_analysis`` 返回以年份为 key、年度 return 为 value
+        的字典。
 
     Member Attributes:
+        rets (list): 已计算的年度 return 列表。
+        ret (OrderedDict): 以年份为 key 的年度 return 字典。
 
-      - ``rets``: list of calculated annual returns
-
-      - ``ret``: dictionary (key: year) of annual returns
-
-    **get_analysis**:
-
-      - Returns a dictionary of annual returns (key: year)
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(AnnualReturn, _name='annual')
     '''
 
     def stop(self):
-        # Must have stats.broker
+        # 必须有 stats.broker
         cur_year = -1
 
         value_start = 0.0
@@ -68,19 +70,19 @@ class AnnualReturn(Analyzer):
                     self.rets.append(annualret)
                     self.ret[cur_year] = annualret
 
-                    # changing between real years, use last value as new start
+                    # 跨自然年时，使用上一年最后 value 作为新的起点
                     value_start = value_end
                 else:
-                    # No value set whatsoever, use the currently loaded value
+                    # 尚未设置任何 value，使用当前已加载 value
                     value_start = value_cur
 
                 cur_year = dt.year
 
-            # No matter what, the last value is always the last loaded value
+            # 无论如何，最后 value 始终是最后加载到的 value
             value_end = value_cur
 
         if cur_year not in self.ret:
-            # finish calculating pending data
+            # 完成待处理数据的计算
             annualret = (value_end / value_start) - 1.0
             self.rets.append(annualret)
             self.ret[cur_year] = annualret

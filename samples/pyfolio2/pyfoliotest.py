@@ -65,7 +65,7 @@ class St(bt.SignalStrategy):
     def next(self):
         super(self.__class__, self).next()
         if self.p.printdata:
-            # Print only 1st data ... is just a check that things are running
+            # 只打印第 1 个 data，用于确认流程正在运行
             txtfields = list()
             txtfields.append('%04d' % len(self))
             txtfields.append(self.data.datetime.datetime(0).isoformat())
@@ -119,7 +119,7 @@ def runstrat(args=None):
     cerebro.addstrategy(St, short=args.short, printdata=args.printdata)
     cerebro.addsizer(bt.sizers.FixedSize, stake=args.stake)
 
-    # Own analyzerset
+    # 自有 analyzerset
     cerebro.addanalyzer(bt.analyzers.TimeReturn, timeframe=bt.TimeFrame.Years)
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, timeframe=bt.TimeFrame.Years)
     cerebro.addanalyzer(bt.analyzers.SQN,)
@@ -135,7 +135,7 @@ def runstrat(args=None):
         print('End Run')
     strat = results[0]
 
-    # Results of own analyzers
+    # 自有 analyzers 的结果
     al = strat.analyzers.timereturn
     print('-- Time Return:')
     for k, v in al.get_analysis().items():
@@ -231,7 +231,7 @@ def parse_args(pargs=None):
     parser.add_argument('--printdata', required=False, action='store_true',
                         help=('Print data lines'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

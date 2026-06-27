@@ -32,7 +32,7 @@ import backtrader as bt
 
 
 class ValueUnlever(bt.observers.Value):
-    '''Extension of regular Value observer to add leveraged view'''
+    '''常规 Value observer 的扩展，用于增加 leveraged view。'''
     lines = ('value_lever', 'asset')
     params = (('assetstart', 100000.0), ('lever', True),)
 
@@ -147,7 +147,7 @@ def runstrat(args=None):
     # Data feed kwargs
     kwargs = dict()
 
-    # Parse from/to-date
+    # 解析 from/to-date
     dtfmt, tmfmt = '%Y-%m-%d', 'T%H:%M:%S'
     for a, d in ((getattr(args, x), x) for x in ['fromdate', 'todate']):
         kwargs[d] = datetime.datetime.strptime(a, dtfmt + tmfmt * ('T' in a))
@@ -164,19 +164,19 @@ def runstrat(args=None):
     # Broker
     cerebro.broker = bt.brokers.BackBroker(**eval('dict(' + args.broker + ')'))
 
-    # Add a commission
+    # 添加 commission
     cerebro.broker.setcommission(**eval('dict(' + args.comminfo + ')'))
 
     # Strategy
     cerebro.addstrategy(St, **eval('dict(' + args.strat + ')'))
 
-    # Add specific observer
+    # 添加特定 observer
     cerebro.addobserver(ValueUnlever, **eval('dict(' + args.valobserver + ')'))
 
-    # Execute
+    # 执行
     cerebro.run(**eval('dict(' + args.cerebro + ')'))
 
-    if args.plot:  # Plot if requested to
+    if args.plot:  # 按需绘图 to
         cerebro.plot(**eval('dict(' + args.plot + ')'))
 
 

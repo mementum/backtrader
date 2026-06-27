@@ -26,14 +26,20 @@ from . import MovingAverageBase, ExponentialSmoothing
 
 class SmoothedMovingAverage(MovingAverageBase):
     '''
-    Smoothing Moving Average used by Wilder in his 1978 book `New Concepts in
-    Technical Trading`
+    Wilder 在 1978 年 *New Concepts in Technical Trading* 中使用的
+    Smoothing Moving Average。
 
-    Defined in his book originally as:
+    Args:
+        period: 平滑周期。
+
+    Returns:
+        SmoothedMovingAverage: 输出 ``smma`` line 的 indicator。
+
+    书中的原始定义为：
 
       - new_value = (old_value * (period - 1) + new_data) / period
 
-    Can be expressed as a SmoothingMovingAverage with the following factors:
+    可用下列因子表示为 ``SmoothingMovingAverage``：
 
       - self.smfactor -> 1.0 / period
       - self.smfactor1 -> `1.0 - self.smfactor`
@@ -43,14 +49,20 @@ class SmoothedMovingAverage(MovingAverageBase):
 
     See also:
       - http://en.wikipedia.org/wiki/Moving_average#Modified_moving_average
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(SmoothedMovingAverage, period=20)
     '''
     alias = ('SMMA', 'WilderMA', 'MovingAverageSmoothed',
              'MovingAverageWilder', 'ModifiedMovingAverage',)
     lines = ('smma',)
 
     def __init__(self):
-        # Before super to ensure mixins (right-hand side in subclassing)
-        # can see the assignment operation and operate on the line
+        # 放在 super 之前，确保 mixin（子类化时右侧基类）能看到赋值操作并处理该 line
         self.lines[0] = ExponentialSmoothing(
             self.data,
             period=self.p.period,

@@ -29,32 +29,45 @@ __all__ = ['HurstExponent', 'Hurst']
 
 class HurstExponent(PeriodN):
     '''
+    Hurst Exponent 指标，用于判断序列更接近随机游走、均值回归还是趋势状态。
+
+    Args:
+        period: 计算窗口周期。
+        lag_start: lag 起始值；为空时使用 ``2``。
+        lag_end: lag 结束值；为空时使用 ``self.p.period / 2``。
+
+    Returns:
+        HurstExponent: 输出 ``hurst`` line 的 indicator。
+
     References:
 
       - https://www.quantopian.com/posts/hurst-exponent
       - https://www.quantopian.com/posts/some-code-from-ernie-chans-new-book-implemented-in-python
 
-   Interpretation of the results
+    结果解释：
 
       1. Geometric random walk (H=0.5)
       2. Mean-reverting series (H<0.5)
-      3. Trending Series (H>0.5)
+      3. Trending series (H>0.5)
 
-    Important notes:
+    重要说明：
 
-      - The default period is ``40``, but experimentation by users has shown
-        that it would be advisable to have at least 2000 samples (i.e.: a
-        period of at least 2000) to have stable values.
+      - 默认 period 为 ``40``，但用户实验表明至少使用 2000 个样本（即 period 至少
+        2000）更容易得到稳定值。
 
-      - The `lag_start` and `lag_end` values will default to be ``2`` and
-        ``self.p.period / 2`` unless the parameters are specified.
+      - 未指定参数时，``lag_start`` 和 ``lag_end`` 默认分别为 ``2`` 和
+        ``self.p.period / 2``。
 
-        Experimentation by users has also shown that values of around ``10``
-        and ``500`` produce good results
+        用户实验也表明，约 ``10`` 和 ``500`` 的取值表现较好。
 
-    The original values (40, 2, self.p.period / 2) are kept for backwards
-    compatibility
+    原始取值 ``(40, 2, self.p.period / 2)`` 为保持向后兼容而保留。
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(HurstExponent, period=2000)
     '''
     frompackages = (
         ('numpy', ('asarray', 'log10', 'polyfit', 'sqrt', 'std', 'subtract')),
@@ -63,9 +76,9 @@ class HurstExponent(PeriodN):
     alias = ('Hurst',)
     lines = ('hurst',)
     params = (
-        ('period', 40),  # 2000 was proposed
-        ('lag_start', None),  # 10 was proposed
-        ('lag_end', None),  # 500 was proposed
+        ('period', 40),  # 曾建议使用 2000
+        ('lag_start', None),  # 曾建议使用 10
+        ('lag_end', None),  # 曾建议使用 500
     )
 
     def _plotlabel(self):
@@ -76,21 +89,21 @@ class HurstExponent(PeriodN):
 
     def __init__(self):
         super(HurstExponent, self).__init__()
-        # Prepare the lags array
+        # 准备 lags 数组
         self._lag_start = lag_start = self.p.lag_start or 2
         self._lag_end = lag_end = self.p.lag_end or (self.p.period // 2)
         self.lags = asarray(range(lag_start, lag_end))
         self.log10lags = log10(self.lags)
 
     def next(self):
-        # Fetch the data
+        # 获取数据
         ts = asarray(self.data.get(size=self.p.period))
 
-        # Calculate the array of the variances of the lagged differences
+        # 计算 lagged differences 的方差数组
         tau = [sqrt(std(subtract(ts[lag:], ts[:-lag]))) for lag in self.lags]
 
-        # Use a linear fit to estimate the Hurst Exponent
+        # 使用线性拟合估算 Hurst Exponent
         poly = polyfit(self.log10lags, log10(tau), 1)
 
-        # Return the Hurst exponent from the polyfit output
+        # 从 polyfit 输出中返回 Hurst exponent
         self.lines.hurst[0] = poly[0] * 2.0

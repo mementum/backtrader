@@ -29,53 +29,41 @@ __all__ = ['Calmar']
 
 
 class Calmar(bt.TimeFrameAnalyzerBase):
-    '''This analyzer calculates the CalmarRatio
-    timeframe which can be different from the one used in the underlying data
-    Params:
+    '''计算 Calmar Ratio 的 analyzer。
 
-      - ``timeframe`` (default: ``None``)
-        If ``None`` the ``timeframe`` of the 1st data in the system will be
-        used
+    统计使用的 timeframe 可以不同于底层 data 使用的 timeframe。
 
-        Pass ``TimeFrame.NoTimeFrame`` to consider the entire dataset with no
-        time constraints
+    Args:
+        timeframe: 统计使用的 timeframe，默认 ``TimeFrame.Months``。
+        compression: timeframe 压缩倍数，默认 ``None``。仅用于日内
+            timeframe。如果为 ``None``，使用系统中第 1 个 data 的
+            compression。
+        period (int): rolling 计算使用的 period 数量，默认 ``36``。
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 returns 基于总净资产 value 还是 fund value。
+            将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-      - ``compression`` (default: ``None``)
-
-        Only used for sub-day timeframes to for example work on an hourly
-        timeframe by specifying "TimeFrame.Minutes" and 60 as compression
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-      - *None*
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
-
-    See also:
-
-      - https://en.wikipedia.org/wiki/Calmar_ratio
-
-    Methods:
-      - ``get_analysis``
-
-        Returns a OrderedDict with a key for the time period and the
-        corresponding rolling Calmar ratio
+    Returns:
+        OrderedDict: ``get_analysis`` 返回以时间 period 为 key、rolling
+        Calmar Ratio 为 value 的字典。
 
     Attributes:
-      - ``calmar`` the latest calculated calmar ratio
+        calmar: 最近一次计算得到的 Calmar Ratio。
+
+    See also:
+        https://en.wikipedia.org/wiki/Calmar_ratio
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(Calmar, timeframe=bt.TimeFrame.Months,
+    ...                     period=36, _name='calmar')
     '''
 
     packages = ('collections', 'math',)
 
     params = (
-        ('timeframe', bt.TimeFrame.Months),  # default in calmar
+        ('timeframe', bt.TimeFrame.Months),  # calmar 默认值
         ('period', 36),
         ('fund', None),
     )
@@ -110,4 +98,4 @@ class Calmar(bt.TimeFrameAnalyzerBase):
         self.rets[self.dtkey] = calmar
 
     def stop(self):
-        self.on_dt_over()  # update last values
+        self.on_dt_over()  # 更新最后一组 value

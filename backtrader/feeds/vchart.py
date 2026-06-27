@@ -32,35 +32,40 @@ from ..utils import date2num
 
 class VChartData(feed.DataBase):
     '''
-    Support for `Visual Chart <www.visualchart.com>`_ binary on-disk files for
-    both daily and intradaily formats.
+    支持 `Visual Chart <www.visualchart.com>`_ 的本地二进制文件，包括日线和日内
+    数据格式。
 
-    Note:
+    Args:
+        dataname: 文件路径，或已经打开的类文件对象。传入类文件对象时，使用
+            ``timeframe`` 参数判断实际 timeframe；传入路径时，优先根据扩展名
+            判断，``.fd`` 表示日线，``.min`` 表示日内数据。
 
-      - ``dataname``: to file or open file-like object
+    Returns:
+        VChartData: 可加入 Cerebro 的 Visual Chart 数据源实例。
 
-        If a file-like object is passed, the ``timeframe`` parameter will be
-        used to determine which is the actual timeframe.
+    ---
+    交互界面使用示范:
 
-        Else the file extension (``.fd`` for daily and ``.min`` for intraday)
-        will be used.
+    >>> data = VChartData(dataname='010015ES.fd')
+    >>> data.p.dataname
+    '010015ES.fd'
     '''
 
     def start(self):
         super(VChartData, self).start()
 
-        # Not yet known if a extension is needed
+        # 先记录扩展名，后面根据 dataname 和 timeframe 决定是否补全
         self.ext = ''
 
         if not hasattr(self.p.dataname, 'read'):
-            # assume is a string because it has no write method
+            # 没有 read 方法时按字符串路径处理
 
             if self.p.dataname.endswith('.fd'):
                 self.p.timeframe = TimeFrame.Days
             elif self.p.dataname.endswith('.min'):
                 self.p.timeframe = TimeFrame.Minutes
             else:
-                # Neither fd nor min ... just the code, assign extension
+                # 没有 fd/min 扩展名时，根据 timeframe 自动补扩展名
                 if self.p.timeframe == TimeFrame.Days:
                     self.ext = '.fd'
                 else:
@@ -77,11 +82,11 @@ class VChartData(feed.DataBase):
 
         self.f = None
         if hasattr(self.p.dataname, 'read'):
-            # A file has been passed in (ex: from a GUI)
+            # 已经传入打开的文件对象，例如来自 GUI 的文件选择器
             self.f = self.p.dataname
         else:
             dataname = self.p.dataname + self.ext
-            # Let an exception propagate
+            # 打不开文件时让异常向上传递，调用方能看到真实原因
             self.f = open(dataname, 'rb')
 
     def stop(self):
@@ -93,21 +98,21 @@ class VChartData(feed.DataBase):
         if self.f is None:
             return False
 
-        # Let an exception propagate to let the caller know
+        # 读取失败时让异常向上传递，调用方能看到真实原因
         bardata = self.f.read(self.barsize)
         if not bardata:
             return False
 
         bdata = struct.unpack(self.barfmt, bardata)
 
-        # Years are stored as if they had 500 days
+        # 年份按“每年 500 天”的编码方式存储
         y, md = divmod(bdata[0], 500)
-        # Months are stored as if they had 32 days
+        # 月份按“每月 32 天”的编码方式存储
         m, d = divmod(md, 32)
         dt = datetime.datetime(y, m, d)
 
-        if self.dtsize > 1:  # Minute Bars
-            # Daily Time is stored in seconds
+        if self.dtsize > 1:  # 分钟 bar
+            # 日内时间以秒数存储
             hhmm, ss = divmod(bdata[1], 60)
             hh, mm = divmod(hhmm, 60)
             dt = dt.replace(hour=hh, minute=mm, second=ss)

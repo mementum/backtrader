@@ -28,25 +28,29 @@ from ..utils import date2num
 
 
 class BacktraderCSVData(feed.CSVDataBase):
-    '''
-    Parses a self-defined CSV Data used for testing.
+    '''解析 backtrader 自定义测试 CSV 格式的 data feed。
 
-    Specific parameters:
+    Args:
+        dataname: 要解析的文件名或 file-like 对象。
 
-      - ``dataname``: The filename to parse or a file-like object
+    Returns:
+        bool: ``_loadline`` 成功解析一行时返回 ``True``。
+
+    ---
+    >>> data = BacktraderCSVData(dataname='2006-day-001.txt')
     '''
 
     def _loadline(self, linetokens):
         itoken = iter(linetokens)
 
-        dttxt = next(itoken)  # Format is YYYY-MM-DD - skip char 4 and 7
+        dttxt = next(itoken)  # 格式为 YYYY-MM-DD，跳过第 4 和第 7 个字符
         dt = date(int(dttxt[0:4]), int(dttxt[5:7]), int(dttxt[8:10]))
 
         if len(linetokens) == 8:
-            tmtxt = next(itoken)  # Format if present HH:MM:SS, skip 3 and 6
+            tmtxt = next(itoken)  # 如果存在，格式为 HH:MM:SS，跳过第 3 和第 6 个字符
             tm = time(int(tmtxt[0:2]), int(tmtxt[3:5]), int(tmtxt[6:8]))
         else:
-            tm = self.p.sessionend  # end of the session parameter
+            tm = self.p.sessionend  # session 结束时间参数
 
         self.lines.datetime[0] = date2num(datetime.combine(dt, tm))
         self.lines.open[0] = float(next(itoken))

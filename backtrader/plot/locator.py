@@ -126,19 +126,17 @@ class AutoDateLocator(ADLocator):
         return [bisect.bisect_left(self._dates, x) for x in dtnums]
 
     def get_locator(self, dmin, dmax):
-        'Pick the best locator based on a distance.'
+        '根据时间距离选择最佳 locator。'
         delta = relativedelta(dmax, dmin)
         tdelta = dmax - dmin
 
-        # take absolute difference
+        # 使用绝对差值
         if dmin > dmax:
             delta = -delta
             tdelta = -tdelta
 
-        # The following uses a mix of calls to relativedelta and timedelta
-        # methods because there is incomplete overlap in the functionality of
-        # these similar functions, and it's best to avoid doing our own math
-        # whenever possible.
+        # 下面混用 relativedelta 与 timedelta 方法，因为这些相似函数的能力不完全重叠；
+        # 能复用库方法时避免自己实现日期数学。
         numYears = float(delta.years)
         numMonths = (numYears * MONTHS_PER_YEAR) + delta.months
         numDays = tdelta.days   # Avoids estimates of days/month, days/year
@@ -152,42 +150,36 @@ class AutoDateLocator(ADLocator):
 
         use_rrule_locator = [True] * 6 + [False]
 
-        # Default setting of bymonth, etc. to pass to rrule
-        # [unused (for year), bymonth, bymonthday, byhour, byminute,
-        #  bysecond, unused (for microseconds)]
+        # 传给 rrule 的 bymonth 等默认设置：
+        # [unused（year）, bymonth, bymonthday, byhour, byminute,
+        #  bysecond, unused（microseconds）]
         byranges = [None, 1, 1, 0, 0, 0, None]
 
-        usemicro = False  # use as flag to avoid raising an exception
+        usemicro = False  # 作为 flag 使用，避免抛出异常
 
-        # Loop over all the frequencies and try to find one that gives at
-        # least a minticks tick positions.  Once this is found, look for
-        # an interval from an list specific to that frequency that gives no
-        # more than maxticks tick positions. Also, set up some ranges
-        # (bymonth, etc.) as appropriate to be passed to rrulewrapper.
+        # 遍历所有 frequency，找到至少能给出 minticks 个 tick position 的配置。
+        # 找到后，再从该 frequency 对应列表中选择不超过 maxticks 的 interval。
+        # 同时准备传给 rrulewrapper 的 bymonth 等 range。
         for i, (freq, num) in enumerate(zip(self._freqs, nums)):
-            # If this particular frequency doesn't give enough ticks, continue
+            # 当前 frequency 不能给出足够 tick 时继续尝试下一种
             if num < self.minticks:
-                # Since we're not using this particular frequency, set
-                # the corresponding by_ to None so the rrule can act as
-                # appropriate
+                # 未使用该 frequency 时，将对应 by_ 设为 None，便于 rrule 正确处理
                 byranges[i] = None
                 continue
 
-            # Find the first available interval that doesn't give too many
-            # ticks
+            # 找到第一个不会产生过多 tick 的 interval
             for interval in self.intervald[freq]:
                 if num <= interval * (self.maxticks[freq] - 1):
                     break
             else:
-                # We went through the whole loop without breaking, default to
-                # the last interval in the list and raise a warning
+                # 遍历后仍未找到合适 interval，默认使用列表最后一个并发出 warning
                 warnings.warn('AutoDateLocator was unable to pick an '
                               'appropriate interval for this date range. '
                               'It may be necessary to add an interval value '
                               "to the AutoDateLocator's intervald dictionary."
                               ' Defaulting to {0}.'.format(interval))
 
-            # Set some parameters as appropriate
+            # 设置相应参数
             self._freq = freq
 
             if self._byranges[i] and self.interval_multiples:
@@ -196,7 +188,7 @@ class AutoDateLocator(ADLocator):
             else:
                 byranges[i] = self._byranges[i]
 
-            # We found what frequency to use
+            # 已找到要使用的 frequency
             break
         else:
             if False:
@@ -218,18 +210,18 @@ class AutoDateLocator(ADLocator):
             locator = RRuleLocator(self._dates, rrule, self.tz)
         else:
             if usemicro:
-                interval = 1  # not set because the for else: was met
+                interval = 1  # 因为进入 for else，尚未设置 interval
             locator = MicrosecondLocator(interval, tz=self.tz)
 
         locator.set_axis(self.axis)
 
         try:
-            # try for matplotlib < 3.6.0
+            # 尝试兼容 matplotlib < 3.6.0
             locator.set_view_interval(*self.axis.get_view_interval())
             locator.set_data_interval(*self.axis.get_data_interval())
         except Exception as e:
             try:
-                # try for matplotlib >= 3.6.0
+                # 尝试兼容 matplotlib >= 3.6.0
                 self.axis.set_view_interval(*self.axis.get_view_interval())
                 self.axis.set_data_interval(*self.axis.get_data_interval())
                 locator.set_axis(self.axis)
@@ -245,7 +237,7 @@ class AutoDateFormatter(ADFormatter):
         super(AutoDateFormatter, self).__init__(locator, tz, defaultfmt)
 
     def __call__(self, x, pos=None):
-        '''Return the label for time x at position pos'''
+        '''返回 ``pos`` 位置上 time ``x`` 的 label。'''
         x = int(round(x))
         ldates = len(self._dates)
         if x >= ldates:

@@ -26,19 +26,22 @@ from .. import Observer
 
 
 class DrawDown(Observer):
-    '''This observer keeps track of the current drawdown level (plotted) and
-    the maxdrawdown (not plotted) levels
+    '''跟踪当前 drawdown 和 maxdrawdown 的 observer。
 
-    Params:
+    当前 drawdown 会被绘制，maxdrawdown 默认不绘制。
 
-      - ``fund`` (default: ``None``)
+    Args:
+        fund: 如果为 ``None``，会自动检测 broker 的实际模式（fundmode -
+            True/False），以决定 drawdown 基于总净资产 value 还是 fund
+            value。将其设为 ``True`` 或 ``False`` 可指定具体行为。
 
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
+    Returns:
+        None: observer 通过 ``drawdown`` 和 ``maxdrawdown`` lines 暴露当前值。
 
-        Set it to ``True`` or ``False`` for a specific behavior
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(DrawDown)
 
     '''
     _stclock = True
@@ -59,15 +62,25 @@ class DrawDown(Observer):
                                                   **kwargs)
 
     def next(self):
-        self.lines.drawdown[0] = self._dd.rets.drawdown  # update drawdown
-        self.lines.maxdrawdown[0] = self._dd.rets.max.drawdown  # update max
+        self.lines.drawdown[0] = self._dd.rets.drawdown  # 更新 drawdown
+        self.lines.maxdrawdown[0] = self._dd.rets.max.drawdown  # 更新最大值
 
 
 class DrawDownLength(Observer):
-    '''This observer keeps track of the current drawdown length (plotted) and
-    the drawdown max length (not plotted)
+    '''跟踪当前 drawdown length 和最大 drawdown length 的 observer。
 
-    Params: None
+    当前 drawdown length 会被绘制，最大 length 默认不绘制。
+
+    Args:
+        无。
+
+    Returns:
+        None: observer 通过 ``len`` 和 ``maxlen`` lines 暴露当前值。
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(DrawDownLength)
     '''
     _stclock = True
 
@@ -81,15 +94,23 @@ class DrawDownLength(Observer):
         self._dd = self._owner._addanalyzer_slave(bt.analyzers.DrawDown)
 
     def next(self):
-        self.lines.len[0] = self._dd.rets.len  # update drawdown length
-        self.lines.maxlen[0] = self._dd.rets.max.len  # update max length
+        self.lines.len[0] = self._dd.rets.len  # 更新 drawdown length
+        self.lines.maxlen[0] = self._dd.rets.max.len  # 更新最大 length
 
 
 class DrawDown_Old(Observer):
-    '''This observer keeps track of the current drawdown level (plotted) and
-    the maxdrawdown (not plotted) levels
+    '''旧版 drawdown observer，跟踪当前 drawdown 和 maxdrawdown。
 
-    Params: None
+    Args:
+        无。
+
+    Returns:
+        None: observer 通过 ``drawdown`` 和 ``maxdrawdown`` lines 暴露当前值。
+
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addobserver(DrawDown_Old)
     '''
     _stclock = True
 
@@ -108,12 +129,12 @@ class DrawDown_Old(Observer):
     def next(self):
         value = self._owner.broker.getvalue()
 
-        # update the maximum seen peak
+        # 更新已见到的最大峰值
         if value > self.peak:
             self.peak = value
 
-        # calculate the current drawdown
+        # 计算当前 drawdown
         self.lines.drawdown[0] = dd = 100.0 * (self.peak - value) / self.peak
 
-        # update the maxdrawdown if needed
+        # 按需更新 maxdrawdown
         self.lines.maxdrawdown[0] = self.maxdd = max(self.maxdd, dd)

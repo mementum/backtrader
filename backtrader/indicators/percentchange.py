@@ -29,16 +29,28 @@ __all__ = ['PercentChange', 'PctChange']
 
 class PercentChange(Indicator):
     '''
-      Measures the perccentage change of the current value with respect to that
-      of period bars ago
+    计算当前值相对 ``period`` 个 bar 前的 percentage change。
+
+    Args:
+        period: 回看周期。
+
+    Returns:
+        PercentChange: 输出 ``pctchange`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PercentChange, period=30)
     '''
     alias = ('PctChange',)
     lines = ('pctchange',)
 
-    # Fancy plotting name
+    # 更适合绘图显示的名称
     plotlines = dict(pctchange=dict(_name='%change'))
 
-    # update value to standard for Moving Averages
+    # 使用与 Moving Averages 统一的 period 参数名
     params = (('period', 30),)
 
     def __init__(self):

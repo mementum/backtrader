@@ -31,52 +31,45 @@ from . import TimeReturn, PositionsValue, Transactions, GrossLeverage
 
 
 class PyFolio(bt.Analyzer):
-    '''This analyzer uses 4 children analyzers to collect data and transforms it
-    in to a data set compatible with ``pyfolio``
+    '''收集并转换为 ``pyfolio`` 兼容数据集的 analyzer。
 
-    Children Analyzer
+    该 analyzer 使用 4 个子 analyzer:
 
       - ``TimeReturn``
 
-        Used to calculate the returns of the global portfolio value
+        用于计算全局 portfolio value 的 returns
 
       - ``PositionsValue``
 
-        Used to calculate the value of the positions per data. It sets the
-        ``headers`` and ``cash`` parameters to ``True``
+        用于计算每个 data 的 position value，并将 ``headers`` 和 ``cash`` 参数
+        设为 ``True``
 
       - ``Transactions``
 
-        Used to record each transaction on a data (size, price, value). Sets
-        the ``headers`` parameter to ``True``
+        用于记录每个 data 上的 transaction（size、price、value），并将
+        ``headers`` 参数设为 ``True``
 
       - ``GrossLeverage``
 
-        Keeps track of the gross leverage (how much the strategy is invested)
+        跟踪 gross leverage，即 strategy 已投入程度
 
-    Params:
-      These are passed transparently to the children
+    Args:
+        timeframe: 传递给子 analyzer 的 timeframe，默认 ``bt.TimeFrame.Days``。
+            如果为 ``None``，使用系统中第 1 个 data 的 timeframe。
+        compression: 传递给子 analyzer 的 compression，默认 ``1``。如果为
+            ``None``，使用系统中第 1 个 data 的 compression。
 
-      - timeframe (default: ``bt.TimeFrame.Days``)
+    Returns:
+        dict: ``get_analysis`` 返回包含 ``returns``、``positions``、
+        ``transactions`` 和 ``gross_lev`` 的字典。
 
-        If ``None`` then the timeframe of the 1st data of the system will be
-        used
+    ``timeframe`` 和 ``compression`` 的默认值遵循 ``pyfolio`` 的行为：使用
+    daily data，并由 pyfolio 进一步 upsample 生成年度收益等结果。
 
-      - compression (default: `1``)
-
-        If ``None`` then the compression of the 1st data of the system will be
-        used
-
-    Both ``timeframe`` and ``compression`` are set following the default
-    behavior of ``pyfolio`` which is working with *daily* data and upsample it
-    to obtaine values like yearly returns.
-
-    Methods:
-
-      - get_analysis
-
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
+    ---
+    >>> import backtrader as bt
+    >>> cerebro = bt.Cerebro()
+    >>> cerebro.addanalyzer(PyFolio, _name='pyfolio')
     '''
     params = (
         ('timeframe', bt.TimeFrame.Days),
@@ -100,19 +93,19 @@ class PyFolio(bt.Analyzer):
         self.rets['gross_lev'] = self._gross_lev.get_analysis()
 
     def get_pf_items(self):
-        '''Returns a tuple of 4 elements which can be used for further processing with
-          ``pyfolio``
+        '''返回可交给 ``pyfolio`` 继续处理的 4 元组。
 
-          returns, positions, transactions, gross_leverage
+        Returns:
+            tuple: ``returns``、``positions``、``transactions``、
+            ``gross_leverage``。
 
-        Because the objects are meant to be used as direct input to ``pyfolio``
-        this method makes a local import of ``pandas`` to convert the internal
-        *backtrader* results to *pandas DataFrames* which is the expected input
-        by, for example, ``pyfolio.create_full_tear_sheet``
+        因为这些对象会作为 ``pyfolio`` 的直接输入，本方法会局部导入
+        ``pandas``，把内部 *backtrader* 结果转换成 *pandas DataFrames*。
+        这是例如 ``pyfolio.create_full_tear_sheet`` 所期望的输入格式。
 
-        The method will break if ``pandas`` is not installed
+        如果未安装 ``pandas``，该方法会失败。
         '''
-        # keep import local to avoid disturbing installations with no pandas
+        # 保持局部导入，避免影响未安装 pandas 的环境
         import pandas
         from pandas import DataFrame as DF
 
@@ -128,7 +121,7 @@ class PyFolio(bt.Analyzer):
         # Positions
         pss = self.rets['positions']
         ps = [[k] + v[-2:] for k, v in iteritems(pss)]
-        cols = ps.pop(0)  # headers are in the first entry
+        cols = ps.pop(0)  # headers 位于第 1 条记录
         positions = DF.from_records(ps, index=cols[0], columns=cols)
         positions.index = pandas.to_datetime(positions.index)
         positions.index = positions.index.tz_localize('UTC')
@@ -137,15 +130,14 @@ class PyFolio(bt.Analyzer):
         # Transactions
         txss = self.rets['transactions']
         txs = list()
-        # The transactions have a common key (date) and can potentially happend
-        # for several assets. The dictionary has a single key and a list of
-        # lists. Each sublist contains the fields of a transaction
-        # Hence the double loop to undo the list indirection
+        # transactions 有公共 key（date），并且可能发生在多个 asset 上。
+        # 字典中一个 key 对应一个 list of lists；每个子 list 包含一条
+        # transaction 的字段，因此需要双层循环展开 list 间接层
         for k, v in iteritems(txss):
             for v2 in v:
                 txs.append([k] + v2)
 
-        cols = txs.pop(0)  # headers are in the first entry
+        cols = txs.pop(0)  # headers 位于第 1 条记录
         transactions = DF.from_records(txs, index=cols[0], columns=cols)
         transactions.index = pandas.to_datetime(transactions.index)
         transactions.index = transactions.index.tz_localize('UTC')
@@ -159,5 +151,5 @@ class PyFolio(bt.Analyzer):
         gross_lev.index = gross_lev.index.tz_localize('UTC')
         glev = gross_lev['gross_lev']
 
-        # Return all together
+        # 一起返回
         return rets, positions, transactions, glev

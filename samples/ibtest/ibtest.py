@@ -24,7 +24,7 @@ from __future__ import (absolute_import, division, print_function,
 import argparse
 import datetime
 
-# The above could be sent to an independent module
+# 上方内容可放到独立 module 中
 import backtrader as bt
 from backtrader.utils import flushfile  # win32 quick stdout flushing
 
@@ -49,14 +49,14 @@ class TestStrategy(bt.Strategy):
     )
 
     def __init__(self):
-        # To control operation entries
+        # 用于控制操作入口
         self.orderid = list()
         self.order = None
 
         self.counttostop = 0
         self.datastatus = 0
 
-        # Create SMA on 2nd data
+        # 在第 2 个 data 上创建 SMA
         self.sma = bt.indicators.MovAv.SMA(self.data, period=self.p.smaperiod)
 
         print('--------------------------------------------------')
@@ -211,7 +211,7 @@ class TestStrategy(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
     storekwargs = dict(
@@ -233,7 +233,7 @@ def runstrategy():
         cerebro.setbroker(broker)
 
     timeframe = bt.TimeFrame.TFrame(args.timeframe)
-    # Manage data1 parameters
+    # 管理 data1 参数
     tf1 = args.timeframe1
     tf1 = bt.TimeFrame.TFrame(tf1) if tf1 is not None else timeframe
     cp1 = args.compression1
@@ -314,7 +314,7 @@ def runstrategy():
         valid = None
     else:
         valid = datetime.timedelta(seconds=args.valid)
-    # Add the strategy
+    # 添加 strategy
     cerebro.addstrategy(TestStrategy,
                         smaperiod=args.smaperiod,
                         trade=args.trade,
@@ -332,7 +332,7 @@ def runstrategy():
                         oca=args.oca,
                         bracket=args.bracket)
 
-    # Live data ... avoid long data accumulation by switching to "exactbars"
+    # live data 场景切换到 "exactbars"，避免长期累积数据
     cerebro.run(exactbars=args.exactbars)
 
     if args.plot and args.exactbars < 1:  # plot if possible

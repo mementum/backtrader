@@ -28,6 +28,19 @@ from backtrader.indicators import SumN, TrueLow, TrueRange
 
 class UltimateOscillator(bt.Indicator):
     '''
+    Ultimate Oscillator 用多个周期的 Buying Pressure 与 TrueRange 比值衡量
+    momentum。
+
+    Args:
+        p1: 短周期求和窗口。
+        p2: 中周期求和窗口。
+        p3: 长周期求和窗口。
+        upperband: 绘图时的上轨参考线。
+        lowerband: 绘图时的下轨参考线。
+
+    Returns:
+        UltimateOscillator: 输出 ``uo`` line 的 indicator。
+
     Formula:
       # Buying Pressure = Close - TrueLow
       BP = Close - Minimum(Low or Prior Close)
@@ -45,6 +58,13 @@ class UltimateOscillator(bt.Indicator):
 
       - https://en.wikipedia.org/wiki/Ultimate_oscillator
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:ultimate_oscillator
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(UltimateOscillator)
     '''
     lines = ('uo',)
 
@@ -60,9 +80,9 @@ class UltimateOscillator(bt.Indicator):
         baseticks = [10.0, 50.0, 90.0]
         hlines = [self.p.upperband, self.p.lowerband]
 
-        # Plot lines at 0 & 100 to make the scale complete + upper/lower/bands
+        # 绘制上下轨参考线
         self.plotinfo.plotyhlines = hlines
-        # Plot ticks at "baseticks" + the user specified upper/lower bands
+        # 绘制基础刻度与用户指定的上下轨刻度
         self.plotinfo.plotyticks = baseticks + hlines
 
     def __init__(self):
@@ -73,7 +93,7 @@ class UltimateOscillator(bt.Indicator):
         av14 = SumN(bp, period=self.p.p2) / SumN(tr, period=self.p.p2)
         av28 = SumN(bp, period=self.p.p3) / SumN(tr, period=self.p.p3)
 
-        # Multiply/divide floats outside of formula to reduce line objects
+        # 将浮点乘除移到公式外，减少 line 对象数量
         factor = 100.0 / (4.0 + 2.0 + 1.0)
         uo = (4.0 * factor) * av7 + (2.0 * factor) * av14 + factor * av28
         self.lines.uo = uo

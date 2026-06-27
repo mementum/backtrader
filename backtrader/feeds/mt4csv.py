@@ -27,15 +27,20 @@ from . import GenericCSVData
 
 
 class MT4CSVData(GenericCSVData):
-    '''
-    Parses a `Metatrader4 <https://www.metaquotes.net/en/metatrader4>`_ History
-    center CSV exported file.
+    '''解析 `Metatrader4 <https://www.metaquotes.net/en/metatrader4>`_
+    History Center 导出的 CSV 文件。
 
-    Specific parameters (or specific meaning):
+    该类基于 ``GenericCSVData``，并调整日期、时间和字段位置参数以匹配 MT4
+    导出格式。
 
-      - ``dataname``: The filename to parse or a file-like object
+    Args:
+        dataname: 要解析的文件名或 file-like 对象。
 
-      - Uses GenericCSVData and simply modifies the params
+    Returns:
+        bool: 成功解析一行时返回 ``True``。
+
+    ---
+    >>> data = MT4CSVData(dataname='mt4-history.csv')
     '''
 
     params = (

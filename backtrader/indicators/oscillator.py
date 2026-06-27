@@ -29,11 +29,10 @@ from . import Indicator, MovingAverage
 
 class OscillatorMixIn(Indicator):
     '''
-    MixIn class to create a subclass with another indicator. The main line of
-    that indicator will be substracted from the other base class main line
-    creating an oscillator
+    Oscillator 的 MixIn 基类，用于与另一个 indicator 组合生成 oscillator。
+    该 indicator 的主 line 会从另一个基类的主 line 中扣除。
 
-    The usage is:
+    用法:
 
       - Class XXXOscillator(XXX, OscillatorMixIn)
 
@@ -57,27 +56,42 @@ class OscillatorMixIn(Indicator):
 
 class Oscillator(Indicator):
     '''
-    Oscillation of a given data around another data
+    给定 data 围绕另一个 data 的 oscillation。
+
+    Args:
+        data: 单 data 模式下为带有原始 datas 的 Lines 对象；双 data 模式下为基准
+            data。
+        data1: 双 data 模式下用于计算 oscillation 的另一个 data。
+
+    Returns:
+        Oscillator: 输出 ``osc`` line 的 indicator。
 
     Datas:
-      This indicator can accept 1 or 2 datas for the calculation.
+      该 indicator 可接受 1 或 2 个 data 进行计算。
 
-      - If 1 data is provided, it must be a complex "Lines" object (indicator)
-        which also has "datas". Example: A moving average
+      - 如果提供 1 个 data，它必须是同时持有 ``datas`` 的复杂 "Lines" 对象
+        （indicator）。例如：Moving Average。
 
-        The calculated oscillation will be that of the Moving Average (in the
-        example) around the data that was used for the average calculation
+        计算结果表示该 Moving Average 围绕其计算所用原始 data 的 oscillation。
 
-      - If 2 datas are provided the calculated oscillation will be that of the
-        2nd data around the 1st data
+      - 如果提供 2 个 data，则表示第 2 个 data 围绕第 1 个 data 的 oscillation。
 
     Formula:
       - 1 data -> osc = data.data - data
       - 2 datas -> osc = data0 - data1
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> from backtrader.indicators import SimpleMovingAverage
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(SimpleMovingAverage)
+    >>> cerebro.addindicator(Oscillator)
     '''
     lines = ('osc',)
 
-    # Have a default value which can be later modified if needed
+    # 提供默认值，后续可按需修改
     plotlines = dict(_0=dict(_name='osc'))
 
     def _plotinit(self):
@@ -100,13 +114,13 @@ class Oscillator(Indicator):
         self.lines[0] = datasrc - self.dataosc
 
 
-# Automatic creation of Oscillating Lines
+# 自动创建 Oscillating Lines
 
 for movav in MovingAverage._movavs[1:]:
     _newclsdoc = '''
-    Oscillation of a %s around its data
+    %s 围绕其 data 的 oscillation。
     '''
-    # Skip aliases - they will be created automatically
+    # 跳过 alias，它们会自动创建
     if getattr(movav, 'aliased', ''):
         continue
 

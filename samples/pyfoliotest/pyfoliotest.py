@@ -53,7 +53,7 @@ class St(bt.Strategy):
 
     def next(self):
         if self.p.printout:
-            # Print only 1st data ... is just a check that things are running
+            # 只打印第 1 个 data，用于确认流程正在运行
             txtfields = list()
             txtfields.append('%04d' % len(self))
             txtfields.append(self.data.datetime.datetime(0).isoformat())

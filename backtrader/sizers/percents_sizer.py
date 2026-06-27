@@ -27,15 +27,36 @@ __all__ = ['PercentSizer', 'AllInSizer', 'PercentSizerInt', 'AllInSizerInt']
 
 
 class PercentSizer(bt.Sizer):
-    '''This sizer return percents of available cash
+    '''按可用 cash 的百分比返回 size 的 sizer。
 
-    Params:
-      - ``percents`` (default: ``20``)
+    如果当前 data 没有持仓，则用 ``cash / data.close[0] * percents / 100``
+    计算 size；如果已经有持仓，则返回当前 position size。
+
+    Args:
+        percents (float): 使用可用 cash 的百分比，默认 ``20``。
+        retint (bool): 是否把返回 size 截断为 int，默认 ``False``。
+
+    Returns:
+        float | int: 计算得到的 size；``retint`` 为 ``True`` 时返回 int。
+
+    ---
+    >>> class Broker:
+    ...     def getposition(self, data):
+    ...         return 0
+    >>> class Close:
+    ...     def __getitem__(self, ago):
+    ...         return 10.0
+    >>> class Data:
+    ...     close = Close()
+    >>> sizer = PercentSizer(percents=25)
+    >>> sizer.broker = Broker()
+    >>> sizer._getsizing(None, 1000.0, Data(), True)
+    25.0
     '''
 
     params = (
         ('percents', 20),
-        ('retint', False),  # return an int size or rather the float value
+        ('retint', False),  # 返回 int size，还是保留 float value
     )
 
     def __init__(self):
@@ -55,10 +76,18 @@ class PercentSizer(bt.Sizer):
 
 
 class AllInSizer(PercentSizer):
-    '''This sizer return all available cash of broker
+    '''使用 broker 全部可用 cash 计算 size 的 sizer。
 
-     Params:
-       - ``percents`` (default: ``100``)
+    Args:
+        percents (float): 使用可用 cash 的百分比，默认 ``100``。
+
+    Returns:
+        float: 计算得到的全仓 size。
+
+    ---
+    >>> sizer = AllInSizer()
+    >>> sizer.p.percents
+    100
      '''
     params = (
         ('percents', 100),
@@ -66,24 +95,38 @@ class AllInSizer(PercentSizer):
 
 
 class PercentSizerInt(PercentSizer):
-    '''This sizer return percents of available cash in form of size truncated
-    to an int
+    '''按可用 cash 的百分比返回 size，并将结果截断为 int 的 sizer。
 
-    Params:
-      - ``percents`` (default: ``20``)
+    Args:
+        percents (float): 使用可用 cash 的百分比，默认 ``20``。
+
+    Returns:
+        int: 截断为 int 的 size。
+
+    ---
+    >>> sizer = PercentSizerInt()
+    >>> sizer.p.retint
+    True
     '''
 
     params = (
-        ('retint', True),  # return an int size or rather the float value
+        ('retint', True),  # 返回 int size，还是保留 float value
     )
 
 
 class AllInSizerInt(PercentSizerInt):
-    '''This sizer return all available cash of broker with the
-    size truncated to an int
+    '''使用 broker 全部可用 cash 计算 size，并将结果截断为 int 的 sizer。
 
-     Params:
-       - ``percents`` (default: ``100``)
+    Args:
+        percents (float): 使用可用 cash 的百分比，默认 ``100``。
+
+    Returns:
+        int: 截断为 int 的全仓 size。
+
+    ---
+    >>> sizer = AllInSizerInt()
+    >>> sizer.p.percents, sizer.p.retint
+    (100, True)
      '''
     params = (
         ('percents', 100),

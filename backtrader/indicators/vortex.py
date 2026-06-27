@@ -26,9 +26,23 @@ import backtrader as bt
 
 class Vortex(bt.Indicator):
     '''
+    Vortex Indicator，用于衡量正向和负向趋势运动。
+
+    Args:
+        period: 统计周期。
+
+    Returns:
+        Vortex: 输出 ``vi_plus`` 和 ``vi_minus`` line 的 indicator。
+
     See:
       - http://www.vortexindicator.com/VFX_VORTEX.PDF
 
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(Vortex, period=14)
     '''
     lines = ('vi_plus', 'vi_minus',)
 

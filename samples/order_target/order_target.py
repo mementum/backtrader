@@ -28,23 +28,17 @@ import backtrader as bt
 
 
 class TheStrategy(bt.Strategy):
-    '''
-    This strategy is loosely based on some of the examples from the Van
-    K. Tharp book: *Trade Your Way To Financial Freedom*. The logic:
+    '''该 strategy 大致参考 Van K. Tharp 的 *Trade Your Way To Financial Freedom*。
 
-      - Enter the market if:
-        - The MACD.macd line crosses the MACD.signal line to the upside
-        - The Simple Moving Average has a negative direction in the last x
-          periods (actual value below value x periods ago)
+    逻辑如下：
 
-     - Set a stop price x times the ATR value away from the close
+      - 当 MACD.macd line 向上穿过 MACD.signal line，且 Simple Moving Average
+        最近 x 个 periods 方向为负时进入市场。
 
-     - If in the market:
+      - 在距离 close 为 x 倍 ATR 的位置设置 stop price。
 
-       - Check if the current close has gone below the stop price. If yes,
-         exit.
-       - If not, update the stop price if the new stop price would be higher
-         than the current
+      - 持仓期间，如果当前 close 低于 stop price，则退出；否则仅当新的 stop price
+        高于当前值时更新。
     '''
 
     params = (
@@ -179,7 +173,7 @@ def parse_args(pargs=None):
                         action='store_true',
                         help=('Use order_target_percent'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

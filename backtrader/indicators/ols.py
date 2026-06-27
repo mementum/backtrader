@@ -31,12 +31,24 @@ __all__ = ['OLS_Slope_InterceptN', 'OLS_TransformationN', 'OLS_BetaN',
 
 class OLS_Slope_InterceptN(PeriodN):
     '''
-    Calculates a linear regression using ``statsmodel.OLS`` (Ordinary least
-    squares) of data1 on data0
+    使用 ``statsmodel.OLS``（Ordinary least squares）计算 data1 对 data0 的线性回归。
 
-    Uses ``pandas`` and ``statsmodels``
+    依赖 ``pandas`` 与 ``statsmodels``。
+
+    Args:
+        period: 回归窗口长度。
+
+    Returns:
+        OLS_Slope_InterceptN: 输出 ``slope`` 与 ``intercept`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(OLS_Slope_InterceptN, period=10)
     '''
-    _mindatas = 2  # ensure at least 2 data feeds are passed
+    _mindatas = 2  # 确保至少传入 2 个 data feed
 
     packages = (
         ('pandas', 'pd'),
@@ -59,11 +71,24 @@ class OLS_Slope_InterceptN(PeriodN):
 
 class OLS_TransformationN(PeriodN):
     '''
-    Calculates the ``zscore`` for data0 and data1. Although it doesn't directly
-    uses any external package it relies on ``OLS_SlopeInterceptN`` which uses
-    ``pandas`` and ``statsmodels``
+    计算 data0 与 data1 的 ``zscore``。该类不直接使用外部包，但依赖使用
+    ``pandas`` 与 ``statsmodels`` 的 ``OLS_Slope_InterceptN``。
+
+    Args:
+        period: 回归和统计窗口长度。
+
+    Returns:
+        OLS_TransformationN: 输出 ``spread``、``spread_mean``、``spread_std``
+        与 ``zscore`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(OLS_TransformationN, period=10)
     '''
-    _mindatas = 2  # ensure at least 2 data feeds are passed
+    _mindatas = 2  # 确保至少传入 2 个 data feed
     lines = ('spread', 'spread_mean', 'spread_std', 'zscore',)
     params = (('period', 10),)
 
@@ -80,11 +105,24 @@ class OLS_TransformationN(PeriodN):
 
 class OLS_BetaN(PeriodN):
     '''
-    Calculates a regression of data1 on data0 using ``pandas.ols``
+    使用 ``pandas.ols`` 计算 data1 对 data0 的回归 beta。
 
-    Uses ``pandas``
+    依赖 ``pandas``。
+
+    Args:
+        period: 回归窗口长度。
+
+    Returns:
+        OLS_BetaN: 输出 ``beta`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(OLS_BetaN, period=10)
     '''
-    _mindatas = 2  # ensure at least 2 data feeds are passed
+    _mindatas = 2  # 确保至少传入 2 个 data feed
 
     packages = (
         ('pandas', 'pd'),
@@ -101,12 +139,25 @@ class OLS_BetaN(PeriodN):
 
 class CointN(PeriodN):
     '''
-    Calculates the score (coint_t) and pvalue for a given ``period`` for the
-    data feeds
+    为传入 data feed 在给定 ``period`` 上计算协整 score（coint_t）与 pvalue。
 
-    Uses ``pandas`` and ``statsmodels`` (for ``coint``)
+    依赖 ``pandas`` 与 ``statsmodels``（用于 ``coint``）。
+
+    Args:
+        period: 协整检验窗口长度。
+        trend: 传给 ``statsmodels.tsa.stattools.coint`` 的 trend 参数。
+
+    Returns:
+        CointN: 输出 ``score`` 与 ``pvalue`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(CointN, period=10)
     '''
-    _mindatas = 2  # ensure at least 2 data feeds are passed
+    _mindatas = 2  # 确保至少传入 2 个 data feed
 
     packages = (
         ('pandas', 'pd'),  # import pandas as pd
@@ -118,7 +169,7 @@ class CointN(PeriodN):
     lines = ('score', 'pvalue',)
     params = (
         ('period', 10),
-        ('trend', 'c'),  # see statsmodel.tsa.statttools
+        ('trend', 'c'),  # 见 statsmodel.tsa.statttools
     )
 
     def next(self):

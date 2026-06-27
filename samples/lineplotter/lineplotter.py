@@ -48,7 +48,7 @@ def runstrat(pargs=None):
     cerebro = bt.Cerebro()
 
     dkwargs = dict()
-    # Get the dates from the args
+    # 从 args 获取日期
     if args.fromdate is not None:
         fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
         dkwargs['fromdate'] = fromdate
@@ -62,7 +62,7 @@ def runstrat(pargs=None):
     cerebro.addstrategy(St, ondata=args.ondata)
     cerebro.run(stdstats=False)
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         pkwargs = dict(style='bar')
         if args.plot is not True:  # evals to True but is not True

@@ -26,14 +26,19 @@ from . import GenericCSVData
 
 
 class SierraChartCSVData(GenericCSVData):
-    '''
-    Parses a `SierraChart <http://www.sierrachart.com>`_ CSV exported file.
+    '''解析 `SierraChart <http://www.sierrachart.com>`_ 导出的 CSV 文件。
 
-    Specific parameters (or specific meaning):
+    该类基于 ``GenericCSVData``，并将 ``dtformat`` 调整为 SierraChart 常见的
+    ``'%Y/%m/%d'``。
 
-      - ``dataname``: The filename to parse or a file-like object
+    Args:
+        dataname: 要解析的文件名或 file-like 对象。
 
-      - Uses GenericCSVData and simply modifies the dateformat (dtformat) to
+    Returns:
+        bool: 成功解析一行时返回 ``True``。
+
+    ---
+    >>> data = SierraChartCSVData(dataname='sierra.csv')
     '''
 
     params = (('dtformat', '%Y/%m/%d'),)

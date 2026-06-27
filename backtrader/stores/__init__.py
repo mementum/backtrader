@@ -21,23 +21,22 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-# The modules below should/must define __all__ with the objects wishes
-# or prepend an "_" (underscore) to private classes/variables
+# 下列模块应在 __all__ 中定义要导出的对象，私有类/变量则使用 "_" 前缀
 
 try:
     from .ibstore import IBStore
 except ImportError:
-    pass  # The user may not have ibpy installed
+    pass  # 用户可能未安装 ibpy
 
 try:
     from .vcstore import VCStore
 except ImportError:
-    pass  # The user may not have a module installed
+    pass  # 用户可能未安装相关模块
 
 try:
     from .oandastore import OandaStore
 except ImportError:
-    pass  # The user may not have a module installed
+    pass  # 用户可能未安装相关模块
 
 
 from .vchartfile import VChartFile

@@ -34,7 +34,7 @@ class St(bt.Strategy):
 
     def __init__(self):
         # self.schedule_once(self.pepe, when=datetime.datetime())
-        # This one won't have the expected fidelity in backtesting
+        # 这一项在 backtesting 中不会达到预期精度
         # self.schedule_once(self.pepe, when=datetime.timedelta())
         # self.schedule_reps(self.pepe, when=datetime.time(), days=bt.sched.)
 
@@ -54,7 +54,7 @@ def runstrat(args=None):
     # Data feed kwargs
     kwargs = dict()
 
-    # Parse from/to-date
+    # 解析 from/to-date
     dtfmt, tmfmt = '%Y-%m-%d', 'T%H:%M:%S'
     for a, d in ((getattr(args, x), x) for x in ['fromdate', 'todate']):
         if a:
@@ -76,10 +76,10 @@ def runstrat(args=None):
     # Strategy
     cerebro.addstrategy(St, **eval('dict(' + args.strat + ')'))
 
-    # Execute
+    # 执行
     cerebro.run(**eval('dict(' + args.cerebro + ')'))
 
-    if args.plot:  # Plot if requested to
+    if args.plot:  # 按需绘图 to
         cerebro.plot(**eval('dict(' + args.plot + ')'))
 
 
@@ -94,7 +94,7 @@ def parse_args(pargs=None):
     parser.add_argument('--data0', default='../../datas/2005-2006-day-001.txt',
                         required=False, help='Data to read in')
 
-    # Defaults for dates
+    # 日期默认值
     parser.add_argument('--fromdate', required=False, default='',
                         help='Date[time] in YYYY-MM-DD[THH:MM:SS] format')
 

@@ -26,26 +26,38 @@ __all__ = ['BacktraderError', 'StrategySkipError']
 
 
 class BacktraderError(Exception):
-    '''Base exception for all other exceptions'''
+    '''backtrader 异常的基类，用于统一承载框架内错误。'''
     pass
 
 
 class StrategySkipError(BacktraderError):
-    '''Requests the platform to skip this strategy for backtesting. To be
-    raised during the initialization (``__init__``) phase of the instance'''
+    '''请求平台在回测中跳过当前 strategy。
+
+    该异常应在 strategy 实例初始化（``__init__``）阶段抛出。
+    '''
     pass
 
 
 class ModuleImportError(BacktraderError):
-    '''Raised if a class requests a module to be present to work and it cannot
-    be imported'''
+    '''依赖模块缺失时抛出的异常。
+
+    当某个类需要指定 module 才能工作，但该 module 无法 import 时使用。
+
+    Args:
+        message: 给调用方展示的错误信息。
+        *args: 与缺失 module 相关的附加上下文。
+    '''
     def __init__(self, message, *args):
         super(ModuleImportError, self).__init__(message)
         self.args = args
 
 
 class FromModuleImportError(ModuleImportError):
-    '''Raised if a class requests a module to be present to work and it cannot
-    be imported'''
+    '''``from module import name`` 形式依赖缺失时抛出的异常。
+
+    Args:
+        message: 给调用方展示的错误信息。
+        *args: 与缺失对象相关的附加上下文。
+    '''
     def __init__(self, message, *args):
         super(FromModuleImportError, self).__init__(message, *args)

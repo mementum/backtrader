@@ -29,15 +29,27 @@ __all__ = ['LaguerreRSI', 'LRSI', 'LaguerreFilter', 'LAGF']
 
 class LaguerreRSI(PeriodN):
     '''
-    Defined by John F. Ehlers in `Cybernetic Analysis for Stock and Futures`,
-    2004, published by Wiley. `ISBN: 978-0-471-46307-8`
+    John F. Ehlers 在 Wiley 2004 年出版的 *Cybernetic Analysis for Stock and
+    Futures* 中定义。`ISBN: 978-0-471-46307-8`
 
-    The Laguerre RSI tries to implements a better RSI by providing a sort of
-    *Time Warp without Time Travel* using a Laguerre filter. This provides for
-    faster reactions to price changes
+    Laguerre RSI 通过 Laguerre filter 提供一种 *Time Warp without Time Travel*
+    的效果，尝试实现反应更快的 RSI。
 
-    ``gamma`` is meant to have values between ``0.2`` and ``0.8``, with the
-    best balance found theoretically at the default of ``0.5``
+    ``gamma`` 通常取 ``0.2`` 到 ``0.8`` 之间，理论上默认值 ``0.5`` 有较好平衡。
+
+    Args:
+        gamma: Laguerre filter 的平滑参数。
+        period: 最小计算周期。
+
+    Returns:
+        LaguerreRSI: 输出 ``lrsi`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(LaguerreRSI, gamma=0.5)
     '''
     alias = ('LRSI',)
     lines = ('lrsi',)
@@ -54,11 +66,11 @@ class LaguerreRSI(PeriodN):
     l0, l1, l2, l3 = 0.0, 0.0, 0.0, 0.0
 
     def next(self):
-        l0_1 = self.l0  # cache previous intermediate values
+        l0_1 = self.l0  # 缓存上一轮中间值
         l1_1 = self.l1
         l2_1 = self.l2
 
-        g = self.p.gamma  # avoid more lookups
+        g = self.p.gamma  # 避免重复查找
         self.l0 = l0 = (1.0 - g) * self.data + g * l0_1
         self.l1 = l1 = -g * l0 + l0_1 + g * l1_1
         self.l2 = l2 = -g * l1 + l1_1 + g * l2_1
@@ -87,11 +99,23 @@ class LaguerreRSI(PeriodN):
 
 class LaguerreFilter(PeriodN):
     '''
-    Defined by John F. Ehlers in `Cybernetic Analysis for Stock and Futures`,
-    2004, published by Wiley. `ISBN: 978-0-471-46307-8`
+    John F. Ehlers 在 Wiley 2004 年出版的 *Cybernetic Analysis for Stock and
+    Futures* 中定义。`ISBN: 978-0-471-46307-8`
 
-    ``gamma`` is meant to have values between ``0.2`` and ``0.8``, with the
-    best balance found theoretically at the default of ``0.5``
+    ``gamma`` 通常取 ``0.2`` 到 ``0.8`` 之间，理论上默认值 ``0.5`` 有较好平衡。
+
+    Args:
+        gamma: Laguerre filter 的平滑参数。
+
+    Returns:
+        LaguerreFilter: 输出 ``lfilter`` line 的 indicator。
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(LaguerreFilter, gamma=0.5)
     '''
     alias = ('LAGF',)
     lines = ('lfilter',)
@@ -101,11 +125,11 @@ class LaguerreFilter(PeriodN):
     l0, l1, l2, l3 = 0.0, 0.0, 0.0, 0.0
 
     def next(self):
-        l0_1 = self.l0  # cache previous intermediate values
+        l0_1 = self.l0  # 缓存上一轮中间值
         l1_1 = self.l1
         l2_1 = self.l2
 
-        g = self.p.gamma  # avoid more lookups
+        g = self.p.gamma  # 避免重复查找
         self.l0 = l0 = (1.0 - g) * self.data + g * l0_1
         self.l1 = l1 = -g * l0 + l0_1 + g * l1_1
         self.l2 = l2 = -g * l1 + l1_1 + g * l2_1

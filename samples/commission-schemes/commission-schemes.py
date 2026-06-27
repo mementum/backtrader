@@ -42,11 +42,11 @@ class SMACrossOver(bt.Strategy):
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
-            # Buy/Sell order submitted/accepted to/by broker - Nothing to do
+            # Buy/Sell order 已提交/被 broker 接受，无需处理
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enougth cash
+        # 检查 order 是否已完成
+        # 注意：现金不足时 broker 可能拒绝 order
         if order.status in [order.Completed, order.Canceled, order.Margin]:
             if order.isbuy():
                 self.log(
@@ -67,7 +67,7 @@ class SMACrossOver(bt.Strategy):
 
     def __init__(self):
         sma = btind.SMA(self.data, period=self.p.period)
-        # > 0 crossing up / < 0 crossing down
+        # > 0 向上交叉 / < 0 向下交叉
         self.buysell_sig = btind.CrossOver(self.data, sma)
 
     def next(self):
@@ -83,26 +83,26 @@ class SMACrossOver(bt.Strategy):
 def runstrategy():
     args = parse_args()
 
-    # Create a cerebro
+    # 创建 cerebro
     cerebro = bt.Cerebro()
 
-    # Get the dates from the args
+    # 从 args 获取日期
     fromdate = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d')
     todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
 
-    # Create the 1st data
+    # 创建第 1 个 data
     data = btfeeds.BacktraderCSVData(
         dataname=args.data,
         fromdate=fromdate,
         todate=todate)
 
-    # Add the 1st data to cerebro
+    # 添加第 1 个 data 到 cerebro
     cerebro.adddata(data)
 
-    # Add a strategy
+    # 添加 strategy
     cerebro.addstrategy(SMACrossOver, period=args.period, stake=args.stake)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcash(args.cash)
 
     commtypes = dict(
@@ -110,7 +110,7 @@ def runstrategy():
         perc=bt.CommInfoBase.COMM_PERC,
         fixed=bt.CommInfoBase.COMM_FIXED)
 
-    # Add the commission - only stocks like a for each operation
+    # 添加 commission；仅针对类似 stock 的每次操作
     cerebro.broker.setcommission(commission=args.comm,
                                  mult=args.mult,
                                  margin=args.margin,
@@ -118,10 +118,10 @@ def runstrategy():
                                  commtype=commtypes[args.commtype],
                                  stocklike=args.stocklike)
 
-    # And run it
+    # 然后运行
     cerebro.run()
 
-    # Plot if requested
+    # 按需绘图
     if args.plot:
         cerebro.plot(numfigs=args.numfigs, volume=False)
 

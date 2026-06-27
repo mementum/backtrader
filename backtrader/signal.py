@@ -54,6 +54,8 @@ SignalTypes = [
 
 
 class Signal(bt.Indicator):
+    '''signal indicator 的包装类，用于把输入 line 暴露为 ``signal`` line。'''
+
     SignalTypes = SignalTypes
 
     lines = ('signal',)

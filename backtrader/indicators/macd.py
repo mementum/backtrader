@@ -26,13 +26,21 @@ from . import Indicator, MovAv
 
 class MACD(Indicator):
     '''
-    Moving Average Convergence Divergence. Defined by Gerald Appel in the 70s.
+    Gerald Appel 在 20 世纪 70 年代定义的 Moving Average Convergence Divergence。
 
-    It measures the distance of a short and a long term moving average to
-    try to identify the trend.
+    它衡量短期与长期 Moving Average 之间的距离，用于尝试识别趋势。
 
-    A second lagging moving average over the convergence-divergence should
-    provide a "signal" upon being crossed by the macd
+    对 convergence-divergence 再做一次滞后 Moving Average，可在被 macd 穿越时
+    提供 "signal"。
+
+    Args:
+        period_me1: 短周期 Moving Average 周期。
+        period_me2: 长周期 Moving Average 周期。
+        period_signal: signal line 的平滑周期。
+        movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        MACD: 输出 ``macd`` 与 ``signal`` line 的 indicator。
 
     Formula:
       - macd = ema(data, me1_period) - ema(data, me2_period)
@@ -40,6 +48,13 @@ class MACD(Indicator):
 
     See:
       - http://en.wikipedia.org/wiki/MACD
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MACD)
     '''
     lines = ('macd', 'signal',)
     params = (('period_me1', 12), ('period_me2', 26), ('period_signal', 9),
@@ -65,14 +80,29 @@ class MACD(Indicator):
 
 class MACDHisto(MACD):
     '''
-    Subclass of MACD which adds a "histogram" of the difference between the
-    macd and signal lines
+    MACD 的子类，额外添加 macd 与 signal line 差值的 "histogram"。
+
+    Args:
+        period_me1: 短周期 Moving Average 周期。
+        period_me2: 长周期 Moving Average 周期。
+        period_signal: signal line 的平滑周期。
+        movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        MACDHisto: 输出 ``macd``、``signal`` 与 ``histo`` line 的 indicator。
 
     Formula:
       - histo = macd - signal
 
     See:
       - http://en.wikipedia.org/wiki/MACD
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(MACDHisto)
     '''
     alias = ('MACDHistogram',)
 

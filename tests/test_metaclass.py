@@ -21,19 +21,15 @@
 import testcommon
 
 class TestFrompackages(testcommon.SampleParamsHolder):
-    """
-    This class is used for testing that inheriting from base class that
-    uses `frompackages` import mechanism, doesnt brake the functionality
-    of the base class.
-    """
+    """验证继承使用 ``frompackages`` import 机制的基类不会破坏基类功能。"""
     def __init__(self):
         super(TestFrompackages, self).__init__()
-        # Prepare the lags array
+        # 准备 lags array
 
 def test_run(main=False):
-    """
-    Instantiate the TestFrompackages and see that no exception is raised
-    Bug Discussion:
+    """实例化 TestFrompackages，并验证不会抛出异常。
+
+    Bug 讨论：
     https://community.backtrader.com/topic/2661/frompackages-directive-functionality-seems-to-be-broken-when-using-inheritance
     """
     test = TestFrompackages()

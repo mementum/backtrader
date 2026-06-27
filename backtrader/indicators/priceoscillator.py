@@ -25,6 +25,7 @@ from . import Indicator, Max, MovAv
 
 
 class _PriceOscBase(Indicator):
+    '''Price Oscillator 的基类，用于统一短/长 Moving Average 差值计算。'''
     params = (('period1', 12), ('period2', 26),
               ('_movav', MovAv.Exponential),)
 
@@ -40,14 +41,28 @@ class _PriceOscBase(Indicator):
 
 class PriceOscillator(_PriceOscBase):
     '''
-    Shows the difference between a short and long exponential moving
-    averages expressed in points.
+    显示短周期与长周期 Exponential Moving Average 的差值，以点数表达。
+
+    Args:
+        period1: 短周期 Moving Average 周期。
+        period2: 长周期 Moving Average 周期。
+        _movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        PriceOscillator: 输出 ``po`` line 的 indicator。
 
     Formula:
       - po = ema(short) - ema(long)
 
     See:
       - http://www.metastock.com/Customer/Resources/TAAZ/?c=3&p=94
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PriceOscillator)
     '''
     alias = ('PriceOsc', 'AbsolutePriceOscillator', 'APO', 'AbsPriceOsc',)
     lines = ('po',)
@@ -55,19 +70,33 @@ class PriceOscillator(_PriceOscBase):
 
 class PercentagePriceOscillator(_PriceOscBase):
     '''
-    Shows the difference between a short and long exponential moving
-    averages expressed in percentage. The MACD does the same but expressed in
-    absolute points.
+    显示短周期与长周期 Exponential Moving Average 的差值，以百分比表达。
+    MACD 做的是类似计算，但以绝对点数表达。
 
-    Expressing the difference in percentage allows to compare the indicator at
-    different points in time when the underlying value has significatnly
-    different values.
+    用百分比表达差值，可以在底层价格水平差异很大时比较不同时点的指标值。
+
+    Args:
+        period1: 短周期 Moving Average 周期。
+        period2: 长周期 Moving Average 周期。
+        period_signal: signal line 的平滑周期。
+        _movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        PercentagePriceOscillator: 输出 ``ppo``、``signal`` 与 ``histo`` line
+        的 indicator。
 
     Formula:
       - po = 100 * (ema(short) - ema(long)) / ema(long)
 
     See:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:price_oscillators_ppo
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PercentagePriceOscillator)
     '''
     _long = True
 
@@ -90,23 +119,34 @@ class PercentagePriceOscillator(_PriceOscBase):
 
 class PercentagePriceOscillatorShort(PercentagePriceOscillator):
     '''
-    Shows the difference between a short and long exponential moving
-    averages expressed in percentage. The MACD does the same but expressed in
-    absolute points.
+    PercentagePriceOscillator 的短周期分母版本，以短周期 EMA 作为百分比计算分母。
 
-    Expressing the difference in percentage allows to compare the indicator at
-    different points in time when the underlying value has significatnly
-    different values.
+    用百分比表达差值，可以在底层价格水平差异很大时比较不同时点的指标值。
 
-    Most on-line literature shows the percentage calculation having the long
-    exponential moving average as the denominator. Some sources like MetaStock
-    use the short one.
+    大部分在线资料使用长周期 EMA 作为分母；MetaStock 等资料使用短周期 EMA。
+
+    Args:
+        period1: 短周期 Moving Average 周期。
+        period2: 长周期 Moving Average 周期。
+        period_signal: signal line 的平滑周期。
+        _movav: 用于计算的 Moving Average 类型。
+
+    Returns:
+        PercentagePriceOscillatorShort: 输出 ``ppo``、``signal`` 与 ``histo``
+        line 的 indicator。
 
     Formula:
       - po = 100 * (ema(short) - ema(long)) / ema(short)
 
     See:
       - http://www.metastock.com/Customer/Resources/TAAZ/?c=3&p=94
+
+    ---
+    交互界面使用示范:
+
+    >>> from backtrader import Cerebro
+    >>> cerebro = Cerebro()
+    >>> cerebro.addindicator(PercentagePriceOscillatorShort)
     '''
     _long = False
     alias = ('PPOShort', 'PercPriceOscShort',)

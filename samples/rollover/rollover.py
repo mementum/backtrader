@@ -40,7 +40,7 @@ class TheStrategy(bt.Strategy):
         txt = list()
         txt.append('%04d' % len(self.data0))
         txt.append('{}'.format(self.data0._dataname))
-        # Internal knowledge ... current expiration in use is in _d
+        # 内部约定：当前使用的 expiration 保存在 _d
         txt.append('{}'.format(self.data0._d._dataname))
         txt.append('{}'.format(self.data.datetime.date()))
         txt.append('{}'.format(self.data.datetime.date().strftime('%a')))
@@ -54,7 +54,7 @@ class TheStrategy(bt.Strategy):
 
 
 def checkdate(dt, d):
-    # Check if the date is in the week where the 3rd friday of Mar/Jun/Sep/Dec
+    # 检查日期是否位于 3/6/9/12 月第 3 个周五所在周
 
     # EuroStoxx50 expiry codes: MY
     # M -> H, M, U, Z (Mar, Jun, Sep, Dec)
@@ -74,14 +74,14 @@ def checkdate(dt, d):
     exp_day = 21 - (calendar.weekday(Y, M, 1) + 2) % 7
     exp_dt = datetime.datetime(Y, M, exp_day)
 
-    # Get the year, week numbers
+    # 获取年份和周数
     exp_year, exp_week, _ = exp_dt.isocalendar()
     dt_year, dt_week, _ = dt.isocalendar()
 
     # print('dt {} vs {} exp_dt'.format(dt, exp_dt))
     # print('dt_week {} vs {} exp_week'.format(dt_week, exp_week))
 
-    # can switch if in same week
+    # 如果处于同一周则可以切换
     return (dt_year, dt_week) == (exp_year, exp_week)
 
 
@@ -144,7 +144,7 @@ def parse_args(pargs=None):
                         action='store_true',
                         help='Change when a given condition is met')
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'

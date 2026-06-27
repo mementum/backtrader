@@ -28,68 +28,120 @@ from backtrader.metabase import MetaParams
 
 
 class FixedSize(with_metaclass(MetaParams, object)):
-    '''Returns the execution size for a given order using a *percentage* of the
-    volume in a bar.
+    '''按固定上限返回给定 order 的 execution size。
 
-    This percentage is set with the parameter ``perc``
+    Args:
+        size: 最大可执行 size。实际执行时的 bar volume 也是限制；如果 bar
+            volume 更小，则使用更小值。
 
-    Params:
+    如果该参数的值为 False，则使用 bar 的全部 volume 来匹配 order。
 
-      - ``size`` (default: ``None``)  maximum size to be executed. The actual
-        volume of the bar at execution time is also a limit if smaller than the
-        size
+    ---
+    交互示例:
 
-        If the value of this parameter evaluates to False, the entire volume
-        of the bar will be used to match the order
+    >>> class Line:
+    ...     def __getitem__(self, ago):
+    ...         return 100
+    >>> class Data:
+    ...     volume = Line()
+    >>> class Executed:
+    ...     remsize = 25
+    >>> class Order:
+    ...     data = Data()
+    ...     executed = Executed()
+    >>> FixedSize(size=10)(Order(), price=100.0, ago=0)
+    10
     '''
     params = (('size', None),)
 
     def __call__(self, order, price, ago):
+        '''计算可执行 size。
+
+        Args:
+            order: 当前 order，需提供 ``data.volume`` 和 ``executed.remsize``。
+            price (float): 当前 execution price。
+            ago (int): 访问 data line 时使用的相对位置。
+
+        Returns:
+            int: 当前可执行 size。
+        '''
         size = self.p.size or MAXINT
         return min((order.data.volume[ago], abs(order.executed.remsize), size))
 
 
 class FixedBarPerc(with_metaclass(MetaParams, object)):
-    '''Returns the execution size for a given order using a *percentage* of the
-    volume in a bar.
+    '''使用 bar volume 的固定百分比返回给定 order 的 execution size。
 
-    This percentage is set with the parameter ``perc``
+    Args:
+        perc (float): 用于执行 order 的 bar volume 百分比，合法值为
+            ``0.0 - 100.0``。
 
-    Params:
+    ---
+    交互示例:
 
-      - ``perc`` (default: ``100.0``) (valied values: ``0.0 - 100.0``)
-
-        Percentage of the volume bar to use to execute an order
+    >>> class Line:
+    ...     def __getitem__(self, ago):
+    ...         return 100
+    >>> class Data:
+    ...     volume = Line()
+    >>> class Executed:
+    ...     remsize = 80
+    >>> class Order:
+    ...     data = Data()
+    ...     executed = Executed()
+    >>> FixedBarPerc(perc=50.0)(Order(), price=100.0, ago=0)
+    50.0
     '''
     params = (('perc', 100.0),)
 
     def __call__(self, order, price, ago):
-        # Get the volume and scale it to the requested perc
+        '''计算按 bar volume 百分比限制后的可执行 size。
+
+        Args:
+            order: 当前 order，需提供 ``data.volume`` 和 ``executed.remsize``。
+            price (float): 当前 execution price。
+            ago (int): 访问 data line 时使用的相对位置。
+
+        Returns:
+            float: 当前可执行 size。
+        '''
+        # 获取 volume，并按请求的 perc 缩放
         maxsize = (order.data.volume[ago] * self.p.perc) // 100
-        # Return the maximum possible executed volume
+        # 返回最大可能执行 volume
         return min(maxsize, abs(order.executed.remsize))
 
 
 class BarPointPerc(with_metaclass(MetaParams, object)):
-    '''Returns the execution size for a given order. The volume will be
-    distributed uniformly in the range *high*-*low* using ``minmov`` to
-    partition.
+    '''返回给定 order 的 execution size，并按 price 区间分配 bar volume。
 
-    From the allocated volume for the given price, the ``perc`` percentage will
-    be used
+    volume 会在 *high*-*low* 区间内用 ``minmov`` 分区并均匀分布。给定 price
+    分到的 volume 会再按 ``perc`` 百分比用于匹配。
 
-    Params:
+    Args:
+        minmov (float): 最小 price movement。用于将 *high*-*low* 区间分区，
+            以便在可能 price 之间按比例分配 volume。
+        perc (float): 分配给 order execution price 的 volume 中用于匹配的
+            百分比，合法值为 ``0.0 - 100.0``。
 
-      - ``minmov`` (default: ``0.01``)
+    ---
+    交互示例:
 
-        Minimum price movement. Used to partition the range *high*-*low* to
-        proportionally distribute the volume amongst possible prices
-
-      - ``perc`` (default: ``100.0``) (valied values: ``0.0 - 100.0``)
-
-        Percentage of the volume allocated to the order execution price to use
-        for matching
-
+    >>> class Line:
+    ...     def __init__(self, value):
+    ...         self.value = value
+    ...     def __getitem__(self, ago):
+    ...         return self.value
+    >>> class Data:
+    ...     high = Line(101.0)
+    ...     low = Line(100.0)
+    ...     volume = Line(100)
+    >>> class Executed:
+    ...     remsize = 80
+    >>> class Order:
+    ...     data = Data()
+    ...     executed = Executed()
+    >>> BarPointPerc(minmov=0.5, perc=50.0)(Order(), price=100.5, ago=0)
+    16.0
     '''
     params = (
         ('minmov', None),
@@ -97,15 +149,26 @@ class BarPointPerc(with_metaclass(MetaParams, object)):
     )
 
     def __call__(self, order, price, ago):
+        '''计算按 price 分区和百分比限制后的可执行 size。
+
+        Args:
+            order: 当前 order，需提供 ``data.high``、``data.low``、
+                ``data.volume`` 和 ``executed.remsize``。
+            price (float): 当前 execution price。
+            ago (int): 访问 data line 时使用的相对位置。
+
+        Returns:
+            float: 当前可执行 size。
+        '''
         data = order.data
         minmov = self.p.minmov
 
         parts = 1
         if minmov:
-            # high - low + minmov to account for open ended minus op
+            # high - low + minmov 用于处理开区间减法
             parts = (data.high[ago] - data.low[ago] + minmov) // minmov
 
         alloc_vol = ((data.volume[ago] / parts) * self.p.perc) // 100.0
 
-        # return max possible executable volume
+        # 返回最大可能执行 volume
         return min(alloc_vol, abs(order.executed.remsize))

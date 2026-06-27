@@ -44,9 +44,8 @@ class OrderObserver(bt.observer.Observer):
             if not order.isbuy():
                 continue
 
-            # Only interested in "buy" orders, because the sell orders
-            # in the strategy are Market orders and will be immediately
-            # executed
+            # 只关注 "buy" orders，因为 strategy 中的 sell orders 是 Market orders，
+            # 会立即执行
 
             if order.status in [bt.Order.Accepted, bt.Order.Submitted]:
                 self.lines.created[0] = order.created.price

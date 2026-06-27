@@ -40,6 +40,8 @@ SESSION_TIME, SESSION_START, SESSION_END = range(3)
 
 
 class Timer(with_metaclass(MetaParams, object)):
+    '''Timer 的基类，用于按 session、日期过滤和 repeat 规则触发回调。'''
+
     params = (
         ('tid', None),
         ('owner', None),
@@ -51,7 +53,7 @@ class Timer(with_metaclass(MetaParams, object)):
         ('weekcarry', False),
         ('monthdays', []),
         ('monthcarry', True),
-        ('allow', None),  # callable that allows a timer to take place
+        ('allow', None),  # 允许 timer 触发的 callable
         ('tzdata', None),
         ('cheat', False),
     )
@@ -63,7 +65,8 @@ class Timer(with_metaclass(MetaParams, object)):
         self.kwargs = kwargs
 
     def start(self, data):
-        # write down the 'reset when' value
+        '''启动 timer，并根据 data/session 信息初始化下一次触发时间。'''
+        # 记录 'reset when' 值
         if not isinstance(self.p.when, integer_types):  # expect time/datetime
             self._rstwhen = self.p.when
             self._tzdata = self.p.tzdata
@@ -81,19 +84,21 @@ class Timer(with_metaclass(MetaParams, object)):
         self._nexteos = datetime.min
         self._curdate = date.min
 
-        self._curmonth = -1  # non-existent month
+        self._curmonth = -1  # 不存在的月份
         self._monthmask = collections.deque()
 
-        self._curweek = -1  # non-existent week
+        self._curweek = -1  # 不存在的周
         self._weekmask = collections.deque()
 
     def _reset_when(self, ddate=datetime.min):
+        '''重置当前目标触发时间。'''
         self._when = self._rstwhen
         self._dtwhen = self._dwhen = None
 
         self._lastcall = ddate
 
     def _check_month(self, ddate):
+        '''检查当前日期是否满足 monthdays/monthcarry 条件。'''
         if not self.p.monthdays:
             return True
 
@@ -101,15 +106,15 @@ class Timer(with_metaclass(MetaParams, object)):
         daycarry = False
         dmonth = ddate.month
         if dmonth != self._curmonth:
-            self._curmonth = dmonth  # write down new month
+            self._curmonth = dmonth  # 记录新月份
             daycarry = self.p.monthcarry and bool(mask)
             self._monthmask = mask = collections.deque(self.p.monthdays)
 
         dday = ddate.day
-        dc = bisect.bisect_left(mask, dday)  # "left" for days before dday
+        dc = bisect.bisect_left(mask, dday)  # "left" 对应 dday 之前的天
         daycarry = daycarry or (self.p.monthcarry and dc > 0)
         if dc < len(mask):
-            curday = bisect.bisect_right(mask, dday, lo=dc) > 0  # check dday
+            curday = bisect.bisect_right(mask, dday, lo=dc) > 0  # 检查 dday
             dc += curday
         else:
             curday = False
@@ -121,6 +126,7 @@ class Timer(with_metaclass(MetaParams, object)):
         return daycarry or curday
 
     def _check_week(self, ddate=date.min):
+        '''检查当前日期是否满足 weekdays/weekcarry 条件。'''
         if not self.p.weekdays:
             return True
 
@@ -129,14 +135,14 @@ class Timer(with_metaclass(MetaParams, object)):
         mask = self._weekmask
         daycarry = False
         if dweek != self._curweek:
-            self._curweek = dweek  # write down new month
+            self._curweek = dweek  # 记录新周
             daycarry = self.p.weekcarry and bool(mask)
             self._weekmask = mask = collections.deque(self.p.weekdays)
 
-        dc = bisect.bisect_left(mask, dwkday)  # "left" for days before dday
+        dc = bisect.bisect_left(mask, dwkday)  # "left" 对应 dwkday 之前的天
         daycarry = daycarry or (self.p.weekcarry and dc > 0)
         if dc < len(mask):
-            curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # check dday
+            curday = bisect.bisect_right(mask, dwkday, lo=dc) > 0  # 检查 dwkday
             dc += curday
         else:
             curday = False
@@ -148,20 +154,21 @@ class Timer(with_metaclass(MetaParams, object)):
         return daycarry or curday
 
     def check(self, dt):
+        '''检查给定 numeric datetime 是否触发 timer。'''
         d = num2date(dt)
         ddate = d.date()
-        if self._lastcall == ddate:  # not repeating, awaiting date change
+        if self._lastcall == ddate:  # 非 repeat，等待日期变化
             return False
 
         if d > self._nexteos:
-            if self._isdata:  # eos provided by data
+            if self._isdata:  # eos 由 data 提供
                 nexteos, _ = self._tzdata._getnexteos()
-            else:  # generic eos
+            else:  # 通用 eos
                 nexteos = datetime.combine(ddate, TIME_MAX)
             self._nexteos = nexteos
             self._reset_when()
 
-        if ddate > self._curdate:  # day change
+        if ddate > self._curdate:  # 日期变化
             self._curdate = ddate
             ret = self._check_month(ddate)
             if ret:
@@ -170,10 +177,10 @@ class Timer(with_metaclass(MetaParams, object)):
                 ret = self.p.allow(ddate)
 
             if not ret:
-                self._reset_when(ddate)  # this day won't make it
-                return False  # timer target not met
+                self._reset_when(ddate)  # 这一天不会触发
+                return False  # timer target 未满足
 
-        # no day change or passed month, week and allow filters on date change
+        # 无日期变化，或日期变化时已通过 month、week 和 allow filters
         dwhen = self._dwhen
         dtwhen = self._dtwhen
         if dtwhen is None:
@@ -189,17 +196,17 @@ class Timer(with_metaclass(MetaParams, object)):
                 self._dtwhen = dtwhen = date2num(dwhen, tz=self._tzdata)
 
         if dt < dtwhen:
-            return False  # timer target not met
+            return False  # timer target 未满足
 
-        self.lastwhen = dwhen  # record when the last timer "when" happened
+        self.lastwhen = dwhen  # 记录上次 timer "when" 发生的时间
 
-        if not self.p.repeat:  # cannot repeat
-            self._reset_when(ddate)  # reset and mark as called on ddate
+        if not self.p.repeat:  # 不可 repeat
+            self._reset_when(ddate)  # reset 并标记 ddate 已调用
         else:
             if d > self._nexteos:
-                if self._isdata:  # eos provided by data
+                if self._isdata:  # eos 由 data 提供
                     nexteos, _ = self._tzdata._getnexteos()
-                else:  # generic eos
+                else:  # 通用 eos
                     nexteos = datetime.combine(ddate, TIME_MAX)
 
                 self._nexteos = nexteos
@@ -208,18 +215,18 @@ class Timer(with_metaclass(MetaParams, object)):
 
             while True:
                 dwhen += self.p.repeat
-                if dwhen > nexteos:  # new schedule is beyone session
-                    self._reset_when(ddate)  # reset to original point
+                if dwhen > nexteos:  # 新 schedule 超过 session
+                    self._reset_when(ddate)  # reset 到原始点
                     break
 
-                if dwhen > d:  # gone over current datetime
+                if dwhen > d:  # 已超过当前 datetime
                     self._dtwhen = dtwhen = date2num(dwhen)  # float timestamp
-                    # Get the localized expected next time
+                    # 获取 localized 后的预期 next time
                     if self._isdata:
                         self._dwhen = self._tzdata.num2date(dtwhen)
-                    else:  # assume pytz compatible or None
+                    else:  # 假设为 pytz compatible 或 None
                         self._dwhen = num2date(dtwhen, tz=self._tzdata)
 
                     break
 
-        return True  # timer target was met
+        return True  # timer target 已满足

@@ -73,7 +73,7 @@ def runstrat(args=None):
         todate = datetime.datetime.strptime(args.todate, '%Y-%m-%d')
         dkwargs['todate'] = todate
 
-    # if dataset is None, args.data has been given
+    # 如果 dataset 为 None，说明已传入 args.data
     data = bt.feeds.BacktraderCSVData(dataname=args.data, **dkwargs)
     cerebro.adddata(data)
 
@@ -132,7 +132,7 @@ def parse_args(pargs=None):
                         default=None, choices=EXITSIGNALS,
                         help=('Signal type to use for the exit signal'))
 
-    # Plot options
+    # 绘图选项
     parser.add_argument('--plot', '-p', nargs='?', required=False,
                         metavar='kwargs', const=True,
                         help=('Plot the read data applying any kwargs passed\n'
