@@ -99,20 +99,29 @@
   - 因子评价课：`lessons/0002-factor-ic-rankic.html`
   - 基本面时点课：`lessons/0003-fundamental-point-in-time.html`
   - 四因子打分课：`lessons/0004-four-factor-cross-sectional-scoring.html`
+  - 月度四因子面板课：`lessons/0005-monthly-four-factor-panel.html`
+  - 真实数据月度四因子课：`lessons/0006-real-monthly-four-factor-data.html`
   - 示例：`samples/multidata-strategy/multidata-strategy12.py`
   - 研究脚本：`samples/factor-research/factor-research13.py`
   - 基本面审计：`samples/factor-research/fundamental-pit14.py`
   - 四因子截面打分：`samples/factor-research/factor-scoring15.py`
+  - 月度面板评价：`samples/factor-research/factor-panel16.py`
+  - 真实数据月度面板：`samples/factor-research/factor-real17.py`
   - 速查：`reference/multifactor-checklist.html`
   - 当前实现：价格类因子、截面 robust z-score、加权排名、月度调仓、
-    IC/RankIC、五分组收益、2023 年前后样本切分；单日四因子样例已实现
-    MAD 缩尾、统一方向、行业/对数市值中性化、Z-score 和等权合成
+    IC/RankIC、分组收益和样本切分；四因子样例已实现 MAD 缩尾、统一方向、
+    行业/对数市值中性化、Z-score、等权合成、逐月 RankIC、剔除单因子的
+    边际贡献、平均截面相关性和 Top K 目标组合换手率；真实数据版已接入
+    复权行情、历史市值和公告/更新日对齐的季度财务快照
   - 当前结论：15 只股票、2020-2024 月度样本中，Momentum/Trend/LowVol
     与复合因子均无稳定正 IC；strategy12 的正收益不能证明因子有效
   - 基本面审计：报告期法在 35/60 条观察中提前使用财报；25/25 份当前
     快照在首次披露后被更新，免费快照不具备完整 point-in-time 安全性
-  - 待完成：完成课程回忆题，建立版本化财务采集表、历史股票池；把单日
-    四因子截面扩展为月度面板，检验 IC、RankIC、边际贡献和样本外稳定性
+  - 真实结果：16 只固定股票、2021-2025 共 60 个月，snapshot-safe 综合
+    RankIC 全样本 -0.006、2024 年起保留样本 -0.100，Q4-Q1 月均 -0.44%；
+    当前四因子配置未通过验证，且 93.0% 观察存在财务快照后续更新风险
+  - 待完成：完成课程回忆题；建立历史股票池和版本化财务数据，再扩大截面
+    并重新进行真实样本外稳定性检验
 - **replay 实战**：概念已学（大周期 bar 逐日"长大"，`replaydata` 替代 `resampledata`），
   未写实战文件；做日内多周期时再补
 - **TradingCalendar**（A 股交易日历）、**exactbars 内存优化**、**btrun CLI**——工程边角料
@@ -146,4 +155,10 @@
 
 # 单日四因子缩尾 / 中性化 / 标准化 / 等权合成
 .venv/bin/python samples/factor-research/factor-scoring15.py
+
+# 月度四因子 RankIC / 分组收益 / 边际贡献 / 换手率
+.venv/bin/python samples/factor-research/factor-panel16.py
+
+# 真实行情 / 市值 / 公告与更新日对齐的季度财务
+.venv/bin/python samples/factor-research/factor-real17.py
 ```

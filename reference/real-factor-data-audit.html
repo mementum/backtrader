@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>真实因子数据审计表</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(900px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    h2 {
+      margin: 28px 0 8px;
+      padding-top: 12px;
+      border-top: 2px solid #235f8c;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+    .sub { margin: 0 0 26px; color: #5d6a62; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #d8ddd8;
+      text-align: left;
+      vertical-align: top;
+    }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    ul, ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media (max-width: 700px) {
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>真实因子数据审计表</h1>
+  <p class="sub">真实网站下载的数据不自动等于可安全回测的历史数据。</p>
+
+  <h2>三个等级</h2>
+  <table>
+    <thead><tr><th>等级</th><th>满足条件</th><th>允许的用途</th></tr></thead>
+    <tbody>
+      <tr><td>真实来源</td><td>数值来自真实行情或财报接口</td><td>数据探索、当前截面</td></tr>
+      <tr><td>公告日对齐</td><td>数值不早于首次公告日生效</td><td>演示历史研究，但仍需检查修订</td></tr>
+      <tr><td>版本安全</td><td>保留每次公告、更正和供应商历史版本</td><td>正式 point-in-time 回测</td></tr>
+    </tbody>
+  </table>
+
+  <h2>本项目四因子</h2>
+  <table>
+    <thead><tr><th>因子</th><th>真实数据定义</th><th>主要风险</th></tr></thead>
+    <tbody>
+      <tr><td>价值</td><td>年化归母净利润 ÷ 当日总市值</td><td>季度年化忽略季节性；财报可能修订</td></tr>
+      <tr><td>质量</td><td>按报告月份年化的加权 ROE</td><td>不同报告期可比性有限；财报可能修订</td></tr>
+      <tr><td>动量</td><td><code>close[t-21] / close[t-252] - 1</code></td><td>复权口径和停牌处理</td></tr>
+      <tr><td>低风险</td><td>120 日收益波动率取负方向</td><td>停牌、涨跌停和波动聚集</td></tr>
+    </tbody>
+  </table>
+
+  <h2>两种财务生效口径</h2>
+  <table>
+    <thead><tr><th>模式</th><th>有效日期</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td><code>snapshot-safe</code></td><td><code>max(notice, update)</code> 后下一交易日</td><td>不提前使用当前版本，但旧报告会非常陈旧</td></tr>
+      <tr><td><code>notice-date</code></td><td>首次公告日后下一交易日</td><td>覆盖率高，但可能把后续修订值带回首次公告日</td></tr>
+    </tbody>
+  </table>
+  <p><code>notice-date</code> 运行后应统计 <code>update_date &gt; signal_date</code> 的行数；任何一行都代表当前版本在该信号日尚不存在。</p>
+
+  <h2>每次运行必须检查</h2>
+  <ol>
+    <li>每月股票数量和缺失原因。</li>
+    <li><code>report_date ≤ notice_date ≤ effective_date ≤ signal_date</code>。</li>
+    <li><code>valuation_date ≤ signal_date &lt; entry_date &lt; exit_date</code>。</li>
+    <li><code>UPDATE_DATE &gt; NOTICE_DATE</code> 的观察比例。</li>
+    <li>所用财报距离信号日的年龄。</li>
+    <li>历史股票池、行业分类和退市股是否按当时状态保存。</li>
+    <li>开发样本与保留样本是否方向一致。</li>
+  </ol>
+
+  <h2>停止信号</h2>
+  <ul>
+    <li class="stop">当前快照按首次公告日回填，却声称完全 point-in-time。</li>
+    <li class="stop">固定使用今天仍上市的股票回测过去，却忽略幸存者偏差。</li>
+    <li class="stop">保留样本失败后反转因子方向，再继续引用同一个保留样本。</li>
+    <li class="stop">免费数据覆盖不足时，用零填充 PE、ROE 或市值。</li>
+    <li class="stop">因子没有稳定预测力，却直接进入 Backtrader 调参。</li>
+  </ul>
+</main>
+</body>
+</html>

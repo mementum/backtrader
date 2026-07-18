@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>月度因子面板速查表</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(900px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    h2 {
+      margin: 28px 0 8px;
+      padding-top: 12px;
+      border-top: 2px solid #235f8c;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+    .sub { margin: 0 0 26px; color: #5d6a62; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #d8ddd8;
+      text-align: left;
+      vertical-align: top;
+    }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    ul, ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media (max-width: 700px) {
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>月度因子面板速查表</h1>
+  <p class="sub">一行代表某个信号日的一只股票；主键必须是 <code>signal_date + symbol</code>。</p>
+
+  <h2>必要字段</h2>
+  <table>
+    <thead><tr><th>字段</th><th>用途</th><th>能否参与当期打分</th></tr></thead>
+    <tbody>
+      <tr><td><code>signal_date</code></td><td>截面处理和排名所属日期</td><td>分组键</td></tr>
+      <tr><td><code>symbol / industry / market_cap</code></td><td>股票标识和中性化控制变量</td><td>可以</td></tr>
+      <tr><td><code>value_z ... low_risk_z</code></td><td>当期可知数据生成的标准分</td><td>可以</td></tr>
+      <tr><td><code>entry_date / exit_date</code></td><td>定义信号后的可执行持有期</td><td>不参与打分</td></tr>
+      <tr><td><code>future_return</code></td><td>评价因子预测能力的标签</td><td>绝对不可以</td></tr>
+    </tbody>
+  </table>
+
+  <h2>固定处理顺序</h2>
+  <ol>
+    <li>每个 <code>signal_date</code> 独立形成当时可交易股票池。</li>
+    <li>仅使用信号日已经公开的数据计算原始因子。</li>
+    <li>在当月截面内缩尾、中性化和标准化。</li>
+    <li>得到综合分后，才连接下一持有期收益。</li>
+    <li>逐月计算 IC / RankIC，再汇总均值、IR 和正值比例。</li>
+    <li>检查分组收益、边际贡献、因子相关性和组合换手率。</li>
+    <li>开发样本定规则；保留样本只做一次最终检验。</li>
+  </ol>
+
+  <h2>四种证据</h2>
+  <table>
+    <thead><tr><th>证据</th><th>回答的问题</th></tr></thead>
+    <tbody>
+      <tr><td>RankIC 时间序列</td><td>高分股票之后是否通常表现更好，方向是否稳定</td></tr>
+      <tr><td>Q1 到 Q5 分组收益</td><td>预测关系是否大体单调，收益差能否覆盖成本</td></tr>
+      <tr><td>剔除单因子</td><td>该因子是否给现有组合提供额外信息</td></tr>
+      <tr><td>Top K 换手率</td><td>理论信号转成组合后要付出多少交易代价</td></tr>
+    </tbody>
+  </table>
+
+  <h2>公式</h2>
+  <p><code>RankIC_t = Spearman(factor_t, return_t→t+1)</code></p>
+  <p><code>RankICIR = mean(RankIC) / std(RankIC) × sqrt(12)</code></p>
+  <p><code>marginal = RankIC(full) - RankIC(without factor)</code></p>
+  <p><code>turnover_t = 1 - |TopK_t ∩ TopK_t-1| / K</code></p>
+
+  <h2>停止信号</h2>
+  <ul>
+    <li class="stop">跨所有月份一起标准化：未来分布污染了过去。</li>
+    <li class="stop">信号日收盘计算，却用同一收盘价作为可成交价格。</li>
+    <li class="stop">根据保留样本删因子后，仍把它称为样本外成绩。</li>
+    <li class="stop">RankIC 尚可，但分组不单调、换手率高到无法覆盖成本。</li>
+    <li class="stop">当前成分股回填历史，造成幸存者偏差。</li>
+  </ul>
+</main>
+</body>
+</html>

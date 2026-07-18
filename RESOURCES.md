@@ -22,6 +22,12 @@
   东方财富当前财务指标快照，包含报告指标和最新公告日期。用于教学和数据审计，不等同于版本化历史库。
 - [AKShare: 巨潮信息披露公告](https://akshare.akfamily.xyz/data/stock/stock.html#id153)
   按股票和报告类型查询原始公告日期及链接。用于核对定期报告首次披露日。
+- [AKShare: stock_value_em 源码](https://github.com/akfamily/akshare/blob/master/akshare/stock_feature/stock_value_em.py)
+  东方财富历史总市值、总股本和估值序列接口。用于真实月度面板的信号日市值。
+- [AKShare: stock_yjbb_em 源码](https://github.com/akfamily/akshare/blob/master/akshare/stock_feature/stock_yjbb_em.py)
+  东方财富季度业绩快照与最新公告日期接口。用于理解当前快照的数据来源和局限。
+- [巨潮资讯网](https://www.cninfo.com.cn/new/index)
+  上市公司原始公告、定期报告和更正文件。用于后续构建版本化 point-in-time 财务数据。
 
 ## Wisdom (Communities)
 

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>真实数据月度四因子</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #5d6a62;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #d8ddd8;
+      --green: #176b4d;
+      --blue: #235f8c;
+      --red: #a53a32;
+      --gold: #8a651d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      line-height: 1.75;
+    }
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 42px; }
+    h2 { margin-top: 44px; font-size: 25px; }
+    h3 { font-size: 17px; }
+    p { margin: 12px 0; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border-left: 4px solid var(--green);
+      background: #111a15;
+      color: #eef7f1;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; border: 0; background: transparent; }
+    .lede {
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .sources {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      margin: 22px 0;
+    }
+    .source {
+      min-height: 126px;
+      padding: 13px;
+      border-top: 3px solid var(--blue);
+      background: var(--panel);
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .source b { display: block; margin-bottom: 7px; color: var(--blue); }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .note, .warning, .finding {
+      margin: 20px 0;
+      padding: 17px 20px;
+      background: var(--panel);
+    }
+    .note { border-left: 5px solid var(--green); }
+    .warning { border-left: 5px solid var(--red); background: #fff8f5; }
+    .finding { border-left: 5px solid var(--gold); background: #fffdf7; }
+    .recall {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button {
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .answer { display: none; color: var(--green); }
+    .answer.open { display: block; }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 28px;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    @media (max-width: 760px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 34px; }
+      .sources { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      button, .nav { display: none; }
+      .answer { display: block; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="nav">
+    <a href="0005-monthly-four-factor-panel.html">上一课：月度四因子面板</a>
+    <a href="../reference/real-factor-data-audit.html">速查：真实数据审计</a>
+  </nav>
+
+  <h1>真实数据月度四因子</h1>
+  <p class="lede">
+    本课把模拟生成器替换为真实 A 股行情、历史市值和季度财务快照。
+    目标不是得到正收益，而是判断免费数据能支持什么结论、不能支持什么结论。
+  </p>
+
+  <h2>三个真实来源</h2>
+  <div class="sources">
+    <div class="source"><b>复权行情</b>真实日线收盘价计算 12-1 动量和 120 日波动率；开盘价定义下期收益</div>
+    <div class="source"><b>历史估值</b>东方财富每日总市值；不直接使用供应商历史 PE，避免隐藏计算口径</div>
+    <div class="source"><b>季度财务</b>归母净利润、加权 ROE、报告期、首次公告日和当前快照更新日</div>
+  </div>
+
+  <h2>四个因子的真实定义</h2>
+  <table>
+    <thead><tr><th>因子</th><th>计算式</th><th>方向</th></tr></thead>
+    <tbody>
+      <tr><td>价值</td><td>按报告月份年化的归母净利润 ÷ 信号日总市值</td><td>越高越好</td></tr>
+      <tr><td>质量</td><td>按报告月份年化的加权 ROE</td><td>越高越好</td></tr>
+      <tr><td>动量</td><td><code>close[t-21] / close[t-252] - 1</code></td><td>越高越好</td></tr>
+      <tr><td>低风险</td><td>120 日收益率年化波动率</td><td>越低越好</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    每个月仍然执行上一课的 MAD 缩尾、行业和对数市值中性化、Z-score 及四因子等权。
+    信号在月末收盘形成，未来收益从下一交易日开盘计算到下次调仓后的开盘。
+  </p>
+
+  <h2>最关键的数据选择</h2>
+  <table>
+    <thead><tr><th>模式</th><th>生效日期</th><th>代价</th></tr></thead>
+    <tbody>
+      <tr><td><code>snapshot-safe</code></td><td><code>max(NOTICE_DATE, UPDATE_DATE)</code> 后下一交易日</td><td>不提前使用当前版本，但财报可能非常陈旧</td></tr>
+      <tr><td><code>notice-date</code></td><td><code>NOTICE_DATE</code> 后下一交易日</td><td>更及时，但会把后续修订后的值带回首次公告日</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <code>notice-date</code> 只用于泄漏敏感性对照。它使用的是真实数字，却不是版本安全的历史数字。
+  </div>
+
+  <h2>运行真实数据版</h2>
+  <pre><code># 保守口径；首次运行下载，后续读取本地缓存
+.venv/bin/python \
+  samples/factor-research/factor-real17.py
+
+# 保存完整真实面板
+.venv/bin/python \
+  samples/factor-research/factor-real17.py \
+  --output samples/factor-research/factor-real17-output.csv
+
+# 仅用于观察修订泄漏影响
+.venv/bin/python \
+  samples/factor-research/factor-real17.py \
+  --availability-mode notice-date
+
+# 强制更新 ~/.cache/backtrader-factor-real17
+.venv/bin/python \
+  samples/factor-research/factor-real17.py --refresh</code></pre>
+
+  <h2>先看数据审计</h2>
+  <table>
+    <thead><tr><th>检查项</th><th>snapshot-safe 结果</th><th>解释</th></tr></thead>
+    <tbody>
+      <tr><td>真实区间</td><td>2021-01 至 2025-12</td><td>60 个真实月度截面</td></tr>
+      <tr><td>每月股票数</td><td>14 / 16 / 16</td><td>最少 / 中位数 / 最多</td></tr>
+      <tr><td>修订风险观察</td><td>884 / 951，93.0%</td><td>当前快照大多晚于首次公告更新</td></tr>
+      <tr><td>notice-date 未来更新</td><td>884 / 951</td><td>这些行的 UPDATE_DATE 晚于当期信号日</td></tr>
+      <tr><td>财报年龄中位数</td><td>456 天</td><td>保守等待更新日造成信息严重陈旧</td></tr>
+      <tr><td>notice-date 财报年龄</td><td>91 天</td><td>更及时，但包含修订前视风险</td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding">
+    真实来源、公告日对齐和版本安全是三个不同等级。免费当前快照在“及时”与“不提前使用修订值”之间无法两全。
+  </div>
+
+  <h2>真实研究结果</h2>
+  <table>
+    <thead><tr><th>信号</th><th>全样本 RankIC</th><th>开发样本</th><th>保留样本</th></tr></thead>
+    <tbody>
+      <tr><td>价值</td><td>+0.017</td><td>+0.050</td><td>-0.033</td></tr>
+      <tr><td>质量</td><td>-0.036</td><td>-0.039</td><td>-0.032</td></tr>
+      <tr><td>动量</td><td>-0.014</td><td>+0.050</td><td>-0.109</td></tr>
+      <tr><td>低风险</td><td>+0.026</td><td>+0.067</td><td>-0.036</td></tr>
+      <tr><td>四因子综合</td><td>-0.006</td><td>+0.057</td><td>-0.100</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    综合分最高组 Q4 的平均月收益为 -0.01%，最低组 Q1 为 +0.43%，
+    Q4-Q1 为 <strong>-0.44%</strong>，只有 40% 的月份为正。这个四因子配置没有通过当前真实样本检验。
+  </p>
+
+  <div class="note">
+    正确动作是记录失败原因并改善数据与研究设计，不是立刻反转所有因子方向。根据保留样本修改后，必须获得新的未见数据。
+  </div>
+
+  <h2>结果为什么可能失败</h2>
+  <ol>
+    <li>固定使用今天选出的 16 只大型股票，存在幸存者和选择偏差。</li>
+    <li>横截面太小，中性化后单只股票影响较大。</li>
+    <li>季度指标简单年化，忽略企业季节性。</li>
+    <li>免费当前快照没有保留修订前版本，保守模式导致财报陈旧。</li>
+    <li>因子溢价可能在 2024 至 2025 年阶段失效或反转。</li>
+  </ol>
+
+  <h2>代码只看三处</h2>
+  <pre><code># 当前快照值不早于最后更新日使用
+available = max(notice_date, update_date)
+effective = next_trading_date(available)
+
+# 价值因子使用透明计算式
+earnings_yield = annualized_net_profit / market_cap
+
+# 未来收益仅用于评价
+future_return = exit_open / entry_open - 1</code></pre>
+
+  <h2>主动回忆</h2>
+  <div class="recall">
+    <h3>问题 1</h3>
+    <p>为什么真实网站下载的 ROE 仍可能造成历史前视偏差？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">接口可能用后续更正覆盖旧值；如果把当前版本放回首次公告日，就提前使用了当时尚不存在的修订。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 2</h3>
+    <p>snapshot-safe 为什么会让财报年龄达到 456 天？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">当前值在后续更新日才确定安全可用，而修订前旧值已经丢失；等待更新会继续沿用更老的安全报告。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 3</h3>
+    <p>保留样本综合 RankIC 为负，现在可以把四个因子全部反向吗？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">不可以。反向规则使用了保留样本信息，属于重新拟合；需要新的历史股票池、版本数据和未见时期验证。</p>
+  </div>
+
+  <h2>参考资料</h2>
+  <ul>
+    <li><a href="https://github.com/akfamily/akshare/blob/master/akshare/stock_feature/stock_value_em.py">AKShare stock_value_em 源码</a>：历史总市值、股本和估值接口。</li>
+    <li><a href="https://github.com/akfamily/akshare/blob/master/akshare/stock_feature/stock_yjbb_em.py">AKShare stock_yjbb_em 源码</a>：季度业绩快照接口与最新公告日期。</li>
+    <li><a href="https://www.cninfo.com.cn/new/index">巨潮资讯网</a>：原始定期报告、公告与更正文件。</li>
+    <li><a href="../reference/real-factor-data-audit.html">真实因子数据审计表</a>。</li>
+  </ul>
+
+  <p>
+    运行两种生效口径后，不看答案回答三个问题。下一步应建立历史股票池和版本化财务数据表，再决定是否扩大到沪深 300 或中证 500。
+  </p>
+</main>
+<script>
+  function reveal(button) {
+    const answer = button.nextElementSibling;
+    answer.classList.toggle('open');
+    button.textContent = answer.classList.contains('open') ? '隐藏答案' : '显示答案';
+  }
+</script>
+</body>
+</html>
