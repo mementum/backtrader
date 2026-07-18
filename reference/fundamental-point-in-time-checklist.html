@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>基本面时点检查清单</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(860px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    .sub { margin: 0 0 28px; color: #5d6a62; }
+    section {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 2px solid #235f8c;
+    }
+    h2 { margin: 0 0 8px; font-size: 19px; letter-spacing: 0; }
+    ul { margin: 0; padding-left: 22px; }
+    li { margin: 7px 0; }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>基本面时点检查清单</h1>
+  <p class="sub">任何 PE、ROE、利润增长因子进入研究前先检查。</p>
+
+  <section>
+    <h2>日期语义</h2>
+    <ul>
+      <li>区分报告期、首次披露时间、修订时间和抓取时间。</li>
+      <li>日期级公告数据保守顺延到下一交易日生效。</li>
+      <li>估值因子的价格和财务分母必须在同一可知时点。</li>
+      <li class="stop">绝不把报告期直接当作数据可用日。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>版本控制</h2>
+    <ul>
+      <li>每次抓取保存原始响应，不覆盖旧文件。</li>
+      <li>记录 <code>captured_at</code>、来源和文档链接。</li>
+      <li>同一报告期出现更正时新增版本，而不是改写历史行。</li>
+      <li class="stop">只有当前最新值、没有历史版本时，不宣称 point-in-time 安全。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>对齐</h2>
+    <ul>
+      <li>按股票分别执行 backward as-of join。</li>
+      <li>财报生效前继续使用上一期已知数据。</li>
+      <li>财报缺失时保留缺失状态，不用未来报告回填。</li>
+      <li>每日因子列生成后再输入 Backtrader。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>质量检查</h2>
+    <ul>
+      <li>统计报告期到首次披露的延迟分布。</li>
+      <li>比较首次披露日与供应商更新时间。</li>
+      <li>抽样回查原始公告标题、发布日期和数值。</li>
+      <li>比较错误对齐与正确对齐的排名、持仓和 IC。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>正式研究门槛</h2>
+    <ul>
+      <li>历史股票池包含退市和曾经 ST 的股票。</li>
+      <li>行业分类和流通市值也必须是历史时点数据。</li>
+      <li>明确财务口径：单季、累计、TTM 或年度。</li>
+      <li>免费当前快照只能教学时，停止在教学结论，不包装成策略结果。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

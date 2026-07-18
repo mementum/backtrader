@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>因子 IC 与 RankIC</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #5d6a62;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #d8ddd8;
+      --green: #176b4d;
+      --blue: #235f8c;
+      --red: #a53a32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      line-height: 1.75;
+    }
+    main {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 42px; }
+    h2 { margin-top: 44px; font-size: 25px; }
+    h3 { font-size: 17px; }
+    p { margin: 12px 0; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border-left: 4px solid var(--green);
+      background: #111a15;
+      color: #eef7f1;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; border: 0; background: transparent; }
+    .lede {
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 20px 0;
+    }
+    .time-step {
+      min-height: 118px;
+      padding: 14px;
+      border-top: 3px solid var(--blue);
+      background: var(--panel);
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .time-step b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--blue);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .result {
+      margin: 20px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--red);
+      background: #fff8f5;
+    }
+    .note {
+      padding: 16px 18px;
+      border-left: 5px solid var(--green);
+      background: var(--panel);
+    }
+    .recall {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button {
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .answer { display: none; color: var(--green); }
+    .answer.open { display: block; }
+    @media (max-width: 700px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 34px; }
+      .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      button { display: none; }
+      .answer { display: block; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>因子 IC 与 RankIC</h1>
+  <p class="lede">
+    回测收益回答“这个组合过去赚没赚钱”，IC 回答“因子在每个截面上有没有预测排序能力”。
+    两者不能互相替代。当前任务是判断上一课的三个因子是否值得继续使用。
+  </p>
+
+  <h2>先固定时间</h2>
+  <div class="timeline" aria-label="无前视的月度因子评价时序">
+    <div class="time-step"><b>1 月末收盘</b>只用当时已知数据计算因子值</div>
+    <div class="time-step"><b>2 月首日开盘</b>这是可执行的建仓价格</div>
+    <div class="time-step"><b>2 月持有</b>未来收益只作为评价标签</div>
+    <div class="time-step"><b>3 月首日开盘</b>计算完整持有期收益</div>
+  </div>
+  <p>
+    脚本中的标签是 <code>exit_open / entry_open - 1</code>。月末收盘生成信号，
+    下一交易日开盘才允许成交，这与 Backtrader 默认的下一 bar 执行保持一致。
+  </p>
+
+  <h2>四个统计量</h2>
+  <table>
+    <thead>
+      <tr><th>统计量</th><th>计算</th><th>回答的问题</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>IC</td><td>因子值与未来收益的 Pearson 相关</td><td>数值差异是否具有线性预测力</td></tr>
+      <tr><td>RankIC</td><td>因子排名与未来收益排名的 Spearman 相关</td><td>排序是否大体正确</td></tr>
+      <tr><td>ICIR</td><td>平均 IC / IC 标准差，并按月年化</td><td>预测力是否稳定</td></tr>
+      <tr><td>分组收益</td><td>按因子从 Q1 到 Q5 分组</td><td>高分组是否持续优于低分组</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>术语差异：</strong>
+    Qlib 将 Pearson 相关称为 IC、Spearman 相关称为 Rank IC；
+    Alphalens 的 <code>factor_information_coefficient</code> 默认直接计算 Spearman。
+    阅读报告时必须先确认口径。
+  </div>
+
+  <h2>运行</h2>
+  <pre><code>.venv/bin/python -W ignore \
+  samples/factor-research/factor-research13.py
+
+# 保存逐月逐股票的因子面板
+.venv/bin/python -W ignore \
+  samples/factor-research/factor-research13.py \
+  --output samples/factor-research/factor-panel13.csv</code></pre>
+
+  <h2>本次真实结果</h2>
+  <table>
+    <thead>
+      <tr><th>因子</th><th>全样本 RankIC</th><th>样本外 RankIC</th><th>Q5-Q1 月收益</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Momentum</td><td>-0.032</td><td>-0.064</td><td>+0.23%</td></tr>
+      <tr><td>Trend</td><td>-0.012</td><td>-0.008</td><td>-0.37%</td></tr>
+      <tr><td>Low Volatility</td><td>-0.091</td><td>-0.054</td><td>-2.71%</td></tr>
+      <tr><td>Composite</td><td>-0.051</td><td>-0.040</td><td>-1.24%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="result">
+    <strong>研究结论：</strong>
+    当前复合因子没有得到横截面证据支持，不能因为策略回测曾获得正收益就宣布因子有效。
+    Low Volatility 在这个 15 只大盘股的小股票池中甚至表现为反向。
+  </div>
+
+  <p>
+    也不要立刻把所有权重取反。看到负 IC 后反转因子属于使用同一批数据调参，
+    仍可能是过拟合。正确动作是扩大历史股票池、保留退市股票、加入行业与市值控制，
+    再用新的样本外区间验证。
+  </p>
+
+  <h2>代码阅读顺序</h2>
+  <table>
+    <thead>
+      <tr><th>函数</th><th>职责</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>add_factors</code></td><td>只用历史价格计算时间序列因子</td></tr>
+      <tr><td><code>build_factor_panel</code></td><td>对齐信号、建仓、退出日期和未来收益</td></tr>
+      <tr><td><code>information_coefficients</code></td><td>逐月计算 Pearson IC 与 Spearman RankIC</td></tr>
+      <tr><td><code>quantile_returns</code></td><td>构造 Q1–Q5 分组和多空收益差</td></tr>
+    </tbody>
+  </table>
+
+  <h2>主动回忆</h2>
+  <div class="recall">
+    <h3>问题 1</h3>
+    <p>为什么月末收盘计算因子后，不能用同一天收盘价作为成交价？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">因为只有收盘后才能完整知道月末因子值；使用同一收盘价成交会产生时间穿越。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 2</h3>
+    <p>策略赚钱但 RankIC 接近零，应该相信哪一个？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">不能只信策略收益。它可能来自集中持仓、市场暴露或路径运气；因子排序能力尚未得到支持。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 3</h3>
+    <p>看到 Low Volatility 的 IC 为负，为什么不能立即反转它？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">反转决定来自同一研究样本，会引入数据挖掘；必须在独立样本和更完整股票池中验证。</p>
+  </div>
+
+  <h2>参考资料</h2>
+  <ul>
+    <li><a href="https://github.com/quantopian/alphalens/blob/master/alphalens/performance.py">Alphalens performance.py</a>：逐截面使用 Spearman 相关计算因子 IC。</li>
+    <li><a href="https://github.com/microsoft/qlib/blob/main/qlib/contrib/eva/alpha.py">Qlib alpha evaluation</a>：同时返回 Pearson IC 与 Spearman Rank IC。</li>
+    <li><a href="../reference/factor-evaluation-checklist.html">因子评价检查清单</a>：进入组合回测前的最低验证要求。</li>
+  </ul>
+
+  <p>完成三个回忆问题后，下一课进入基本面数据的公告日对齐，而不是继续调整当前价格因子权重。</p>
+</main>
+<script>
+  function reveal(button) {
+    const answer = button.nextElementSibling;
+    answer.classList.toggle('open');
+    button.textContent = answer.classList.contains('open') ? '隐藏答案' : '显示答案';
+  }
+</script>
+</body>
+</html>

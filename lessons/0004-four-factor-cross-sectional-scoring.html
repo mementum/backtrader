@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>四因子截面打分</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #5d6a62;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #d8ddd8;
+      --green: #176b4d;
+      --blue: #235f8c;
+      --red: #a53a32;
+      --gold: #8a651d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      line-height: 1.75;
+    }
+    main {
+      width: min(940px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 42px; }
+    h2 { margin-top: 44px; font-size: 25px; }
+    h3 { font-size: 17px; }
+    p { margin: 12px 0; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border-left: 4px solid var(--green);
+      background: #111a15;
+      color: #eef7f1;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; border: 0; background: transparent; }
+    .lede {
+      max-width: 800px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      margin: 22px 0;
+    }
+    .stage {
+      min-height: 116px;
+      padding: 13px;
+      border-top: 3px solid var(--blue);
+      background: var(--panel);
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .stage b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--blue);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .note, .warning {
+      margin: 20px 0;
+      padding: 17px 20px;
+      background: var(--panel);
+    }
+    .note { border-left: 5px solid var(--green); }
+    .warning {
+      border-left: 5px solid var(--red);
+      background: #fff8f5;
+    }
+    .formula {
+      margin: 14px 0;
+      padding: 15px 18px;
+      border-left: 5px solid var(--gold);
+      background: #fffdf7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .recall {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button {
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .answer { display: none; color: var(--green); }
+    .answer.open { display: block; }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 28px;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    @media (max-width: 760px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 34px; }
+      .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stage:last-child { grid-column: 1 / -1; min-height: auto; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      button, .nav { display: none; }
+      .answer { display: block; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="nav">
+    <a href="0003-fundamental-point-in-time.html">上一课：基本面公告日对齐</a>
+    <a href="../reference/factor-scoring-pipeline.html">速查：截面打分流程</a>
+  </nav>
+
+  <h1>四因子截面打分</h1>
+  <p class="lede">
+    本课只解决一个问题：在某个调仓日，怎样把量纲完全不同的
+    <code>E/P</code>、ROE、动量和波动率，变成可以公平相加的四个分数。
+  </p>
+
+  <h2>为什么不能直接相加</h2>
+  <table>
+    <thead><tr><th>原始值</th><th>典型范围</th><th>直接相加的问题</th></tr></thead>
+    <tbody>
+      <tr><td>盈利收益率 E/P</td><td>0.02 到 0.15</td><td>量纲是比例，并可能有负值和极端值</td></tr>
+      <tr><td>ROE</td><td>0.05 到 0.30</td><td>行业结构差异很大</td></tr>
+      <tr><td>12-1 动量</td><td>-0.50 到 1.00</td><td>极端行情会支配总分</td></tr>
+      <tr><td>120 日波动率</td><td>0.15 到 0.60</td><td>方向相反：数值越低通常越好</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    原始值相加不是“简单模型”，而是一个没有定义清楚权重的模型：
+    数值范围最大的因子会自动获得最高权重。
+  </div>
+
+  <h2>固定处理流水线</h2>
+  <div class="pipeline" aria-label="四因子处理流水线">
+    <div class="stage"><b>1. 统一方向</b>低波因子取负，所有分数都变成越高越好</div>
+    <div class="stage"><b>2. 截面缩尾</b>限制错误数据和极端行情对结果的支配</div>
+    <div class="stage"><b>3. 中性化</b>回归行业与对数市值，取无法被它们解释的残差</div>
+    <div class="stage"><b>4. 标准化</b>转换为均值 0、标准差 1 的 Z-score</div>
+    <div class="stage"><b>5. 等权合成</b>四个因子各占 25%，得到综合分</div>
+  </div>
+
+  <div class="formula">
+    factor = industry + beta × log(market_cap) + residual<br>
+    factor_z = (residual - mean) / std<br>
+    composite = 0.25 × (value_z + quality_z + momentum_z + low_risk_z)
+  </div>
+
+  <p>
+    中性化不是证明“小市值或行业暴露一定不好”。它的作用是让我们知道：
+    选中一只股票，到底因为公司自身因子突出，还是因为它碰巧属于高 ROE 行业或小市值组。
+  </p>
+
+  <h2>运行本课实验</h2>
+  <pre><code>.venv/bin/python \
+  samples/factor-research/factor-scoring15.py
+
+# 保存每只股票的全部中间列
+.venv/bin/python \
+  samples/factor-research/factor-scoring15.py \
+  --output samples/factor-research/factor-scoring15-output.csv</code></pre>
+
+  <p>
+    输入文件是
+    <code>samples/factor-research/factor-scoring15-input.csv</code>。
+    其中 16 只股票和数值是教学截面，不代表真实历史时点，也不构成投资建议。
+  </p>
+
+  <h2>读懂运行结果</h2>
+  <table>
+    <thead><tr><th>观察</th><th>结果</th><th>解释</th></tr></thead>
+    <tbody>
+      <tr><td>海康威视</td><td>第 11 → 第 1</td><td>剥离科技行业和市值影响后，质量、动量和低风险残差较强</td></tr>
+      <tr><td>贵州茅台</td><td>第 1 → 第 2</td><td>仍然较强，但原始质量分的一部分可由行业和规模解释</td></tr>
+      <tr><td>美的集团</td><td>第 2 → 第 7</td><td>原始综合分较高，中性化后质量和低风险不再占优</td></tr>
+      <tr><td>四个因子残差</td><td>市值相关约 0</td><td>线性市值暴露已按设计移除</td></tr>
+      <tr><td>各行业残差均值</td><td>约 0</td><td>行业整体高低不再直接决定因子排名</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    排名变化不是中性化“修正出了真相”，而是研究问题发生了变化。
+    未中性化模型问“谁的原始指标最高”；中性化模型问“相对同类和相似规模，谁更突出”。
+  </div>
+
+  <h2>代码只看三处</h2>
+  <pre><code># 统一方向
+directed = direction * result[source]
+
+# 行业 + 对数市值回归，保留残差
+residual = neutralize(winsorized, controls)
+
+# 四因子等权
+result['composite_score'] += 0.25 * standardize(residual)</code></pre>
+
+  <p>
+    现在不优化 25% 权重。你的旧价量组合在小样本中的 RankIC 为负，
+    如果根据全样本表现反复调权，很容易把噪声优化成漂亮结果。
+    等权是下一阶段检验因子有效性的基准，不是最终答案。
+  </p>
+
+  <h2>为什么还不进 Backtrader</h2>
+  <p>
+    这一步属于研究层：每个调仓日生成一张股票截面分数表。
+    下一步要把它扩展成多日期面板，检查每个单因子与综合分的
+    IC、RankIC、分组收益和换手率。只有证据合格后，才把目标持仓交给
+    Backtrader 执行。
+  </p>
+
+  <h2>主动回忆</h2>
+  <div class="recall">
+    <h3>问题 1</h3>
+    <p>为什么 E/P、ROE、动量和波动率不能直接相加？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">它们的量纲、范围和方向不同；直接相加会让数值范围最大的因子获得隐含高权重。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 2</h3>
+    <p>低风险因子为什么先写成负波动率？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">这样四个因子都统一为越高越好，后续排名、标准化和加权不容易写反方向。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 3</h3>
+    <p>行业和市值中性化之后，综合分回答的是什么问题？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">它比较股票相对同类行业和相似规模公司的因子强弱，而不是奖励整个行业或规模组。</p>
+  </div>
+
+  <h2>参考资料</h2>
+  <ul>
+    <li><a href="https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html">Kenneth French Data Library</a>：规模、价值、盈利能力和投资因子的官方构造资料。</li>
+    <li><a href="https://www.msci.com/indexes/factor-indexes/msci-factor-indexes">MSCI Factor Indexes</a>：价值、质量、动量、低波动等实务因子家族。</li>
+    <li><a href="https://github.com/microsoft/qlib/blob/main/qlib/data/dataset/processor.py">Qlib 数据处理器</a>：截面去极值、标准化和缺失值处理的工程参考。</li>
+    <li><a href="../reference/factor-scoring-pipeline.html">多因子截面打分速查表</a>。</li>
+  </ul>
+
+  <p>
+    先运行脚本，再不看答案回答三个问题。把答案发给我，我会根据你的理解程度进入下一课：
+    将单日截面扩展为月度四因子面板，并检验每个因子的边际贡献。
+  </p>
+</main>
+<script>
+  function reveal(button) {
+    const answer = button.nextElementSibling;
+    answer.classList.toggle('open');
+    button.textContent = answer.classList.contains('open') ? '隐藏答案' : '显示答案';
+  }
+</script>
+</body>
+</html>

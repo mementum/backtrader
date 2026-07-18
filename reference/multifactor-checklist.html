@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多因子选股检查清单</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(860px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    .sub { margin: 0 0 28px; color: #5d6a62; }
+    section {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 2px solid #235f8c;
+    }
+    h2 { margin: 0 0 8px; font-size: 19px; letter-spacing: 0; }
+    ul { margin: 0; padding-left: 22px; }
+    li { margin: 7px 0; }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>多因子选股检查清单</h1>
+  <p class="sub">每次新策略回测前，从上到下检查一遍。</p>
+
+  <section>
+    <h2>股票池</h2>
+    <ul>
+      <li>历史成分股，不使用今天的成分股回测过去。</li>
+      <li>剔除当日不可交易、停牌、涨跌停无法成交的标的。</li>
+      <li>设置上市天数、价格和成交额过滤条件。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>数据时点</h2>
+    <ul>
+      <li>价格因子只读取 <code>[0]</code> 和负索引。</li>
+      <li>财报数据按公告日生效，并保留历史版本。</li>
+      <li>退市股票仍留在历史股票池，避免幸存者偏差。</li>
+      <li class="stop">策略计算中出现 <code>[1]</code> 时立即审查前视偏差。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>因子处理</h2>
+    <ul>
+      <li>明确经济含义、计算窗口、方向和更新频率。</li>
+      <li>按调仓日截面去极值、标准化；必要时行业和市值中性化。</li>
+      <li>检查因子覆盖率、分布、相关性和换手率。</li>
+      <li>先做分组收益、IC/RankIC，再进入组合回测。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>组合与执行</h2>
+    <ul>
+      <li>明确 Top K、等权或风险权重、单股和行业上限。</li>
+      <li>信号在收盘生成时，使用下一交易日价格成交。</li>
+      <li>计入佣金、印花税、滑点、冲击成本和整手约束。</li>
+      <li>报告换手率、容量和无法成交订单，而不只看收益。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>验证</h2>
+    <ul>
+      <li>训练期、验证期、样本外测试期严格分开。</li>
+      <li>与等权股票池、指数和单因子版本比较。</li>
+      <li>做参数扰动、时间切片和股票池切片。</li>
+      <li>任何异常优秀结果先排查数据泄漏和未来函数。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

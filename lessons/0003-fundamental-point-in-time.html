@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>基本面因子的公告日对齐</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #5d6a62;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #d8ddd8;
+      --green: #176b4d;
+      --blue: #235f8c;
+      --red: #a53a32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      line-height: 1.75;
+    }
+    main {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      letter-spacing: 0;
+    }
+    h1 { font-size: 42px; }
+    h2 { margin-top: 44px; font-size: 25px; }
+    h3 { font-size: 17px; }
+    p { margin: 12px 0; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border-left: 4px solid var(--green);
+      background: #111a15;
+      color: #eef7f1;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; border: 0; background: transparent; }
+    .lede {
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 20px 0;
+    }
+    .time-step {
+      min-height: 120px;
+      padding: 14px;
+      border-top: 3px solid var(--blue);
+      background: var(--panel);
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .time-step b {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--blue);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .warning {
+      margin: 20px 0;
+      padding: 18px 20px;
+      border-left: 5px solid var(--red);
+      background: #fff8f5;
+    }
+    .note {
+      padding: 16px 18px;
+      border-left: 5px solid var(--green);
+      background: var(--panel);
+    }
+    .recall {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button {
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .answer { display: none; color: var(--green); }
+    .answer.open { display: block; }
+    @media (max-width: 700px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 34px; }
+      .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      button { display: none; }
+      .answer { display: block; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>基本面因子的公告日对齐</h1>
+  <p class="lede">
+    财报的 <code>2023-12-31</code> 是统计截止日，不是投资者获得数据的日期。
+    本课建立基本面研究的最低时间标准，并验证错误对齐会怎样改变选股结果。
+  </p>
+
+  <h2>四个不同日期</h2>
+  <div class="timeline" aria-label="财务数据时点">
+    <div class="time-step"><b>报告期</b>财务指标统计到哪一天，不能用作可用日期</div>
+    <div class="time-step"><b>首次披露日</b>原始定期报告第一次公开的日期</div>
+    <div class="time-step"><b>生效日</b>策略最早可以使用；日期级数据保守顺延一天</div>
+    <div class="time-step"><b>更新日</b>数据供应商当前快照最后修改的日期</div>
+  </div>
+
+  <p>
+    如果只有公告日期、没有具体发布时间，就不能假设当天开盘或收盘前已经知道。
+    本课使用 <code>effective_date = first_disclosure_date + 1 day</code>；
+    接入交易日历后，应顺延到下一交易日。
+  </p>
+
+  <h2>为什么一个公告日期还不够</h2>
+  <table>
+    <thead>
+      <tr><th>字段</th><th>贵州茅台 2023 年报</th><th>含义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>REPORTDATE</td><td>2023-12-31</td><td>财务统计截止日</td></tr>
+      <tr><td>NOTICE_DATE</td><td>2024-04-03</td><td>原始报告披露日</td></tr>
+      <tr><td>UPDATE_DATE</td><td>2025-04-03</td><td>当前快照的更新日</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <strong>修订污染：</strong>
+    如果今天下载 2023 年报指标，再把数值放回 2024 年 4 月使用，数值可能已经包含
+    2025 年更新后的修订。正确的 point-in-time 数据库需要保留每个版本的
+    <code>valid_from</code>、<code>valid_to</code> 或抓取时间。
+  </div>
+
+  <h2>运行实验</h2>
+  <pre><code>.venv/bin/python -W ignore \
+  samples/factor-research/fundamental-pit14.py
+
+# 输出报告历史、月度对齐和排名明细
+.venv/bin/python -W ignore \
+  samples/factor-research/fundamental-pit14.py \
+  --output samples/factor-research/pit14-output</code></pre>
+
+  <p>
+    脚本直接请求东方财富底层接口中的 <code>NOTICE_DATE</code> 和
+    <code>UPDATE_DATE</code>，并用巨潮资讯定期报告公告交叉验证首次披露日期。
+  </p>
+
+  <h2>本次真实结果</h2>
+  <table>
+    <thead>
+      <tr><th>检查项</th><th>结果</th><th>解释</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>报告期法提前使用</td><td>35 / 60</td><td>58.3% 的股票-月份观察存在前视</td></tr>
+      <tr><td>快照晚于首次披露</td><td>25 / 25</td><td>全部报告存在历史修订污染风险</td></tr>
+      <tr><td>首次披露延迟</td><td>16–94 天</td><td>报告期与市场可知时间相差显著</td></tr>
+      <tr><td>Top 2 持仓集合变化</td><td>1 / 12 月</td><td>错误日期至少一次改变实际持仓</td></tr>
+      <tr><td>Top 2 排名顺序变化</td><td>5 / 12 月</td><td>即使集合相同，打分次序也常被改变</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    这不是 ROE + 利润增长因子的有效性测试。当前数值来自最新快照，
+    只能用于证明日期对齐和版本控制的重要性。
+  </div>
+
+  <h2>接入 Backtrader</h2>
+  <pre><code># reports: symbol, effective_date, roe, profit_growth
+# prices:  date, open, high, low, close, volume
+daily = pd.merge_asof(
+    prices.sort_values('date'),
+    reports.sort_values('effective_date'),
+    left_on='date',
+    right_on='effective_date',
+    direction='backward',
+)
+
+class FundamentalData(bt.feeds.PandasData):
+    lines = ('roe', 'profit_growth')
+    params = (
+        ('roe', 'roe'),
+        ('profit_growth', 'profit_growth'),
+    )</code></pre>
+
+  <p>
+    先在 Pandas 中完成 point-in-time 展开，再把已经对齐的每日因子列交给 Backtrader。
+    Backtrader 负责组合与成交，不负责判断一份财报在历史某天是否已经公开。
+  </p>
+
+  <h2>正式数据表结构</h2>
+  <table>
+    <thead>
+      <tr><th>字段</th><th>必要性</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>symbol / report_period</td><td>标识公司和财务周期</td></tr>
+      <tr><td>announcement_datetime</td><td>决定市场何时知道数据</td></tr>
+      <tr><td>effective_trading_date</td><td>决定策略最早何时能使用</td></tr>
+      <tr><td>revision_id / captured_at</td><td>保留后续更正前的旧版本</td></tr>
+      <tr><td>source_document</td><td>能追溯到原始公告或文件</td></tr>
+    </tbody>
+  </table>
+
+  <h2>主动回忆</h2>
+  <div class="recall">
+    <h3>问题 1</h3>
+    <p>为什么 2023 年报不能从 2023-12-31 开始使用？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">那只是统计截止日，报告尚未编制并公开；使用它会提前看到未来信息。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 2</h3>
+    <p>已经按首次披露日对齐，为什么当前下载的历史指标仍可能不安全？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">供应商可能用后续更正覆盖旧值；若没有版本历史，当前快照仍会把未来修订带回过去。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 3</h3>
+    <p>基本面数据应该在 Backtrader 内部按报告期查找吗？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">不应该。先在外部数据层按生效交易日展开，再作为自定义 Data Feed lines 输入 Backtrader。</p>
+  </div>
+
+  <h2>参考资料</h2>
+  <ul>
+    <li><a href="https://akshare.akfamily.xyz/data/stock/stock.html#id148">AKShare：业绩报表</a>，当前财务指标快照接口。</li>
+    <li><a href="https://akshare.akfamily.xyz/data/stock/stock.html#id153">AKShare：巨潮信息披露公告</a>，查询原始定期报告公告日期。</li>
+    <li><a href="https://github.com/akfamily/akshare/blob/master/akshare/stock_feature/stock_yjbb_em.py">AKShare stock_yjbb_em 源码</a>，用于核对 UPDATE_DATE 等底层字段。</li>
+    <li><a href="../reference/fundamental-point-in-time-checklist.html">基本面时点检查清单</a>。</li>
+  </ul>
+
+  <p>完成三个回忆问题后，下一步是设计可持续采集的版本化财务数据表，而不是立刻回测 ROE 因子。</p>
+</main>
+<script>
+  function reveal(button) {
+    const answer = button.nextElementSibling;
+    answer.classList.toggle('open');
+    button.textContent = answer.classList.contains('open') ? '隐藏答案' : '显示答案';
+  }
+</script>
+</body>
+</html>

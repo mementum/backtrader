@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多因子截面打分速查表</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(880px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    h2 {
+      margin: 28px 0 8px;
+      padding-top: 12px;
+      border-top: 2px solid #235f8c;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+    .sub { margin: 0 0 26px; color: #5d6a62; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #d8ddd8;
+      text-align: left;
+      vertical-align: top;
+    }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    ol { padding-left: 24px; }
+    li { margin: 7px 0; }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>多因子截面打分速查表</h1>
+  <p class="sub">每个调仓日独立处理一次，不能跨日期把所有股票混在一起标准化。</p>
+
+  <h2>四因子基线</h2>
+  <table>
+    <thead><tr><th>因子</th><th>示例</th><th>统一方向</th></tr></thead>
+    <tbody>
+      <tr><td>价值</td><td><code>E/P</code>、<code>B/P</code>、FCF 收益率</td><td>越高越好</td></tr>
+      <tr><td>质量</td><td>ROE、ROIC、毛利/资产</td><td>越高越好</td></tr>
+      <tr><td>动量</td><td>过去 12 个月剔除最近 1 个月</td><td>越高越好</td></tr>
+      <tr><td>低风险</td><td>120 日波动率、Beta、下行波动</td><td>取负后越高越好</td></tr>
+    </tbody>
+  </table>
+
+  <h2>固定顺序</h2>
+  <ol>
+    <li>确定调仓日可用股票池和 point-in-time 数据。</li>
+    <li>统一方向，例如 <code>low_risk = -volatility</code>。</li>
+    <li>处理缺失值；不要默认用零填充经济指标。</li>
+    <li>截面缩尾，限制错误数据和极端值影响。</li>
+    <li>对行业哑变量与 <code>log(market_cap)</code> 回归，取残差。</li>
+    <li>把残差转换为 Z-score 或百分位排名。</li>
+    <li>等权合成，先不根据全样本结果优化权重。</li>
+    <li>先做 IC、RankIC、分组收益，再进入组合回测。</li>
+  </ol>
+
+  <h2>核心公式</h2>
+  <p><code>factor = industry + beta × log(market_cap) + residual</code></p>
+  <p><code>factor_z = (residual - mean) / std</code></p>
+  <p><code>composite = 0.25 × (value_z + quality_z + momentum_z + low_risk_z)</code></p>
+
+  <h2>诊断标准</h2>
+  <ul>
+    <li>中性化残差与对数市值相关性应接近 0。</li>
+    <li>每个行业的残差均值应接近 0。</li>
+    <li>每个标准分均值接近 0、标准差接近 1。</li>
+    <li>比较中性化前后排名，解释显著变化来自哪里。</li>
+    <li class="stop">截面太小、行业只有一两只股票时，中性化结果不稳定。</li>
+  </ul>
+</main>
+</body>
+</html>

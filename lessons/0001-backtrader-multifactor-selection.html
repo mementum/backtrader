@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backtrader 多因子选股</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #5d6a62;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --line: #d8ddd8;
+      --green: #176b4d;
+      --blue: #235f8c;
+      --red: #a53a32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+      line-height: 1.75;
+    }
+    main {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      letter-spacing: 0;
+    }
+    h1 { max-width: 760px; font-size: 42px; }
+    h2 { margin-top: 48px; font-size: 25px; }
+    h3 { font-size: 17px; }
+    p { margin: 12px 0; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 5px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      overflow: auto;
+      padding: 18px;
+      border-left: 4px solid var(--green);
+      background: #111a15;
+      color: #eef7f1;
+      line-height: 1.55;
+    }
+    pre code { padding: 0; border: 0; background: transparent; }
+    .lede {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    .verdict {
+      margin-top: 28px;
+      padding: 18px 20px;
+      border-left: 5px solid var(--green);
+      background: var(--panel);
+    }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin: 22px 0;
+    }
+    .step {
+      min-height: 100px;
+      padding: 12px;
+      border-top: 3px solid var(--blue);
+      background: var(--panel);
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .step b { display: block; margin-bottom: 6px; color: var(--blue); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      font-size: 14px;
+    }
+    .warning {
+      padding: 16px 18px;
+      border-left: 5px solid var(--red);
+      background: #fff8f5;
+    }
+    .recall {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button {
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .answer { display: none; color: var(--green); }
+    .answer.open { display: block; }
+    .sources li { margin: 8px 0; }
+    @media (max-width: 760px) {
+      main { padding-top: 28px; }
+      h1 { font-size: 34px; }
+      .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+      button { display: none; }
+      .answer { display: block; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Backtrader 多因子选股</h1>
+  <p class="lede">
+    从因子值到组合。目标不是再写三个指标，而是建立一个没有前视偏差的横截面选股流程。
+    你已经完成了单因子动量轮动，这一课只增加一个关键能力：同一天比较多只股票的多个因子。
+  </p>
+
+  <div class="verdict">
+    <strong>Backtrader 里有么？</strong>
+    没有现成的多因子研究引擎。Backtrader 提供多数据源、指标、Timer、
+    <code>order_target_percent</code> 和成交仿真；股票池、因子清洗、截面标准化与打分需要自己实现。
+  </div>
+
+  <h2>一条正确的流水线</h2>
+  <div class="pipeline" aria-label="多因子选股流水线">
+    <div class="step"><b>01 股票池</b>上市时间、停牌、ST、流动性、可交易状态</div>
+    <div class="step"><b>02 原始因子</b>每只股票只使用当时已经可知的数据</div>
+    <div class="step"><b>03 去极值</b>限制异常值对截面分布的支配</div>
+    <div class="step"><b>04 标准化</b>把不同量纲变成可加权的分数</div>
+    <div class="step"><b>05 合成排名</b>统一因子方向，加权后取前 K 名</div>
+    <div class="step"><b>06 组合回测</b>下一 bar 成交，计入费用、换手和停牌</div>
+  </div>
+
+  <p>
+    因子先沿时间计算，再在调仓日沿股票截面比较。Backtrader 自带的
+    <code>PercentRank</code> 是“当前值在自身历史窗口里的排名”，不是“同一天所有股票之间的排名”。
+  </p>
+
+  <h2>本课的三个因子</h2>
+  <table>
+    <thead>
+      <tr><th>因子</th><th>定义</th><th>方向</th><th>作用</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Momentum</td><td>过去 60 日收益</td><td>越高越好</td><td>捕捉中期相对强势</td></tr>
+      <tr><td>Trend</td><td>收盘价 / 120 日均线 - 1</td><td>越高越好</td><td>过滤弱趋势</td></tr>
+      <tr><td>Volatility</td><td>过去 20 日日收益标准差</td><td>越低越好</td><td>偏向低波动股票</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    这三个因子都来自价格，只适合学习框架。正式研究应增加价值、质量等不同信息来源，
+    并先检验因子相关性，避免把三个相似趋势指标误当成三个独立因子。
+  </p>
+
+  <h2>截面标准化</h2>
+  <p>示例采用 robust z-score：</p>
+  <pre><code>z = (x - median(x)) / (1.4826 * MAD(x))
+score = 0.5 * z_momentum + 0.2 * z_trend - 0.3 * z_volatility</code></pre>
+  <p>
+    使用中位数和 MAD 比均值与标准差更不容易被极端值拉偏。Qlib 的数据处理器也提供
+    Robust Z-Score、Cross-Sectional Z-Score 和 Cross-Sectional Rank 这类处理。
+  </p>
+
+  <h2>运行与阅读代码</h2>
+  <pre><code>.venv/bin/python -W ignore \
+  samples/multidata-strategy/multidata-strategy12.py
+
+.venv/bin/python -W ignore \
+  samples/multidata-strategy/multidata-strategy12.py \
+  --symbols 600519,000001,601318,300750,600036 \
+  --topk 2 --momentum 60 --trend 120 --volatility 20
+
+# 验证逐 bar 模式与默认向量化模式结果一致
+.venv/bin/python -W ignore \
+  samples/multidata-strategy/multidata-strategy12.py --runnext --quiet</code></pre>
+
+  <p>
+    阅读顺序：<code>__init__</code> 看单股时间序列因子；
+    <code>_collect_factor_rows</code> 看调仓日截面；
+    <code>_score_rows</code> 看标准化和合成；
+    <code>next</code> 看排名、清仓与目标权重。
+  </p>
+
+  <h2>接入 PE、ROE</h2>
+  <pre><code>class FactorData(bt.feeds.PandasData):
+    lines = ('pe_ttm', 'roe_ttm')
+    params = (
+        ('pe_ttm', 'pe_ttm'),
+        ('roe_ttm', 'roe_ttm'),
+    )</code></pre>
+  <p>
+    之后在调仓日读取 <code>data.pe_ttm[0]</code> 和 <code>data.roe_ttm[0]</code>，
+    放入同一套截面标准化流程。关键不在语法，而在数据日期：财报必须从公告日之后才可用，
+    不能把报告期结束日当作市场已知日。
+  </p>
+
+  <div class="warning">
+    <strong>前视偏差警报：</strong>
+    网上一个较受关注的 Backtrader 多因子项目在策略内部读取
+    <code>data.open[1]</code> 计算收益和下单量。这使用了未来 bar，不能作为严谨范本。
+    本课示例只读取 <code>[0]</code> 和负索引，订单在下一根 bar 执行。
+  </div>
+
+  <h2>主动回忆</h2>
+  <div class="recall">
+    <h3>问题 1</h3>
+    <p>为什么不能把 PE、动量和波动率的原始数值直接相加？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">量纲、分布和方向不同；必须先处理异常值、统一方向并做截面标准化。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 2</h3>
+    <p>为什么财报因子要按公告日对齐，而不是报告期结束日？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">报告期结束时投资者尚不知道财报数值，提前使用会造成前视偏差。</p>
+  </div>
+  <div class="recall">
+    <h3>问题 3</h3>
+    <p>Backtrader 在多因子系统中最适合负责哪一部分？</p>
+    <button type="button" onclick="reveal(this)">显示答案</button>
+    <p class="answer">负责事件推进、组合调仓、订单成交、费用、持仓和绩效；因子研究宜先在 Pandas 或 Qlib 完成。</p>
+  </div>
+
+  <h2>参考资料</h2>
+  <ul class="sources">
+    <li><a href="https://www.backtrader.com/blog/2019-05-20-momentum-strategy/momentum-strategy/">Backtrader 官方：Momentum Strategy</a>，横截面排名、调仓和 Timer 建议。</li>
+    <li><a href="https://www.backtrader.com/docu/extending-a-datafeed/">Backtrader 官方：Extending a Data Feed</a>，向数据源加入 P/E 等自定义 line。</li>
+    <li><a href="https://qlib.readthedocs.io/en/latest/component/data.html">Microsoft Qlib：Data Framework</a>，因子生成、处理器和数据集分层。</li>
+    <li><a href="https://github.com/Quant132/BackTrader_Multifactors">BackTrader_Multifactors</a>，可参考工程组织，但不要沿用未来数据访问。</li>
+  </ul>
+
+  <p>
+    完成运行后，向老师解释一次“为什么标准化必须发生在每个调仓日的股票截面”，
+    再进入基本面时点数据与因子 IC 检验。
+  </p>
+</main>
+<script>
+  function reveal(button) {
+    const answer = button.nextElementSibling;
+    answer.classList.toggle('open');
+    button.textContent = answer.classList.contains('open') ? '隐藏答案' : '显示答案';
+  }
+</script>
+</body>
+</html>

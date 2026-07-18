@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>因子评价检查清单</title>
+  <style>
+    body {
+      margin: 0;
+      color: #17211b;
+      background: #f7f5ef;
+      font-family: Inter, "Noto Sans SC", "PingFang SC", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: min(860px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 0; }
+    .sub { margin: 0 0 28px; color: #5d6a62; }
+    section {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 2px solid #235f8c;
+    }
+    h2 { margin: 0 0 8px; font-size: 19px; letter-spacing: 0; }
+    ul { margin: 0; padding-left: 22px; }
+    li { margin: 7px 0; }
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d8ddd8;
+      background: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .stop { color: #a53a32; font-weight: 700; }
+    @media print {
+      body { background: white; }
+      main { width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>因子评价检查清单</h1>
+  <p class="sub">因子进入 Backtrader 组合回测前，至少回答这些问题。</p>
+
+  <section>
+    <h2>时间对齐</h2>
+    <ul>
+      <li>因子计算时只使用当时已经公开的数据。</li>
+      <li>未来收益从信号可执行后的价格开始。</li>
+      <li>因子窗口、持有期和调仓频率定义清楚。</li>
+      <li class="stop">信号价与成交价相同时，检查是否真的能在该时点获得信号。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>截面质量</h2>
+    <ul>
+      <li>记录每期股票数、因子覆盖率和缺失原因。</li>
+      <li>使用历史股票池，包含后来退市的股票。</li>
+      <li>检查极端值、重复值和因子分布漂移。</li>
+      <li>股票数过少时，不把单期相关系数当成可靠证据。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>预测能力</h2>
+    <ul>
+      <li>同时报告 IC、RankIC、ICIR 和正值比例。</li>
+      <li>查看逐期序列，而不只看全样本平均数。</li>
+      <li>检查 Q1 到 Q5 收益是否大体单调。</li>
+      <li>报告最高组减最低组的收益及正收益月份比例。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>稳健性</h2>
+    <ul>
+      <li>训练期与样本外测试期严格分开。</li>
+      <li>按市场阶段、行业和市值分组复查。</li>
+      <li>检查因子之间的相关性和边际贡献。</li>
+      <li class="stop">根据全样本结果反转因子或修改权重后，必须使用新样本验证。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>进入组合前</h2>
+    <ul>
+      <li>明确因子失效条件和预期换手率。</li>
+      <li>确认分组收益足以覆盖交易成本。</li>
+      <li>记录最终选用、舍弃因子的研究理由。</li>
+      <li>因子证据不足时允许停止，而不是强行凑出策略。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
