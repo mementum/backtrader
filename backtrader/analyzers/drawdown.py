@@ -180,7 +180,7 @@ class TimeDrawDown(bt.TimeFrameAnalyzerBase):
             value = self.strategy.broker.fundvalue
 
         # update the maximum seen peak
-        if value > self.peak:
+        if value >= self.peak:
             self.peak = value
             self.ddlen = 0  # start of streak
 
