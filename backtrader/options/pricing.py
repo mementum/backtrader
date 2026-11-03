@@ -197,6 +197,10 @@ def implied_vol(
     fb = value(b)[0] - price
     if fa > 0.0 or fb < 0.0:
         return math.nan  # outside what any volatility in [lo, hi] produces
+    if fa > -tol:
+        # the lowest volatility already reproduces the price, so every low
+        # one does: a worthless option identifies no volatility
+        return math.nan
 
     sig = min(max(0.2, a), b)
     for _ in range(200):

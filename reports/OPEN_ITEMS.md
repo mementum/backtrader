@@ -12,6 +12,28 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### implied_vol gave a worthless option a volatility of 0.2
+
+*Found 2026-11-03, watching a model-priced call run into expiry with
+`OptionGreeks` in the AAPL/MSFT notebook; fixed the same day.* The call's
+implied volatility tracked the model's realised volatility until its price
+reached about 1e-12, then sat at exactly 0.2000. `implied_vol` checks that
+the price lies between the prices at its bracket's ends, `lo` and `hi`, and
+then iterates from 0.2 until the price error is below `tol` (1e-10). A price
+within `tol` of the price at `lo` passes the bracket check, and the first
+guess already meets the tolerance, so 0.2 came back. The price could not
+identify any volatility. `implied_vol` now returns `NaN` when the price at
+`lo` is within `tol` of the target. Every caller already handled `NaN`:
+`PortfolioGreeks` prices on intrinsic, `GreeksAttribution` keeps the
+previous volatility, chain selection skips the contract. Example 21's 2006
+attribution, quoted in `reports/sessions/2026-10-29_options-design.md`,
+moves 461 from residual to vega: the jump to 0.2 had been booked as a
+volatility change. The tests are
+`test_implied_vol_is_nan_for_a_worthless_option` (bsm, black76, binomial at
+prices 0.0 and 1e-13) and `test_implied_vol_still_finds_a_small_but_real_price`
+in `tests/test_options_pricing.py`; against the unfixed code, all 6 of the
+first failed and the second passed.
+
 ### The writer wrote the strategy's datetime as a number
 
 *Found 2026-11-03, writing a run out in the AAPL/MSFT notebook; fixed the

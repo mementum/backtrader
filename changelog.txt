@@ -171,6 +171,13 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - implied_vol returned 0.2, its starting guess, for an option worth
+    nothing: any price the lowest volatility already reproduces to within
+    the tolerance (0.0, 1e-13). OptionGreeks showed an implied volatility of
+    0.2 on worthless contracts near expiry, and GreeksAttribution booked the
+    jump to 0.2 as vega. It returns NaN now. Example 21's 2006 split moves
+    461 from residual to vega (vega +3,604, residual -3,195); the total is
+    unchanged.
   - The CSV writer wrote a strategy's datetime as the raw date number
     (732313.99...) beside its data feed's readable date. It writes a date.
   - GrossLeverage reported (value - cash) / value. A short's proceeds sit

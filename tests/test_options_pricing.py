@@ -119,6 +119,23 @@ def test_implied_vol_is_nan_for_a_price_no_volatility_produces():
     assert math.isnan(px.implied_vol(9.0, "C", 110.0, 100.0, 0.5, 0.0))
 
 
+@pytest.mark.parametrize("model", ["bsm", "black76", "binomial"])
+@pytest.mark.parametrize("price", [0.0, 1e-13])
+def test_implied_vol_is_nan_for_a_worthless_option(model, price):
+    """A price every low volatility reproduces to within the tolerance
+    identifies no volatility. The solver returned its first guess, 0.2."""
+    iv = px.implied_vol(price, "C", 100.0, 150.0, 2 / 365, 0.03, model=model)
+    assert math.isnan(iv)
+
+
+def test_implied_vol_still_finds_a_small_but_real_price():
+    price = px.bsm("C", 100.0, 130.0, 20 / 365, 0.03, 0.4).price
+    assert 1e-4 < price < 1e-2
+    assert px.implied_vol(price, "C", 100.0, 130.0, 20 / 365, 0.03) == pytest.approx(
+        0.4, rel=1e-6
+    )
+
+
 def test_expiry_and_zero_volatility_are_intrinsic_or_forward():
     assert px.bsm("C", 105, 100, 0.0, 0.05, 0.2).price == 5.0
     assert px.bsm("P", 105, 100, 0.0, 0.05, 0.2).price == 0.0
