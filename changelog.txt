@@ -171,6 +171,8 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - The CSV writer wrote a strategy's datetime as the raw date number
+    (732313.99...) beside its data feed's readable date. It writes a date.
   - GrossLeverage reported (value - cash) / value. A short's proceeds sit
     in cash, so shorts netted against longs: a short book read negative and
     a dollar-neutral book about zero. A futures position counted its

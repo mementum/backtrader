@@ -244,6 +244,28 @@ class TestWriter:
         assert len(text.splitlines()) > 100
 
 
+class TestWriterDates:
+    def test_the_strategy_writes_its_datetime_as_a_date(self):
+        """The data feed's column was a date, the strategy's beside it the
+        raw date number (734870.99...)."""
+        import csv
+        import io
+
+        out = io.StringIO()
+        cerebro = bt.Cerebro(stdstats=False)
+        cerebro.adddata(csvdata())
+        cerebro.addstrategy(Noop)
+        cerebro.addwriter(bt.WriterFile, out=out, csv=True)
+        cerebro.run()
+        rows = [r for r in csv.reader(io.StringIO(out.getvalue())) if r]
+        header = next(r for r in rows if r[0] == "Id")
+        first = next(r for r in rows if r[0] == "1")
+        dates = [first[i] for i, h in enumerate(header) if h == "datetime"]
+        assert len(dates) == 2  # the data's and the strategy's
+        assert dates[0] == dates[1]
+        assert dates[0].startswith("2006-01-02")
+
+
 class TestPlotting:
     @pytest.mark.plotting
     def test_plot_renders_without_a_display(self):

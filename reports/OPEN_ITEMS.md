@@ -12,6 +12,17 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### The writer wrote the strategy's datetime as a number
+
+*Found 2026-11-03, writing a run out in the AAPL/MSFT notebook; fixed the
+same day.* `Strategy.getwritervalues` wrote every line of every
+strategy, indicator and observer as `line[0]`, so the strategy's `datetime`
+column held the raw date number while the data feed's, written by
+`DataSeries.getwritervalues`, held a date. A line named `datetime` is now
+written as `line.datetime(0)`. The test is
+`test_the_strategy_writes_its_datetime_as_a_date` in
+`tests/test_cerebro.py`, which failed against the unfixed code.
+
 ### GrossLeverage reported net exposure, and not even that for futures
 
 *Found 2026-11-03, when the AAPL/MSFT notebook's pair trade reported an
