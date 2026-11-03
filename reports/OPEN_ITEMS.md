@@ -12,6 +12,24 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### An order cancelled on the bar that created it went on to fill
+
+*Found 2026-11-03, touring the order types in the AAPL/MSFT notebook; fixed
+the same day.* `Strategy.buy()` hands a new order to `BackBroker.transmit`,
+which queues it in `submitted` until `check_submitted` runs on the broker's
+next cycle. `BackBroker.cancel` looked only in `pending`, so a cancel on the
+creating bar returned `False` and changed nothing. The order was then
+accepted. A market order filled; a limit order stayed live with status
+`Accepted`; and the caller had no sign of it but the ignored return value.
+It came from upstream. `cancel()` now also removes the order from
+`submitted`. A combo leg cancelled there leaves its siblings to
+`_exec_combos`, which already cancels every leg of a combo with a dead one,
+so no leg fills. The tests are
+`test_cancel_on_the_bar_that_created_the_order` and
+`test_cancelling_one_new_combo_leg_cancels_the_combo` in
+`tests/test_broker.py`; against the unfixed code, all 3 failed (the market
+order had status `Completed`).
+
 ### Data wrappers could not wrap a feed with extra lines
 
 *Found 2026-11-03, filtering a Yahoo CSV feed in the AAPL/MSFT notebook;

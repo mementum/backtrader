@@ -458,8 +458,13 @@ class BackBroker(bt.BrokerBase):
         try:
             self.pending.remove(order)
         except ValueError:
-            # If the list didn't have the element we didn't cancel anything
-            return False
+            # an order cancelled on the bar that created it is still waiting
+            # in submitted; the legs of a combo left behind are cancelled by
+            # _exec_combos, so none of them fills
+            try:
+                self.submitted.remove(order)
+            except ValueError:
+                return False  # not an open order: nothing to cancel
 
         order.cancel()
         self.notify(order)

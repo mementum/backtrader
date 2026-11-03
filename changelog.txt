@@ -167,6 +167,12 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - An order cancelled on the bar that created it was not cancelled.
+    BackBroker.cancel looked only among the pending orders, but a new order
+    waits in the submitted queue until the broker's next cycle, so cancel()
+    returned False and the order went on to be accepted: a market order
+    filled, a limit order stayed live. It is now taken out of the queue and
+    notified Canceled. Cancelling one leg of a new combo cancels them all.
   - DataFilter and DataFiller raised IndexError on the first bar when the
     feed they wrap has lines beyond the standard seven: YahooFinanceCSVData
     (adjclose), an option feed (bid, ask), any feed with lines of its own.
