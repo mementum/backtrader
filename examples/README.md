@@ -30,6 +30,9 @@ working fails the build rather than misleading its reader.
 | [20_options_vertical_spread.py](20_options_vertical_spread.py) | a monthly bull call spread: a defined-risk structure, and why the short leg goes first |
 | [21_options_book.py](21_options_book.py) | iron condors as combo orders under the `CashCovered` margin model, with portfolio greeks, per-structure results and P&L by greek |
 | [22_options_chains.py](22_options_chains.py) | whole option chains: a 30-delta put sold monthly on three stocks, picked from each chain by delta |
+| [23_options_collar.py](23_options_collar.py) | zero-cost protective collar: holding stock, financed put protection via covered call |
+| [24_options_covered_strangle.py](24_options_covered_strangle.py) | covered strangle: stock holding combined with covered call and cash-secured put for enhanced yield |
+| [25_options_stock_collar_chains.py](25_options_stock_collar_chains.py) | multi-stock portfolio with dynamic option chains: delta-selected collars and physical delivery |
 
 `--plot` (or `--show` for 09) opens a chart where a display is available.
 Example 09 always writes its chart to `examples/output/`, which git ignores.

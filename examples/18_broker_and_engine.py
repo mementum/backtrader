@@ -40,10 +40,11 @@
 - The writer: ``addwriter`` records every bar's data, indicators and
   observers as CSV, for analysis outside backtrader.
 
-Run it:  python examples/18_broker_and_engine.py
+Run it:  python examples/18_broker_and_engine.py [--plot]
 """
 
 import io
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -104,6 +105,8 @@ def main(plot=False):
         f"{sum(strat.analyzers.value.get_analysis().values()):+.2%}; "
         f"fund-share returns, summed: {fund:+.2%}"
     )
+    if plot:
+        cerebro.plot()
 
     for cheat in (False, True):
         cerebro = bt.Cerebro(stdstats=False, cheat_on_open=cheat)
@@ -128,4 +131,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

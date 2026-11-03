@@ -42,9 +42,10 @@ holds no option chain data. With real data, ``PandasChainSource`` takes a
 DataFrame of daily chains, and ``PartitionedChainSource`` loads it a year or
 a month at a time, so that ten years of chains need not fit in memory.
 
-Run it:  python examples/22_options_chains.py
+Run it:  python examples/22_options_chains.py [--plot]
 """
 
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -107,7 +108,9 @@ def main(plot=False):
         if held:
             print(f"holding {held:.0f} {d._name} from assignment")
     print(f"final value {cerebro.broker.getvalue():,.2f} from 250,000.00")
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

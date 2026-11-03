@@ -32,10 +32,11 @@
 - A pandas DataFrame works too, through ``PandasData`` (if pandas is
   installed).
 
-Run it:  python examples/02_data_feeds.py
+Run it:  python examples/02_data_feeds.py [--plot]
 """
 
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -123,4 +124,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

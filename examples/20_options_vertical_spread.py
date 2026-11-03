@@ -39,11 +39,12 @@ leaving a naked short call. So this sends the short leg first, whose
 premium helps pay for the long one. ``self.combo`` sends the legs as one
 order instead, checked and filled together: see example 21.
 
-Run it:  python examples/20_options_vertical_spread.py
+Run it:  python examples/20_options_vertical_spread.py [--plot]
 """
 
 import collections
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -119,7 +120,9 @@ def main(plot=False):
     cerebro.broker.setcash(100_000.0)
     cerebro.run()
     print(f"final value {cerebro.broker.getvalue():,.2f} from 100,000.00")
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

@@ -36,9 +36,10 @@ under different broker settings:
   they were sent, rather than the next open (look-ahead, for comparison
   only).
 
-Run it:  python examples/07_commissions_and_slippage.py
+Run it:  python examples/07_commissions_and_slippage.py [--plot]
 """
 
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -62,7 +63,7 @@ class InAndOut(bt.Strategy):
             self.costs += order.executed.comm
 
 
-def run(label, setup):
+def run(label, setup, plot=False):
     cerebro = bt.Cerebro(stdstats=False)
     cerebro.adddata(
         bt.feeds.BacktraderCSVData(dataname=str(DATAS / "2006-day-001.txt"))
@@ -73,11 +74,13 @@ def run(label, setup):
     strat = cerebro.run()[0]
     pnl = cerebro.broker.getvalue() - 100_000.0
     print(f"{label:28s} profit {pnl:10.2f}   commission paid {strat.costs:8.2f}")
+    if plot:
+        cerebro.plot()
 
 
 def main(plot=False):
     run("no costs", lambda b: None)
-    run("0.1% commission", lambda b: b.setcommission(commission=0.001))
+    run("0.1% commission", lambda b: b.setcommission(commission=0.001), plot=plot)
     run(
         "2.00 per unit",
         lambda b: b.setcommission(
@@ -93,4 +96,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

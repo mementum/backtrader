@@ -31,9 +31,10 @@ role, and cerebro builds the strategy that trades it:
 - ``SIGNAL_LONG``: long when positive, flat when negative
 - ``SIGNAL_LONGEXIT``: an extra signal that exits a long when negative
 
-Run it:  python examples/12_signals.py
+Run it:  python examples/12_signals.py [--plot]
 """
 
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -61,7 +62,7 @@ class RsiOverbought(bt.Indicator):
         self.lines.signal = 70.0 - bt.ind.RSI(period=14)
 
 
-def run(label, *signals):
+def run(label, *signals, plot=False):
     cerebro = bt.Cerebro(stdstats=False)
     cerebro.adddata(
         bt.feeds.BacktraderCSVData(dataname=str(DATAS / "2006-day-001.txt"))
@@ -75,10 +76,12 @@ def run(label, *signals):
     trades = strat.analyzers.trades.get_analysis().total.get("closed", 0)
     pnl = cerebro.broker.getvalue() - 100_000.0
     print(f"{label:30s} {trades:3d} trades, profit {pnl:9.2f}")
+    if plot:
+        cerebro.plot()
 
 
 def main(plot=False):
-    run("long/short above/below SMA", (bt.SIGNAL_LONGSHORT, PriceAboveSma))
+    run("long/short above/below SMA", (bt.SIGNAL_LONGSHORT, PriceAboveSma), plot=plot)
     run("long only", (bt.SIGNAL_LONG, PriceAboveSma))
     run(
         "long only, exit when RSI > 70",
@@ -88,4 +91,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

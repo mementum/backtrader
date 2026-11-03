@@ -31,10 +31,11 @@ the interest rate and the volatility (rates and volatilities as fractions:
 The first numbers are the worked examples in Hull, *Options, Futures, and
 Other Derivatives*, to compare against.
 
-Run it:  python examples/14_options_pricing.py
+Run it:  python examples/14_options_pricing.py [--plot]
 """
 
 import math
+import sys
 
 from backtrader.options import pricing
 
@@ -84,6 +85,46 @@ def main(plot=False):
     ]
     print("put prices into a skew: " + ", ".join(f"K={K} {v:.1%}" for K, v in smile))
 
+    if plot:
+        import matplotlib.pyplot as plt
+
+        strikes = range(70, 131, 5)
+        spot = 100.0
+        calls = [
+            pricing.bsm("C", S=spot, K=k, T=0.25, r=0.03, sigma=0.20).price
+            for k in strikes
+        ]
+        puts = [
+            pricing.bsm("P", S=spot, K=k, T=0.25, r=0.03, sigma=0.20).price
+            for k in strikes
+        ]
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+        ax1.plot(strikes, calls, label="Call (T=0.25, σ=20%)", color="tab:blue")
+        ax1.plot(strikes, puts, label="Put (T=0.25, σ=20%)", color="tab:orange")
+        ax1.axvline(
+            spot, color="gray", linestyle="--", alpha=0.7, label=f"Spot ({spot:.0f})"
+        )
+        ax1.set_xlabel("Strike")
+        ax1.set_ylabel("Option Price")
+        ax1.set_title("BSM Option Pricing Curve")
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        smile_k = [x[0] for x in smile]
+        smile_iv = [x[1] * 100 for x in smile]
+        ax2.plot(
+            smile_k, smile_iv, marker="o", color="tab:red", label="Implied Volatility"
+        )
+        ax2.set_xlabel("Strike")
+        ax2.set_ylabel("Implied Volatility (%)")
+        ax2.set_title("Put Volatility Skew")
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+        plt.show()
+
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

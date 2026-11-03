@@ -30,10 +30,11 @@
   ``next()`` runs every day, and the current week's bar grows until Friday.
   That is how a strategy sees a live market build a bar.
 
-Run it:  python examples/13_timeframes_and_replay.py
+Run it:  python examples/13_timeframes_and_replay.py [--plot]
 """
 
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -86,6 +87,8 @@ def main(plot=False):
     print(
         f"daily entries, weekly filter: profit {cerebro.broker.getvalue() - 100_000:.2f}"
     )
+    if plot:
+        cerebro.plot()
 
     print("the week of 2006-03-06, replayed day by day as one weekly bar:")
     cerebro = bt.Cerebro(stdstats=False)
@@ -97,4 +100,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

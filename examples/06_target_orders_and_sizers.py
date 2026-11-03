@@ -31,9 +31,10 @@
   of the cash; a custom sizer can use anything (here: risk a fixed amount
   per trade, sized by volatility).
 
-Run it:  python examples/06_target_orders_and_sizers.py
+Run it:  python examples/06_target_orders_and_sizers.py [--plot]
 """
 
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -100,6 +101,8 @@ def main(plot=False):
     cerebro.addstrategy(Rebalance)
     cerebro.broker.setcash(1_000_000.0)
     cerebro.run()
+    if plot:
+        cerebro.plot()
 
     print("Sizers, each deciding the size of the same entry:")
     for sizer, kwargs in (
@@ -116,4 +119,4 @@ def main(plot=False):
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

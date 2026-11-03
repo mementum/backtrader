@@ -55,7 +55,7 @@ def _param(path):
 
 
 def test_the_examples_are_there():
-    assert len(EXAMPLES) >= 22
+    assert len(EXAMPLES) >= 25
 
 
 @pytest.mark.parametrize("path", [_param(p) for p in EXAMPLES])
@@ -75,3 +75,23 @@ def test_example_runs(path, capsys, tmp_path, monkeypatch):
     else:
         module.main()
     assert capsys.readouterr().out.strip()
+
+
+@pytest.mark.plotting
+@pytest.mark.parametrize("path", [_param(p) for p in EXAMPLES])
+def test_example_plots(path, tmp_path, monkeypatch):
+    if importlib.util.find_spec("matplotlib") is None:
+        pytest.skip("plotting requires matplotlib")
+    for package in _requires(path):
+        if importlib.util.find_spec(package) is None:
+            pytest.skip(f"{path.name} needs {package}")
+    name = f"example_{path.stem}_plot"
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, name, module)
+    spec.loader.exec_module(module)
+    sig = inspect.signature(module.main).parameters
+    if "plot" in sig:
+        module.main(plot=True)
+    elif "out" in sig:
+        module.main(out=tmp_path / "chart_plot.png")

@@ -41,10 +41,11 @@ Three things to notice:
   protection costs more than this shows. That is why the feeds' names end
   in "(model)".
 
-Run it:  python examples/17_options_rolling_puts.py
+Run it:  python examples/17_options_rolling_puts.py [--plot]
 """
 
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -115,7 +116,9 @@ def main(plot=False):
 
     print(f"puts bought for {strat.cost:,.2f}, paid out {strat.payout:,.2f}")
     print(f"final value {cerebro.broker.getvalue():,.2f} from 1,000,000.00")
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

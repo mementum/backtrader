@@ -40,10 +40,11 @@ volatility. Selling options at model prices is optimistic: real puts
 trade at a higher implied volatility than the index realises (that gap is
 the premium sellers earn), but also cost a bid/ask spread on every trade.
 
-Run it:  python examples/19_options_cash_secured_put.py
+Run it:  python examples/19_options_cash_secured_put.py [--plot]
 """
 
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -121,7 +122,9 @@ def main(plot=False):
     strat = cerebro.run()[0]
     print(f"premiums collected {strat.premiums:,.2f}")
     print(f"final value {cerebro.broker.getvalue():,.2f} from 500,000.00")
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

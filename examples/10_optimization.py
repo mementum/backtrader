@@ -32,7 +32,7 @@ A caution that applies to every optimiser: the best combination on past
 data is partly the best fit to that data's noise. Check it on data it was
 not chosen on.
 
-Run it:  python examples/10_optimization.py [--cpus N]
+Run it:  python examples/10_optimization.py [--cpus N] [--plot]
 """
 
 import sys
@@ -78,9 +78,21 @@ def main(plot=False, cpus=1):
     print(" fast  slow   return  max drawdown")
     for ret, dd, fast, slow in sorted(results, reverse=True):
         print(f"{fast:5d} {slow:5d} {ret:8.2%} {dd:12.2%}")
+
+    if plot and results:
+        best_ret, best_dd, best_fast, best_slow = sorted(results, reverse=True)[0]
+        cerebro_plot = bt.Cerebro(stdstats=False)
+        cerebro_plot.adddata(
+            bt.feeds.BacktraderCSVData(dataname=str(DATAS / "2005-2006-day-001.txt"))
+        )
+        cerebro_plot.addstrategy(SmaCross, fast=best_fast, slow=best_slow)
+        cerebro_plot.broker.setcash(100_000.0)
+        cerebro_plot.run()
+        cerebro_plot.plot()
+
     return results
 
 
 if __name__ == "__main__":
     cpus = int(sys.argv[sys.argv.index("--cpus") + 1]) if "--cpus" in sys.argv else 1
-    main(cpus=cpus)
+    main(plot="--plot" in sys.argv, cpus=cpus)

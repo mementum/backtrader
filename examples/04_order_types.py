@@ -38,10 +38,11 @@ what happens to it:
 An order goes Submitted -> Accepted -> Completed, or ends Canceled, Expired,
 Margin (not enough cash) or Rejected.
 
-Run it:  python examples/04_order_types.py
+Run it:  python examples/04_order_types.py [--plot]
 """
 
 import datetime
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -102,7 +103,9 @@ def main(plot=False):
     cerebro.addstrategy(Orders)
     cerebro.broker.setcash(100_000.0)  # enough for all seven at once
     cerebro.run()
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)

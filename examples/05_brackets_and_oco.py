@@ -30,9 +30,10 @@
   the rest: here, two entry limits at different prices, only one of which
   may trade.
 
-Run it:  python examples/05_brackets_and_oco.py
+Run it:  python examples/05_brackets_and_oco.py [--plot]
 """
 
+import sys
 from pathlib import Path
 
 import backtrader as bt
@@ -101,7 +102,9 @@ def main(plot=False):
     cerebro.broker.setcash(100_000.0)
     cerebro.run()
     print(f"final value {cerebro.broker.getvalue():,.2f}")
+    if plot:
+        cerebro.plot()
 
 
 if __name__ == "__main__":
-    main()
+    main(plot="--plot" in sys.argv)
