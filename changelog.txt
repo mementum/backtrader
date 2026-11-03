@@ -1,5 +1,9 @@
 UNRELEASED
   API BREAKS
+  - GrossLeverage reports gross notional over account value, so a book
+    with shorts or futures reads differently (see FIXES). Its `fund`
+    parameter is removed: the ratio uses the account value in every mode.
+                                                                  (FIXES)
   - PercentSizer (and AllInSizer, PercentSizerInt, AllInSizerInt) size by
     the cost of a unit under the data's commission scheme, with its
     leverage, rather than by the price alone. A stock with mult=1 sizes as
@@ -167,6 +171,12 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - GrossLeverage reported (value - cash) / value. A short's proceeds sit
+    in cash, so shorts netted against longs: a short book read negative and
+    a dollar-neutral book about zero. A futures position counted its
+    margin, and fund mode divided by the per-share fund value. It now
+    reports the notional of every position, abs(size) x close x mult, over
+    the account value. A long-only stock book reads as before.
   - An order cancelled on the bar that created it was not cancelled.
     BackBroker.cancel looked only among the pending orders, but a new order
     waits in the submitted queue until the broker's next cycle, so cancel()

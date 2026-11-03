@@ -12,6 +12,24 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### GrossLeverage reported net exposure, and not even that for futures
+
+*Found 2026-11-03, when the AAPL/MSFT notebook's pair trade reported an
+average gross leverage of -0.01 while holding 40% long and 40% short; fixed
+the same day.* `GrossLeverage.next` computed `(value - cash) / value`. That
+is the invested fraction of a long-only stock book and nothing else:
+- a short sale's proceeds raise cash, so shorts netted against longs;
+- futures cash moves by the margin, so a contract counted its margin rather
+  than its notional;
+- in fund mode `value` was the per-share fund value, a different unit from
+  cash.
+
+It came from upstream. It now sums `abs(size) * close * mult` over the
+broker's positions and divides by the account value, in every mode; the
+`fund` parameter is gone. The tests are in `TestGrossLeverage` in
+`tests/test_analyzers.py`; against the unfixed code, 3 of 4 failed (short,
+long/short, futures). The long-only test passed, as it should.
+
 ### An order cancelled on the bar that created it went on to fill
 
 *Found 2026-11-03, touring the order types in the AAPL/MSFT notebook; fixed
