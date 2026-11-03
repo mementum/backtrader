@@ -171,6 +171,11 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - In run-once mode (the default) every observer's buffer held twice the
+    run's bars: sized for the run in LineIterator._once, then grown by one
+    slot per bar. The values were right, but .array ended in a tail of NaN
+    as long as the run, and the memory doubled. Observers now step into
+    the slots sized for them, and grow only past their end.
   - implied_vol returned 0.2, its starting guess, for an option worth
     nothing: any price the lowest volatility already reproduces to within
     the tolerance (0.0, 1e-13). OptionGreeks showed an implied volatility of

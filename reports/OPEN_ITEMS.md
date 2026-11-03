@@ -12,6 +12,23 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### Observers held twice their bars in run-once mode
+
+*Found 2026-11-03, building a DataFrame from `PortfolioGreeks`' lines in the
+AAPL/MSFT notebook (1508 values for 754 bars); fixed the same day.*
+`LineIterator._once` sizes each observer for the clock's bars
+(`forward(size=buflen)`) and homes it. `cerebro._runonce` then resets the
+strategy's own lines, but not the observers'. `Strategy._next_observers`
+stepped them with `forward()`, which appends a slot, so every observer
+(`Value` included) ended with twice the bars, the second half `NaN`. Values
+read by `[0]` or by bar index were right; `.array` was padded, and memory
+doubled. It came from upstream, where the `oldsync` path already used
+`advance()`. Observers now `advance()` into the sized buffer and `forward()`
+only past its end, which a run with more bars than its clock (`data0`)
+reaches. The test is `test_an_observer_holds_one_value_per_bar` in
+`tests/test_cerebro.py`; against the unfixed code, both cases failed
+(510 values for 255 bars; 307 for 255 with a weekly clock).
+
 ### implied_vol gave a worthless option a volatility of 0.2
 
 *Found 2026-11-03, watching a model-priced call run into expiry with
