@@ -69,6 +69,32 @@ class TestFilters:
         fine = barcount(csvdata(), bt.filters.Renko, dict(size=25))
         assert len(fine) > len(coarse)
 
+    @pytest.mark.parametrize("preload", [True, False])
+    def test_a_filter_returning_true_removes_the_bar(self, preload):
+        """A Filter subclass drops a bar by calling backwards() and returning
+        True. Filter.__call__ discarded that return value, so load() reported
+        a bar that was not there: preloading hid it, and without preloading
+        the strategy was handed an empty buffer (IndexError)."""
+
+        class EveryOther(bt.Filter):
+            n = 0
+
+            def next(self, data):
+                self.n += 1
+                if self.n % 2 == 0:
+                    data.backwards()
+                    return True
+                return False
+
+        assert len(barcount(csvdata(), EveryOther, preload=preload)) == 128
+
+    @pytest.mark.parametrize("size", [25, 50, 200])
+    def test_renko_bricks_do_not_depend_on_preload(self, size):
+        kwargs = dict(size=size)
+        assert barcount(csvdata(), bt.filters.Renko, kwargs, preload=False) == (
+            barcount(csvdata(), bt.filters.Renko, kwargs, preload=True)
+        )
+
     def test_calendardays_filter_fills_missing_sessions(self):
         """Regression: with its own documented default (fill_price=None,
         'use the last known closing price') the filter raised TypeError,

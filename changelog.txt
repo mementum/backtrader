@@ -167,6 +167,13 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - A filter that removed a bar (Renko between bricks, or any Filter
+    subclass whose next() calls backwards() and returns True) crashed a run
+    without preloading: IndexError, as the strategy was handed an empty
+    buffer. Filter.__call__ dropped next()'s return value, so load() took
+    the removed bar for a delivered one. Preloading hid it, because the
+    preload loop simply loads again. Renko now gives the same bricks either
+    way.
   - A run that raised (a malformed CSV row, an exception in a strategy)
     never stopped its data feeds, so their files stayed open. Cerebro now
     stops them when a run does not finish, and still raises the error that

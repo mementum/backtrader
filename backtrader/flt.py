@@ -45,7 +45,8 @@ class Filter(metaclass=MetaParams):
             self.nextstart(data)
             self._firsttime = False
 
-        self.next(data)
+        # True means next() removed the bar, and load() must fetch another
+        return self.next(data)
 
     def nextstart(self, data):
         pass

@@ -4,13 +4,29 @@ Places where the code does something other than what it should. Fixed entries
 move out of this file; things that turn out to be deliberate move to
 `DECISIONS.md`.
 
-*Last updated: 2026-10-29*
+*Last updated: 2026-11-03*
 
 ## Open
 
 *None as of 2026-10-29.*
 
 ## Fixed, unreleased
+
+### A filter could not remove a bar without preloading
+
+*Found 2026-11-03, building the AAPL/MSFT notebook; fixed the same day.*
+A filter removes a bar by calling `data.backwards()` and returning `True`,
+which `AbstractDataBase.load` reads as "fetch another". `Filter.__call__`, the
+base of `Renko` and of any user filter, called `next()` and returned `None`,
+so `load()` reported the removed bar as delivered. With `preload=True` the
+preload loop calls `load()` again and nothing showed. With `preload=False` the
+strategy was handed an empty buffer and `Cerebro._runnext` raised
+`IndexError: array index out of range` on the first bar. `__call__` now
+returns `next()`'s result. The tests are
+`test_a_filter_returning_true_removes_the_bar` and
+`test_renko_bricks_do_not_depend_on_preload` in
+`tests/test_filters_sizers.py`; against the unfixed code, 4 of the 5 failed
+(the preloaded case passed).
 
 ### An aborted run left its feeds' files open
 
