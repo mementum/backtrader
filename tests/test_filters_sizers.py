@@ -95,6 +95,30 @@ class TestFilters:
             barcount(csvdata(), bt.filters.Renko, kwargs, preload=True)
         )
 
+    def test_every_renko_brick_has_its_high_above_its_low(self):
+        """A falling brick was written with high = its bottom and low = its
+        top, so its high sat below its low."""
+        bricks = []
+
+        class Recorder(bt.Strategy):
+            __test__ = False
+
+            def next(self):
+                d = self.data
+                bricks.append((d.open[0], d.high[0], d.low[0], d.close[0]))
+
+        data = csvdata()
+        data.addfilter(bt.filters.Renko, size=50)
+        cerebro = bt.Cerebro(stdstats=False)
+        cerebro.adddata(data)
+        cerebro.addstrategy(Recorder)
+        cerebro.run()
+        falling = [b for b in bricks if b[3] < b[0]]
+        assert falling  # the year has falling bricks to check
+        for o, h, l, c in bricks:
+            assert h == max(o, c) and l == min(o, c)
+            assert h - l == 50
+
     def test_calendardays_filter_fills_missing_sessions(self):
         """Regression: with its own documented default (fill_price=None,
         'use the last known closing price') the filter raised TypeError,

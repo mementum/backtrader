@@ -12,6 +12,15 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### A falling Renko brick had its high below its low
+
+*Found 2026-11-03, reading `Renko.next` while fixing the item above; fixed
+the same day.* A brick falling from `top` to `bot` was written with
+`low = top` and `high = bot`. It came from upstream. Rising bricks were
+right. The test is `test_every_renko_brick_has_its_high_above_its_low` in
+`tests/test_filters_sizers.py`, which failed against the unfixed code
+(`assert 3579.0 == 3629.0`).
+
 ### A filter could not remove a bar without preloading
 
 *Found 2026-11-03, building the AAPL/MSFT notebook; fixed the same day.*

@@ -167,6 +167,10 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - A falling Renko brick had its high and low swapped: high was the
+    brick's bottom and low its top, so high < low. Rising bricks were
+    right. Plots drew falling bricks inside out, and anything reading
+    high or low of a brick (a range, a stop) got the wrong side.
   - A filter that removed a bar (Renko between bricks, or any Filter
     subclass whose next() calls backwards() and returns True) crashed a run
     without preloading: IndexError, as the strategy was handed an empty

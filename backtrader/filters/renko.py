@@ -129,8 +129,8 @@ class Renko(Filter):
             self._bot = bot
 
             data.open[0] = top
-            data.low[0] = top
-            data.high[0] = bot
+            data.high[0] = top
+            data.low[0] = bot
             data.close[0] = bot
             data.volume[0] = 0.0
             data.openinterest[0] = 0.0
