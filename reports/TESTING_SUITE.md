@@ -2,13 +2,13 @@
 
 What is tested, how it is selected, and what it costs.
 
-*Last updated: 2026-10-29*
+*Last updated: 2026-11-03*
 
 ## Running it
 
 ```shell
 conda activate backtrader
-pytest                  # 643 tests, ~85 s (2026-10-29)
+pytest                  # 698 tests, ~80 s (2026-11-03)
 pytest --cov            # adds coverage, ~4 min
 pytest -m "not plotting"   # skip the 13 matplotlib rendering tests
 ```
@@ -119,9 +119,9 @@ is now in CLAUDE.md.
 | file | tests | subject |
 |---|---|---|
 | `test_ind_*.py` (70 files) | 70 | golden-value regressions, one per indicator |
-| `test_analyzers.py` | 30 | every built-in analyzer |
-| `test_cerebro.py` | 31 | running, optimisation, resampling, timers, writer, plotting, the btrun CLI |
-| `test_options_pricing.py` | 23 | pricing against Hull's worked examples, parity, tree convergence, greeks by finite differences, implied volatility |
+| `test_analyzers.py` | 34 | every built-in analyzer |
+| `test_cerebro.py` | 34 | running, optimisation, resampling, timers, writer, observer buffers, plotting, the btrun CLI |
+| `test_options_pricing.py` | 30 | pricing against Hull's worked examples, parity, tree convergence, greeks by finite differences, implied volatility |
 | `test_options_settlement.py` | 30 | option positions through cerebro: valuation, commission, cash and physical settlement, assignment, intraday expiry |
 | `test_options_chain.py` | 18 | chain sources (pandas, CSV, partitioned, model), views' bars and gaps, settlement, selection by moneyness and delta, all run modes, margin and quote fills on views; skipped without numpy |
 | `test_options_attribution.py` | 4 | the greek split adds up to the whole gain, theta on a flat market, a stock is all delta, delta on a trend |
@@ -129,14 +129,14 @@ is now in CLAUDE.md.
 | `test_options_combos.py` | 20 | the `CashCovered` rules, margin at submission and after a bar, combo orders filling whole or not at all, `PortfolioGreeks`, `StructureTrades` |
 | `test_options_model.py` | 25 | `ModelOptionData` against prices and realised volatility recomputed from the CSV, listing, moneyness, all run modes, settlement |
 | `test_ind_optiongreeks.py` | 18 | `OptionGreeks` in all twelve run modes against a fixture priced at 20% volatility, and the fixture against its generator |
-| `test_examples.py` | 23 | every script in `examples/` runs and prints something; skips one whose `REQUIRES` package is missing |
+| `test_examples.py` | 52 | every script in `examples/` runs and prints something, and plots; skips one whose `REQUIRES` package is missing; the notebook's code compiles (it needs Yahoo Finance, so it is not run) |
 | `test_plot.py` | 10 | the date axis (labels, tick placement, timezone, weekend gaps), when figures are shown, `use=`, fresh figures |
 | `test_utils.py` | 27 | date conversion, AutoDict family, mathsupport, TimeFrame |
 | `test_orders_advanced.py` | 19 | stop/trailing/bracket/OCO orders, order_target_* |
-| `test_broker.py` | 17 | cash and value accounting, order types, commission, slippage |
+| `test_broker.py` | 20 | cash and value accounting, order types, commission, slippage |
 | `test_resampling_intraday.py` | 18 | intraday resample/replay, trading calendar, PSAR, PivotPoint |
 | `test_feeds.py` | 20 | CSV family, PandasData, Chainer, RollOver |
-| `test_filters_sizers.py` | 48 | filters, sizers, fillers, commission schemes, bar splitters, data wrappers |
+| `test_filters_sizers.py` | 57 | filters, sizers, fillers, commission schemes, bar splitters, data wrappers |
 | `test_strategy_*.py`, `test_writer.py`, others | 10 | strategy runs, writer output |
 | `test_metaclass.py` | 6 | the `frompackages` directive, that nothing optional is imported eagerly, and that pyflakes finds no undefined name |
 | `test_licensing.py` | 5 | GPLv3 notices, upstream copyright, modification notices, LICENSE, README attribution |

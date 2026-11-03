@@ -79,3 +79,6 @@ prompts.md
 
 # written by examples/ when they run
 examples/output/
+# the notebook's price cache (Yahoo Finance data, not ours to ship)
+examples/notebooks/data/
+.ipynb_checkpoints/

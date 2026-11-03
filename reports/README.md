@@ -20,3 +20,4 @@ standing question; point-in-time records live in `sessions/`.
 | [2026-08-23 — Timing the engine, fixing concurrency, and breaking it on purpose](sessions/2026-08-23_performance-scan-and-concurrency.md) |
 | [2026-08-24 — Putting the suite on CI, and the release on a tag](sessions/2026-08-24_ci-and-pypi.md) |
 | [2026-10-29 — Options on the Cerebro engine: implementation options and a questionnaire](sessions/2026-10-29_options-design.md) |
+| [2026-11-03 — A worked notebook on AAPL and MSFT, and the eight defects it found](sessions/2026-11-03_aapl-msft-notebook.md) |
