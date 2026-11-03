@@ -12,6 +12,19 @@ move out of this file; things that turn out to be deliberate move to
 
 ## Fixed, unreleased
 
+### Data wrappers could not wrap a feed with extra lines
+
+*Found 2026-11-03, filtering a Yahoo CSV feed in the AAPL/MSFT notebook;
+fixed the same day.* `DataFilter._load` and `DataFiller._copyfromdata`
+copied `range(self.p.dataname.size())` lines into the wrapper, which has only
+the seven standard ones, so any inner feed with more (`YahooFinanceCSVData`'s
+`adjclose`, an option feed's `bid` and `ask`) raised
+`IndexError: list index out of range` on the first bar. They now pair their
+own lines with the inner feed's by alias in `_startinner`. The tests are
+`test_data_filter_wraps_a_feed_with_extra_lines` and
+`test_a_wrapped_feed_may_carry_extra_lines` in
+`tests/test_filters_sizers.py`; against the unfixed code, all 3 failed.
+
 ### A falling Renko brick had its high below its low
 
 *Found 2026-11-03, reading `Renko.next` while fixing the item above; fixed

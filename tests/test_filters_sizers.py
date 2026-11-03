@@ -450,6 +450,21 @@ class TestDataWrappers:
         assert len(delivered) == 255
         assert len({bar[0] for bar in delivered}) == 255
 
+    @pytest.mark.parametrize("preload", [True, False])
+    def test_data_filter_wraps_a_feed_with_extra_lines(self, preload):
+        """YahooFinanceCSVData carries an adjclose line the wrapper has not.
+        The bar copy ran over the inner feed's lines and raised IndexError."""
+        inner = bt.feeds.YahooFinanceCSVData(dataname=datafile("nvda-2014.txt"))
+        plain = bars(
+            bt.feeds.YahooFinanceCSVData(dataname=datafile("nvda-2014.txt")),
+            preload=preload,
+        )
+        kept = bars(
+            bt.filters.DataFilter(dataname=inner, funcfilter=lambda d: True),
+            preload=preload,
+        )
+        assert kept == plain
+
     def test_data_filter_agrees_with_itself_across_preload(self):
         assert bars(self.wrap(lambda d: True), preload=True) == bars(
             self.wrap(lambda d: True), preload=False
@@ -544,6 +559,27 @@ class TestDataFiller:
         rows = self.delivered(filled)
         assert (rows[0][1], rows[0][2]) == (10.2, 100.0)
         assert (rows[3][1], rows[3][2]) == (11.2, 200.0)
+
+    def test_a_wrapped_feed_may_carry_extra_lines(self, tmp_path):
+        class WithExtra(bt.feeds.BacktraderCSVData):
+            lines = ("extra",)
+
+        path = tmp_path / "gapped.txt"
+        path.write_text(self.HEADER + self.ROWS)
+        inner = WithExtra(
+            dataname=str(path),
+            timeframe=bt.TimeFrame.Minutes,
+            compression=1,
+            sessionstart=datetime.time(10, 30),
+            sessionend=datetime.time(17, 0),
+        )
+        filled = bt.filters.DataFiller(dataname=inner)
+        assert [r[0] for r in self.delivered(filled)] == [
+            "10:31",
+            "10:32",
+            "10:33",
+            "10:34",
+        ]
 
     def test_the_wrapped_feeds_file_is_closed(self, tmp_path):
         inner = self.minutefeed(tmp_path)

@@ -167,6 +167,11 @@ UNRELEASED
     failed against the previous code on 2026-10-29.
 
   FIXES
+  - DataFilter and DataFiller raised IndexError on the first bar when the
+    feed they wrap has lines beyond the standard seven: YahooFinanceCSVData
+    (adjclose), an option feed (bid, ask), any feed with lines of its own.
+    They copied the bar line by line up to the inner feed's size. They now
+    copy their own lines, by name.
   - A falling Renko brick had its high and low swapped: high was the
     brick's bottom and low its top, so high < low. Rising bricks were
     right. Plots drew falling bricks inside out, and anything reading

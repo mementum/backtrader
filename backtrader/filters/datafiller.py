@@ -82,6 +82,13 @@ class DataFiller(AbstractDataBase):
         """
         self.p.dataname.setenvironment(self._env)
         self.p.dataname._start()
+        # Copied by name: the inner feed may carry lines this one has not
+        # (YahooFinanceCSVData's adjclose, an option feed's bid and ask)
+        inner = self.p.dataname.lines
+        self._copylines = [
+            (self.lines[i], getattr(inner, alias))
+            for i, alias in enumerate(self.lines.getlinealiases())
+        ]
 
     def stop(self):
         super().stop()
@@ -102,9 +109,8 @@ class DataFiller(AbstractDataBase):
         super(DataFiller, self).preload()
 
     def _copyfromdata(self):
-        # Data is allowed - Copy size which is "number of lines"
-        for i in range(self.p.dataname.size()):
-            self.lines[i][0] = self.p.dataname.lines[i][0]
+        for mine, theirs in self._copylines:
+            mine[0] = theirs[0]
 
         self._dbar = False  # invalidate flag for read bar
 
