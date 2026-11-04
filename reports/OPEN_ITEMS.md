@@ -4,13 +4,137 @@ Places where the code does something other than what it should. Fixed entries
 move out of this file; things that turn out to be deliberate move to
 `DECISIONS.md`.
 
-*Last updated: 2026-10-29*
+*Last updated: 2026-11-03*
 
 ## Open
 
 *None as of 2026-10-29.*
 
 ## Fixed, unreleased
+
+### Observers held twice their bars in run-once mode
+
+*Found 2026-11-03, building a DataFrame from `PortfolioGreeks`' lines in the
+AAPL/MSFT notebook (1508 values for 754 bars); fixed the same day.*
+`LineIterator._once` sizes each observer for the clock's bars
+(`forward(size=buflen)`) and homes it. `cerebro._runonce` then resets the
+strategy's own lines, but not the observers'. `Strategy._next_observers`
+stepped them with `forward()`, which appends a slot, so every observer
+(`Value` included) ended with twice the bars, the second half `NaN`. Values
+read by `[0]` or by bar index were right; `.array` was padded, and memory
+doubled. It came from upstream, where the `oldsync` path already used
+`advance()`. Observers now `advance()` into the sized buffer and `forward()`
+only past its end, which a run with more bars than its clock (`data0`)
+reaches. The test is `test_an_observer_holds_one_value_per_bar` in
+`tests/test_cerebro.py`; against the unfixed code, both cases failed
+(510 values for 255 bars; 307 for 255 with a weekly clock).
+
+### implied_vol gave a worthless option a volatility of 0.2
+
+*Found 2026-11-03, watching a model-priced call run into expiry with
+`OptionGreeks` in the AAPL/MSFT notebook; fixed the same day.* The call's
+implied volatility tracked the model's realised volatility until its price
+reached about 1e-12, then sat at exactly 0.2000. `implied_vol` checks that
+the price lies between the prices at its bracket's ends, `lo` and `hi`, and
+then iterates from 0.2 until the price error is below `tol` (1e-10). A price
+within `tol` of the price at `lo` passes the bracket check, and the first
+guess already meets the tolerance, so 0.2 came back. The price could not
+identify any volatility. `implied_vol` now returns `NaN` when the price at
+`lo` is within `tol` of the target. Every caller already handled `NaN`:
+`PortfolioGreeks` prices on intrinsic, `GreeksAttribution` keeps the
+previous volatility, chain selection skips the contract. Example 21's 2006
+attribution, quoted in `reports/sessions/2026-10-29_options-design.md`,
+moves 461 from residual to vega: the jump to 0.2 had been booked as a
+volatility change. The tests are
+`test_implied_vol_is_nan_for_a_worthless_option` (bsm, black76, binomial at
+prices 0.0 and 1e-13) and `test_implied_vol_still_finds_a_small_but_real_price`
+in `tests/test_options_pricing.py`; against the unfixed code, all 6 of the
+first failed and the second passed.
+
+### The writer wrote the strategy's datetime as a number
+
+*Found 2026-11-03, writing a run out in the AAPL/MSFT notebook; fixed the
+same day.* `Strategy.getwritervalues` wrote every line of every
+strategy, indicator and observer as `line[0]`, so the strategy's `datetime`
+column held the raw date number while the data feed's, written by
+`DataSeries.getwritervalues`, held a date. A line named `datetime` is now
+written as `line.datetime(0)`. The test is
+`test_the_strategy_writes_its_datetime_as_a_date` in
+`tests/test_cerebro.py`, which failed against the unfixed code.
+
+### GrossLeverage reported net exposure, and not even that for futures
+
+*Found 2026-11-03, when the AAPL/MSFT notebook's pair trade reported an
+average gross leverage of -0.01 while holding 40% long and 40% short; fixed
+the same day.* `GrossLeverage.next` computed `(value - cash) / value`. That
+is the invested fraction of a long-only stock book and nothing else:
+- a short sale's proceeds raise cash, so shorts netted against longs;
+- futures cash moves by the margin, so a contract counted its margin rather
+  than its notional;
+- in fund mode `value` was the per-share fund value, a different unit from
+  cash.
+
+It came from upstream. It now sums `abs(size) * close * mult` over the
+broker's positions and divides by the account value, in every mode; the
+`fund` parameter is gone. The tests are in `TestGrossLeverage` in
+`tests/test_analyzers.py`; against the unfixed code, 3 of 4 failed (short,
+long/short, futures). The long-only test passed, as it should.
+
+### An order cancelled on the bar that created it went on to fill
+
+*Found 2026-11-03, touring the order types in the AAPL/MSFT notebook; fixed
+the same day.* `Strategy.buy()` hands a new order to `BackBroker.transmit`,
+which queues it in `submitted` until `check_submitted` runs on the broker's
+next cycle. `BackBroker.cancel` looked only in `pending`, so a cancel on the
+creating bar returned `False` and changed nothing. The order was then
+accepted. A market order filled; a limit order stayed live with status
+`Accepted`; and the caller had no sign of it but the ignored return value.
+It came from upstream. `cancel()` now also removes the order from
+`submitted`. A combo leg cancelled there leaves its siblings to
+`_exec_combos`, which already cancels every leg of a combo with a dead one,
+so no leg fills. The tests are
+`test_cancel_on_the_bar_that_created_the_order` and
+`test_cancelling_one_new_combo_leg_cancels_the_combo` in
+`tests/test_broker.py`; against the unfixed code, all 3 failed (the market
+order had status `Completed`).
+
+### Data wrappers could not wrap a feed with extra lines
+
+*Found 2026-11-03, filtering a Yahoo CSV feed in the AAPL/MSFT notebook;
+fixed the same day.* `DataFilter._load` and `DataFiller._copyfromdata`
+copied `range(self.p.dataname.size())` lines into the wrapper, which has only
+the seven standard ones, so any inner feed with more (`YahooFinanceCSVData`'s
+`adjclose`, an option feed's `bid` and `ask`) raised
+`IndexError: list index out of range` on the first bar. They now pair their
+own lines with the inner feed's by alias in `_startinner`. The tests are
+`test_data_filter_wraps_a_feed_with_extra_lines` and
+`test_a_wrapped_feed_may_carry_extra_lines` in
+`tests/test_filters_sizers.py`; against the unfixed code, all 3 failed.
+
+### A falling Renko brick had its high below its low
+
+*Found 2026-11-03, reading `Renko.next` while fixing the item above; fixed
+the same day.* A brick falling from `top` to `bot` was written with
+`low = top` and `high = bot`. It came from upstream. Rising bricks were
+right. The test is `test_every_renko_brick_has_its_high_above_its_low` in
+`tests/test_filters_sizers.py`, which failed against the unfixed code
+(`assert 3579.0 == 3629.0`).
+
+### A filter could not remove a bar without preloading
+
+*Found 2026-11-03, building the AAPL/MSFT notebook; fixed the same day.*
+A filter removes a bar by calling `data.backwards()` and returning `True`,
+which `AbstractDataBase.load` reads as "fetch another". `Filter.__call__`, the
+base of `Renko` and of any user filter, called `next()` and returned `None`,
+so `load()` reported the removed bar as delivered. With `preload=True` the
+preload loop calls `load()` again and nothing showed. With `preload=False` the
+strategy was handed an empty buffer and `Cerebro._runnext` raised
+`IndexError: array index out of range` on the first bar. `__call__` now
+returns `next()`'s result. The tests are
+`test_a_filter_returning_true_removes_the_bar` and
+`test_renko_bricks_do_not_depend_on_preload` in
+`tests/test_filters_sizers.py`; against the unfixed code, 4 of the 5 failed
+(the preloaded case passed).
 
 ### An aborted run left its feeds' files open
 

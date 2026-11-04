@@ -171,6 +171,51 @@ class TestOrderTypes:
         assert strat.cancelled
         assert strat.order.status == bt.Order.Canceled
 
+    @pytest.mark.parametrize("exectype", [bt.Order.Market, bt.Order.Limit])
+    def test_cancel_on_the_bar_that_created_the_order(self, exectype):
+        """A new order waits in the broker's submitted queue until its next
+        cycle. cancel() looked only among the pending orders, returned False,
+        and the order went on to be accepted - and a market order filled."""
+
+        class CancelAtOnce(bt.Strategy):
+            __test__ = False
+
+            def __init__(self):
+                self.statuses = []
+
+            def next(self):
+                if len(self) == 5:
+                    price = self.data.close[0] * 0.5
+                    self.order = self.buy(size=10, exectype=exectype, price=price)
+                    self.result = self.cancel(self.order)
+
+            def notify_order(self, order):
+                self.statuses.append(order.getstatusname())
+
+        strat, _ = run(strategy=CancelAtOnce)
+        assert strat.order.status == bt.Order.Canceled
+        assert strat.statuses == ["Submitted", "Canceled"]
+        assert strat.getposition(strat.data).size == 0
+
+    def test_cancelling_one_new_combo_leg_cancels_the_combo(self):
+        class ComboThenCancel(bt.Strategy):
+            __test__ = False
+
+            def next(self):
+                if len(self) == 5:
+                    self.legs = self.combo([(self.data0, 10), (self.data1, -10)])
+                    self.cancel(self.legs[0])
+
+        cerebro = bt.Cerebro(stdstats=False)
+        cerebro.adddata(csvdata())
+        cerebro.adddata(csvdata())
+        cerebro.broker.setcash(100000.0)
+        cerebro.addstrategy(ComboThenCancel)
+        strat = cerebro.run()[0]
+        assert [leg.status for leg in strat.legs] == [bt.Order.Canceled] * 2
+        assert strat.getposition(strat.data0).size == 0
+        assert strat.getposition(strat.data1).size == 0
+
     def test_order_rejected_when_cash_is_insufficient(self):
         strat, _ = run(cash=10.0, size=1000)
         assert strat.orders[0].status in (bt.Order.Margin, bt.Order.Rejected)

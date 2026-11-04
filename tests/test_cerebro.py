@@ -244,6 +244,59 @@ class TestWriter:
         assert len(text.splitlines()) > 100
 
 
+class TestObserverBuffers:
+    """In run-once mode an observer's buffer was sized for the run and then
+    grown again bar by bar: twice the memory, and a tail of NaN after the
+    last bar for anything reading ``.array``."""
+
+    @staticmethod
+    def value_line(runonce, *names):
+        cerebro = bt.Cerebro(stdstats=False, runonce=runonce)
+        for name in names:
+            cerebro.adddata(csvdata(name))
+        cerebro.addobserver(bt.observers.Value)
+        cerebro.addstrategy(Noop)
+        strat = cerebro.run()[0]
+        return len(strat), list(strat.getobservers()[0].lines.value.array)
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ("2006-day-001.txt",),
+            # the weekly feed is the clock, so the run has more bars than
+            # the buffer sized from it
+            ("2006-week-001.txt", "2006-day-001.txt"),
+        ],
+        ids=["one feed", "more bars than the clock's buffer"],
+    )
+    def test_an_observer_holds_one_value_per_bar(self, names):
+        bars, once = self.value_line(True, *names)
+        assert len(once) == bars
+        assert once == self.value_line(False, *names)[1]
+
+
+class TestWriterDates:
+    def test_the_strategy_writes_its_datetime_as_a_date(self):
+        """The data feed's column was a date, the strategy's beside it the
+        raw date number (734870.99...)."""
+        import csv
+        import io
+
+        out = io.StringIO()
+        cerebro = bt.Cerebro(stdstats=False)
+        cerebro.adddata(csvdata())
+        cerebro.addstrategy(Noop)
+        cerebro.addwriter(bt.WriterFile, out=out, csv=True)
+        cerebro.run()
+        rows = [r for r in csv.reader(io.StringIO(out.getvalue())) if r]
+        header = next(r for r in rows if r[0] == "Id")
+        first = next(r for r in rows if r[0] == "1")
+        dates = [first[i] for i, h in enumerate(header) if h == "datetime"]
+        assert len(dates) == 2  # the data's and the strategy's
+        assert dates[0] == dates[1]
+        assert dates[0].startswith("2006-01-02")
+
+
 class TestPlotting:
     @pytest.mark.plotting
     def test_plot_renders_without_a_display(self):

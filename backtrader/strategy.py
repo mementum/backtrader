@@ -363,7 +363,10 @@ class Strategy(StrategyBase, metaclass=MetaStrategy):
 
             if once:
                 if len(self) > len(observer):
-                    if self._oldsync:
+                    # _once sized the buffer for the clock's bars and homed
+                    # it: step into that, and grow it only past its end
+                    # (a run can have more bars than its clock)
+                    if self._oldsync or observer.buflen() > len(observer):
                         observer.advance()
                     else:
                         observer.forward()
@@ -441,7 +444,11 @@ class Strategy(StrategyBase, metaclass=MetaStrategy):
             lio = len(iocsv)
             values.append(lio)
             if lio:
-                values.extend(map(lambda l: l[0], iocsv.lines.itersize()))
+                for alias, line in zip(
+                    iocsv.lines.getlinealiases(), iocsv.lines.itersize()
+                ):
+                    # a date, as a data feed writes its own, not the number
+                    values.append(line.datetime(0) if alias == "datetime" else line[0])
             else:
                 values.extend([""] * iocsv.lines.size())
 

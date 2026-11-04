@@ -28,44 +28,28 @@ import backtrader as bt
 
 class GrossLeverage(bt.Analyzer):
     """This analyzer calculates the Gross Leverage of the current strategy
-    on a timeframe basis
+    on a timeframe basis: the notional of every open position, long or
+    short, over the value of the account.
 
-    Params:
-
-      - ``fund`` (default: ``None``)
-
-        If ``None`` the actual mode of the broker (fundmode - True/False) will
-        be autodetected to decide if the returns are based on the total net
-        asset value or on the fund value. See ``set_fundmode`` in the broker
-        documentation
-
-        Set it to ``True`` or ``False`` for a specific behavior
+    A position's notional is ``abs(size) * close * mult``: what a stock
+    position is worth, a futures contract's full value rather than its
+    margin, an option's premium times its multiplier. 0.0 is all cash, 1.0
+    a fully invested long book, 2.0 a book long and short 100% each.
 
     Methods:
 
       - get_analysis
 
-        Returns a dictionary with returns as values and the datetime points for
-        each return as keys
+        Returns a dictionary with the leverage as values and the datetime
+        points as keys
     """
 
-    params = (("fund", None),)
-
-    def start(self):
-        if self.p.fund is None:
-            self._fundmode = self.strategy.broker.fundmode
-        else:
-            self._fundmode = self.p.fund
-
-    def notify_fund(self, cash, value, fundvalue, shares):
-        self._cash = cash
-        if not self._fundmode:
-            self._value = value
-        else:
-            self._value = fundvalue
-
     def next(self):
-        # Updates the leverage for "dtkey" (see base class) for each cycle
-        # 0.0 if 100% in cash, 1.0 if no short selling and fully invested
-        lev = (self._value - self._cash) / self._value
-        self.rets[self.data0.datetime.datetime()] = lev
+        broker = self.strategy.broker
+        gross = 0.0
+        for data, position in broker.positions.items():
+            if position.size:
+                mult = broker.getcommissioninfo(data).p.mult
+                gross += abs(position.size) * data.close[0] * mult
+        value = broker.getvalue()
+        self.rets[self.data0.datetime.datetime()] = gross / value if value else 0.0

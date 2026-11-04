@@ -35,6 +35,19 @@ working fails the build rather than misleading its reader.
 | [25_options_stock_collar_chains.py](25_options_stock_collar_chains.py) | multi-stock portfolio with dynamic option chains: delta-selected collars and physical delivery |
 
 `--plot` (or `--show` for 09) opens a chart where a display is available.
+
+## The notebook
+
+[notebooks/aapl_msft_walkthrough.ipynb](notebooks/aapl_msft_walkthrough.ipynb)
+works through the whole package on two real stocks, AAPL and MSFT, with daily
+prices from Yahoo Finance through `yfinance`: data feeds, indicators, orders,
+sizing, the broker, analyzers and plots, several stocks at once, signals and
+optimisation, option pricing, options on model feeds, an options book with
+margin and greeks, and whole option chains. Unlike the scripts it needs a
+network the first time (prices are then cached in `notebooks/data/`, which
+git ignores) and `pip install yfinance jupyter` on top of the
+`plotting`, `pandas` and `options` extras. The suite compiles its code but
+does not run it.
 Example 09 always writes its chart to `examples/output/`, which git ignores.
 
 `samples/` holds upstream's original sample programs, kept while they are

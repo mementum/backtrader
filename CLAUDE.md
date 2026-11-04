@@ -168,7 +168,7 @@ And what bounds it:
 
 - `pytest` from the repository root — **in the foreground, with a bounded
   timeout.** Do not background the runner or spawn polling loops.
-- **643 tests, ~85 s** (2026-10-29, Python 3.13). `pytest --cov` adds
+- **698 tests, ~80 s** (2026-11-03, Python 3.13). `pytest --cov` adds
   coverage and takes ~4 min; coverage is 72% counting branches.
   **Report exact pass/fail counts.** "Tests pass" without numbers is not a
   report.

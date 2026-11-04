@@ -95,3 +95,22 @@ def test_example_plots(path, tmp_path, monkeypatch):
         module.main(plot=True)
     elif "out" in sig:
         module.main(out=tmp_path / "chart_plot.png")
+
+
+NOTEBOOK = EXAMPLES[0].parent / "notebooks" / "aapl_msft_walkthrough.ipynb"
+
+
+def test_the_notebook_compiles():
+    """The notebook needs Yahoo Finance, so the suite cannot run it; it can
+    still catch a cell that no longer parses. IPython magics are dropped."""
+    import json
+
+    cells = json.loads(NOTEBOOK.read_text(encoding="utf-8"))["cells"]
+    code = [c for c in cells if c["cell_type"] == "code"]
+    assert len(code) > 50
+    for i, cell in enumerate(code):
+        source = "".join(cell["source"])
+        python = "\n".join(
+            line for line in source.splitlines() if not line.startswith("%")
+        )
+        compile(python, f"{NOTEBOOK.name}, code cell {i}", "exec")

@@ -221,6 +221,64 @@ class TestGrossLeverage:
         assert len(rets) > 0
         assert all(v >= 0.0 for v in rets.values())
 
+    @staticmethod
+    def book(targets, **comm):
+        """Leverage per bar of a book put on at bar 5 and checked by hand."""
+
+        class Book(bt.Strategy):
+            __test__ = False
+
+            def __init__(self):
+                self.expected = {}
+
+            def next(self):
+                if len(self) == 5:
+                    for d, target in zip(self.datas, targets):
+                        self.order_target_percent(d, target=target)
+                gross = sum(
+                    abs(self.getposition(d).size) * d.close[0] * comm.get("mult", 1)
+                    for d in self.datas
+                )
+                self.expected[self.data.datetime.datetime()] = (
+                    gross / self.broker.getvalue()
+                )
+
+        cerebro = bt.Cerebro(stdstats=False)
+        cerebro.broker.setcash(100000.0)
+        if comm:
+            cerebro.broker.setcommission(**comm)
+        for _ in targets:
+            cerebro.adddata(csvdata())
+        cerebro.addstrategy(Book)
+        cerebro.addanalyzer(btanalyzers.GrossLeverage, _name="lev")
+        strat = cerebro.run()[0]
+        return strat.analyzers.lev.get_analysis(), strat.expected
+
+    def test_a_short_position_is_exposure_too(self):
+        """(value - cash) / value nets a short's proceeds against it, so a
+        short book read negative."""
+        rets, expected = self.book([-0.5])
+        assert max(rets.values()) == pytest.approx(max(expected.values()))
+        assert min(rets.values()) >= 0.0
+        assert max(rets.values()) > 0.4
+
+    def test_a_long_short_book_reports_its_gross_not_its_net(self):
+        rets, expected = self.book([0.4, -0.4])
+        for dt, lev in rets.items():
+            assert lev == pytest.approx(expected[dt])
+        assert max(rets.values()) > 0.7  # a net figure would be about zero
+
+    def test_a_futures_position_counts_its_notional(self):
+        """Cash moves by the margin, not by the contract's value."""
+        rets, expected = self.book([0.1], margin=2000.0, mult=10.0)
+        for dt, lev in rets.items():
+            assert lev == pytest.approx(expected[dt])
+
+    def test_a_long_stock_book_is_unchanged(self):
+        rets, expected = self.book([0.6])
+        for dt, lev in rets.items():
+            assert lev == pytest.approx(expected[dt])
+
 
 class TestVWR:
     def test_reports_a_vwr_value(self):

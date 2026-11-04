@@ -5,6 +5,7 @@ graft tests
 graft datas
 graft examples
 prune examples/output
+prune examples/notebooks/data
 
 # Upstream material being pruned rather than maintained, plus local notes.
 prune contrib

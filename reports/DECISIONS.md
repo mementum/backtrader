@@ -3,7 +3,7 @@
 Things that were examined and found to be correct, deliberate, or the lesser
 evil. Do not re-open these without new evidence.
 
-*Last updated: 2026-10-29*
+*Last updated: 2026-11-03*
 
 ## Upstream is dormant, and this fork already contains all of it
 
@@ -135,6 +135,40 @@ A daily bar carries `23:59:59.999` as its time, so `todate=datetime(2006, 6, 30)
 excludes 2006-06-30. This looks like an off-by-one when splitting a feed on a
 date boundary; it is the documented consequence of session-end stamping.
 Pinned by `test_todate_excludes_a_bar_stamped_at_the_session_end`.
+
+## A closing order's `executed.value` is the cost of what it closed
+
+*2026-11-03*
+
+A sell that closes a long reports `executed.value` equal to the position's
+*cost*, not the sale's proceeds: `SELL -8728 @ 11.41`, value 91,361.01, the
+same as the buy. Upstream does this deliberately: `value` is the capital the
+order opened or released, and `Trade.pnl` carries the difference. Use
+`abs(executed.size) * executed.price` for what changed hands. Found while
+logging trades in the AAPL/MSFT notebook.
+
+## In `next_open()`, indicators still show the bar that just closed
+
+*2026-11-03*
+
+With `cheat_on_open=True`, `next_open()` runs after the new bar's open is
+loaded and before the broker fills. Data lines already show the new bar;
+indicators have not moved, so `cross[0]` is the crossover of the bar that
+just closed. Using `cross[-1]` there (as if the indicators had moved) trades
+a day late. Checked on 2026-11-03 to give the same fills with `runonce`,
+`runonce=False` and `preload=False`; upstream's cheat-on-open sample reads
+`[0]` the same way.
+
+## `add_cash` reaches the account on the broker's next cycle
+
+*2026-11-03*
+
+`broker.add_cash()` queues the amount; it is added when the broker next
+runs, so an `order_target_*` sent on the same bar still sizes on the old
+value. Invest a deposit on the following bar. In fund mode the deposit
+buys shares at the share value of the bar it lands on, which is what makes
+the fund's return ignore it (checked 2026-11-03: share value 114.83 before
+a 50,000 deposit, 114.77 after it).
 
 ## How CI and publishing are wired, and what was rejected
 
